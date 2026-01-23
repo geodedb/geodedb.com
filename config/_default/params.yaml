@@ -59,8 +59,8 @@ social_links:
 defaultTitle: 'Geode Database - Production-Ready Graph Database'
 defaultDescription: |
   Geode is an enterprise-ready graph database implementing the ISO/IEC 39075:2024 GQL standard.
-  Built in Zig for maximum performance and reliability. Features include 100% GQL compliance,
-  97.4% test coverage, ACID transactions, vector search, ML graph embeddings, and real-time analytics.
+  Built in Zig for maximum performance and reliability. Features include full GQL compliance,
+  high test coverage, ACID transactions, vector search, ML graph embeddings, and real-time analytics.
   Production-ready with comprehensive client libraries for Go, Python, Rust, and Zig.
 
 sitename: Geode Database
@@ -180,7 +180,7 @@ meta:
     site_name: 'Geode Database'
     type: 'website'
     title: 'Geode - Enterprise Graph Database with ISO GQL Compliance'
-    description: 'Production-ready graph database implementing ISO/IEC 39075:2024 GQL standard with 97.4% test coverage and enterprise features.'
+    description: 'Production-ready graph database implementing ISO/IEC 39075:2024 GQL standard with high test coverage and enterprise features.'
     url: 'inherit'
     images:
       - url: images/og-image.png
@@ -195,7 +195,7 @@ meta:
     domain: 'geodedb.com'
     title: 'Geode - Enterprise Graph Database with ISO GQL Compliance'
     url: 'inherit'
-    description: 'Production-ready graph database implementing ISO/IEC 39075:2024 GQL standard with 97.4% test coverage and enterprise features.'
+    description: 'Production-ready graph database implementing ISO/IEC 39075:2024 GQL standard with high test coverage and enterprise features.'
     card: 'summary_large_image'
     creator: '@codeprosorg'
     site: '@codeprosorg'
@@ -215,6 +215,3 @@ meta:
     description: 'Enterprise Graph Database with ISO GQL Compliance'
     url: 'https://geodedb.com'
     logo: 'images/logo.png'
-    same_as:
-      - 'https://gitlab.com/devnw/codepros/geode'
-      - 'https://github.com/codeprosorg'
