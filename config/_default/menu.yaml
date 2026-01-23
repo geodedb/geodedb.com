@@ -1,0 +1,39 @@
+main:
+  - name: Documentation
+    url: /docs/
+    weight: 1
+  - name: Guides
+    url: /guides/
+    weight: 2
+  - name: Client Libraries
+    url: /clients/
+    weight: 3
+  - name: Plugins
+    url: /plugins/
+    weight: 4
+  - name: Blog
+    url: /blog/
+    weight: 5
+  - name: GitHub
+    url: https://github.com/codeprosorg
+    weight: 6
+
+footer:
+  - name: Documentation
+    url: /docs/
+    weight: 1
+  - name: Getting Started
+    url: /docs/getting-started/
+    weight: 2
+  - name: API Reference
+    url: /docs/api-reference/
+    weight: 3
+  - name: Client Libraries
+    url: /clients/
+    weight: 4
+  - name: Community
+    url: https://gitlab.com/devnw/codepros/geode
+    weight: 5
+  - name: License
+    url: /license/
+    weight: 6

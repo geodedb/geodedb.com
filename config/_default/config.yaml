@@ -1,0 +1,111 @@
+baseURL: "https://geodedb.com"
+title: "Geode Database"
+languageCode: "en-us"
+defaultContentLanguage: "en"
+enableRobotsTXT: true
+canonifyURLs: true
+theme: "ultra"
+
+pagination:
+  pagerSize: 12
+
+permalinks:
+  docs: /docs/:slug/
+  guides: /guides/:slug/
+  blog: /blog/:slug/
+  tag: /tags/:slug/
+  category: /categories/:slug/
+
+taxonomies:
+  tag: "tags"
+  category: "categories"
+  series: "series"
+
+mediaTypes:
+  "application/manifest+json":
+    suffixes:
+      - json
+  "application/atom+xml":
+    suffixes:
+      - xml
+
+outputFormats:
+  MANIFEST:
+    name: manifest
+    baseName: manifest
+    mediaType: "application/manifest+json"
+    notAlternative: "true"
+    permalinkable: "true"
+  SITEMAP:
+    name: sitemap
+    baseName: sitemap
+    mediaType: "application/xml"
+    notAlternative: "true"
+    permalinkable: "false"
+  ATOM:
+    name: atom
+    baseName: atom
+    mediaType: "application/atom+xml"
+    notAlternative: "true"
+    permalinkable: "false"
+
+outputs:
+  home:
+    - HTML
+    - RSS
+    - JSON
+    - MANIFEST
+    - SITEMAP
+    - ATOM
+  section:
+    - HTML
+    - RSS
+    - SITEMAP
+    - ATOM
+  taxonomy:
+    - HTML
+    - RSS
+    - SITEMAP
+    - ATOM
+  term:
+    - HTML
+    - RSS
+    - SITEMAP
+    - ATOM
+
+build:
+  writeStats: true
+
+# RSS service configuration
+services:
+  rss:
+    limit: 20
+
+# Dart Sass configuration for CI/CD stability
+params:
+  css:
+    transpiler: "dartsass"
+  rss:
+    fullContent: false
+  atom:
+    fullContent: false
+
+# Resource processing settings
+markup:
+  goldmark:
+    renderer:
+      unsafe: true
+  highlight:
+    style: monokai
+    lineNos: true
+    lineNumbersInTable: true
+
+# SEO and Sitemap optimization
+seo:
+  includeNoIndex: false
+
+# Sitemap settings
+sitemap:
+  changefreq: weekly
+  filename: sitemap.xml
+  priority: 0.5

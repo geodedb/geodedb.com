@@ -1,0 +1,219 @@
+# Web Awesome Configuration
+webawesome:
+  version: '3.0.0-beta.4'
+  theme: 'premium'
+  palette: 'anodized'
+  brand: 'cyan'
+  neutral: 'gray'
+  success: 'green'
+  warning: 'yellow'
+  danger: 'red'
+  kitCode: '54b6985a3e'
+  iconFamily: 'sharp-duotone'
+  borderRadiusScale: 0.5
+  borderWidthScale: 1.5
+  spaceScale: 1
+
+# Pagination settings
+paginate: 12
+taxonomyPaginate: 12
+paginateDocs: 12
+paginateGuides: 12
+paginateBlogs: 9
+
+# Analytics Configuration (disabled initially)
+analytics:
+  enabled: false
+  googleTagManager:
+    enabled: false
+    id: ''
+  ga4_id: ''
+
+# Components
+components:
+  search:
+    visible: true
+  breadcrumb:
+    visible: true
+  toc:
+    visible: true
+
+social_links:
+  - key: 'github'
+    url: 'https://github.com/%s'
+    title: 'GitHub'
+    username: 'codeprosorg'
+    icon: 'fab fa-github'
+    weight: 1
+  - key: 'gitlab'
+    url: 'https://gitlab.com/%s'
+    title: 'GitLab'
+    username: 'devnw/codepros/geode'
+    icon: 'fab fa-gitlab'
+    weight: 2
+  - key: 'rss'
+    url: '/index.xml'
+    icon: 'fa-solid fa-rss'
+    weight: 10
+
+defaultTitle: 'Geode - Enterprise Graph Database with ISO GQL Compliance'
+defaultDescription: |
+  Geode is a production-ready graph database implementing ISO/IEC 39075:2024 GQL standard.
+  Built in Zig for performance and reliability, with 97.4% test coverage, 100% GQL compliance,
+  and enterprise features including ACID transactions, vector search, ML embeddings, and real-time analytics.
+
+sitename: GeodeDB
+author: CodePros
+favicons:
+  shortcut_icon: 'images/icons/favicon.ico'
+  icon: 'images/icons/favicon.ico'
+  apple_touch_icon: 'images/icons/apple-touch-icon.png'
+  favicon_32: 'images/icons/favicon-32x32.png'
+  favicon_16: 'images/icons/favicon-16x16.png'
+  favicon_svg: 'images/icons/favicon.svg'
+  favicon_png: 'images/icons/favicon.png'
+logo: '/images/logo.svg'
+logo_alt: 'Geode Database Logo'
+
+# Theme-specific logos and symbols
+branding:
+  light:
+    logo: '/images/logo-dark.svg'
+    symbol: '/images/symbol-dark.svg'
+  dark:
+    logo: '/images/logo-light.svg'
+    symbol: '/images/symbol-light.svg'
+
+# Page header configuration
+pageHeader:
+  background:
+    useImage: false
+    light:
+      image: ''
+      textTheme: 'dark'
+      overlay: 'none'
+    dark:
+      image: ''
+      textTheme: 'light'
+      overlay: 'rgba(0, 0, 0, 0.3)'
+  gradient:
+    direction: '135deg'
+    startColor: '#2563eb'
+    endColor: '#0ea5e9'
+  textStyles:
+    dark:
+      color: 'var(--bs-dark)'
+      shadowColor: 'rgba(255, 255, 255, 0.3)'
+      shadowBlur: '1px'
+    light:
+      color: 'var(--bs-light)'
+      shadowColor: 'rgba(0, 0, 0, 0.3)'
+      shadowBlur: '1px'
+
+# Banner Configuration
+main:
+  banner:
+    desc: |
+      <div class="banner-text-container">
+        <div class="banner-primary-text">
+          <i class="fa-duotone fa-database" aria-hidden="true"></i> Enterprise Graph Database
+        </div>
+        <hr class="banner-divider" />
+        <div class="banner-secondary-text">
+          100% ISO GQL Compliance <i class="fa-duotone fa-check-circle" aria-hidden="true"></i>
+        </div>
+        <hr class="banner-divider" />
+        <div class="banner-tertiary-text">
+          <i class="fa-duotone fa-rocket" aria-hidden="true"></i> Production-Ready with 97.4% Test Coverage
+        </div>
+      </div>
+    startbuttonText: 'Get Started'
+    startbuttonLink: '/docs/getting-started/'
+
+copyright: 'CodePros'
+body_is_markdown: true
+
+contact:
+  enable: false
+  title: 'Contact'
+  body: 'Get in touch with the Geode team.'
+  email: 'info@codepros.org'
+  subject: 'Geode Database Inquiry'
+
+pwa:
+  manifest:
+    name: 'Geode Database'
+    short_name: Geode
+    description: 'Enterprise Graph Database with ISO GQL Compliance'
+    background_color: '#ffffff'
+    theme_color: '#2563eb'
+    display: standalone
+    icons:
+      - src: 'images/icons/android-chrome-192x192.png'
+        sizes: '192x192'
+        type: 'image/png'
+      - src: 'images/icons/android-chrome-512x512.png'
+        sizes: '512x512'
+        type: 'image/png'
+
+dateFormat: 'Monday, Jan 2, 2006'
+
+keywords:
+  - 'graph database'
+  - 'geode'
+  - 'geodedb'
+  - 'gql'
+  - 'iso gql'
+  - 'graph query language'
+  - 'zig database'
+  - 'enterprise database'
+  - 'vector search'
+  - 'graph embeddings'
+  - 'acid transactions'
+  - 'mvcc'
+  - 'graph analytics'
+
+meta:
+  og:
+    locale: 'en_US'
+    site_name: 'Geode Database'
+    type: 'website'
+    title: 'Geode - Enterprise Graph Database with ISO GQL Compliance'
+    description: 'Production-ready graph database implementing ISO/IEC 39075:2024 GQL standard with 97.4% test coverage and enterprise features.'
+    url: 'inherit'
+    images:
+      - url: images/og-image.png
+        secure_url: images/og-image.png
+        width: 1200
+        height: 630
+        type: image/png
+        alt: 'Geode Database'
+    determiner: 'auto'
+
+  twitter:
+    domain: 'geodedb.com'
+    title: 'Geode - Enterprise Graph Database with ISO GQL Compliance'
+    url: 'inherit'
+    description: 'Production-ready graph database implementing ISO/IEC 39075:2024 GQL standard with 97.4% test coverage and enterprise features.'
+    card: 'summary_large_image'
+    creator: '@codeprosorg'
+    site: '@codeprosorg'
+    image: 'images/og-image.png'
+    image_alt: 'Geode Database'
+
+  apple:
+    mobile_web_app_capable: 'yes'
+    mobile_web_app_status_bar_style: 'black-translucent'
+    mobile_web_app_title: 'Geode'
+    touch_icon: 'images/icons/apple-touch-icon.png'
+
+  structured_data:
+    enable: true
+    type: 'Organization'
+    name: 'Geode Database'
+    description: 'Enterprise Graph Database with ISO GQL Compliance'
+    url: 'https://geodedb.com'
+    logo: 'images/logo.png'
+    same_as:
+      - 'https://gitlab.com/devnw/codepros/geode'
+      - 'https://github.com/codeprosorg'
