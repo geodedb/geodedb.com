@@ -1,20 +1,25 @@
 # GitLab CI/CD configuration for Geode documentation site
 # Builds and deploys Hugo site to GitLab Pages at geodedb.com
 
-image: klakegg/hugo:ext-alpine
+image: nixos/nix:latest
 
 variables:
   GIT_SUBMODULE_STRATEGY: recursive
   HUGO_ENV: production
+  NIX_CONFIG: "experimental-features = nix-command flakes"
 
 before_script:
-  - hugo version
-  - hugo env
+  - nix --version
+  - nix flake show --no-write-lock-file
+
+.nix_build: &nix_build
+  script:
+    - nix develop --accept-flake-config --command hugo version
+    - nix develop --accept-flake-config --command make build
 
 test:
   stage: test
-  script:
-    - hugo -b https://geodedb.com --minify --gc
+  <<: *nix_build
   artifacts:
     paths:
       - public
@@ -23,8 +28,7 @@ test:
 
 pages:
   stage: deploy
-  script:
-    - hugo -b https://geodedb.com --minify --gc
+  <<: *nix_build
   artifacts:
     paths:
       - public
