@@ -81,7 +81,13 @@ services:
   rss:
     limit: 20
 
-# Dart Sass configuration for CI/CD stability
+# Resource processing settings
+module:
+  hugoVersion:
+    min: "0.112.0"
+    extended: true
+
+# Dart Sass configuration
 params:
   css:
     transpiler: "dartsass"
