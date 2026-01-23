@@ -91,7 +91,20 @@
   // Hide excessive anchor/share buttons in homepage content
   .h-anchor,
   .h-top,
-  .h-share {
+  .h-share,
+  button.h-share,
+  a.h-anchor,
+  a.h-top {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+  }
+
+  // Also hide the share modal and its scripts/styles
+  #headingShareModal,
+  #headingShareModal + style,
+  #headingShareModal + style + script {
     display: none !important;
   }
 

@@ -6,15 +6,12 @@
     {{ partial "banner.html" . }}
   {{ end }}
 
-  {{/* Responsive container ----------------------- */}}
-  {{ $container := partial "helpers/container.html" . }}
-
   <!-- =================================================================== -->
   <!--  Main homepage content                                              -->
   <!-- =================================================================== -->
-  <div class="{{ $container }} my-5" itemprop="mainContentOfPage">
-    <div class="row">
-      <div class="col-12">
+  <div class="container my-5" itemprop="mainContentOfPage">
+    <div class="row justify-content-center">
+      <div class="col-12 col-lg-10 col-xl-9">
         <!-- Render the markdown content from content/_index.md -->
         <article class="homepage-content">
           {{ .Content }}
