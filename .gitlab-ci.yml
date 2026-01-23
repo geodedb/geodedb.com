@@ -4,7 +4,7 @@
 image: ubuntu:24.04
 
 variables:
-  GIT_SUBMODULE_STRATEGY: recursive
+  GIT_SUBMODULE_STRATEGY: none
   HUGO_ENV: production
   HUGO_VERSION: "0.139.4"
   DART_SASS_VERSION: "1.80.7"
@@ -14,6 +14,10 @@ variables:
 before_script:
   - apt-get update -qq
   - apt-get install -y -qq wget git ca-certificates nodejs npm
+  - echo "Cloning private submodules with CI token..."
+  - git config --global url."https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.com/".insteadOf "https://gitlab.com/"
+  - git submodule sync --recursive
+  - git submodule update --init --recursive --depth=1
   - echo "Installing Hugo and Dart Sass..."
   - make deps 2>&1 | tail -20
   - export PATH="/usr/local/bin:$PATH"
