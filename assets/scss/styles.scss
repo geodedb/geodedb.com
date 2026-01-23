@@ -1,0 +1,8 @@
+// Geode Database Custom Styles
+// Imports theme styles and adds amethyst geode color scheme
+
+// Import all theme styles first
+@forward "../../themes/ultra/assets/scss/styles.scss";
+
+// Import custom amethyst geode theme
+@use "custom";

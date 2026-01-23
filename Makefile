@@ -5,7 +5,7 @@ DART_SASS_VERSION ?= 1.80.7
 HUGO_BIN ?= /usr/local/bin/hugo
 SASS_BIN ?= /usr/local/bin/sass
 
-.PHONY: help deps deps-check npm build serve clean deploy update
+.PHONY: help deps deps-check npm build serve clean deploy update upgrade
 
 help:
 	@echo "Geode Documentation - Available targets:"
@@ -16,6 +16,7 @@ help:
 	@echo "  make serve       - Serve locally for development"
 	@echo "  make clean       - Clean build artifacts"
 	@echo "  make update      - Update theme submodule"
+	@echo "  make upgrade     - Force upgrade Hugo and Dart Sass to latest versions"
 	@echo "  make deploy      - Deploy to GitLab Pages"
 
 deps-check:
@@ -100,3 +101,36 @@ update:
 deploy: build
 	@echo "Site built. Push to main branch to deploy via GitLab CI/CD"
 	@echo "Run: git push origin main"
+
+upgrade:
+	@echo "Upgrading Hugo to $(HUGO_VERSION) and Dart Sass to $(DART_SASS_VERSION)..."
+	@if [ -z "$(CI)" ]; then \
+		SUDO="sudo"; \
+	else \
+		SUDO=""; \
+	fi; \
+	echo "Removing existing Hugo..."; \
+	$$SUDO rm -f $(HUGO_BIN); \
+	echo "Installing Hugo Extended $(HUGO_VERSION)..."; \
+	wget -q https://github.com/gohugoio/hugo/releases/download/v$(HUGO_VERSION)/hugo_extended_$(HUGO_VERSION)_linux-amd64.tar.gz -O /tmp/hugo.tar.gz; \
+	tar -xzf /tmp/hugo.tar.gz -C /tmp/; \
+	$$SUDO mv /tmp/hugo $(HUGO_BIN); \
+	$$SUDO chmod +x $(HUGO_BIN); \
+	rm -f /tmp/hugo.tar.gz; \
+	echo "✓ Hugo Extended $(HUGO_VERSION) installed"; \
+	echo "Removing existing Dart Sass..."; \
+	$$SUDO rm -f $(SASS_BIN); \
+	$$SUDO rm -rf /usr/local/lib/dart-sass; \
+	echo "Installing Dart Sass $(DART_SASS_VERSION)..."; \
+	wget -q https://github.com/sass/dart-sass/releases/download/$(DART_SASS_VERSION)/dart-sass-$(DART_SASS_VERSION)-linux-x64.tar.gz -O /tmp/dart-sass.tar.gz; \
+	tar -xzf /tmp/dart-sass.tar.gz -C /tmp/; \
+	$$SUDO mkdir -p /usr/local/lib/dart-sass; \
+	$$SUDO cp -r /tmp/dart-sass/* /usr/local/lib/dart-sass/; \
+	$$SUDO ln -sf /usr/local/lib/dart-sass/sass $(SASS_BIN); \
+	$$SUDO chmod +x /usr/local/lib/dart-sass/sass; \
+	rm -rf /tmp/dart-sass /tmp/dart-sass.tar.gz; \
+	echo "✓ Dart Sass $(DART_SASS_VERSION) installed"; \
+	echo ""; \
+	echo "Upgrade complete!"; \
+	hugo version; \
+	sass --version
