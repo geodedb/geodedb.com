@@ -13,6 +13,9 @@ variables:
 before_script:
   - apt-get update && apt-get install -y wget git ca-certificates
   - make deps
+  - export PATH="/usr/local/bin:$PATH"
+  - which hugo
+  - which sass
   - hugo version
   - sass --version
 
