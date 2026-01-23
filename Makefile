@@ -47,8 +47,10 @@ deps:
 		echo "Installing Dart Sass $(DART_SASS_VERSION)..."; \
 		wget -q https://github.com/sass/dart-sass/releases/download/$(DART_SASS_VERSION)/dart-sass-$(DART_SASS_VERSION)-linux-x64.tar.gz -O /tmp/dart-sass.tar.gz; \
 		tar -xzf /tmp/dart-sass.tar.gz -C /tmp/; \
-		$$SUDO mv /tmp/dart-sass/sass $(SASS_BIN); \
-		$$SUDO chmod +x $(SASS_BIN); \
+		$$SUDO mkdir -p /usr/local/lib/dart-sass; \
+		$$SUDO cp -r /tmp/dart-sass/* /usr/local/lib/dart-sass/; \
+		$$SUDO ln -sf /usr/local/lib/dart-sass/sass $(SASS_BIN); \
+		$$SUDO chmod +x /usr/local/lib/dart-sass/sass; \
 		rm -rf /tmp/dart-sass /tmp/dart-sass.tar.gz; \
 		echo "✓ Dart Sass $(DART_SASS_VERSION) installed"; \
 	else \
