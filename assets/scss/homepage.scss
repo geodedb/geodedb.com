@@ -1,0 +1,112 @@
+// Homepage-specific styles
+
+// Import amethyst color variables first
+@use "custom" as *;
+
+.homepage-content {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 2rem 1rem;
+
+  // Section spacing
+  h2, h3 {
+    margin-top: 3rem;
+    margin-bottom: 1.5rem;
+    font-weight: 600;
+    color: var(--bs-heading-color);
+
+    &:first-child {
+      margin-top: 0;
+    }
+  }
+
+  h2 {
+    font-size: 2rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid var(--bs-border-color);
+  }
+
+  h3 {
+    font-size: 1.75rem;
+  }
+
+  // Paragraph spacing
+  p {
+    line-height: 1.8;
+    margin-bottom: 1.25rem;
+    color: var(--bs-body-color);
+  }
+
+  // List styling
+  ul {
+    margin-bottom: 2rem;
+    padding-left: 1.5rem;
+
+    li {
+      margin-bottom: 0.75rem;
+      line-height: 1.7;
+
+      strong {
+        color: $amethyst-deep;
+        font-weight: 600;
+      }
+    }
+  }
+
+  // Code blocks
+  code {
+    background-color: var(--bs-secondary-bg);
+    padding: 0.2rem 0.4rem;
+    border-radius: 0.25rem;
+    font-size: 0.9em;
+    color: $amethyst-medium;
+  }
+
+  pre {
+    background-color: var(--bs-secondary-bg);
+    padding: 1.5rem;
+    border-radius: 0.5rem;
+    overflow-x: auto;
+    margin: 1.5rem 0;
+    border: 1px solid var(--bs-border-color);
+
+    code {
+      background: none;
+      padding: 0;
+      color: inherit;
+    }
+  }
+
+  // Links
+  a {
+    color: $amethyst-medium;
+    text-decoration: none;
+    font-weight: 500;
+    transition: color 0.2s ease;
+
+    &:hover {
+      color: $amethyst-deep;
+      text-decoration: underline;
+    }
+  }
+
+  // Hide excessive anchor/share buttons in homepage content
+  .h-anchor,
+  .h-top,
+  .h-share {
+    display: none !important;
+  }
+
+  // Responsive adjustments
+  @media (max-width: 768px) {
+    padding: 1.5rem 1rem;
+
+    h2 {
+      font-size: 1.75rem;
+    }
+
+    h3 {
+      font-size: 1.5rem;
+    }
+  }
+}
