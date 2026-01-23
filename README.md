@@ -99,7 +99,7 @@ To configure the custom domain `geodedb.com`:
 
 ## Theme
 
-This site uses the [Ultra Hugo theme](https://gitlab.com/devnw/codepros/ultra), a highly optimized theme for SEO with:
+This site uses the [Ultra Hugo theme](https://gitlab.com/devnw/hugo-modules/ultra), a highly optimized theme for SEO with:
 
 - Automatic sitemap generation
 - OpenGraph and Twitter Card support

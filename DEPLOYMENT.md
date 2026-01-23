@@ -252,7 +252,7 @@ git clone --mirror git@gitlab.com:devnw/codepros/geode/geodedb.com.git backup-ge
 For issues with:
 - **GitLab Pages**: https://docs.gitlab.com/ee/user/project/pages/
 - **Hugo**: https://gohugo.io/documentation/
-- **Ultra Theme**: https://gitlab.com/devnw/codepros/ultra
+- **Ultra Theme**: https://gitlab.com/devnw/hugo-modules/ultra
 - **Domain/DNS**: Contact your domain registrar
 
 ## Additional Resources
@@ -260,4 +260,4 @@ For issues with:
 - [GitLab Pages Documentation](https://docs.gitlab.com/ee/user/project/pages/)
 - [Custom Domain Setup](https://docs.gitlab.com/ee/user/project/pages/custom_domains_ssl_tls_certification/)
 - [Hugo Documentation](https://gohugo.io/documentation/)
-- [Ultra Theme Docs](https://gitlab.com/devnw/codepros/ultra)
+- [Ultra Theme Docs](https://gitlab.com/devnw/hugo-modules/ultra)
