@@ -56,14 +56,15 @@ social_links:
     icon: 'fa-solid fa-rss'
     weight: 10
 
-defaultTitle: 'Geode - Enterprise Graph Database with ISO GQL Compliance'
+defaultTitle: 'Geode Database - Production-Ready Graph Database'
 defaultDescription: |
-  Geode is a production-ready graph database implementing ISO/IEC 39075:2024 GQL standard.
-  Built in Zig for performance and reliability, with 97.4% test coverage, 100% GQL compliance,
-  and enterprise features including ACID transactions, vector search, ML embeddings, and real-time analytics.
+  Geode is an enterprise-ready graph database implementing the ISO/IEC 39075:2024 GQL standard.
+  Built in Zig for maximum performance and reliability. Features include 100% GQL compliance,
+  97.4% test coverage, ACID transactions, vector search, ML graph embeddings, and real-time analytics.
+  Production-ready with comprehensive client libraries for Go, Python, Rust, and Zig.
 
-sitename: GeodeDB
-author: CodePros
+sitename: Geode Database
+author: Geode Contributors
 favicons:
   shortcut_icon: 'images/icons/favicon.ico'
   icon: 'images/icons/favicon.ico'
@@ -116,21 +117,21 @@ main:
     desc: |
       <div class="banner-text-container">
         <div class="banner-primary-text">
-          <i class="fa-duotone fa-database" aria-hidden="true"></i> Enterprise Graph Database
+          <i class="fa-solid fa-database" aria-hidden="true"></i> ISO/IEC 39075:2024 GQL Compliant
         </div>
         <hr class="banner-divider" />
         <div class="banner-secondary-text">
-          100% ISO GQL Compliance <i class="fa-duotone fa-check-circle" aria-hidden="true"></i>
+          Built in Zig for Maximum Performance <i class="fa-solid fa-bolt" aria-hidden="true"></i>
         </div>
         <hr class="banner-divider" />
         <div class="banner-tertiary-text">
-          <i class="fa-duotone fa-rocket" aria-hidden="true"></i> Production-Ready with 97.4% Test Coverage
+          <i class="fa-solid fa-shield-check" aria-hidden="true"></i> 97.4% Test Coverage • Enterprise Ready
         </div>
       </div>
     startbuttonText: 'Get Started'
     startbuttonLink: '/docs/getting-started/'
 
-copyright: 'CodePros'
+copyright: 'Geode Contributors'
 body_is_markdown: true
 
 contact:

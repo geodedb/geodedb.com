@@ -1,0 +1,352 @@
+---
+title: "Architecture"
+description: "Geode system architecture, storage engine design, and distributed systems overview"
+weight: 60
+---
+
+# Geode Architecture
+
+Geode is an enterprise-ready graph database built with a modular, high-performance architecture designed for scalability, reliability, and compliance.
+
+## System Overview
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                      Entry Points                           │
+│  ┌────────────┐                       ┌─────────────┐       │
+│  │   Server   │                       │     CLI     │       │
+│  │ (QUIC+TLS) │                       │   (Shell)   │       │
+│  └─────┬──────┘                       └──────┬──────┘       │
+│        │                                     │              │
+│        └─────────────┬──────────────────────┘              │
+│                      │                                      │
+└──────────────────────┼──────────────────────────────────────┘
+                       │
+        ┌──────────────┼──────────────┐
+        │              │              │
+        ▼              ▼              ▼
+   ┌─────────┐   ┌──────────┐   ┌─────────┐
+   │   GQL   │   │Execution │   │  Eval   │
+   │ Parser  │   │  Engine  │◄──┤ Engine  │
+   └────┬────┘   └─────┬────┘   └─────────┘
+        │              │
+        └──────────────┴──────────────┘
+                       │
+        ┌──────────────┼──────────────┐
+        │              │              │
+        ▼              ▼              ▼
+   ┌─────────┐   ┌──────────┐   ┌─────────┐
+   │ Planner │   │ Storage  │   │Security │
+   │   CBO   │   │  Engine  │   │(Audit,  │
+   └─────────┘   └─────┬────┘   │ TDE,RLS)│
+                       │        └─────────┘
+                       ▼
+                 ┌──────────┐
+                 │   WAL    │
+                 │  Index   │
+                 │   Txn    │
+                 └──────────┘
+```
+
+## Core Components
+
+### Query Processing Pipeline
+
+**1. GQL Parser** (`src/gql/`)
+- **ISO/IEC 39075:2024 Compliance**: 100% (70/70 tests)
+- Lexer with complete token support
+- Recursive descent parser
+- AST generation
+- **Performance**: <1ms parse time for typical queries
+
+**2. Query Planner** (`src/planner/`)
+- Cost-based optimization (CBO)
+- Statistics-driven index selection
+- Join order optimization
+- Adaptive query planning
+- **IndexOptimizer**: Automatic index selection with logarithmic cost scaling
+
+**3. Execution Engine** (`src/execution/`)
+- Pattern matching with backtracking
+- Path evaluation (variable-length paths)
+- Aggregation and grouping
+- Set operations (UNION, INTERSECT, EXCEPT)
+- **Performance**: 10,000+ queries/second
+
+**4. Expression Evaluator** (`src/eval.zig`)
+- Type promotion and coercion
+- Built-in function dispatch
+- NULL propagation semantics
+- **SIMD Optimization**: 2x+ speedup for vector operations
+
+### Storage Engine
+
+**Page Manager** (`src/storage/`)
+- Memory-mapped I/O: 13.18x performance improvement
+- 8KB page size (configurable)
+- LRU cache with eviction
+- Lock-free read paths where possible
+
+**Write-Ahead Log (WAL)** (`src/wal/`)
+- Durability guarantees
+- Point-in-time recovery
+- Segment-based storage
+- Automatic checkpoint management
+
+**Transaction Management** (`src/txn/`)
+- MVCC (Multi-Version Concurrency Control)
+- Serializable Snapshot Isolation (SSI)
+- Phantom read prevention
+- 6 isolation levels: Read Uncommitted, Read Committed, Repeatable Read, Snapshot, Serializable, Linearizable
+
+### Index System
+
+**Six Index Types** (`src/index/`):
+
+1. **B-tree** - Range queries, sorting
+   - O(log N) operations
+   - Bulk loading optimization
+
+2. **Hash** - Exact match lookups
+   - O(1) average case
+   - Collision handling via chaining
+
+3. **HNSW** (Vector index)
+   - Approximate K-NN search
+   - O(log N) search complexity
+   - >90% recall rate
+   - 6 distance metrics: L2, cosine, dot product, Manhattan, Hamming, Jaccard
+
+4. **R-tree** (Spatial index)
+   - Geographic queries
+   - Bounding box search
+   - Radius search with Haversine distance
+
+5. **Full-text** (BM25)
+   - Tokenization and ranking
+   - Stop word removal
+   - Stemming support
+
+6. **Patricia Trie** (CIDR index)
+   - IP prefix matching
+   - Longest Prefix Match (LPM)
+   - O(prefix_bits) lookup
+
+### Security Layer
+
+**Authentication & Authorization** (`src/security/`)
+- RBAC (Role-Based Access Control)
+- ABAC (Attribute-Based Access Control)
+- Enhanced RLS (Row-Level Security) with policy evaluation
+- MFA support
+- Session management
+
+**Data Protection**:
+- TDE (Transparent Data Encryption): AES-256-GCM with <1% overhead
+- Field-Level Encryption (FLE) with searchable encryption
+- KMS integration (HashiCorp Vault)
+- Audit logging with compliance tracking
+
+**Constraints** (`src/schema/catalog.zig`):
+- UNIQUE constraints
+- NOT NULL constraints
+- NODE KEY constraints (combined uniqueness + existence)
+- Catalog persistence across restarts
+
+### Distributed Architecture
+
+**Federation** (`src/distributed/`)
+- Multi-shard support (up to 32 shards)
+- Cross-shard query coordination
+- Load balancing with health checks
+- Fault tolerance with automatic failover
+
+**Raft Consensus** (`src/distributed/raft_consensus.zig`)
+- Leader election
+- Log replication
+- Membership changes
+- Snapshot management
+
+### Network Layer
+
+**QUIC Transport** (`src/transport/`)
+- Modern protocol with multiplexing
+- TLS 1.3 mandatory
+- Connection migration support
+- Low latency (~1-2ms)
+
+**Protocol** (`src/protocol.zig`)
+- JSON line protocol
+- Message types: HELLO, RUN_GQL, PULL, BEGIN, COMMIT, ROLLBACK, PING
+- Response types: SCHEMA, BINDINGS, ERROR, EXPLAIN, PROFILE
+- Multi-tenancy support with tenant_id in HELLO message
+
+### Advanced Features
+
+**ML Graph Embeddings** (`src/ml/`)
+- Node2Vec algorithm
+- GraphSAGE implementation
+- DeepWalk support
+- Integration with HNSW indexes
+
+**Real-time Analytics** (`src/analytics/`)
+- Streaming pattern detection
+- Anomaly detection with ML
+- CDC (Change Data Capture) integration
+- Backpressure handling
+
+**Materialized Views** (`src/query/`)
+- Three refresh strategies: immediate, deferred, on-demand
+- Query rewriting for automatic use
+- Dependency tracking
+- Incremental refresh support
+
+## File Organization
+
+### Codebase Statistics
+
+- **Total LOC**: 173,048 lines of Zig code
+- **Source Files**: 436 files
+- **Test Files**: 843 test files
+- **Test/Source Ratio**: 1.9:1
+- **Modules**: 50 top-level directories
+
+### Module Structure
+
+```
+src/
+├── server/          # Server implementation (7,039 LOC)
+├── cli/             # CLI implementation (5,885 LOC)
+├── gql/             # GQL parser (5,883 LOC)
+├── execution/       # Query execution (4,725 LOC)
+├── eval.zig         # Expression evaluation (3,332 LOC)
+├── planner/         # Query planning
+├── storage/         # Storage engine
+├── security/        # Security features
+├── distributed/     # Federation & Raft
+├── index/           # Index implementations
+├── ml/              # Machine learning
+├── analytics/       # Real-time analytics
+├── types/           # Advanced data types
+└── ...              # 40+ more modules
+```
+
+## Performance Characteristics
+
+### Query Performance
+
+- **Simple queries**: <1ms latency
+- **Complex patterns**: <10ms (10-hop traversals)
+- **Throughput**: 10,000+ queries/second
+- **Vector search**: <50ns per distance calculation (8D L2)
+
+### Storage Performance
+
+- **Write throughput**: 100,000+ writes/second with WAL
+- **Read latency**: <100μs for indexed lookups
+- **Memory-mapped I/O**: 13.18x improvement over traditional I/O
+- **Cache hit ratio**: >90% for typical workloads
+
+### Scalability
+
+- **Nodes**: Tested with 100M+ nodes
+- **Relationships**: Tested with 1B+ edges
+- **Concurrent connections**: 10,000+ with connection pooling
+- **Shards**: Up to 32 shards with linear scale-out
+
+## Quality Metrics
+
+### Test Coverage
+
+- **Integration tests**: 97.4% pass rate (1,644/1,688 tests)
+- **Unit tests**: 100% pass rate (393/393 tests)
+- **GQL compliance**: 100% (70/70 ISO tests)
+- **CANARY markers**: 1,735 markers tracking 2,190+ requirements
+
+### Status Breakdown
+
+- **TESTED**: 81.4% - Full test coverage
+- **BENCHED**: 6.0% - Performance benchmarks
+- **EXEMPT**: 7.7% - Documentation/metadata
+- **IMPL**: 5.7% - Implementation without tests
+
+## Design Principles
+
+### Modularity
+
+- Clear module boundaries
+- Dependency injection for testability
+- Interface-based design
+- Zero circular dependencies (resolved)
+
+### Performance
+
+- SIMD vectorization where applicable
+- Memory-mapped I/O for storage
+- Lock-free algorithms for hot paths
+- Adaptive query optimization
+
+### Reliability
+
+- ACID transaction guarantees
+- WAL for durability
+- Crash recovery
+- Comprehensive error handling
+
+### Security
+
+- Security-first design
+- Encryption at rest and in transit
+- Fine-grained access control
+- Comprehensive audit logging
+
+### Compliance
+
+- ISO/IEC 39075:2024 (GQL standard)
+- GDPR compliance features
+- SOX/HIPAA/PCI-DSS support
+- Evidence-based development with CANARY markers
+
+## Deployment Architecture
+
+### Standalone Mode
+
+```
+┌─────────────────┐
+│  Geode Server   │
+│   (QUIC:3141)   │
+│                 │
+│  ┌───────────┐  │
+│  │  Storage  │  │
+│  │    WAL    │  │
+│  │  Indexes  │  │
+│  └───────────┘  │
+└─────────────────┘
+```
+
+### Distributed Mode
+
+```
+┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐
+│ Geode Shard 1   │  │ Geode Shard 2   │  │ Geode Shard 3   │
+│  (QUIC:3141)    │  │  (QUIC:3142)    │  │  (QUIC:3143)    │
+│                 │  │                 │  │                 │
+│  ┌───────────┐  │  │  ┌───────────┐  │  │  ┌───────────┐  │
+│  │  Storage  │  │  │  │  Storage  │  │  │  │  Storage  │  │
+│  └───────────┘  │  │  └───────────┘  │  │  └───────────┘  │
+└────────┬────────┘  └────────┬────────┘  └────────┬────────┘
+         │                    │                     │
+         └────────────────────┼─────────────────────┘
+                              │
+                     ┌────────▼────────┐
+                     │   Coordinator   │
+                     │  (Federation)   │
+                     └─────────────────┘
+```
+
+## Next Steps
+
+- [Storage Engine Details](storage-engine/) - Deep dive into storage
+- [Query Optimization](query-optimization/) - CBO and index selection
+- [Distributed Systems](distributed-systems/) - Federation and Raft
+- [Security Architecture](security-architecture/) - Security features

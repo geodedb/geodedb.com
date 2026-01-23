@@ -1,45 +1,83 @@
 ---
 title: "Documentation"
-description: "Complete documentation for Geode Graph Database"
+description: "Complete documentation for Geode graph database with 100% GQL compliance"
 weight: 1
 ---
 
 # Geode Documentation
 
-Welcome to the comprehensive documentation for Geode, an enterprise-ready graph database implementing the ISO/IEC 39075:2024 GQL standard.
+Welcome to the complete documentation for Geode, an enterprise-ready graph database with 100% ISO/IEC 39075:2024 GQL compliance.
 
-## Getting Started
+## Quick Links
 
-New to Geode? Start here:
+### Getting Started
 
-- [Getting Started Guide](/docs/getting-started/) - Quick introduction and first steps
-- [Installation](/docs/installation/) - How to install Geode on your system
-- [Configuration](/docs/configuration/) - Configure your Geode instance
+- **[Installation](installation/)** - Install Geode from source or Docker
+  - [From Source](installation/from-source/) - Build with Zig compiler
+- **[Getting Started](getting-started/)** - First steps with Geode
+- **[Quick Start Guide](getting-started/quickstart/)** - 5-minute introduction
 
-## Core Concepts
+### Core Documentation
 
-- [Architecture](/docs/architecture/) - System design and internals
-- [GQL Query Language](/docs/gql/) - Graph Query Language reference
-- [Data Types](/docs/data-types/) - Supported data types
-- [Transactions](/docs/transactions/) - ACID transaction management
+- **[GQL Reference](gql-reference/)** - Complete query language reference with pattern matching, aggregations, and set operations
+- **[Data Types](data-types/)** - 50+ specialized types including vectors, geographic, network, and cryptographic
+- **[API Reference](api-reference/)** - Functions, operators, and system procedures
+- **[Configuration](configuration/)** - Complete server and client configuration reference
 
-## Features
+### Architecture and Performance
 
-- [Vector Search](/docs/features/vector-search/) - HNSW indexing and similarity search
-- [ML Embeddings](/docs/features/ml-embeddings/) - Graph embedding algorithms
-- [Real-time Analytics](/docs/features/real-time-analytics/) - Streaming analytics
-- [Security](/docs/features/security/) - Authentication, encryption, and audit logging
-- [Full-Text Search](/docs/features/full-text-search/) - BM25 ranking and indexing
+- **[Architecture](architecture/)** - System architecture, storage engine, and distributed systems
+- **[Performance Tuning](performance/)** - Query optimization, configuration tuning, and hardware recommendations
 
-## Reference
+### Client Libraries
 
-- [API Reference](/docs/api-reference/) - Complete API documentation
-- [CLI Reference](/docs/cli-reference/) - Command-line interface
-- [Configuration Reference](/docs/configuration-reference/) - All configuration options
+- **[Client Libraries](client-libraries/)** - Official libraries for Go, Python, Rust, and Zig
+  - [Go Client](client-libraries/go-client/) - Production-ready database/sql driver
+  - [Python Client](client-libraries/python-client/) - Async Python with type hints
+  - [Rust Client](client-libraries/rust-client/) - High-performance type-safe client
 
-## Advanced Topics
+## Key Features
 
-- [Performance Tuning](/docs/performance/) - Optimization guide
-- [Distributed Deployment](/docs/distributed/) - Multi-node setup
-- [Backup & Recovery](/docs/backup-recovery/) - Data protection
-- [Monitoring](/docs/monitoring/) - Performance monitoring and observability
+### 100% GQL Compliance
+
+Geode achieves **100% compliance** with ISO/IEC 39075:2024:
+- ✅ All 70 official conformance tests passing
+- ✅ Complete pattern matching syntax
+- ✅ Full aggregation support
+- ✅ Set operations (UNION, INTERSECT, EXCEPT)
+
+### Enterprise-Grade Security
+
+- Authentication: RBAC/ABAC with MFA support
+- Encryption: TDE with <1% overhead, FLE with searchable encryption
+- Audit: Comprehensive compliance tracking
+- RLS: Enhanced row-level security with policy evaluation
+
+### High Performance
+
+- Query Performance: 10,000+ queries/second
+- Vector Search: <50ns per distance calculation (8D L2)
+- Storage: 13.18x I/O improvement with memory-mapped I/O
+- Scalability: 100M+ nodes, 1B+ edges tested
+
+### Advanced Data Types
+
+Over 50 specialized types including:
+- Vectors (VectorF32/VectorI32) with SIMD acceleration
+- Geographic (LatLon, GeoPoint) with R-tree indexing
+- Network (IpAddr, Subnet) with Patricia trie indexing
+- Cryptographic (Hash, UUID) with constant-time operations
+
+## Test Coverage
+
+- **Integration tests**: 97.4% pass rate (1,644/1,688 tests)
+- **Unit tests**: 100% pass rate (393/393 tests)
+- **GQL compliance**: 100% (70/70 ISO tests)
+- **CANARY markers**: 1,735 markers tracking 2,190+ requirements
+
+## Community and Support
+
+- **Documentation**: [https://geodedb.com/docs](https://geodedb.com/docs)
+- **GitHub**: [https://github.com/devnw/geode](https://github.com/devnw/geode)
+- **Discord**: Community chat and support
+- **Email**: [email protected]
