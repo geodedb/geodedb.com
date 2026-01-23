@@ -2,6 +2,13 @@
 title: "Getting Started"
 description: "Quick start guide for Geode Graph Database"
 weight: 1
+tags:
+  - tutorial
+  - getting-started
+  - quickstart
+categories:
+  - documentation
+  - guides
 ---
 
 # Getting Started with Geode

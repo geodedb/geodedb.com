@@ -2,6 +2,14 @@
 title: "Editor Plugins"
 description: "Editor and IDE integrations for Geode"
 weight: 3
+tags:
+  - plugins
+  - editors
+  - ide
+  - tools
+categories:
+  - plugins
+  - development-tools
 ---
 
 # Editor & IDE Plugins

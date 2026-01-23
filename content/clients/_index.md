@@ -2,6 +2,13 @@
 title: "Client Libraries"
 description: "Official client libraries for Geode Graph Database"
 weight: 2
+tags:
+  - clients
+  - sdk
+  - api
+categories:
+  - client-libraries
+  - integration
 ---
 
 # Client Libraries

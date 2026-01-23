@@ -91,7 +91,7 @@ pageHeader:
     useImage: false
     light:
       image: ''
-      textTheme: 'dark'
+      textTheme: 'light'
       overlay: 'none'
     dark:
       image: ''
@@ -99,8 +99,8 @@ pageHeader:
       overlay: 'rgba(0, 0, 0, 0.3)'
   gradient:
     direction: '135deg'
-    startColor: '#2563eb'
-    endColor: '#0ea5e9'
+    startColor: '#4a148c'
+    endColor: '#8e24aa'
   textStyles:
     dark:
       color: 'var(--bs-dark)'

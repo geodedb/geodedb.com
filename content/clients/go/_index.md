@@ -2,6 +2,16 @@
 title: "Go Client"
 description: "Official Go client library for Geode"
 weight: 1
+tags:
+  - go
+  - golang
+  - client
+  - database-sql
+categories:
+  - client-libraries
+  - go
+series:
+  - client-libraries
 ---
 
 # Go Client Library

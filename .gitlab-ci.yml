@@ -9,16 +9,22 @@ variables:
   HUGO_VERSION: "0.139.4"
   DART_SASS_VERSION: "1.80.7"
   CI: "true"
+  DEBIAN_FRONTEND: noninteractive
 
 before_script:
-  - apt-get update && apt-get install -y wget git ca-certificates nodejs npm
-  - make deps
+  - apt-get update -qq
+  - apt-get install -y -qq wget git ca-certificates nodejs npm
+  - echo "Installing Hugo and Dart Sass..."
+  - make deps 2>&1 | tail -20
   - export PATH="/usr/local/bin:$PATH"
+  - echo "Verifying installations..."
   - hugo version
   - sass --version
   - node --version
   - npm --version
-  - make npm
+  - echo "Installing npm packages..."
+  - npm install --quiet
+  - echo "Build environment ready!"
 
 test:
   stage: test

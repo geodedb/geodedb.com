@@ -1,0 +1,306 @@
+// Amethyst Geode Color Scheme
+// Inspired by the natural beauty of amethyst geodes
+
+// Color Palette
+$amethyst-deep: #4a148c;      // Deep purple (geode core)
+$amethyst-rich: #6a1b9a;      // Rich purple
+$amethyst-medium: #8e24aa;    // Medium purple
+$amethyst-light: #ab47bc;     // Light purple
+$amethyst-pale: #ce93d8;      // Pale purple
+$crystal-white: #f3e5f5;      // Crystal white/lavender
+$crystal-accent: #d4a5ff;     // Light crystal accent
+
+$geode-dark: #2d1b3d;         // Dark geode exterior
+$geode-medium: #4a2c5e;       // Medium exterior
+$geode-highlight: #9c4dff;    // Bright crystal highlight
+
+// Accent colors
+$accent-teal: #00bcd4;        // Complementary teal (like some geodes)
+$accent-gold: #ffd700;        // Gold (mineral veins)
+$success: #4caf50;            // Keep standard success green
+$warning: #ff9800;            // Keep standard warning orange
+$danger: #f44336;             // Keep standard danger red
+
+// Override Bootstrap/theme colors
+:root {
+  // Primary colors
+  --bs-primary: #{$amethyst-medium};
+  --bs-primary-rgb: 142, 36, 170;
+
+  --bs-secondary: #{$crystal-accent};
+  --bs-secondary-rgb: 212, 165, 255;
+
+  // Background colors
+  --bs-body-bg: #ffffff;
+  --bs-body-bg-rgb: 255, 255, 255;
+
+  // Dark mode backgrounds
+  --bs-dark: #{$geode-dark};
+  --bs-dark-rgb: 45, 27, 61;
+
+  // Text colors
+  --bs-body-color: #212529;
+  --bs-heading-color: #{$amethyst-deep};
+
+  // Link colors
+  --bs-link-color: #{$amethyst-rich};
+  --bs-link-hover-color: #{$amethyst-deep};
+
+  // Border colors
+  --bs-border-color: #{$amethyst-pale};
+
+  // Component colors
+  --bs-info: #{$accent-teal};
+  --bs-success: #{$success};
+  --bs-warning: #{$warning};
+  --bs-danger: #{$danger};
+}
+
+// Dark mode overrides
+[data-bs-theme="dark"] {
+  --bs-body-bg: #{$geode-dark};
+  --bs-body-bg-rgb: 45, 27, 61;
+  --bs-body-color: #{$crystal-white};
+  --bs-heading-color: #{$crystal-accent};
+  --bs-link-color: #{$amethyst-light};
+  --bs-link-hover-color: #{$crystal-accent};
+  --bs-border-color: #{$geode-medium};
+  --bs-primary: #{$amethyst-light};
+  --bs-secondary: #{$amethyst-pale};
+}
+
+// Header/Navigation
+.navbar {
+  background: linear-gradient(135deg, $amethyst-deep 0%, $amethyst-rich 100%) !important;
+  border-bottom: 3px solid $geode-highlight;
+}
+
+.navbar-brand,
+.nav-link {
+  color: $crystal-white !important;
+
+  &:hover {
+    color: $crystal-accent !important;
+  }
+}
+
+// Hero/Banner section
+.banner {
+  background: linear-gradient(135deg, $amethyst-deep 0%, $amethyst-medium 50%, $amethyst-rich 100%);
+  color: $crystal-white;
+  border-bottom: 5px solid $geode-highlight;
+
+  h1, h2, h3, p {
+    color: $crystal-white !important;
+  }
+}
+
+// Buttons
+.btn-primary {
+  background: linear-gradient(135deg, $amethyst-medium 0%, $amethyst-rich 100%);
+  border-color: $amethyst-deep;
+  color: white;
+
+  &:hover {
+    background: linear-gradient(135deg, $amethyst-rich 0%, $amethyst-deep 100%);
+    border-color: $amethyst-deep;
+    box-shadow: 0 4px 12px rgba($amethyst-deep, 0.4);
+  }
+}
+
+.btn-secondary {
+  background: $crystal-accent;
+  border-color: $amethyst-light;
+  color: $geode-dark;
+
+  &:hover {
+    background: $amethyst-pale;
+    border-color: $amethyst-medium;
+  }
+}
+
+// Cards and content blocks
+.card {
+  border: 2px solid $amethyst-pale;
+  box-shadow: 0 2px 8px rgba($amethyst-deep, 0.1);
+
+  &:hover {
+    border-color: $amethyst-light;
+    box-shadow: 0 4px 16px rgba($amethyst-deep, 0.2);
+    transform: translateY(-2px);
+    transition: all 0.3s ease;
+  }
+}
+
+.card-header {
+  background: linear-gradient(135deg, $crystal-white 0%, $amethyst-pale 100%);
+  border-bottom: 2px solid $amethyst-light;
+  color: $amethyst-deep;
+  font-weight: 600;
+}
+
+// Headings
+h1, h2, h3, h4, h5, h6 {
+  color: $amethyst-deep;
+  font-weight: 600;
+}
+
+// Links in content
+article a,
+.content a {
+  color: $amethyst-rich;
+  text-decoration: none;
+  border-bottom: 2px solid transparent;
+  transition: border-color 0.3s ease;
+
+  &:hover {
+    color: $amethyst-deep;
+    border-bottom-color: $amethyst-light;
+  }
+}
+
+// Code blocks
+pre {
+  background: $geode-dark !important;
+  border: 2px solid $amethyst-pale;
+  border-radius: 8px;
+}
+
+code {
+  background: rgba($amethyst-pale, 0.2);
+  color: $amethyst-deep;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+// Sidebar/Table of Contents
+.toc {
+  background: linear-gradient(180deg, $crystal-white 0%, rgba($amethyst-pale, 0.3) 100%);
+  border: 2px solid $amethyst-pale;
+  border-radius: 8px;
+
+  a {
+    color: $amethyst-rich;
+
+    &:hover {
+      color: $amethyst-deep;
+      background: rgba($amethyst-pale, 0.3);
+    }
+  }
+}
+
+// Footer
+footer {
+  background: linear-gradient(135deg, $geode-dark 0%, $geode-medium 100%);
+  color: $crystal-white;
+  border-top: 3px solid $geode-highlight;
+
+  a {
+    color: $crystal-accent;
+
+    &:hover {
+      color: white;
+    }
+  }
+}
+
+// Badges/Tags
+.badge {
+  &.bg-primary {
+    background: $amethyst-medium !important;
+  }
+
+  &.bg-secondary {
+    background: $crystal-accent !important;
+    color: $geode-dark !important;
+  }
+}
+
+// Homepage sections
+.homepage-section {
+  border-left: 4px solid $amethyst-light;
+  padding-left: 20px;
+  margin-bottom: 30px;
+
+  &:hover {
+    border-left-color: $geode-highlight;
+  }
+}
+
+// Crystalline accents
+.crystalline-accent {
+  position: relative;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg,
+      $amethyst-deep 0%,
+      $geode-highlight 50%,
+      $amethyst-deep 100%);
+  }
+}
+
+// Search bar
+.search-input {
+  border: 2px solid $amethyst-pale;
+
+  &:focus {
+    border-color: $amethyst-medium;
+    box-shadow: 0 0 0 0.25rem rgba($amethyst-medium, 0.25);
+  }
+}
+
+// Breadcrumbs
+.breadcrumb {
+  background: rgba($crystal-white, 0.5);
+  border: 1px solid $amethyst-pale;
+
+  .breadcrumb-item {
+    a {
+      color: $amethyst-rich;
+    }
+
+    &.active {
+      color: $amethyst-deep;
+    }
+  }
+}
+
+// Alerts
+.alert-info {
+  background: rgba($accent-teal, 0.1);
+  border-color: $accent-teal;
+  color: darken($accent-teal, 30%);
+}
+
+.alert-success {
+  background: rgba($success, 0.1);
+  border-color: $success;
+}
+
+// Tables
+table {
+  thead {
+    background: linear-gradient(135deg, $amethyst-medium 0%, $amethyst-rich 100%);
+    color: white;
+  }
+
+  tbody tr {
+    &:hover {
+      background: rgba($amethyst-pale, 0.1);
+    }
+  }
+}
+
+// Syntax highlighting adjustments for geode theme
+.highlight {
+  .k, .kd, .kn { color: $amethyst-rich; } // Keywords
+  .s, .s1, .s2 { color: $accent-teal; }  // Strings
+  .nf { color: $geode-highlight; }       // Functions
+  .nc { color: $amethyst-light; }        // Classes
+}
