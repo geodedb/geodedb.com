@@ -1,0 +1,633 @@
+---
+title: "Deployment and Integration Guide"
+description: "Deploy Geode with Docker Compose or NixOS, configure Vault/MinIO/Prometheus/Grafana, set up S3 backups and CDC/webhooks, and integrate client libraries"
+weight: 10
+tags:
+  - deployment
+  - docker
+  - kubernetes
+  - nix
+  - production
+  - backup
+  - cdc
+categories:
+  - deployment-and-devops
+keywords:
+  - deploy geode
+  - docker compose
+  - nixos module
+  - vault kms
+  - s3 backup
+  - cdc
+---
+
+# Deployment and Integration Guide
+
+Production deployment patterns, infrastructure stacks, backup strategies, and client integration for Geode.
+
+## Deployment Modes
+
+### Single Node
+
+**Best for**:
+- Development and testing
+- Small-scale production (<100K nodes)
+- Proof-of-concept
+
+**Quickstart**:
+
+```bash
+# Build and run
+cd geode
+make build
+./zig-out/bin/geode serve --listen 0.0.0.0:3141
+```
+
+**Systemd service** (Linux):
+
+```bash
+# Create service file
+sudo tee /etc/systemd/system/geode.service > /dev/null <<EOF
+[Unit]
+Description=Geode Graph Database
+After=network.target
+
+[Service]
+Type=simple
+User=geode
+Group=geode
+ExecStart=/usr/local/bin/geode serve --config /etc/geode/geode.yaml
+Restart=on-failure
+RestartSec=5s
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+# Enable and start
+sudo systemctl enable geode
+sudo systemctl start geode
+```
+
+### Distributed Cluster
+
+**Best for**:
+- High availability
+- Large-scale datasets (>1M nodes)
+- Federated query coordination
+
+**Architecture**:
+- Multiple Geode instances (shards)
+- Distributed query coordinator
+- Shared KMS (Vault) for encryption keys
+- Centralized monitoring (Prometheus/Grafana)
+
+**Docker Compose**:
+
+```bash
+cd geode
+
+# Distributed cluster (3 nodes)
+make docker-up-distributed
+```
+
+**See**: [Distributed Query Coordination](/docs/architecture/distributed-queries) for topology details.
+
+### Containerized Production Stack
+
+From `deployment/DEPLOYMENT.md`:
+
+**Full production stack** includes:
+- **Geode**: Graph database instances
+- **Vault**: KMS for TDE/FLE keys
+- **MinIO**: S3-compatible object storage for backups
+- **Prometheus**: Metrics collection
+- **Grafana**: Dashboards and alerting
+- **Loki + Promtail**: Log aggregation
+- **Nginx**: Reverse proxy with TLS termination
+- **Redis**: Session store (optional)
+
+**Start stack**:
+
+```bash
+cd geode/docs/deployment
+
+# Start all services
+docker-compose up -d
+
+# Verify services
+docker-compose ps
+```
+
+**Service endpoints**:
+- Geode: `https://localhost:3141` (QUIC+TLS)
+- Grafana: `http://localhost:3000` (admin/admin)
+- Prometheus: `http://localhost:9090`
+- Vault: `http://localhost:8200`
+- MinIO: `http://localhost:9000` (minioadmin/minioadmin)
+
+### NixOS Managed Service
+
+From `NIX_DEPLOYMENT.md`:
+
+**NixOS module** provides declarative configuration and lifecycle management.
+
+**Configuration** (`/etc/nixos/configuration.nix`):
+
+```nix
+{ config, pkgs, ... }:
+
+{
+  imports = [ <geode/nixos/module.nix> ];
+
+  services.geode = {
+    enable = true;
+    package = pkgs.geode;
+
+    # Server config
+    listen = "0.0.0.0:3141";
+    dataDir = "/var/lib/geode";
+
+    # TLS
+    tls = {
+      cert = "/etc/geode/certs/server-cert.pem";
+      key = "/etc/geode/certs/server-key.pem";
+    };
+
+    # TDE with Vault
+    tde = {
+      enabled = true;
+      provider = "vault";
+      vaultAddress = "https://vault.example.com:8200";
+      vaultTokenFile = "/run/secrets/vault-token";
+      vaultKeyPath = "secret/geode/tde-key";
+    };
+
+    # Audit logging
+    audit = {
+      enabled = true;
+      logPath = "/var/log/geode/audit.jsonl";
+      syslogAddress = "syslog.example.com:514";
+    };
+  };
+
+  # Firewall
+  networking.firewall.allowedUDPPorts = [ 3141 ];  # QUIC
+}
+```
+
+**Apply configuration**:
+
+```bash
+sudo nixos-rebuild switch
+```
+
+**Kubernetes** (Helm chart):
+
+From `NIX_DEPLOYMENT.md`, Kubernetes section:
+
+```bash
+# Add Helm repository
+helm repo add geode https://charts.geodedb.com
+helm repo update
+
+# Install
+helm install geode geode/geode \
+  --set replicaCount=3 \
+  --set tde.enabled=true \
+  --set tde.provider=vault \
+  --set vault.address=https://vault.default.svc:8200
+
+# Verify deployment
+kubectl get pods -l app=geode
+```
+
+## Configuration
+
+From `USAGE.md`:
+
+### YAML Configuration
+
+**Example** (`/etc/geode/geode.yaml`):
+
+```yaml
+server:
+  listen: '0.0.0.0:3141'
+  data_dir: '/var/lib/geode'
+
+tls:
+  cert: '/etc/geode/certs/server-cert.pem'
+  key: '/etc/geode/certs/server-key.pem'
+
+storage:
+  page_size: 8192
+  page_cache_size: '1GB'
+
+security:
+  # Authentication
+  password_policy:
+    min_length: 16
+    expiration_days: 90
+
+  # TDE
+  tde:
+    enabled: true
+    provider: vault
+    vault:
+      address: 'https://vault.example.com:8200'
+      token_file: '/run/secrets/vault-token'
+      key_path: 'secret/geode/tde-key'
+
+  # Audit logging
+  audit:
+    enabled: true
+    log_path: '/var/log/geode/audit.jsonl'
+    syslog:
+      enabled: true
+      address: 'syslog.example.com:514'
+      format: 'CEF'
+
+logging:
+  level: 'info'  # debug/info/warn/error
+  format: 'json'  # text/json
+
+monitoring:
+  metrics:
+    enabled: true
+    listen: '127.0.0.1:8080'
+  health:
+    enabled: true
+```
+
+### Environment Variable Overrides
+
+```bash
+# Override config with env vars
+export GEODE_DATA_DIR=/custom/data
+export GEODE_LISTEN=0.0.0.0:8443
+export GEODE_TDE_KEY="0123456789abcdef..."
+
+./geode serve --config /etc/geode/geode.yaml
+```
+
+**Priority**: Environment variables > YAML config > defaults
+
+## Backups
+
+From `USAGE.md` and `API_REFERENCE.md`:
+
+### Local Backup
+
+```bash
+# Create backup
+./geode backup \
+  --output /backups/geode-$(date +%Y%m%d).tar.gz
+
+# Restore backup
+./geode restore \
+  --input /backups/geode-20240115.tar.gz \
+  --data-dir /var/lib/geode
+```
+
+### S3 Backup
+
+**Configuration**:
+
+```bash
+# Set S3 credentials
+export AWS_ACCESS_KEY_ID="AKIAIOSFODNN7EXAMPLE"
+export AWS_SECRET_ACCESS_KEY="wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
+export AWS_DEFAULT_REGION="us-east-1"
+```
+
+**Backup to S3**:
+
+```bash
+# Backup
+./geode backup \
+  --dest s3://my-bucket/geode-backups/geode-$(date +%Y%m%d).tar.gz
+
+# Restore from S3
+./geode restore \
+  --source s3://my-bucket/geode-backups/geode-20240115.tar.gz \
+  --data-dir /var/lib/geode
+```
+
+**Automated backups** (cron):
+
+```bash
+# Add to crontab
+crontab -e
+
+# Daily backup at 2 AM
+0 2 * * * /usr/local/bin/geode backup --dest s3://my-bucket/geode-backups/geode-$(date +\%Y\%m\%d).tar.gz
+```
+
+### Point-in-Time Recovery
+
+**Restore to specific timestamp** using WAL replay:
+
+```bash
+./geode restore \
+  --source s3://my-bucket/geode-backups/geode-20240115.tar.gz \
+  --wal-dir /var/lib/geode/wal \
+  --until "2024-01-15T14:30:00Z"
+```
+
+**Use cases**:
+- Recover from accidental deletion
+- Audit historical state
+- Clone database at specific point
+
+## Change Data Capture (CDC)
+
+From `USAGE.md`:
+
+**CDC** captures graph changes and sends webhooks for real-time integration.
+
+### CDC Configuration
+
+**Example** (`cdc-config.yaml`):
+
+```yaml
+cdc:
+  enabled: true
+
+  # Webhook endpoints
+  webhooks:
+    - url: "https://analytics.example.com/webhook"
+      events:
+        - node.created
+        - node.updated
+        - node.deleted
+        - edge.created
+        - edge.deleted
+      filter: "graph = 'SocialNetwork'"
+      retry:
+        max_attempts: 3
+        backoff: exponential
+
+    - url: "https://ml.example.com/embedding-update"
+      events:
+        - node.created
+        - node.updated
+      filter: "label = 'Document'"
+
+  # Event log retention
+  retention:
+    days: 30
+    max_size: "10GB"
+```
+
+### Webhook Payload Format
+
+**Node created**:
+
+```json
+{
+  "event": "node.created",
+  "timestamp": "2024-01-15T14:30:00.123Z",
+  "graph": "SocialNetwork",
+  "node": {
+    "id": 123456,
+    "labels": ["Person"],
+    "properties": {
+      "name": "Alice",
+      "age": 30,
+      "email": "[email protected]"
+    }
+  },
+  "trace_id": "7c9e8d6f-5b4a-3c2d-1e0f-9a8b7c6d5e4f"
+}
+```
+
+**Edge created**:
+
+```json
+{
+  "event": "edge.created",
+  "timestamp": "2024-01-15T14:30:05.456Z",
+  "graph": "SocialNetwork",
+  "edge": {
+    "id": 789012,
+    "type": "KNOWS",
+    "from_node": 123456,
+    "to_node": 654321,
+    "properties": {
+      "since": 2020
+    }
+  },
+  "trace_id": "8d7f9e0a-6c5b-4d3e-2f1a-0b9c8d7e6f5a"
+}
+```
+
+### Use Cases
+
+- **Real-time analytics**: Update dashboards on graph changes
+- **ML pipeline**: Re-train embeddings when nodes/edges added
+- **Audit trail**: Log all changes to external system
+- **Cache invalidation**: Clear application caches on data change
+- **Fraud detection**: Trigger anomaly detection on new transactions
+
+**See**: [Real-Time Analytics](/docs/analytics/real-time) for complete CDC workflow
+
+## Client Integration
+
+From `clients/README.md`:
+
+### Go Client
+
+**Installation**:
+
+```bash
+go get go.codepros.org/geode
+```
+
+**Usage**:
+
+```go
+import (
+    "database/sql"
+    _ "go.codepros.org/geode"
+)
+
+func main() {
+    db, err := sql.Open("geode", "geode://localhost:3141?tls=true")
+    if err != nil {
+        log.Fatal(err)
+    }
+    defer db.Close()
+
+    rows, err := db.Query("MATCH (p:Person) RETURN p.name, p.age")
+    if err != nil {
+        log.Fatal(err)
+    }
+    defer rows.Close()
+
+    for rows.Next() {
+        var name string
+        var age int
+        if err := rows.Scan(&name, &age); err != nil {
+            log.Fatal(err)
+        }
+        fmt.Printf("%s: %d\n", name, age)
+    }
+}
+```
+
+**Features**:
+- `database/sql` driver
+- Prepared statements
+- Transaction support
+- Connection pooling
+
+**See**: [Go Client Guide](/docs/client-libraries/go-client)
+
+### Python Client
+
+**Installation**:
+
+```bash
+pip install geode-client
+```
+
+**Usage**:
+
+```python
+from geode_client import GeodeClient
+
+async with GeodeClient("localhost", 3141) as client:
+    result = await client.query(
+        "MATCH (p:Person) WHERE p.age > $age RETURN p.name",
+        params={"age": 25}
+    )
+    async for row in result:
+        print(row["p.name"])
+```
+
+**Features**:
+- Async/await with aioquic
+- Connection pooling
+- Query builders
+- RLS policy management
+
+**See**: [Python Client Guide](/docs/client-libraries/python-client)
+
+### Rust Client
+
+**Installation** (`Cargo.toml`):
+
+```toml
+[dependencies]
+geode-client = "0.18"
+```
+
+**Usage**:
+
+```rust
+use geode_client::Client;
+
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let client = Client::connect("localhost:3141").await?;
+
+    let result = client.query(
+        "MATCH (p:Person) WHERE p.age > $age RETURN p.name",
+    )
+    .param("age", 25)
+    .execute()
+    .await?;
+
+    for row in result {
+        println!("{}", row.get::<String>("p.name")?);
+    }
+
+    Ok(())
+}
+```
+
+**Features**:
+- Tokio async runtime
+- Type-safe query builders
+- Zero-cost abstractions
+- Connection pooling (10,000+ QPS)
+
+**See**: [Rust Client Guide](/docs/client-libraries/rust-client)
+
+### Zig Client
+
+**Usage**:
+
+```zig
+const geode = @import("geode_client");
+
+pub fn main() !void {
+    const client = try geode.Client.connect("localhost", 3141);
+    defer client.disconnect();
+
+    const result = try client.query(
+        "MATCH (p:Person) WHERE p.age > $age RETURN p.name",
+        .{ .age = 25 },
+    );
+    defer result.deinit();
+
+    while (try result.next()) |row| {
+        const name = try row.get("p.name");
+        std.debug.print("{s}\n", .{name});
+    }
+}
+```
+
+**See**: [Zig Client Guide](/docs/client-libraries/zig-client)
+
+## Production Stack Reference
+
+From `deployment/DEPLOYMENT.md`, full services:
+
+### Services Overview
+
+| Service | Purpose | Port | Dependencies |
+|---------|---------|------|--------------|
+| **Geode** | Graph database | 3141 (QUIC) | Vault (optional) |
+| **Vault** | KMS for TDE/FLE | 8200 | - |
+| **MinIO** | S3-compatible storage | 9000 | - |
+| **Prometheus** | Metrics collection | 9090 | Geode |
+| **Grafana** | Dashboards | 3000 | Prometheus |
+| **Loki** | Log aggregation | 3100 | - |
+| **Promtail** | Log shipping | - | Loki |
+| **Nginx** | Reverse proxy | 443 | Geode |
+| **Redis** | Session store | 6379 | - |
+
+### Docker Compose Configuration
+
+From `deployment/DEPLOYMENT.md`:
+
+**Start services**:
+
+```bash
+docker-compose up -d
+```
+
+**View logs**:
+
+```bash
+# All services
+docker-compose logs -f
+
+# Specific service
+docker-compose logs -f geode
+```
+
+**Scale Geode instances**:
+
+```bash
+docker-compose up -d --scale geode=3
+```
+
+## Next Steps
+
+- **[Configuration Reference](/docs/configuration)** - Complete config options
+- **[Monitoring and Telemetry](/docs/ops/observability)** - Metrics and logging
+- **[Security Guide](/docs/security/overview)** - TLS, TDE, FLE, audit logging
+- **[Client Libraries](/docs/client-libraries)** - Language-specific guides
+- **[Nix Deployment](/docs/ops/nix-deployment)** - NixOS module and Kubernetes

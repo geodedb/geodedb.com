@@ -1,0 +1,69 @@
+{{- printf "<?xml version=\"1.0\" encoding=\"utf-8\" standalone=\"yes\"?>" | safeHTML }}
+<urlset
+  xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+  xmlns:xhtml="http://www.w3.org/1999/xhtml"
+>
+  {{- /* Include the taxonomy list page itself */ -}}
+  <url>
+    <loc>{{ .Permalink }}</loc>
+    {{- if not .Lastmod.IsZero }}
+      <lastmod
+        >{{ .Lastmod.Format "2006-01-02T15:04:05-07:00" | safeHTML }}</lastmod
+      >
+    {{- end }}
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+    {{- if .IsTranslated }}
+      {{- range .AllTranslations }}
+        <xhtml:link
+          rel="alternate"
+          hreflang="{{ .Language.Lang }}"
+          href="{{ .Permalink }}"
+        />
+      {{- end }}
+      {{- /* Add x-default for English version */ -}}
+      {{- range .AllTranslations }}
+        {{- if eq .Language.Lang "en" }}
+          <xhtml:link
+            rel="alternate"
+            hreflang="x-default"
+            href="{{ .Permalink }}"
+          />
+        {{- end }}
+      {{- end }}
+    {{- end }}
+  </url>
+
+  {{- /* Include all terms in this taxonomy */ -}}
+  {{- range .Data.Terms.Alphabetical }}
+    <url>
+      <loc>{{ .Page.Permalink }}</loc>
+      {{- if not .Page.Lastmod.IsZero }}
+        <lastmod
+          >{{ .Page.Lastmod.Format "2006-01-02T15:04:05-07:00" | safeHTML }}</lastmod
+        >
+      {{- end }}
+      <changefreq>weekly</changefreq>
+      <priority>0.6</priority>
+      {{- if .Page.IsTranslated }}
+        {{- range .Page.AllTranslations }}
+          <xhtml:link
+            rel="alternate"
+            hreflang="{{ .Language.Lang }}"
+            href="{{ .Permalink }}"
+          />
+        {{- end }}
+        {{- /* Add x-default for English version */ -}}
+        {{- range .Page.AllTranslations }}
+          {{- if eq .Language.Lang "en" }}
+            <xhtml:link
+              rel="alternate"
+              hreflang="x-default"
+              href="{{ .Permalink }}"
+            />
+          {{- end }}
+        {{- end }}
+      {{- end }}
+    </url>
+  {{- end }}
+</urlset>

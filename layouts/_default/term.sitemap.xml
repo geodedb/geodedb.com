@@ -1,0 +1,81 @@
+{{- printf "<?xml version=\"1.0\" encoding=\"utf-8\" standalone=\"yes\"?>" | safeHTML }}
+<urlset
+  xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+  xmlns:xhtml="http://www.w3.org/1999/xhtml"
+>
+  {{- /* Include the term page itself */ -}}
+  <url>
+    <loc>{{ .Permalink }}</loc>
+    {{- if not .Lastmod.IsZero }}
+      <lastmod
+        >{{ .Lastmod.Format "2006-01-02T15:04:05-07:00" | safeHTML }}</lastmod
+      >
+    {{- end }}
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+    {{- if .IsTranslated }}
+      {{- range .AllTranslations }}
+        <xhtml:link
+          rel="alternate"
+          hreflang="{{ .Language.Lang }}"
+          href="{{ .Permalink }}"
+        />
+      {{- end }}
+      {{- /* Add x-default for English version */ -}}
+      {{- range .AllTranslations }}
+        {{- if eq .Language.Lang "en" }}
+          <xhtml:link
+            rel="alternate"
+            hreflang="x-default"
+            href="{{ .Permalink }}"
+          />
+        {{- end }}
+      {{- end }}
+    {{- end }}
+  </url>
+
+  {{- /* Include all pages in this term */ -}}
+  {{- range .Data.Pages }}
+    <url>
+      <loc>{{ .Permalink }}</loc>
+      {{- if not .Lastmod.IsZero }}
+        <lastmod
+          >{{ .Lastmod.Format "2006-01-02T15:04:05-07:00" | safeHTML }}</lastmod
+        >
+      {{- end }}
+      <changefreq
+        >{{ if or (eq .Section "articles") (eq .Section "blog") }}
+          weekly
+        {{ else }}
+          monthly
+        {{ end }}</changefreq
+      >
+      <priority
+        >{{ if or (eq .Section "articles") (eq .Section "blog") }}
+          0.8
+        {{ else }}
+          0.7
+        {{ end }}</priority
+      >
+      {{- if .IsTranslated }}
+        {{- range .AllTranslations }}
+          <xhtml:link
+            rel="alternate"
+            hreflang="{{ .Language.Lang }}"
+            href="{{ .Permalink }}"
+          />
+        {{- end }}
+        {{- /* Add x-default for English version */ -}}
+        {{- range .AllTranslations }}
+          {{- if eq .Language.Lang "en" }}
+            <xhtml:link
+              rel="alternate"
+              hreflang="x-default"
+              href="{{ .Permalink }}"
+            />
+          {{- end }}
+        {{- end }}
+      {{- end }}
+    </url>
+  {{- end }}
+</urlset>
