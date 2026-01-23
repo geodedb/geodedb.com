@@ -1,0 +1,84 @@
+{{/* layouts/index.html - SEO optimized homepage */}}
+{{/* LOCAL OVERRIDE: Fixes sort syntax issue in ultra theme */}}
+
+{{ define "main" }}
+  {{/* Optional hero / banner -------------------------------------------- */}}
+  {{ with site.Params.main.banner }}
+    {{ partial "banner.html" . }}
+  {{ end }}
+
+  {{/* Responsive container decided by your helper ----------------------- */}}
+  {{ $container := partial "helpers/container.html" . }}
+
+  {{/* --------------------------------------------------------------------
+    1. Collect re-usable sub-pages from a headless bundle /homepage
+    ---------------------------------------------------------------------
+  */}}
+  {{ $headless     := site.GetPage "homepage" }}
+  {{ if not $headless }}
+    {{ warnf "home template: headless bundle 'content/homepage/' not found" }}
+  {{ end }}
+
+  {{ $reusables := slice }}
+  {{ with $headless }}
+    {{ $pages := .Resources.ByType "page" }}
+    {{ $reusables = sort $pages "Params.weight" }}
+  {{ end }}
+
+  {{ if eq (len $reusables) 0 }}
+    {{ warnf "home template: no sub-pages found in /homepage" }}
+  {{ end }}
+
+  {{ $buildDrafts := site.BuildDrafts }}
+
+
+  <!-- =================================================================== -->
+  <!--  Main grid of reusable sections                                    -->
+  <!-- =================================================================== -->
+  <div class="{{ $container }}" itemprop="mainContentOfPage">
+    <div
+      class="row g-4"
+      role="list"
+      aria-label="{{ i18n "page_sections" | default "Page sections" }}"
+    >
+      {{ range $res := $reusables }}
+
+        {{/* 2│ skip drafts unless -D is used --------------------------- */}}
+        {{ $isDraft := $res.Params.draft | default false }}
+        {{ if and $isDraft (not $buildDrafts) }}
+          {{ warnf "home template: draft %q skipped (run hugo -D to include)" $res.File.Path }}
+          {{ continue }}
+        {{ end }}
+
+        {{/* 3│ Grab custom "width" or default to something sensible ---- */}}
+        {{ $w := $res.Params.width | default 12 }}
+
+        {{/* 4│ Section wrapper ----------------------------------------- */}}
+        <section
+          class="col-12 col-md-{{ $w }} homepage-section"
+          role="listitem"
+          data-weight="{{ $res.Params.weight | default 0 }}"
+        >
+          {{/* 5│ Section heading (H2) ---------------------------------- */}}
+          {{ with $res.Title }}
+            <h2
+              class="section-title h3 mb-3"
+              itemprop="headline"
+            >
+              {{ . | markdownify }}
+            </h2>
+          {{ end }}
+
+          {{/* 6│ Section content (rendered from Markdown or HTML) ------ */}}
+          <div
+            class="section-content"
+            itemprop="text"
+          >
+            {{ $res.Content }}
+          </div>
+        </section>
+
+      {{ end }}
+    </div>
+  </div>
+{{ end }}
