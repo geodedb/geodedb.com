@@ -1,3 +1,3 @@
 [submodule "themes/ultra"]
 	path = themes/ultra
-	url = git@gitlab.com:devnw/codepros/ultra.git
+	url = https://gitlab.com/devnw/codepros/ultra.git
