@@ -26,25 +26,29 @@ deps-check:
 
 deps:
 	@echo "Installing dependencies..."
-	@# Install Hugo Extended
-	@if ! command -v hugo >/dev/null 2>&1; then \
+	@# Determine if we need sudo (skip in CI)
+	@if [ -z "$(CI)" ]; then \
+		SUDO="sudo"; \
+	else \
+		SUDO=""; \
+	fi; \
+	if ! command -v hugo >/dev/null 2>&1; then \
 		echo "Installing Hugo Extended $(HUGO_VERSION)..."; \
 		wget -q https://github.com/gohugoio/hugo/releases/download/v$(HUGO_VERSION)/hugo_extended_$(HUGO_VERSION)_linux-amd64.tar.gz -O /tmp/hugo.tar.gz; \
 		tar -xzf /tmp/hugo.tar.gz -C /tmp/; \
-		sudo mv /tmp/hugo $(HUGO_BIN); \
-		sudo chmod +x $(HUGO_BIN); \
+		$$SUDO mv /tmp/hugo $(HUGO_BIN); \
+		$$SUDO chmod +x $(HUGO_BIN); \
 		rm -f /tmp/hugo.tar.gz; \
 		echo "✓ Hugo Extended $(HUGO_VERSION) installed"; \
 	else \
 		echo "✓ Hugo already installed: $$(hugo version)"; \
-	fi
-	@# Install Dart Sass
-	@if ! command -v sass >/dev/null 2>&1; then \
+	fi; \
+	if ! command -v sass >/dev/null 2>&1; then \
 		echo "Installing Dart Sass $(DART_SASS_VERSION)..."; \
 		wget -q https://github.com/sass/dart-sass/releases/download/$(DART_SASS_VERSION)/dart-sass-$(DART_SASS_VERSION)-linux-x64.tar.gz -O /tmp/dart-sass.tar.gz; \
 		tar -xzf /tmp/dart-sass.tar.gz -C /tmp/; \
-		sudo mv /tmp/dart-sass/sass $(SASS_BIN); \
-		sudo chmod +x $(SASS_BIN); \
+		$$SUDO mv /tmp/dart-sass/sass $(SASS_BIN); \
+		$$SUDO chmod +x $(SASS_BIN); \
 		rm -rf /tmp/dart-sass /tmp/dart-sass.tar.gz; \
 		echo "✓ Dart Sass $(DART_SASS_VERSION) installed"; \
 	else \
