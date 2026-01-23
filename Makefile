@@ -1,24 +1,59 @@
 # Makefile for Geode documentation site
 
-BUILDER_NAME := $(if $(BUILDER_NAME),$(BUILDER_NAME),$(shell git config user.name))
-ifndef BUILDER_NAME
-$(error "You must set environment variable BUILDER_NAME or set a user.name in your git configuration.")
-endif
+HUGO_VERSION ?= 0.139.4
+DART_SASS_VERSION ?= 1.80.7
+HUGO_BIN ?= /usr/local/bin/hugo
+SASS_BIN ?= /usr/local/bin/sass
 
-EMAIL := $(if $(BUILDER_EMAIL),$(BUILDER_EMAIL),$(shell git config user.email))
-ifndef EMAIL
-$(error "You must set environment variable BUILDER_EMAIL or set a user.email in your git configuration.")
-endif
-
-.PHONY: help build serve clean deploy update
+.PHONY: help deps deps-check build serve clean deploy update
 
 help:
 	@echo "Geode Documentation - Available targets:"
-	@echo "  make build   - Build production site"
-	@echo "  make serve   - Serve locally for development"
-	@echo "  make clean   - Clean build artifacts"
-	@echo "  make update  - Update theme submodule"
-	@echo "  make deploy  - Deploy to GitLab Pages"
+	@echo "  make deps        - Install Hugo Extended and Dart Sass"
+	@echo "  make deps-check  - Check if dependencies are installed"
+	@echo "  make build       - Build production site"
+	@echo "  make serve       - Serve locally for development"
+	@echo "  make clean       - Clean build artifacts"
+	@echo "  make update      - Update theme submodule"
+	@echo "  make deploy      - Deploy to GitLab Pages"
+
+deps-check:
+	@echo "Checking dependencies..."
+	@which hugo >/dev/null 2>&1 && echo "✓ Hugo found: $$(hugo version)" || echo "✗ Hugo not found"
+	@which sass >/dev/null 2>&1 && echo "✓ Dart Sass found: $$(sass --version)" || echo "✗ Dart Sass not found"
+	@echo ""
+	@echo "Run 'make deps' to install missing dependencies"
+
+deps:
+	@echo "Installing dependencies..."
+	@# Install Hugo Extended
+	@if ! command -v hugo >/dev/null 2>&1; then \
+		echo "Installing Hugo Extended $(HUGO_VERSION)..."; \
+		wget -q https://github.com/gohugoio/hugo/releases/download/v$(HUGO_VERSION)/hugo_extended_$(HUGO_VERSION)_linux-amd64.tar.gz -O /tmp/hugo.tar.gz; \
+		tar -xzf /tmp/hugo.tar.gz -C /tmp/; \
+		sudo mv /tmp/hugo $(HUGO_BIN); \
+		sudo chmod +x $(HUGO_BIN); \
+		rm -f /tmp/hugo.tar.gz; \
+		echo "✓ Hugo Extended $(HUGO_VERSION) installed"; \
+	else \
+		echo "✓ Hugo already installed: $$(hugo version)"; \
+	fi
+	@# Install Dart Sass
+	@if ! command -v sass >/dev/null 2>&1; then \
+		echo "Installing Dart Sass $(DART_SASS_VERSION)..."; \
+		wget -q https://github.com/sass/dart-sass/releases/download/$(DART_SASS_VERSION)/dart-sass-$(DART_SASS_VERSION)-linux-x64.tar.gz -O /tmp/dart-sass.tar.gz; \
+		tar -xzf /tmp/dart-sass.tar.gz -C /tmp/; \
+		sudo mv /tmp/dart-sass/sass $(SASS_BIN); \
+		sudo chmod +x $(SASS_BIN); \
+		rm -rf /tmp/dart-sass /tmp/dart-sass.tar.gz; \
+		echo "✓ Dart Sass $(DART_SASS_VERSION) installed"; \
+	else \
+		echo "✓ Dart Sass already installed: $$(sass --version)"; \
+	fi
+	@echo ""
+	@echo "All dependencies installed!"
+	@hugo version
+	@sass --version
 
 build:
 	@echo "Building production site..."

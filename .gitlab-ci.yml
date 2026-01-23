@@ -1,25 +1,24 @@
 # GitLab CI/CD configuration for Geode documentation site
 # Builds and deploys Hugo site to GitLab Pages at geodedb.com
 
-image: nixos/nix:latest
+image: ubuntu:24.04
 
 variables:
   GIT_SUBMODULE_STRATEGY: recursive
   HUGO_ENV: production
-  NIX_CONFIG: "experimental-features = nix-command flakes"
+  HUGO_VERSION: "0.139.4"
+  DART_SASS_VERSION: "1.80.7"
 
 before_script:
-  - nix --version
-  - nix flake show --no-write-lock-file
-
-.nix_build: &nix_build
-  script:
-    - nix develop --accept-flake-config --command hugo version
-    - nix develop --accept-flake-config --command make build
+  - apt-get update && apt-get install -y wget git ca-certificates
+  - make deps
+  - hugo version
+  - sass --version
 
 test:
   stage: test
-  <<: *nix_build
+  script:
+    - hugo -b https://geodedb.com --minify --gc
   artifacts:
     paths:
       - public
@@ -28,7 +27,8 @@ test:
 
 pages:
   stage: deploy
-  <<: *nix_build
+  script:
+    - hugo -b https://geodedb.com --minify --gc
   artifacts:
     paths:
       - public

@@ -17,26 +17,39 @@ This repository contains the source for the Geode documentation website, built w
 
 ### Prerequisites
 
-- Hugo Extended (v0.120.0+)
 - Git
+- wget (for installing dependencies)
+- sudo access (for installing Hugo and Dart Sass)
 
-### Build and Serve Locally
+### Quick Start
 
 ```bash
 # Clone with submodules
 git clone --recursive git@gitlab.com:devnw/codepros/geode/geodedb.com.git
+cd geodedb.com
 
-# Or initialize submodules if already cloned
-git submodule update --init --recursive
+# Install dependencies (Hugo Extended + Dart Sass)
+make deps
 
 # Serve locally (default port 1313)
-hugo server -D
+make serve
 
-# Build for production
-hugo --minify --gc
+# Or build for production
+make build
 ```
 
 The site will be available at `http://localhost:1313`
+
+### Available Commands
+
+```bash
+make deps        # Install Hugo Extended and Dart Sass
+make deps-check  # Check if dependencies are installed
+make serve       # Start development server
+make build       # Build production site
+make clean       # Clean build artifacts
+make update      # Update theme submodule
+```
 
 ## Content Structure
 
