@@ -5,12 +5,13 @@ DART_SASS_VERSION ?= 1.80.7
 HUGO_BIN ?= /usr/local/bin/hugo
 SASS_BIN ?= /usr/local/bin/sass
 
-.PHONY: help deps deps-check build serve clean deploy update
+.PHONY: help deps deps-check npm build serve clean deploy update
 
 help:
 	@echo "Geode Documentation - Available targets:"
-	@echo "  make deps        - Install Hugo Extended and Dart Sass"
+	@echo "  make deps        - Install Hugo Extended, Dart Sass, and Node.js"
 	@echo "  make deps-check  - Check if dependencies are installed"
+	@echo "  make npm         - Install npm dependencies (PostCSS, etc.)"
 	@echo "  make build       - Build production site"
 	@echo "  make serve       - Serve locally for development"
 	@echo "  make clean       - Clean build artifacts"
@@ -21,8 +22,13 @@ deps-check:
 	@echo "Checking dependencies..."
 	@which hugo >/dev/null 2>&1 && echo "✓ Hugo found: $$(hugo version)" || echo "✗ Hugo not found"
 	@which sass >/dev/null 2>&1 && echo "✓ Dart Sass found: $$(sass --version)" || echo "✗ Dart Sass not found"
+	@which node >/dev/null 2>&1 && echo "✓ Node.js found: $$(node --version)" || echo "✗ Node.js not found"
+	@which npm >/dev/null 2>&1 && echo "✓ npm found: $$(npm --version)" || echo "✗ npm not found"
+	@which npx >/dev/null 2>&1 && echo "✓ npx found" || echo "✗ npx not found"
+	@[ -d node_modules ] && echo "✓ npm packages installed" || echo "✗ npm packages not installed (run 'make npm')"
 	@echo ""
-	@echo "Run 'make deps' to install missing dependencies"
+	@echo "Run 'make deps' to install system dependencies"
+	@echo "Run 'make npm' to install npm packages"
 
 deps:
 	@echo "Installing dependencies..."
@@ -57,15 +63,28 @@ deps:
 		echo "✓ Dart Sass already installed: $$(sass --version)"; \
 	fi
 	@echo ""
-	@echo "All dependencies installed!"
+	@echo "All system dependencies installed!"
 	@hugo version
 	@sass --version
+	@echo ""
+	@echo "Now run 'make npm' to install npm packages (PostCSS, etc.)"
 
-build:
+npm:
+	@echo "Installing npm dependencies..."
+	@if ! command -v npm >/dev/null 2>&1; then \
+		echo "Error: npm not found. Please install Node.js first."; \
+		echo "  Ubuntu/Debian: sudo apt-get install nodejs npm"; \
+		echo "  Or download from: https://nodejs.org/"; \
+		exit 1; \
+	fi
+	@npm install
+	@echo "✓ npm dependencies installed"
+
+build: npm
 	@echo "Building production site..."
 	hugo --minify --gc -b https://geodedb.com
 
-serve:
+serve: npm
 	@echo "Starting development server at http://localhost:1313"
 	hugo server -D --bind 0.0.0.0
 
