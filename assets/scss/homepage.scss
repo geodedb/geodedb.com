@@ -1,7 +1,5 @@
 // Homepage-specific styles
-
-// Import amethyst color variables first
-@use "custom" as *;
+// Uses CSS custom properties instead of Sass variables for better compatibility
 
 .homepage-content {
   max-width: 900px;
@@ -47,7 +45,7 @@
       line-height: 1.7;
 
       strong {
-        color: $amethyst-deep;
+        color: #4a148c; // amethyst-deep
         font-weight: 600;
       }
     }
@@ -59,7 +57,7 @@
     padding: 0.2rem 0.4rem;
     border-radius: 0.25rem;
     font-size: 0.9em;
-    color: $amethyst-medium;
+    color: #8e24aa; // amethyst-medium
   }
 
   pre {
@@ -79,13 +77,13 @@
 
   // Links
   a {
-    color: $amethyst-medium;
+    color: #8e24aa; // amethyst-medium
     text-decoration: none;
     font-weight: 500;
     transition: color 0.2s ease;
 
     &:hover {
-      color: $amethyst-deep;
+      color: #4a148c; // amethyst-deep
       text-decoration: underline;
     }
   }

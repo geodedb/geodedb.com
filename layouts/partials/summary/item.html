@@ -1,0 +1,67 @@
+{{/* LOCAL OVERRIDE: Fixed date_format variable */}}
+{{/* Check if this is an event based on section or params */}}
+{{ if or (eq .Section "events") (isset .Params "startDate") }}
+  {{/* Use the enhanced event template for events */}}
+  {{ partial "summary/event.html" . }}
+{{ else }}
+  {{/* Use the standard item template for other content */}}
+
+  {{ $text_style := "stretched-link text-decoration-none text-tertiary" }}
+
+  {{ if isset .Page.Params "text_style" }}
+    {{ $text_style = .Params.text_style }}
+  {{ end }}
+
+  {{ $date_format := "January 2, 2006" }}
+  {{ with .Site.Params.date_format }}
+    {{ $date_format = . }}
+  {{ end }}
+  {{ with .Page.Params.date_format }}
+    {{ $date_format = . }}
+  {{ end }}
+
+  {{ $summary := "" }}
+  {{ if isset .Page.Params "description" }}
+    {{ $summary = .Page.Params.description }}
+  {{ else }}
+    {{ $summary = .Content }}
+  {{ end }}
+
+
+  <div class="item card bg-tertiary p-3">
+    <a href="{{ .Permalink }}" class="{{ $text_style }}">
+      <div>
+        {{ with (index .Params.Images 1) }}
+          {{ partial "helpers/image" (dict "filename" . "alt" $.Title "class" "img-fluid" "resources" $.Resources) }}
+        {{ end }}
+
+        {{ with .Title }}
+          <h3 class="card-title flex-grow-1">
+            {{ . }}
+          </h3>
+        {{ end }}
+
+        {{ with .Params.subTitle }}
+          <h4 class="flex-grow-1 card-subtitle mt-3">
+            {{ . | safeHTML }}
+          </h4>
+        {{ end }}
+
+        {{ if ne $summary "" }}
+          <p class="card-text">
+            {{ $summary  | safeHTML | truncate 100 }}
+          </p>
+        {{ end }}
+
+        {{ if not .Date.IsZero }}
+          <div class="row mt-2">
+            <time class="icon-time">
+              <i class="icon fa-clock mr-2"></i>
+              {{ .Date.Format $date_format }}
+            </time>
+          </div>
+        {{ end }}
+      </div>
+    </a>
+  </div>
+{{ end }}
