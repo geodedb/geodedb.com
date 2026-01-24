@@ -438,4 +438,458 @@ Geode provides:
 - [GQL Syntax](/tags/gql-syntax/) - Syntax guide
 - [Official ISO Standard](https://www.iso.org/standard/76120.html) - Purchase from ISO
 
+## Detailed Feature Specification
+
+### Pattern Matching Grammar (§7)
+
+Complete BNF grammar for ISO GQL patterns:
+
+```bnf
+<graph_pattern> ::=
+    <node_pattern> [ <relationship_pattern> <node_pattern> ]*
+
+<node_pattern> ::=
+    '(' [ <variable> ] [ <label_expression> ] [ <property_specification> ] ')'
+
+<label_expression> ::=
+    ':' <label_name> [ ':' <label_name> ]*
+
+<property_specification> ::=
+    '{' <property> [ ',' <property> ]* '}'
+
+<property> ::=
+    <property_name> ':' <expression>
+
+<relationship_pattern> ::=
+    '-' '[' [ <variable> ] [ <type_expression> ] [ <property_specification> ] ']' '->'
+    | '<-' '[' [ <variable> ] [ <type_expression> ] [ <property_specification> ] ']' '-'
+    | '-' '[' [ <variable> ] [ <type_expression> ] [ <property_specification> ] ']' '-'
+
+<type_expression> ::=
+    ':' <type_name> [ '|' <type_name> ]*
+
+<variable_length> ::=
+    '*' [ <min_hops> ] [ '..' [ <max_hops> ] ]
+```
+
+### Type System Specification (§6)
+
+Complete type hierarchy:
+
+```
+Type System Hierarchy
+=====================
+
+Value Types:
+├── NULL
+├── Scalar Types
+│   ├── Boolean
+│   ├── Numeric
+│   │   ├── Integer (64-bit signed)
+│   │   ├── Float (IEEE 754 double)
+│   │   └── Decimal (arbitrary precision)
+│   ├── String (UTF-8)
+│   └── Bytes
+├── Temporal Types
+│   ├── Date (ISO 8601)
+│   ├── Time (with timezone)
+│   ├── DateTime (ISO 8601 with timezone)
+│   └── Duration (ISO 8601 duration)
+├── Spatial Types
+│   └── Point (2D/3D with CRS)
+├── Collection Types
+│   ├── List [ordered, allows duplicates]
+│   ├── Set [unordered, no duplicates]
+│   └── Map {key: value pairs}
+└── Graph Types
+    ├── Node (entity reference)
+    ├── Relationship (edge reference)
+    └── Path (node-relationship sequence)
+```
+
+### Function Specification Examples
+
+Detailed specifications from ISO §11:
+
+```gql
+-- String Functions (§11.3)
+FUNCTION substring(
+    str: STRING,
+    start: INTEGER,
+    length: INTEGER?
+) RETURNS STRING
+
+-- Behavior:
+-- - start is 0-indexed
+-- - length is optional (defaults to end of string)
+-- - Returns empty string if start > string length
+-- - NULL propagation: NULL input → NULL output
+
+MATCH (p:Person)
+RETURN substring(p.name, 0, 3) AS initials;
+
+-- Mathematical Functions (§11.5)
+FUNCTION round(
+    value: NUMERIC,
+    precision: INTEGER DEFAULT 0
+) RETURNS NUMERIC
+
+-- Behavior:
+-- - Rounds to nearest integer by default
+-- - precision > 0: decimal places
+-- - precision < 0: rounds before decimal point
+-- - Banker's rounding (round half to even)
+
+MATCH (p:Product)
+RETURN round(p.price, 2) AS rounded_price;
+
+-- Aggregation Functions (§11.7)
+FUNCTION count(
+    expression: ANY
+) RETURNS INTEGER
+
+-- Behavior:
+-- - count(*): counts all rows including NULL
+-- - count(expr): counts non-NULL values
+-- - DISTINCT optional: count(DISTINCT expr)
+
+MATCH (u:User)
+RETURN count(u) AS total_users,
+       count(u.email) AS users_with_email,
+       count(DISTINCT u.country) AS unique_countries;
+```
+
+## Advanced ISO Features
+
+### Recursive Query Patterns
+
+ISO specifies recursive queries through WITH clauses:
+
+```gql
+-- Organizational hierarchy traversal
+WITH RECURSIVE hierarchy AS (
+    -- Base case
+    MATCH (emp:Employee {id: $start_id})
+    RETURN emp, 0 AS level
+
+    UNION ALL
+
+    -- Recursive case
+    MATCH (h.emp)-[:REPORTS_TO]->(manager:Employee)
+    FROM hierarchy h
+    WHERE h.level < $max_depth
+    RETURN manager AS emp, h.level + 1 AS level
+)
+SELECT emp.name, level
+FROM hierarchy
+ORDER BY level, emp.name;
+```
+
+### Window Functions (ISO Extension)
+
+Advanced analytical queries:
+
+```gql
+-- Running totals and moving averages
+MATCH (sale:Sale)
+WHERE sale.date >= date('2025-01-01')
+RETURN sale.date,
+       sale.amount,
+       sum(sale.amount) OVER (
+           ORDER BY sale.date
+           ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
+       ) AS running_total,
+       avg(sale.amount) OVER (
+           ORDER BY sale.date
+           ROWS BETWEEN 6 PRECEDING AND CURRENT ROW
+       ) AS moving_avg_7day
+ORDER BY sale.date;
+
+-- Ranking functions
+MATCH (product:Product)
+RETURN product.name,
+       product.sales,
+       rank() OVER (ORDER BY product.sales DESC) AS sales_rank,
+       dense_rank() OVER (
+           PARTITION BY product.category
+           ORDER BY product.sales DESC
+       ) AS category_rank,
+       percent_rank() OVER (ORDER BY product.sales) AS percentile;
+```
+
+### Common Table Expressions (CTEs)
+
+ISO-standard query composition:
+
+```gql
+-- Multi-step query with CTEs
+WITH active_users AS (
+    MATCH (u:User)
+    WHERE u.last_login >= datetime() - duration('P30D')
+    RETURN u
+),
+power_users AS (
+    MATCH (u:User)-[:PURCHASED]->(p:Product)
+    WITH u, count(p) AS purchase_count
+    WHERE purchase_count > 10
+    RETURN u
+),
+targeted_segment AS (
+    SELECT *
+    FROM active_users
+    INTERSECT
+    SELECT *
+    FROM power_users
+)
+MATCH (u:User)
+WHERE u IN targeted_segment
+RETURN u.email, u.name
+ORDER BY u.last_login DESC;
+```
+
+## ISO Compliance in Practice
+
+### Real-World Compliance Validation
+
+```python
+class ProductionComplianceMonitor:
+    """Monitor ISO compliance in production environment."""
+
+    def __init__(self, client):
+        self.client = client
+        self.violations = []
+
+    async def monitor_query_compliance(self, query, params):
+        """Check if query follows ISO standards."""
+
+        violations = []
+
+        # Check 1: Use of vendor-specific syntax
+        vendor_patterns = [
+            r'CALL apoc\.',
+            r'CALL gds\.',
+            r'CREATE FULLTEXT INDEX',  # Vendor extension
+        ]
+
+        for pattern in vendor_patterns:
+            if re.search(pattern, query, re.IGNORECASE):
+                violations.append({
+                    'type': 'vendor_syntax',
+                    'pattern': pattern,
+                    'message': 'Query uses vendor-specific syntax'
+                })
+
+        # Check 2: Parameter usage (should use $param, not string concat)
+        if any(f"'{param}'" in query or f'"{param}"' in query for param in params):
+            violations.append({
+                'type': 'sql_injection_risk',
+                'message': 'Parameters embedded in query string'
+            })
+
+        # Check 3: ISO-compliant NULL handling
+        if re.search(r'= NULL|!= NULL', query):
+            violations.append({
+                'type': 'incorrect_null_handling',
+                'message': 'Should use IS NULL/IS NOT NULL'
+            })
+
+        if violations:
+            self.violations.extend(violations)
+            logger.warning(f"ISO compliance violations detected: {violations}")
+
+        return len(violations) == 0
+
+    async def generate_compliance_report(self):
+        """Generate production compliance report."""
+
+        report = {
+            'total_queries': len(self.violations) + 1000,  # Example
+            'violations': len(self.violations),
+            'compliance_rate': 1.0 - (len(self.violations) / 1000),
+            'violation_types': {}
+        }
+
+        for violation in self.violations:
+            vtype = violation['type']
+            report['violation_types'][vtype] = \
+                report['violation_types'].get(vtype, 0) + 1
+
+        return report
+
+# Usage in production
+monitor = ProductionComplianceMonitor(client)
+
+@app.middleware("http")
+async def check_query_compliance(request, call_next):
+    """Middleware to monitor query compliance."""
+    if hasattr(request.state, 'query'):
+        await monitor.monitor_query_compliance(
+            request.state.query,
+            request.state.params
+        )
+
+    response = await call_next(request)
+    return response
+```
+
+### ISO Migration Path from Legacy Systems
+
+```python
+class LegacyToISOConverter:
+    """Convert legacy graph queries to ISO GQL."""
+
+    def __init__(self):
+        self.conversions = {}
+        self.warnings = []
+
+    def convert_neo4j_cypher(self, cypher_query):
+        """Convert Neo4j Cypher to ISO GQL."""
+
+        iso_query = cypher_query
+
+        # Conversion 1: DETACH DELETE → DELETE
+        iso_query = re.sub(
+            r'\bDETACH DELETE\b',
+            'DELETE',
+            iso_query,
+            flags=re.IGNORECASE
+        )
+
+        # Conversion 2: exists(n.prop) → n.prop IS NOT NULL
+        iso_query = re.sub(
+            r'\bexists\s*\(\s*(\w+)\.(\w+)\s*\)',
+            r'\1.\2 IS NOT NULL',
+            iso_query
+        )
+
+        # Conversion 3: APOC functions (warn - no direct equivalent)
+        if re.search(r'\bapoc\.', iso_query, re.IGNORECASE):
+            self.warnings.append({
+                'type': 'unsupported_function',
+                'message': 'APOC functions have no ISO equivalent',
+                'suggestion': 'Implement logic in application code'
+            })
+
+        # Conversion 4: Variable-length path syntax
+        iso_query = re.sub(
+            r'-\[(\w+):(\w+)\*(\d+)\.\.(\d+)\]->',
+            r'-[\1:\2*\3..\4]->',
+            iso_query
+        )
+
+        return iso_query, self.warnings
+
+    def convert_gremlin(self, gremlin_query):
+        """Convert Apache Gremlin to ISO GQL."""
+
+        # This is more complex due to imperative nature of Gremlin
+        # Simplified example:
+
+        patterns = {
+            r"g\.V\(\)\.hasLabel\('(\w+)'\)": r"MATCH (n:\1)",
+            r"\.has\('(\w+)',\s*'([^']+)'\)": r"WHERE \1 = '\2'",
+            r"\.values\('(\w+)'\)": r"RETURN \1",
+        }
+
+        iso_query = gremlin_query
+        for gremlin_pattern, gql_pattern in patterns.items():
+            iso_query = re.sub(gremlin_pattern, gql_pattern, iso_query)
+
+        return iso_query
+
+# Usage
+converter = LegacyToISOConverter()
+
+cypher_query = """
+    MATCH (n:Person)
+    WHERE exists(n.email)
+    DETACH DELETE n
+"""
+
+iso_query, warnings = converter.convert_neo4j_cypher(cypher_query)
+print(iso_query)
+# Output:
+# MATCH (n:Person)
+# WHERE n.email IS NOT NULL
+# DELETE n
+
+for warning in warnings:
+    print(f"Warning: {warning['message']}")
+```
+
+## Future ISO Standard Evolution
+
+### Proposed Extensions (Under Discussion)
+
+```gql
+-- Temporal graph queries (proposed for ISO amendment)
+MATCH (p:Person)
+FOR SYSTEM_TIME AS OF '2025-01-01T00:00:00Z'
+WHERE p.status = 'active'
+RETURN p.name;
+
+-- Graph pattern matching with quantification
+MATCH (user:User)
+WHERE ALL x IN (user)-[:PURCHASED]->(products) SATISFIES (x.rating >= 4)
+RETURN user.name;
+
+-- Multi-graph queries
+MATCH (p:Product) IN GRAPH production_graph,
+      (s:Sale) IN GRAPH analytics_graph
+WHERE s.product_id = p.id
+RETURN p.name, sum(s.amount) AS total_sales;
+```
+
+### Tracking Standards Updates
+
+```python
+class ISOStandardsTracker:
+    """Track and notify about ISO GQL standard updates."""
+
+    def __init__(self):
+        self.subscription_endpoint = "https://www.iso.org/committee/45342/x/feed"
+        self.last_check = None
+
+    async def check_for_updates(self):
+        """Check ISO working group for updates."""
+
+        feed = await self.fetch_rss_feed(self.subscription_endpoint)
+        updates = []
+
+        for entry in feed.entries:
+            if entry.published > self.last_check:
+                updates.append({
+                    'title': entry.title,
+                    'link': entry.link,
+                    'published': entry.published,
+                    'summary': entry.summary
+                })
+
+        self.last_check = datetime.now()
+        return updates
+
+    async def notify_team(self, updates):
+        """Notify development team of standard updates."""
+        if not updates:
+            return
+
+        message = "ISO/IEC 39075 Updates:\n\n"
+        for update in updates:
+            message += f"• {update['title']}\n"
+            message += f"  {update['link']}\n\n"
+
+        await send_slack_notification(channel="#standards", message=message)
+
+# Scheduled task
+async def monitor_iso_standards():
+    tracker = ISOStandardsTracker()
+
+    while True:
+        updates = await tracker.check_for_updates()
+        if updates:
+            await tracker.notify_team(updates)
+
+        await asyncio.sleep(86400)  # Daily check
+```
+
 ISO/IEC 39075:2024 provides a solid, vendor-neutral foundation for graph database applications, ensuring portability, interoperability, and longevity of graph data solutions.
