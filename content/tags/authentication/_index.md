@@ -405,3 +405,388 @@ Geode's authentication system helps meet compliance requirements:
 - Compliance and Regulatory Requirements
 - Security Hardening Checklist
 - Incident Response Playbook
+
+## Advanced Authentication Patterns
+
+### JWT Token-Based Authentication
+
+Integrate Geode with JSON Web Tokens for stateless authentication:
+
+```python
+import jwt
+from geode_client import GeodeClient
+
+# Generate JWT for user
+def generate_token(user_id, roles):
+    payload = {
+        'user_id': user_id,
+        'roles': roles,
+        'exp': datetime.utcnow() + timedelta(hours=24)
+    }
+    return jwt.encode(payload, SECRET_KEY, algorithm='HS256')
+
+# Connect with JWT
+token = generate_token('user123', ['analyst'])
+client = GeodeClient('localhost:3141', token=token)
+```
+
+Configure Geode to validate JWTs:
+
+```yaml
+# geode.yaml
+auth:
+  jwt:
+    enabled: true
+    secret_key_file: /secure/jwt_secret
+    algorithm: HS256
+    issuer: myapp.example.com
+    audience: geode-api
+    token_lifetime_seconds: 86400
+```
+
+### Service Account Authentication
+
+Create service accounts for automated systems:
+
+```gql
+-- Create service account
+CREATE USER etl_service TYPE service_account;
+
+-- Grant minimal required permissions
+GRANT SELECT ON :RawData TO etl_service;
+GRANT INSERT ON :ProcessedData TO etl_service;
+
+-- Generate long-lived API key
+CREATE API_KEY FOR etl_service
+  DESCRIPTION 'ETL pipeline data ingestion'
+  EXPIRES '2027-01-01';
+```
+
+Use service accounts in applications:
+
+```python
+# etl_pipeline.py
+import os
+from geode_client import GeodeClient
+
+# Load API key from environment
+API_KEY = os.environ['GEODE_API_KEY']
+
+client = GeodeClient(
+    'geode.prod.example.com:3141',
+    api_key=API_KEY
+)
+
+# Service account has limited permissions
+# Can only read RawData and write ProcessedData
+```
+
+### Multi-Factor Authentication Setup
+
+Enable MFA for administrative accounts:
+
+```gql
+-- Enable TOTP MFA for admin user
+ALTER USER admin ENABLE MFA USING TOTP
+SECRET generate_qr_code();
+
+-- Require MFA for all admins
+ALTER ROLE admin REQUIRE MFA;
+
+-- Verify MFA code during login
+AUTHENTICATE USER admin
+PASSWORD 'secure_password'
+MFA_CODE '123456';
+```
+
+Implement MFA in client applications:
+
+```python
+async def login_with_mfa(username, password, mfa_code):
+    try:
+        client = GeodeClient(
+            'localhost:3141',
+            username=username,
+            password=password,
+            mfa_code=mfa_code
+        )
+        return client
+    except MFARequired:
+        # Prompt user for MFA code
+        mfa_code = input("Enter MFA code: ")
+        return await login_with_mfa(username, password, mfa_code)
+```
+
+### SSO Integration with SAML
+
+Configure SAML 2.0 for enterprise single sign-on:
+
+```xml
+<!-- geode-saml-config.xml -->
+<EntityDescriptor entityID="https://geode.example.com/saml/metadata"
+                  xmlns="urn:oasis:names:tc:SAML:2.0:metadata">
+  <SPSSODescriptor protocolSupportEnumeration="urn:oasis:names:tc:SAML:2.0:protocol">
+    <KeyDescriptor use="signing">
+      <ds:KeyInfo xmlns:ds="http://www.w3.org/2000/09/xmldsig#">
+        <ds:X509Data>
+          <ds:X509Certificate>MIIDXTCCAkWgAwIBAgIJ...</ds:X509Certificate>
+        </ds:X509Data>
+      </ds:KeyInfo>
+    </KeyDescriptor>
+
+    <SingleLogoutService
+      Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect"
+      Location="https://geode.example.com/saml/slo"/>
+
+    <AssertionConsumerService
+      Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST"
+      Location="https://geode.example.com/saml/acs"
+      index="1"/>
+  </SPSSODescriptor>
+</EntityDescriptor>
+```
+
+### OAuth 2.0 Authorization Code Flow
+
+Integrate with OAuth providers:
+
+```yaml
+# geode.yaml
+auth:
+  oauth2:
+    enabled: true
+    provider: okta
+    client_id: ${OAUTH_CLIENT_ID}
+    client_secret_file: /secure/oauth_secret
+    authorization_endpoint: https://dev-123.okta.com/oauth2/v1/authorize
+    token_endpoint: https://dev-123.okta.com/oauth2/v1/token
+    userinfo_endpoint: https://dev-123.okta.com/oauth2/v1/userinfo
+    scopes:
+      - openid
+      - profile
+      - email
+    redirect_url: https://geode.example.com/oauth/callback
+```
+
+Implement OAuth flow in web application:
+
+```python
+from flask import Flask, redirect, request, session
+from geode_client import GeodeClient
+import requests
+
+app = Flask(__name__)
+
+@app.route('/login')
+def login():
+    # Redirect to OAuth provider
+    auth_url = (
+        f"{OAUTH_AUTH_ENDPOINT}?"
+        f"client_id={CLIENT_ID}&"
+        f"redirect_uri={REDIRECT_URL}&"
+        f"response_type=code&"
+        f"scope=openid profile email"
+    )
+    return redirect(auth_url)
+
+@app.route('/oauth/callback')
+def oauth_callback():
+    code = request.args.get('code')
+
+    # Exchange code for token
+    token_response = requests.post(OAUTH_TOKEN_ENDPOINT, data={
+        'grant_type': 'authorization_code',
+        'code': code,
+        'redirect_uri': REDIRECT_URL,
+        'client_id': CLIENT_ID,
+        'client_secret': CLIENT_SECRET
+    })
+
+    access_token = token_response.json()['access_token']
+
+    # Create Geode client with OAuth token
+    session['geode_client'] = GeodeClient(
+        'localhost:3141',
+        oauth_token=access_token
+    )
+
+    return redirect('/dashboard')
+```
+
+### Dynamic Permission Management
+
+Implement runtime permission checks:
+
+```gql
+-- Check user's current permissions
+CALL dbms.security.showUserPermissions('analyst')
+YIELD role, permission, resource
+RETURN role, permission, resource;
+
+-- Temporarily elevate privileges
+BEGIN TRANSACTION;
+SET SESSION AUTHORIZATION admin;
+
+-- Perform privileged operation
+CREATE GRAPH sensitive_data;
+
+-- Restore normal privileges
+RESET SESSION AUTHORIZATION;
+COMMIT;
+```
+
+### Audit Logging for Compliance
+
+Track all authentication events:
+
+```gql
+-- View recent authentication attempts
+SELECT
+  timestamp,
+  username,
+  client_ip,
+  user_agent,
+  auth_method,
+  success,
+  failure_reason
+FROM system.auth_audit
+WHERE timestamp > current_timestamp() - INTERVAL '24 hours'
+ORDER BY timestamp DESC;
+
+-- Alert on suspicious patterns
+CREATE ALERT brute_force_detection
+WHEN (
+  SELECT COUNT(*) as failed_attempts
+  FROM system.auth_audit
+  WHERE success = false
+    AND username = $username
+    AND timestamp > current_timestamp() - INTERVAL '5 minutes'
+) > 5
+ACTION notify_security_team($username, $client_ip);
+```
+
+Export audit logs for SIEM integration:
+
+```python
+# export_audit_logs.py
+import asyncio
+from geode_client import GeodeClient
+import json
+
+async def export_audit_logs_to_splunk():
+    async with GeodeClient('localhost:3141', token=ADMIN_TOKEN) as client:
+        # Fetch recent audit events
+        result = await client.execute("""
+            SELECT * FROM system.auth_audit
+            WHERE timestamp > current_timestamp() - INTERVAL '1 hour'
+        """)
+
+        # Send to Splunk HTTP Event Collector
+        async for event in result:
+            payload = {
+                'time': event['timestamp'].isoformat(),
+                'source': 'geode-auth',
+                'sourcetype': 'geode:auth:audit',
+                'event': {
+                    'username': event['username'],
+                    'success': event['success'],
+                    'client_ip': event['client_ip'],
+                    'auth_method': event['auth_method']
+                }
+            }
+
+            requests.post(
+                SPLUNK_HEC_URL,
+                headers={'Authorization': f'Splunk {SPLUNK_TOKEN}'},
+                json=payload
+            )
+
+asyncio.run(export_audit_logs_to_splunk())
+```
+
+### Certificate-Based Authentication
+
+Use X.509 certificates for strong authentication:
+
+```bash
+# Generate client certificate
+openssl req -new -newkey rsa:4096 \
+  -days 365 -nodes -x509 \
+  -subj "/CN=analyst/O=Example Corp" \
+  -keyout client-key.pem \
+  -out client-cert.pem
+
+# Configure Geode to require client certificates
+geode serve \
+  --tls-cert server.crt \
+  --tls-key server.key \
+  --tls-client-ca ca.crt \
+  --tls-client-auth required
+```
+
+Map certificates to users:
+
+```gql
+-- Map certificate subject to user account
+CREATE CERTIFICATE_MAPPING
+FOR USER analyst
+WITH SUBJECT '/CN=analyst/O=Example Corp';
+```
+
+Connect with certificate:
+
+```python
+client = GeodeClient(
+    'geode.example.com:3141',
+    tls_cert='client-cert.pem',
+    tls_key='client-key.pem',
+    tls_ca='ca.crt'
+)
+```
+
+### Password Policy Enforcement
+
+Configure strong password requirements:
+
+```yaml
+# geode.yaml
+auth:
+  password_policy:
+    min_length: 14
+    require_uppercase: true
+    require_lowercase: true
+    require_numbers: true
+    require_special_chars: true
+    special_chars: "!@#$%^&*()_+-=[]{}|;:,.<>?"
+    max_age_days: 90
+    prevent_reuse_count: 10
+    lockout_threshold: 5
+    lockout_duration_minutes: 30
+    password_history_count: 24
+```
+
+Enforce password changes:
+
+```gql
+-- Force password change on next login
+ALTER USER analyst REQUIRE PASSWORD_CHANGE;
+
+-- Set password expiration
+ALTER USER analyst PASSWORD_EXPIRES '90 days';
+
+-- Check password compliance
+CALL dbms.security.validatePassword('proposed_password');
+```
+
+## Authentication Best Practices Summary
+
+1. **Always use TLS** in production to protect credentials in transit
+2. **Implement principle of least privilege** - grant minimum required permissions
+3. **Enable audit logging** for compliance and security monitoring
+4. **Use strong authentication** - multi-factor for admin accounts
+5. **Rotate credentials regularly** - passwords, API keys, certificates
+6. **Monitor failed login attempts** - detect and respond to attacks
+7. **Separate user types** - different auth methods for users, services, admins
+8. **Integrate with enterprise identity** - LDAP, OAuth, SAML for centralized management
+9. **Encrypt sensitive auth data** - passwords, tokens, secrets
+10. **Test disaster recovery** - ensure you can restore access after failures

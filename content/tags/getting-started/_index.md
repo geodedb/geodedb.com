@@ -415,3 +415,366 @@ A: Yes! Relationships have direction but queries can traverse either way. Use `-
 - **Examples**: Working code samples
 - **Installation**: Detailed setup instructions
 - **Client Libraries**: Language-specific integration guides
+
+## Advanced Getting Started Topics
+
+### Working with Indexes for Performance
+
+Indexes dramatically improve query performance by enabling fast lookups instead of full scans:
+
+```gql
+-- Create single-property index
+CREATE INDEX ON Person(email);
+
+-- Create composite index
+CREATE INDEX ON Transaction(user_id, timestamp);
+
+-- Create unique constraint (automatically creates index)
+CREATE UNIQUE CONSTRAINT ON Person(ssn);
+
+-- View existing indexes
+SHOW INDEXES;
+
+-- Query using index
+PROFILE MATCH (p:Person {email: 'alice@example.com'}) RETURN p;
+```
+
+Without indexes, `MATCH (p:Person {email: 'alice@example.com'})` scans every Person node. With an index, Geode jumps directly to matching nodes—often 100-1000x faster.
+
+### Transaction Patterns for Data Consistency
+
+Transactions ensure atomic, consistent operations:
+
+```python
+# Python transaction example
+async def transfer_funds(from_account, to_account, amount):
+    async with client.transaction() as tx:
+        # Read balances
+        result = await tx.execute("""
+            MATCH (from:Account {id: $from_id})
+            MATCH (to:Account {id: $to_id})
+            RETURN from.balance AS from_balance, to.balance AS to_balance
+        """, from_id=from_account, to_id=to_account)
+
+        row = await result.fetch_one()
+
+        if row['from_balance'] < amount:
+            raise ValueError("Insufficient funds")
+
+        # Update balances atomically
+        await tx.execute("""
+            MATCH (from:Account {id: $from_id})
+            SET from.balance = from.balance - $amount
+        """, from_id=from_account, amount=amount)
+
+        await tx.execute("""
+            MATCH (to:Account {id: $to_id})
+            SET to.balance = to.balance + $amount
+        """, to_id=to_account, amount=amount)
+
+        # Both updates commit together or both roll back
+```
+
+Transactions prevent race conditions, partial updates, and data inconsistencies.
+
+### Connection Pool Configuration
+
+All Geode clients use connection pooling automatically, but you can tune for your workload:
+
+```python
+# Python - explicit pool configuration
+client = GeodeClient(
+    "localhost:3141",
+    pool_size=50,  # Maximum concurrent connections
+    pool_timeout=30,  # Seconds to wait for available connection
+    max_overflow=10,  # Allow temporary connections beyond pool_size
+    pool_recycle=3600  # Recycle connections after 1 hour
+)
+```
+
+```go
+// Go - database/sql automatically pools
+db, err := sql.Open("geode", "geode://localhost:3141?pool_size=50")
+```
+
+```rust
+// Rust - configure pool size
+let client = Client::builder()
+    .address("localhost:3141")
+    .pool_size(50)
+    .connect()
+    .await?;
+```
+
+Proper pool configuration prevents connection exhaustion and improves throughput.
+
+### Error Handling Patterns
+
+Handle Geode errors gracefully:
+
+```python
+from geode_client import GeodeError, ConstraintViolation, DeadlockDetected
+
+async def safe_insert(data):
+    max_retries = 3
+    for attempt in range(max_retries):
+        try:
+            await client.execute("""
+                INSERT (:User {id: $id, email: $email})
+            """, **data)
+            return True
+
+        except ConstraintViolation as e:
+            # Unique constraint violation - don't retry
+            logger.error(f"Duplicate user: {e}")
+            return False
+
+        except DeadlockDetected:
+            # Transaction deadlock - retry with backoff
+            if attempt < max_retries - 1:
+                await asyncio.sleep(2 ** attempt)  # Exponential backoff
+                continue
+            raise
+
+        except GeodeError as e:
+            # Other errors - log and fail
+            logger.error(f"Database error: {e}")
+            raise
+```
+
+Appropriate error handling makes your application resilient to transient failures.
+
+### Monitoring Query Performance
+
+Profile queries to understand execution:
+
+```gql
+-- Profile shows execution plan and timing
+PROFILE
+MATCH (p:Person)-[:KNOWS*2..3]->(friend)
+WHERE p.age > 25
+RETURN friend.name, COUNT(*) as mutual_friends
+ORDER BY mutual_friends DESC
+LIMIT 10;
+```
+
+Output shows:
+- Execution steps (scans, lookups, filters, sorts)
+- Rows processed at each step
+- Time spent in each operation
+- Index usage
+
+Use profiling to identify slow operations and add appropriate indexes.
+
+### Data Modeling Best Practices
+
+Effective graph modeling makes queries natural and efficient:
+
+**Favor Relationships Over Properties**: Instead of storing related IDs as properties, use relationships:
+
+```gql
+-- Bad: Store related IDs as properties
+CREATE (:Order {id: 'o1', user_id: 'u1', product_ids: ['p1', 'p2', 'p3']})
+
+-- Good: Use relationships
+CREATE (user:User {id: 'u1'})
+CREATE (order:Order {id: 'o1'})
+CREATE (p1:Product {id: 'p1'})
+CREATE (p2:Product {id: 'p2'})
+CREATE (p3:Product {id: 'p3'})
+CREATE (user)-[:PLACED]->(order)
+CREATE (order)-[:CONTAINS]->(p1)
+CREATE (order)-[:CONTAINS]->(p2)
+CREATE (order)-[:CONTAINS]->(p3)
+```
+
+Relationships make queries simpler and enable graph traversal.
+
+**Use Appropriate Labels**: Labels categorize nodes for efficient filtering:
+
+```gql
+-- Good: Specific labels
+CREATE (:Admin {name: 'Alice'})
+CREATE (:Customer {name: 'Bob'})
+
+-- Better: Multiple labels for inheritance
+CREATE (:User:Admin {name: 'Alice'})
+CREATE (:User:Customer {name: 'Bob'})
+
+-- Query specific type
+MATCH (admin:Admin) RETURN admin.name
+
+-- Query all users
+MATCH (user:User) RETURN user.name
+```
+
+**Model Time-Series Data Appropriately**: For timestamped events, consider bucketing:
+
+```gql
+-- Create time buckets
+CREATE (:TimeBucket {date: '2026-01-24'})
+       -[:CONTAINS]->(:Event {timestamp: '2026-01-24T10:30:00Z'})
+
+-- Query recent events efficiently
+MATCH (bucket:TimeBucket)-[:CONTAINS]->(event:Event)
+WHERE bucket.date >= '2026-01-20'
+  AND event.timestamp > '2026-01-23T00:00:00Z'
+RETURN event
+```
+
+Bucketing prevents unlimited graph expansion and improves query performance.
+
+### Security Basics for Production
+
+Secure your Geode deployment from the start:
+
+**Enable TLS**: Always use encryption for client-server communication:
+
+```bash
+# Generate self-signed certificate for testing
+openssl req -x509 -newkey rsa:4096 -keyout key.pem -out cert.pem -days 365 -nodes
+
+# Start server with TLS
+geode serve --tls-cert cert.pem --tls-key key.pem
+```
+
+**Use Authentication**: Require credentials for database access:
+
+```gql
+-- Create users with limited privileges
+CREATE USER analyst PASSWORD 'secure_password_here';
+GRANT SELECT ON GRAPH analytics TO analyst;
+
+-- Create admin user
+CREATE USER admin PASSWORD 'very_secure_password';
+GRANT ALL ON GRAPH * TO admin;
+```
+
+**Implement Row-Level Security**: Restrict data access by user:
+
+```gql
+-- Multi-tenant data isolation
+CREATE POLICY tenant_isolation ON :Document
+FOR ALL
+TO analyst
+USING (tenant_id = current_user_property('tenant_id'));
+```
+
+**Enable Audit Logging**: Track all database operations:
+
+```yaml
+# geode.yaml
+audit:
+  enabled: true
+  log_queries: true
+  log_auth_events: true
+  output: /var/log/geode/audit.log
+```
+
+### Common Mistakes to Avoid
+
+**Unbounded Pattern Matching**: Always limit variable-length paths:
+
+```gql
+-- Dangerous: Could traverse entire graph
+MATCH path = (a:Person)-[:KNOWS*]->(b:Person)
+RETURN path
+
+-- Safe: Bounded depth
+MATCH path = (a:Person)-[:KNOWS*1..5]->(b:Person)
+RETURN path
+```
+
+**N+1 Query Pattern**: Fetch related data in single query:
+
+```python
+# Bad: N+1 queries
+users = await client.execute("MATCH (u:User) RETURN u")
+async for user in users:
+    # Separate query for each user's orders
+    orders = await client.execute(
+        "MATCH (:User {id: $id})-[:PLACED]->(o:Order) RETURN o",
+        id=user['u']['id']
+    )
+
+# Good: Single query
+result = await client.execute("""
+    MATCH (u:User)-[:PLACED]->(o:Order)
+    RETURN u.id, COLLECT(o) AS orders
+""")
+```
+
+**Forgetting to Parameterize**: Always use parameters to prevent injection:
+
+```python
+# Dangerous: SQL injection equivalent
+user_email = request.form['email']
+query = f"MATCH (u:User {{email: '{user_email}'}}) RETURN u"  # DON'T!
+
+# Safe: Parameterized
+result = await client.execute(
+    "MATCH (u:User {email: $email}) RETURN u",
+    email=request.form['email']
+)
+```
+
+### Scaling from Development to Production
+
+**Development** (single instance):
+```bash
+geode serve --data /tmp/geode-dev
+```
+
+**Staging** (HA setup):
+```yaml
+# docker-compose.yml
+services:
+  geode-1:
+    image: codepros/geode:v0.18.0
+    volumes:
+      - geode-data-1:/var/lib/geode
+
+  geode-2:
+    image: codepros/geode:v0.18.0
+    volumes:
+      - geode-data-2:/var/lib/geode
+
+  geode-3:
+    image: codepros/geode:v0.18.0
+    volumes:
+      - geode-data-3:/var/lib/geode
+```
+
+**Production** (cloud-native):
+- Deploy to Kubernetes with StatefulSets
+- Configure persistent volumes for data
+- Set up automated backups to S3/GCS
+- Enable monitoring with Prometheus
+- Configure auto-scaling based on load
+- Implement disaster recovery procedures
+
+### Learning Path Recommendations
+
+**Week 1**: Master basic CRUD operations, understand nodes and relationships, practice pattern matching
+
+**Week 2**: Learn transactions, implement error handling, understand connection pooling
+
+**Week 3**: Optimize with indexes, profile queries, model your domain effectively
+
+**Week 4**: Implement security features, set up monitoring, configure backups
+
+**Month 2**: Advanced patterns (aggregations, path finding, recommendations), performance tuning, high availability
+
+**Month 3**: Production deployment, disaster recovery, compliance requirements
+
+## Beyond Getting Started
+
+You now understand Geode fundamentals. Continue your journey:
+
+- **[Advanced Queries](/tags/advanced-queries/)**: Complex pattern matching and optimization
+- **[Performance Tuning](/tags/performance/)**: Maximize throughput and minimize latency  
+- **[Security](/tags/security/)**: Enterprise security features
+- **[Production Deployment](/tags/deployment/)**: High availability architectures
+- **[Monitoring](/tags/monitoring/)**: Observability and alerting
+
+Welcome to the Geode community. Happy graph building!

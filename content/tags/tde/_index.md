@@ -427,21 +427,362 @@ RETURN encrypt_ops_per_sec, decrypt_ops_per_sec, avg_latency_ms;
 - **Cause**: Insufficient KMS permissions
 - **Solution**: Grant required KMS permissions (GenerateDataKey, Decrypt)
 
+## TDE Implementation Patterns
+
+### Multi-Tenant Key Isolation
+
+Isolate tenant data with separate encryption keys:
+
+```yaml
+# geode.yaml
+security:
+  encryption:
+    enabled: true
+    per_tenant_keys: true
+    tenant_key_mapping:
+      tenant-123:
+        kms_key_id: arn:aws:kms:us-east-1:111:key/tenant-123-key
+      tenant-456:
+        kms_key_id: arn:aws:kms:us-east-1:111:key/tenant-456-key
+```
+
+Query with tenant context:
+
+```gql
+-- Set tenant context for session
+SET SESSION tenant_id = 'tenant-123';
+
+-- Geode automatically uses tenant-123's DEK for decryption
+MATCH (d:Document) WHERE d.category = 'financial'
+RETURN d.title, d.content;
+```
+
+Each tenant's data is encrypted with their unique key, preventing cross-tenant data access even if database is compromised.
+
+### Tablespace-Level Encryption
+
+Encrypt different tablespaces with different keys:
+
+```gql
+-- Create encrypted tablespace for sensitive data
+CREATE TABLESPACE sensitive_data
+LOCATION '/var/lib/geode/tablespaces/sensitive'
+WITH (encryption = 'aes-256-gcm', kms_key_id = 'high-security-key');
+
+-- Create encrypted tablespace for regular data
+CREATE TABLESPACE regular_data
+LOCATION '/var/lib/geode/tablespaces/regular'
+WITH (encryption = 'aes-256-gcm', kms_key_id = 'standard-security-key');
+
+-- Assign graphs to tablespaces
+CREATE GRAPH financial_data TABLESPACE sensitive_data;
+CREATE GRAPH analytics_data TABLESPACE regular_data;
+```
+
+Benefits: Different security levels, independent key rotation, compliance segmentation.
+
+### Key Rotation Without Downtime
+
+Rotate encryption keys while database remains online:
+
+```bash
+# Initiate key rotation
+geode admin rotate-tde-key \
+    --old-key-id arn:aws:kms:us-east-1:123:key/old-key \
+    --new-key-id arn:aws:kms:us-east-1:123:key/new-key \
+    --rotation-mode online
+
+# Monitor rotation progress
+geode admin show-key-rotation-status
+# Output:
+# Rotation ID: rot-20260124-001
+# Status: In Progress
+# Progress: 1,234,567 / 5,000,000 pages (24.7%)
+# Estimated completion: 2026-01-24 18:30:00
+# Old DEKs re-encrypted: 45 / 100
+# New DEKs created: 45
+```
+
+Online rotation process:
+1. New DEKs created with new MEK
+2. Background process re-encrypts old DEKs with new MEK
+3. Newly written data uses new DEKs
+4. Old data gradually re-encrypted during maintenance windows
+5. Rollback possible until 100% complete
+
+### Hardware Security Module (HSM) Integration
+
+Use hardware-backed key storage for maximum security:
+
+```yaml
+# geode.yaml with PKCS#11 HSM
+security:
+  encryption:
+    enabled: true
+    algorithm: aes-256-gcm
+
+    kms:
+      provider: pkcs11
+      library_path: /usr/lib/softhsm/libsofthsm2.so
+      slot_id: 0
+      pin_file: /secure/hsm_pin
+      key_label: geode-master-encryption-key
+
+      # HSM-specific settings
+      use_hsm_crypto: true  # Use HSM for encrypt/decrypt operations
+      cache_deks_in_hsm: true  # Store DEKs in HSM memory
+```
+
+Initialize HSM key:
+
+```bash
+# Initialize HSM slot
+softhsm2-util --init-token --slot 0 --label "geode-hsm"
+
+# Generate master key in HSM
+pkcs11-tool --module /usr/lib/softhsm/libsofthsm2.so \
+    --login --keypairgen --key-type AES:32 \
+    --label geode-master-encryption-key
+```
+
+### Encryption Performance Optimization
+
+Optimize TDE for your hardware:
+
+```yaml
+# geode.yaml performance tuning
+security:
+  encryption:
+    enabled: true
+    algorithm: aes-256-gcm
+
+    # Performance optimizations
+    use_aes_ni: true  # Use hardware AES acceleration
+    cache_deks: true
+    dek_cache_size_mb: 512  # Large cache for many tablespaces
+    dek_cache_ttl_seconds: 3600
+
+    # Parallelization
+    encrypt_threads: 8  # Parallel encryption for writes
+    decrypt_threads: 16  # Parallel decryption for reads
+
+    # Batching
+    encryption_batch_size: 128  # Pages to encrypt in batch
+```
+
+Benchmark configuration:
+
+```bash
+# Test read performance with TDE
+geode benchmark read \
+    --queries=1000000 \
+    --threads=32 \
+    --with-tde \
+    --output=tde-read-results.json
+
+# Test write performance
+geode benchmark write \
+    --inserts=1000000 \
+    --threads=32 \
+    --with-tde \
+    --output=tde-write-results.json
+
+# Compare with non-encrypted baseline
+geode benchmark read --queries=1000000 --threads=32 --without-tde
+```
+
+Typical results with AES-NI:
+- Read overhead: 2-4%
+- Write overhead: 4-8%
+- CPU increase: 10-15%
+
+### Compliance Audit Trail
+
+Generate TDE compliance reports:
+
+```gql
+-- Verify encryption status
+CALL dbms.security.encryption.audit()
+YIELD
+    tablespace,
+    encrypted,
+    algorithm,
+    key_id,
+    key_created_at,
+    last_rotation,
+    pages_encrypted,
+    pages_total,
+    encryption_percentage
+RETURN
+    tablespace,
+    encrypted,
+    encryption_percentage,
+    last_rotation
+ORDER BY tablespace;
+
+-- List all encryption keys
+CALL dbms.security.encryption.listKeys()
+YIELD key_id, algorithm, created_at, status, usage_count
+RETURN key_id, algorithm, created_at, status, usage_count
+ORDER BY created_at DESC;
+
+-- Check key access logs
+SELECT
+    timestamp,
+    key_id,
+    operation,  -- encrypt, decrypt, rotate
+    user_id,
+    success,
+    error_message
+FROM system.tde_audit
+WHERE timestamp > current_timestamp() - INTERVAL '7 days'
+ORDER BY timestamp DESC;
+```
+
+Export for compliance reporting:
+
+```python
+def generate_tde_compliance_report():
+    """Generate quarterly TDE compliance report"""
+    report = {
+        'period': f"Q{datetime.now().quarter} {datetime.now().year}",
+        'encryption_status': {},
+        'key_management': {},
+        'access_audit': {}
+    }
+
+    # Verify all data encrypted
+    result = db.execute("""
+        CALL dbms.security.encryption.audit()
+        YIELD tablespace, encrypted, encryption_percentage
+        RETURN tablespace, encrypted, encryption_percentage
+    """)
+
+    report['encryption_status'] = {
+        row['tablespace']: {
+            'encrypted': row['encrypted'],
+            'percentage': row['encryption_percentage']
+        }
+        for row in result
+    }
+
+    # Verify key rotation compliance
+    result = db.execute("""
+        CALL dbms.security.encryption.listKeys()
+        YIELD key_id, created_at, last_rotation
+        RETURN key_id, created_at, last_rotation
+    """)
+
+    for row in result:
+        days_since_rotation = (datetime.now() - row['last_rotation']).days
+        report['key_management'][row['key_id']] = {
+            'age_days': days_since_rotation,
+            'compliant': days_since_rotation < 365  # Annual rotation required
+        }
+
+    return report
+```
+
+### Crypto-Shredding for Data Deletion
+
+Implement cryptographic erasure for secure data deletion:
+
+```gql
+-- Delete data cryptographically by destroying its DEK
+CALL dbms.security.cryptoShred('tablespace_archived_2023')
+YIELD
+    tablespace,
+    dek_id,
+    dek_destroyed,
+    data_rendered_unrecoverable,
+    timestamp
+RETURN *;
+```
+
+Crypto-shredding is faster than deleting billions of records and provides mathematical certainty that data is unrecoverable. Essential for GDPR "right to be forgotten" compliance.
+
+### TDE Disaster Recovery
+
+Backup encryption keys securely:
+
+```bash
+# Export MEK reference (NOT the key itself)
+geode admin export-tde-config \
+    --output=/backups/tde-config.json
+
+# Backup should contain:
+# - KMS key ARN/ID
+# - Algorithm configuration
+# - DEK metadata
+# NOT the actual encryption keys!
+
+# Keys remain in KMS - disaster recovery restores access, not keys themselves
+```
+
+Recover TDE-encrypted database:
+
+```bash
+# Step 1: Restore database from backup
+geode restore --backup=/backups/geode-full-20260124.tar.gz
+
+# Step 2: Configure KMS access
+geode admin configure-tde \
+    --kms-provider aws-kms \
+    --kms-key-id arn:aws:kms:us-east-1:123:key/abc-def
+
+# Step 3: Verify key access
+geode admin test-tde-access
+
+# Step 4: Start database (auto-loads DEKs from KMS)
+geode serve --data /var/lib/geode
+```
+
+## TDE Monitoring and Alerting
+
+Set up monitoring for encryption health:
+
+```yaml
+# prometheus_rules.yml
+groups:
+  - name: geode_tde
+    rules:
+      - alert: TDEKeyUnavailable
+        expr: geode_tde_key_access_failures > 0
+        for: 5m
+        annotations:
+          summary: "TDE encryption key unavailable"
+
+      - alert: TDEPerformanceDegradation
+        expr: rate(geode_tde_decrypt_duration_seconds[5m]) > 0.01
+        for: 10m
+        annotations:
+          summary: "TDE decryption taking longer than expected"
+
+      - alert: TDEKeyRotationOverdue
+        expr: geode_tde_key_age_days > 365
+        annotations:
+          summary: "TDE key rotation overdue (>365 days)"
+```
+
 ## Related Topics
 
-- [Field-Level Encryption (FLE)](/tags/fle/) - Encrypt specific sensitive fields
-- [Security](/tags/security/) - Overall security features
-- [Encryption](/tags/encryption/) - Encryption capabilities
-- [Compliance](/tags/compliance/) - Regulatory compliance
-- [Authentication](/tags/authentication/) - Access control
-- [Audit Logging](/tags/audit-logging/) - Security audit trails
+- **[Field-Level Encryption (FLE)](/tags/fle/)**: Encrypt specific sensitive fields
+- **[Security](/tags/security/)**: Overall security features
+- **[Encryption](/tags/encryption/)**: Encryption capabilities
+- **[Compliance](/tags/compliance/)**: Regulatory compliance
+- **[Authentication](/tags/authentication/)**: Access control
+- **[Audit Logging](/tags/audit-logging/)**: Security audit trails
+- **[Key Management](/tags/key-management/)**: KMS integration
+- **[Backup](/tags/backup/)**: Encrypted backup strategies
 
 ## Further Reading
 
-- [Security Guide](/docs/security/) - Complete security documentation
-- [Encryption Best Practices](/docs/encryption-best-practices/) - Detailed recommendations
-- [Key Management](/docs/key-management/) - KMS integration guide
-- [Compliance](/docs/compliance/) - Regulatory compliance guides
-- [Performance Tuning](/docs/performance-tuning/) - TDE performance optimization
+- **[Security Guide](/docs/security/)**: Complete security documentation
+- **[Encryption Best Practices](/docs/encryption-best-practices/)**: Detailed recommendations
+- **[Key Management](/docs/key-management/)**: KMS integration guide
+- **[Compliance](/docs/compliance/)**: Regulatory compliance guides
+- **[Performance Tuning](/docs/performance-tuning/)**: TDE performance optimization
+- **[HSM Integration](/docs/security/hsm-integration/)**: Hardware security module setup
+- **[Disaster Recovery](/docs/operations/disaster-recovery/)**: TDE-encrypted backup recovery
 
 Geode's Transparent Data Encryption provides enterprise-grade protection for data at rest with minimal performance overhead and zero application changes—essential for regulated industries and security-conscious deployments.

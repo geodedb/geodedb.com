@@ -383,18 +383,284 @@ geode restore --backup=/backups/geode-full.tar.gz \
   --migrate-schema=true
 ```
 
+## Advanced Backup Patterns
+
+### Application-Consistent Backups
+
+Ensure application consistency during backups by coordinating with application state:
+
+```python
+# application_consistent_backup.py
+async def create_application_consistent_backup():
+    # Step 1: Quiesce application writes
+    await app.pause_writes()
+
+    # Step 2: Flush pending transactions
+    async with geode_client.transaction() as tx:
+        await tx.execute("CALL dbms.checkpoint()")
+
+    # Step 3: Create backup
+    subprocess.run([
+        'geode', 'backup', 'create',
+        '--type=full',
+        '--output=/backups/app-consistent.tar.gz'
+    ], check=True)
+
+    # Step 4: Resume application writes
+    await app.resume_writes()
+```
+
+### Backup Cataloging
+
+Maintain backup metadata for efficient management:
+
+```sql
+-- backup_catalog schema
+CREATE TABLE backup_catalog (
+    backup_id SERIAL PRIMARY KEY,
+    backup_type VARCHAR(20),  -- full, incremental, differential
+    backup_path TEXT,
+    created_at TIMESTAMP,
+    size_bytes BIGINT,
+    compressed_size_bytes BIGINT,
+    checksum VARCHAR(64),
+    encryption_enabled BOOLEAN,
+    retention_until TIMESTAMP,
+    parent_backup_id INTEGER REFERENCES backup_catalog(backup_id),
+    status VARCHAR(20),  -- completed, failed, in_progress
+    metadata JSONB
+);
+```
+
+Track backups programmatically:
+
+```python
+def register_backup(backup_path, backup_type):
+    size = os.path.getsize(backup_path)
+    checksum = calculate_sha256(backup_path)
+
+    cursor.execute("""
+        INSERT INTO backup_catalog
+        (backup_type, backup_path, created_at, size_bytes, checksum, status)
+        VALUES (%s, %s, NOW(), %s, %s, 'completed')
+        RETURNING backup_id
+    """, (backup_type, backup_path, size, checksum))
+
+    return cursor.fetchone()[0]
+```
+
+### Backup Compliance Reporting
+
+Generate compliance reports for auditors:
+
+```python
+def generate_backup_compliance_report():
+    """Generate monthly backup compliance report"""
+    report = {
+        'period': datetime.now().strftime('%Y-%m'),
+        'metrics': {}
+    }
+
+    # Daily backup success rate
+    cursor.execute("""
+        SELECT
+            DATE(created_at) as backup_date,
+            COUNT(*) FILTER (WHERE status = 'completed') as successful,
+            COUNT(*) FILTER (WHERE status = 'failed') as failed
+        FROM backup_catalog
+        WHERE created_at > NOW() - INTERVAL '30 days'
+        GROUP BY DATE(created_at)
+        ORDER BY backup_date
+    """)
+
+    report['daily_backups'] = cursor.fetchall()
+
+    # Verify backups exist for all required days
+    cursor.execute("""
+        SELECT COUNT(DISTINCT DATE(created_at))
+        FROM backup_catalog
+        WHERE created_at > NOW() - INTERVAL '30 days'
+          AND status = 'completed'
+    """)
+
+    days_with_backups = cursor.fetchone()[0]
+    report['metrics']['backup_coverage'] = f"{days_with_backups}/30 days"
+
+    # Average backup size and duration
+    cursor.execute("""
+        SELECT
+            AVG(size_bytes) as avg_size,
+            AVG(EXTRACT(EPOCH FROM (completed_at - started_at))) as avg_duration
+        FROM backup_catalog
+        WHERE created_at > NOW() - INTERVAL '30 days'
+    """)
+
+    stats = cursor.fetchone()
+    report['metrics']['avg_backup_size_gb'] = f"{stats[0] / 1e9:.2f}"
+    report['metrics']['avg_duration_minutes'] = f"{stats[1] / 60:.1f}"
+
+    return report
+```
+
+### Incremental Forever Strategy
+
+Implement "incremental forever" backup approach:
+
+```bash
+#!/bin/bash
+# incremental_forever.sh
+
+BACKUP_DIR=/backups/incremental-forever
+
+# Create synthetic full backup weekly by merging incrementals
+if [ $(date +%u) -eq 7 ]; then
+    echo "Creating synthetic full backup..."
+
+    # Get all incrementals from past week
+    INCREMENTALS=$(find $BACKUP_DIR -name "incr-*.tar.gz" -mtime -7 | sort)
+
+    # Merge into synthetic full
+    geode backup merge \
+        --incrementals $INCREMENTALS \
+        --output $BACKUP_DIR/synthetic-full-$(date +%Y%m%d).tar.gz
+
+    # Delete old incrementals
+    find $BACKUP_DIR -name "incr-*.tar.gz" -mtime +7 -delete
+fi
+
+# Always create incremental
+geode backup create --type=incremental \
+    --base=$BACKUP_DIR/synthetic-full-latest.tar.gz \
+    --output=$BACKUP_DIR/incr-$(date +%Y%m%d-%H%M%S).tar.gz
+```
+
+Benefits: Reduces backup window, optimizes storage, simplifies retention management.
+
+## Disaster Recovery Scenarios
+
+### Complete Data Center Loss
+
+Recover from total data center failure:
+
+```bash
+#!/bin/bash
+# disaster_recovery_full.sh
+
+DR_REGION="us-west-2"
+PRIMARY_REGION="us-east-1"
+
+echo "Initiating disaster recovery for complete DC loss..."
+
+# 1. Provision infrastructure in DR region
+cd terraform/dr-region
+terraform apply -auto-approve -var="region=$DR_REGION"
+
+# 2. Retrieve latest backup from off-site storage
+aws s3 cp \
+    "s3://geode-backups-$PRIMARY_REGION/latest-full.tar.gz" \
+    /tmp/recovery-backup.tar.gz \
+    --region $PRIMARY_REGION
+
+# 3. Deploy Geode instances
+DR_INSTANCES=$(terraform output -json instance_ips | jq -r '.[]')
+
+# 4. Restore to all instances in parallel
+for instance in $DR_INSTANCES; do
+    (
+        scp /tmp/recovery-backup.tar.gz geode@$instance:/tmp/
+        ssh geode@$instance "geode restore --backup=/tmp/recovery-backup.tar.gz"
+    ) &
+done
+wait
+
+# 5. Verify data integrity
+geode shell --host $DR_INSTANCES[0] -c "
+    MATCH (n) RETURN COUNT(n) AS node_count;
+    MATCH ()-[r]->() RETURN COUNT(r) AS rel_count;
+"
+
+# 6. Update DNS for failover
+aws route53 change-resource-record-sets \
+    --hosted-zone-id Z123456 \
+    --change-batch file://dns-failover.json
+
+echo "DR complete. Database active in $DR_REGION"
+```
+
+### Ransomware Recovery
+
+Recover from ransomware attack:
+
+```bash
+# Detect ransomware early
+geode backup verify /backups/geode-full-20260124.tar.gz
+
+# If current data is compromised, restore to pre-attack state
+geode restore \
+    --backup=/backups/geode-full-20260122.tar.gz \
+    --recovery-target-time="2026-01-22 23:59:59" \
+    --verify-integrity=true
+
+# Apply WAL up to attack time (discard compromised transactions)
+geode recover \
+    --wal-archive=s3://wal-archive/ \
+    --recovery-target-time="2026-01-22 23:55:00" \
+    --skip-corrupted-wal=true
+```
+
+### Logical Data Corruption
+
+Recover from application bug that corrupted data:
+
+```bash
+# Identify when corruption occurred
+geode query -c "
+    SELECT MIN(modified_at) as corruption_start
+    FROM audit_log
+    WHERE data_integrity_check = false
+" > /tmp/corruption_time.txt
+
+# Restore to point before corruption
+RECOVERY_TIME=$(cat /tmp/corruption_time.txt | awk '{print $1}')
+
+geode restore \
+    --backup=/backups/closest-backup-before-corruption.tar.gz
+
+geode recover \
+    --wal-archive=/wal-archive \
+    --recovery-target-time="$RECOVERY_TIME" \
+    --recovery-target-inclusive=false
+```
+
+## Backup Best Practices Summary
+
+1. **Implement 3-2-1 rule**: 3 copies, 2 different media, 1 off-site
+2. **Test restores quarterly**: Ensure backups actually work
+3. **Monitor backup health**: Automate checks for freshness and integrity
+4. **Encrypt backups**: Protect sensitive data at rest
+5. **Document procedures**: Maintain runbooks for disaster recovery
+6. **Automate everything**: Eliminate human error
+7. **Verify after creation**: Check checksums and test-restore samples
+8. **Set retention policies**: Balance compliance needs with storage costs
+9. **Separate backup credentials**: Don't use same account as production
+10. **Practice disaster recovery**: Regular drills ensure team readiness
+
 ## Related Topics
 
-- [WAL](/tags/wal/) - Write-Ahead Logging for continuous archiving
-- [MVCC](/tags/mvcc/) - Multi-Version Concurrency Control for consistent snapshots
-- [Server Configuration](/tags/server/) - Server settings for backup operations
-- [Data Integrity](/tags/data-integrity/) - Ensuring data consistency and reliability
-- [Disaster Recovery](/tags/production/) - Production deployment and disaster planning
+- **[WAL](/tags/wal/)**: Write-Ahead Logging for continuous archiving
+- **[MVCC](/tags/mvcc/)**: Multi-Version Concurrency Control for consistent snapshots
+- **[Server Configuration](/tags/server/)**: Server settings for backup operations
+- **[Data Integrity](/tags/data-integrity/)**: Ensuring data consistency and reliability
+- **[Disaster Recovery](/tags/production/)**: Production deployment and disaster planning
+- **[High Availability](/tags/high-availability/)**: HA architectures
+- **[Monitoring](/tags/monitoring/)**: Backup monitoring and alerting
+- **[Security](/tags/security/)**: Backup encryption and access control
 
 ## Further Reading
 
-- [Backup Administration Guide](/docs/administration/backup/) - Detailed backup procedures
-- [Recovery Procedures](/docs/administration/recovery/) - Step-by-step recovery guides
-- [High Availability Architecture](/docs/deployment/high-availability/) - HA configurations
-- [Disaster Recovery Planning](/docs/operations/disaster-recovery/) - DR strategies
-- [Backup Performance Tuning](/docs/performance/backup-optimization/) - Optimization techniques
+- **[Backup Administration Guide](/docs/administration/backup/)**: Detailed backup procedures
+- **[Recovery Procedures](/docs/administration/recovery/)**: Step-by-step recovery guides
+- **[High Availability Architecture](/docs/deployment/high-availability/)**: HA configurations
+- **[Disaster Recovery Planning](/docs/operations/disaster-recovery/)**: DR strategies
+- **[Backup Performance Tuning](/docs/performance/backup-optimization/)**: Optimization techniques
+- **[Compliance Guide](/docs/compliance/backup-requirements/)**: Regulatory backup requirements
