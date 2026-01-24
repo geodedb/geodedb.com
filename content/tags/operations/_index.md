@@ -468,15 +468,467 @@ EXPOSE 3141
 CMD ["geode", "serve", "--listen", "0.0.0.0:3141"]
 ```
 
+## Advanced Operational Techniques
+
+### Health Check Automation
+
+Implement comprehensive health monitoring:
+
+```bash
+#!/bin/bash
+# health-check.sh
+
+GEODE_HOST="localhost:3141"
+ALERT_WEBHOOK="https://alerts.example.com/webhook"
+
+check_connectivity() {
+    if timeout 5 ./geode shell -c "PING" > /dev/null 2>&1; then
+        echo "PASS: Connectivity check"
+        return 0
+    else
+        echo "FAIL: Cannot connect to Geode"
+        send_alert "Geode connectivity failed"
+        return 1
+    fi
+}
+
+check_query_performance() {
+    local start=$(date +%s%N)
+    ./geode shell -c "MATCH (n) RETURN count(n) LIMIT 1" > /dev/null 2>&1
+    local end=$(date +%s%N)
+    local duration=$(( (end - start) / 1000000 ))  # Convert to ms
+
+    if [ $duration -lt 1000 ]; then
+        echo "PASS: Query performance ($duration ms)"
+        return 0
+    else
+        echo "WARN: Slow query performance ($duration ms)"
+        send_alert "Query performance degraded: ${duration}ms"
+        return 1
+    fi
+}
+
+check_disk_space() {
+    local usage=$(df -h /var/lib/geode | tail -1 | awk '{print $5}' | sed 's/%//')
+
+    if [ $usage -lt 80 ]; then
+        echo "PASS: Disk usage ${usage}%"
+        return 0
+    else
+        echo "WARN: High disk usage ${usage}%"
+        send_alert "Disk usage at ${usage}%"
+        return 1
+    fi
+}
+
+send_alert() {
+    local message=$1
+    curl -X POST "$ALERT_WEBHOOK" \
+         -H "Content-Type: application/json" \
+         -d "{\"text\": \"Geode Alert: $message\"}"
+}
+
+# Run all checks
+check_connectivity
+check_query_performance
+check_disk_space
+```
+
+### Automated Failover
+
+Implement automatic failover for high availability:
+
+```python
+# failover.py
+import asyncio
+from geode_client import GeodeClient
+
+class FailoverManager:
+    def __init__(self, primary_host, replica_hosts):
+        self.primary = primary_host
+        self.replicas = replica_hosts
+        self.current_host = primary_host
+
+    async def health_check(self, host):
+        """Check if host is healthy"""
+        try:
+            async with GeodeClient(host, timeout=5) as client:
+                await client.ping()
+                return True
+        except Exception:
+            return False
+
+    async def failover(self):
+        """Perform failover to healthy replica"""
+        # Check primary
+        if await self.health_check(self.primary):
+            self.current_host = self.primary
+            return self.primary
+
+        # Try replicas
+        for replica in self.replicas:
+            if await self.health_check(replica):
+                print(f"Failing over to {replica}")
+                self.current_host = replica
+                await self.promote_replica(replica)
+                return replica
+
+        raise Exception("No healthy Geode instances available")
+
+    async def promote_replica(self, replica):
+        """Promote replica to primary"""
+        async with GeodeClient(replica) as client:
+            await client.execute("CALL system.promote_to_primary()")
+
+    async def monitor(self):
+        """Continuously monitor and failover if needed"""
+        while True:
+            await asyncio.sleep(10)  # Check every 10 seconds
+
+            if not await self.health_check(self.current_host):
+                print(f"Current host {self.current_host} unhealthy")
+                await self.failover()
+```
+
+### Rolling Upgrades
+
+Upgrade Geode without downtime:
+
+```bash
+#!/bin/bash
+# rolling-upgrade.sh
+
+NODES=("geode-1" "geode-2" "geode-3")
+NEW_VERSION="0.19.0"
+
+for node in "${NODES[@]}"; do
+    echo "Upgrading $node..."
+
+    # Drain connections
+    ssh $node "systemctl reload geode"  # Sends SIGUSR1 to drain
+    sleep 30  # Wait for connections to drain
+
+    # Stop old version
+    ssh $node "systemctl stop geode"
+
+    # Backup data
+    ssh $node "tar czf /backup/geode-$(date +%Y%m%d).tar.gz /var/lib/geode/data"
+
+    # Install new version
+    scp geode-${NEW_VERSION}.tar.gz $node:/tmp/
+    ssh $node "cd /opt && tar xzf /tmp/geode-${NEW_VERSION}.tar.gz"
+
+    # Start new version
+    ssh $node "systemctl start geode"
+
+    # Wait for node to be healthy
+    while ! ssh $node "geode ping" > /dev/null 2>&1; do
+        echo "Waiting for $node to be ready..."
+        sleep 5
+    done
+
+    echo "$node upgraded successfully"
+    sleep 10  # Brief pause before next node
+done
+
+echo "Rolling upgrade complete"
+```
+
+### Configuration Management
+
+Use Ansible for configuration management:
+
+```yaml
+# ansible/geode-playbook.yml
+---
+- name: Configure Geode servers
+  hosts: geode_servers
+  become: yes
+
+  vars:
+    geode_version: "0.19.0"
+    geode_listen_addr: "0.0.0.0:3141"
+    geode_data_dir: "/var/lib/geode/data"
+    geode_max_connections: 1000
+
+  tasks:
+    - name: Install Geode
+      unarchive:
+        src: "geode-{{ geode_version }}.tar.gz"
+        dest: "/opt"
+        remote_src: no
+
+    - name: Create data directory
+      file:
+        path: "{{ geode_data_dir }}"
+        state: directory
+        owner: geode
+        group: geode
+        mode: '0755'
+
+    - name: Deploy configuration
+      template:
+        src: geode.conf.j2
+        dest: /etc/geode/geode.conf
+        owner: geode
+        group: geode
+        mode: '0644'
+      notify: restart geode
+
+    - name: Deploy systemd service
+      template:
+        src: geode.service.j2
+        dest: /etc/systemd/system/geode.service
+      notify:
+        - reload systemd
+        - restart geode
+
+    - name: Ensure geode is running
+      systemd:
+        name: geode
+        state: started
+        enabled: yes
+
+  handlers:
+    - name: reload systemd
+      systemd:
+        daemon_reload: yes
+
+    - name: restart geode
+      systemd:
+        name: geode
+        state: restarted
+```
+
+### Disaster Recovery Procedures
+
+Document and automate disaster recovery:
+
+```bash
+#!/bin/bash
+# disaster-recovery.sh
+
+BACKUP_DIR="/backup/geode"
+RESTORE_POINT="$1"
+
+if [ -z "$RESTORE_POINT" ]; then
+    echo "Usage: $0 <backup-date-YYYYMMDD>"
+    echo "Available backups:"
+    ls -1 $BACKUP_DIR
+    exit 1
+fi
+
+BACKUP_FILE="${BACKUP_DIR}/geode-${RESTORE_POINT}.tar.gz"
+
+if [ ! -f "$BACKUP_FILE" ]; then
+    echo "Error: Backup file not found: $BACKUP_FILE"
+    exit 1
+fi
+
+echo "WARNING: This will restore Geode to state from $RESTORE_POINT"
+echo "All current data will be lost!"
+read -p "Continue? (yes/no): " confirm
+
+if [ "$confirm" != "yes" ]; then
+    echo "Cancelled"
+    exit 0
+fi
+
+# Stop Geode
+echo "Stopping Geode..."
+systemctl stop geode
+
+# Backup current data (just in case)
+echo "Backing up current data..."
+tar czf /tmp/geode-pre-restore-$(date +%Y%m%d-%H%M%S).tar.gz /var/lib/geode/data
+
+# Restore from backup
+echo "Restoring from $BACKUP_FILE..."
+rm -rf /var/lib/geode/data
+tar xzf "$BACKUP_FILE" -C /
+
+# Start Geode
+echo "Starting Geode..."
+systemctl start geode
+
+# Wait for startup
+echo "Waiting for Geode to be ready..."
+for i in {1..30}; do
+    if geode ping > /dev/null 2>&1; then
+        echo "Geode is ready!"
+        exit 0
+    fi
+    sleep 2
+done
+
+echo "Error: Geode failed to start"
+exit 1
+```
+
+### Capacity Planning
+
+Track and forecast resource needs:
+
+```python
+# capacity-planning.py
+import pandas as pd
+import numpy as np
+from datetime import datetime, timedelta
+
+class CapacityPlanner:
+    def __init__(self, metrics_client):
+        self.metrics = metrics_client
+
+    async def analyze_growth_trends(self, days_back=90):
+        """Analyze data growth over time"""
+        # Query historical data size
+        query = f"""
+            SELECT timestamp, data_size_gb
+            FROM metrics.data_size
+            WHERE timestamp > NOW() - INTERVAL '{days_back}' DAY
+            ORDER BY timestamp
+        """
+
+        data = await self.metrics.query(query)
+        df = pd.DataFrame(data)
+
+        # Calculate growth rate
+        df['daily_growth'] = df['data_size_gb'].diff()
+        avg_growth = df['daily_growth'].mean()
+
+        # Forecast future size
+        days_ahead = 180
+        forecast = df['data_size_gb'].iloc[-1] + (avg_growth * days_ahead)
+
+        return {
+            'current_size_gb': df['data_size_gb'].iloc[-1],
+            'avg_daily_growth_gb': avg_growth,
+            'forecast_6_months_gb': forecast,
+            'trend': 'increasing' if avg_growth > 0 else 'stable'
+        }
+
+    async def recommend_resources(self):
+        """Recommend resource allocations"""
+        trends = await self.analyze_growth_trends()
+
+        # Rule of thumb: 4x data size for total memory
+        recommended_memory_gb = trends['forecast_6_months_gb'] * 4
+
+        # CPU based on query throughput
+        query_stats = await self.metrics.query("""
+            SELECT AVG(queries_per_second) as avg_qps,
+                   MAX(queries_per_second) as peak_qps
+            FROM metrics.query_stats
+            WHERE timestamp > NOW() - INTERVAL '30' DAY
+        """)
+
+        # Rough estimate: 1 core per 100 QPS
+        recommended_cores = int(query_stats[0]['peak_qps'] / 100) + 2
+
+        return {
+            'memory_gb': recommended_memory_gb,
+            'cpu_cores': recommended_cores,
+            'disk_gb': trends['forecast_6_months_gb'] * 1.5,  # 50% overhead
+            'based_on': 'historical trends and current load'
+        }
+```
+
+### Log Aggregation
+
+Centralize logging for analysis:
+
+```yaml
+# filebeat.yml - Ship logs to ELK stack
+filebeat.inputs:
+  - type: log
+    enabled: true
+    paths:
+      - /var/log/geode/*.log
+    fields:
+      service: geode
+      environment: production
+    multiline.pattern: '^\d{4}-\d{2}-\d{2}'
+    multiline.negate: true
+    multiline.match: after
+
+output.elasticsearch:
+  hosts: ["elasticsearch:9200"]
+  index: "geode-logs-%{+yyyy.MM.dd}"
+
+processors:
+  - add_host_metadata: ~
+  - add_cloud_metadata: ~
+```
+
+### Runbook Examples
+
+Create operational runbooks for common scenarios:
+
+**Runbook: High Memory Usage**
+
+```markdown
+# Runbook: High Memory Usage
+
+## Symptoms
+- Memory usage > 90%
+- OOM errors in logs
+- Slow query performance
+
+## Diagnosis
+1. Check current memory usage:
+   ```bash
+   free -h
+   ps aux --sort=-%mem | head -10
+   ```
+
+2. Check Geode-specific metrics:
+   ```gql
+   CALL system.memory_stats()
+   ```
+
+3. Identify memory-heavy queries:
+   ```bash
+   journalctl -u geode | grep "high memory"
+   ```
+
+## Resolution
+1. Clear query cache:
+   ```gql
+   CALL system.clear_cache()
+   ```
+
+2. Kill long-running queries:
+   ```gql
+   CALL system.list_queries()
+   -- Note query IDs consuming memory
+   CALL system.kill_query($query_id)
+   ```
+
+3. Restart Geode if needed:
+   ```bash
+   systemctl restart geode
+   ```
+
+4. Long-term: Increase memory or optimize queries
+
+## Prevention
+- Set query memory limits
+- Monitor memory trends
+- Optimize expensive queries
+- Add query timeouts
+```
+
 ## Related Topics
 
 Operational excellence requires understanding related areas:
 
-- **Performance Profiling** - Analyzing query execution for optimization opportunities
-- **Performance Tuning** - Adjusting configuration for optimal throughput
-- **Troubleshooting** - Systematic problem resolution techniques
-- **DevOps** - Automation and infrastructure management practices
-- **Monitoring** - Comprehensive system observability strategies
+- **[Performance Profiling](/tags/profiling/)**: Analyzing query execution for optimization opportunities
+- **[Performance Tuning](/tags/tuning/)**: Adjusting configuration for optimal throughput
+- **[Troubleshooting](/tags/troubleshooting/)**: Systematic problem resolution techniques
+- **[DevOps](/tags/devops/)**: Automation and infrastructure management practices
+- **[Monitoring](/tags/monitoring/)**: Comprehensive system observability strategies
+- **[High Availability](/tags/high-availability/)**: HA deployment patterns
+- **[Disaster Recovery](/tags/disaster-recovery/)**: Backup and recovery procedures
 
 ## Resources
 
@@ -486,5 +938,7 @@ Additional operational resources:
 - ISO/IEC 39075:2024 standard for GQL compliance requirements
 - Client library documentation for connection pool configuration
 - System administration guides for process management and security
+- Operational runbooks and playbooks
+- Capacity planning tools and calculators
 
 Effective database operations ensure Geode delivers reliable, high-performance graph database capabilities in production environments. Regular monitoring, proactive maintenance, and systematic troubleshooting maintain optimal system health and user satisfaction.

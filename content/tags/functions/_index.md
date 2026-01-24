@@ -472,13 +472,382 @@ RETURN day, count
 ORDER BY day
 ```
 
+## Graph-Specific Functions
+
+### Shortest Path Functions
+
+```gql
+-- Find shortest path between nodes
+MATCH path = SHORTEST_PATH((a:User {id: 1})-[:KNOWS*]-(b:User {id: 100}))
+RETURN path, length(path) AS hops;
+
+-- All shortest paths (multiple paths with same length)
+MATCH paths = ALL_SHORTEST_PATHS((a)-[:RELATED*]-(b))
+RETURN paths;
+
+-- Weighted shortest path
+MATCH path = SHORTEST_PATH((a)-[r:ROAD*]-(b))
+RETURN path, REDUCE(dist = 0, rel IN relationships(path) | dist + rel.distance) AS total_distance;
+```
+
+### Centrality Functions
+
+```gql
+-- PageRank centrality
+CALL graph.pagerank(nodes: [:User], relationships: [:FOLLOWS])
+YIELD node, score
+RETURN node.name, score
+ORDER BY score DESC
+LIMIT 10;
+
+-- Betweenness centrality
+CALL graph.betweenness([:User], [:KNOWS])
+YIELD node, score
+RETURN node.name, score;
+
+-- Degree centrality
+MATCH (n:User)
+RETURN n.name,
+       SIZE([(n)-[:FOLLOWS]->() | 1]) AS out_degree,
+       SIZE([()<-[:FOLLOWS]-(n) | 1]) AS in_degree,
+       SIZE([(n)-[:FOLLOWS]-() | 1]) AS total_degree;
+```
+
+### Community Detection
+
+```gql
+-- Louvain community detection
+CALL graph.louvain([:User], [:KNOWS], {iterations: 10})
+YIELD node, community
+SET node.community = community;
+
+-- Label propagation
+CALL graph.label_propagation([:User], [:FOLLOWS])
+YIELD node, community
+RETURN community, COUNT(node) AS size
+ORDER BY size DESC;
+```
+
+## Geospatial Functions
+
+### Distance Calculations
+
+```gql
+-- Haversine distance (km)
+MATCH (a:Location), (b:Location)
+RETURN a.name, b.name,
+       geospatial.distance(
+         point({latitude: a.lat, longitude: a.lon}),
+         point({latitude: b.lat, longitude: b.lon})
+       ) AS distance_km;
+
+-- Find locations within radius
+MATCH (center:Location {name: 'New York'})
+MATCH (nearby:Location)
+WHERE geospatial.distance(
+  point({latitude: center.lat, longitude: center.lon}),
+  point({latitude: nearby.lat, longitude: nearby.lon})
+) < 100  -- 100 km radius
+RETURN nearby.name, nearby.lat, nearby.lon;
+```
+
+### Bounding Box Queries
+
+```gql
+-- Find all locations in bounding box
+MATCH (loc:Location)
+WHERE loc.lat >= $min_lat AND loc.lat <= $max_lat
+  AND loc.lon >= $min_lon AND loc.lon <= $max_lon
+RETURN loc.name, loc.lat, loc.lon;
+```
+
+## JSON Functions
+
+### JSON Processing
+
+```gql
+-- Parse JSON string
+MATCH (d:Document)
+WITH d, JSON_PARSE(d.content) AS json_obj
+RETURN json_obj.title, json_obj.author;
+
+-- Extract JSON field
+MATCH (d:Document)
+RETURN JSON_EXTRACT(d.metadata, '$.tags[0]') AS first_tag;
+
+-- Build JSON object
+MATCH (u:User)
+RETURN JSON_OBJECT(
+  'name', u.name,
+  'email', u.email,
+  'age', u.age
+) AS user_json;
+
+-- Convert to JSON string
+MATCH (u:User)
+RETURN JSON_STRINGIFY(u) AS user_string;
+```
+
+### Array Functions
+
+```gql
+-- Array contains
+MATCH (u:User)
+WHERE ARRAY_CONTAINS(u.tags, 'developer')
+RETURN u;
+
+-- Array length
+MATCH (u:User)
+RETURN u.name, ARRAY_LENGTH(u.interests) AS interest_count;
+
+-- Array slice
+MATCH (u:User)
+RETURN u.name, ARRAY_SLICE(u.purchases, 0, 5) AS recent_purchases;
+
+-- Array distinct
+MATCH (u:User)
+SET u.unique_tags = ARRAY_DISTINCT(u.tags);
+```
+
+## Statistical Functions
+
+### Descriptive Statistics
+
+```gql
+-- Standard deviation
+MATCH (u:User)
+RETURN STDDEV(u.age) AS age_stddev,
+       STDDEV_POP(u.age) AS population_stddev;
+
+-- Variance
+MATCH (p:Product)
+RETURN VARIANCE(p.price) AS price_variance;
+
+-- Percentiles
+MATCH (u:User)
+RETURN PERCENTILE_CONT(u.age, 0.25) AS q1,
+       PERCENTILE_CONT(u.age, 0.50) AS median,
+       PERCENTILE_CONT(u.age, 0.75) AS q3;
+
+-- Mode (most common value)
+MATCH (u:User)
+RETURN u.country, COUNT(*) AS frequency
+ORDER BY frequency DESC
+LIMIT 1;
+```
+
+### Correlation
+
+```gql
+-- Correlation between two properties
+MATCH (u:User)
+RETURN CORR(u.age, u.purchase_count) AS age_purchase_correlation;
+```
+
+## Text Search Functions
+
+### Full-Text Search
+
+```gql
+-- Full-text search
+MATCH (p:Post)
+WHERE FULLTEXT_SEARCH(p.content, 'graph database')
+RETURN p.title, p.content;
+
+-- Fuzzy search
+MATCH (u:User)
+WHERE FUZZY_MATCH(u.name, 'Alice', 2)  -- Edit distance <= 2
+RETURN u.name;
+
+-- Soundex matching
+MATCH (u:User)
+WHERE SOUNDEX(u.last_name) = SOUNDEX('Smith')
+RETURN u.name;
+```
+
+### Text Analysis
+
+```gql
+-- Word count
+MATCH (p:Post)
+RETURN p.title, WORD_COUNT(p.content) AS words;
+
+-- Tokenization
+MATCH (t:Text)
+RETURN TOKENIZE(t.content, ' ') AS tokens;
+
+-- Stemming
+MATCH (w:Word)
+RETURN w.text, STEM(w.text) AS stemmed;
+```
+
+## Vector Functions
+
+### Vector Operations
+
+```gql
+-- Cosine similarity
+MATCH (a:Product {id: 1}), (b:Product)
+WHERE b <> a
+RETURN b.name,
+       COSINE_SIMILARITY(a.embedding, b.embedding) AS similarity
+ORDER BY similarity DESC
+LIMIT 10;
+
+-- Euclidean distance
+MATCH (a:Item), (b:Item)
+RETURN a.id, b.id,
+       EUCLIDEAN_DISTANCE(a.features, b.features) AS distance;
+
+-- Dot product
+MATCH (v:Vector)
+RETURN DOT_PRODUCT(v.vec1, v.vec2) AS dot_prod;
+
+-- Vector magnitude
+MATCH (v:Vector)
+RETURN MAGNITUDE(v.embedding) AS mag;
+```
+
+## Custom Function Development
+
+### Python UDFs
+
+```python
+# Register custom function
+await client.execute("""
+CREATE FUNCTION sentiment_score(text STRING)
+RETURNS FLOAT
+LANGUAGE PYTHON
+AS $$
+from textblob import TextBlob
+
+def sentiment_score(text):
+    blob = TextBlob(text)
+    return blob.sentiment.polarity
+$$
+""")
+
+# Use custom function
+result = await client.execute("""
+MATCH (p:Post)
+RETURN p.content,
+       sentiment_score(p.content) AS sentiment
+ORDER BY sentiment DESC
+""")
+```
+
+### JavaScript UDFs
+
+```gql
+-- Create JavaScript function
+CREATE FUNCTION calculate_discount(price FLOAT, customer_tier STRING)
+RETURNS FLOAT
+LANGUAGE JAVASCRIPT
+AS $$
+function calculate_discount(price, tier) {
+    const discounts = {
+        'gold': 0.20,
+        'silver': 0.10,
+        'bronze': 0.05
+    };
+    return price * (1 - (discounts[tier] || 0));
+}
+$$;
+
+-- Use function
+MATCH (p:Product)
+RETURN p.name,
+       p.price,
+       calculate_discount(p.price, 'gold') AS discounted_price;
+```
+
+## Performance Tips for Functions
+
+### Indexed Function Results
+
+```gql
+-- Create index on function result
+CREATE INDEX user_name_upper ON User(UPPER(name));
+
+-- Efficient case-insensitive search
+MATCH (u:User)
+WHERE UPPER(u.name) = UPPER($search_name)
+RETURN u;
+```
+
+### Materialized Function Results
+
+```gql
+-- Pre-compute expensive functions
+MATCH (u:User)
+SET u.full_name_normalized = UPPER(TRIM(CONCAT(u.first_name, ' ', u.last_name)));
+
+-- Later queries are fast
+MATCH (u:User {full_name_normalized: 'ALICE SMITH'})
+RETURN u;
+```
+
+### Avoid Repeated Function Calls
+
+```gql
+-- Inefficient: LENGTH called twice
+MATCH (p:Product)
+WHERE LENGTH(p.description) > 100 AND LENGTH(p.description) < 500
+RETURN p;
+
+-- Efficient: Compute once with WITH
+MATCH (p:Product)
+WITH p, LENGTH(p.description) AS desc_len
+WHERE desc_len > 100 AND desc_len < 500
+RETURN p;
+```
+
+## Function Reference Summary
+
+### Aggregation
+- COUNT, SUM, AVG, MIN, MAX, COLLECT, STRING_AGG
+- STDDEV, VARIANCE, PERCENTILE_CONT
+
+### String
+- UPPER, LOWER, LENGTH, SUBSTRING, TRIM, CONCAT, REPLACE, SPLIT
+- FULLTEXT_SEARCH, FUZZY_MATCH, SOUNDEX
+
+### Math
+- ABS, CEIL, FLOOR, ROUND, SIGN, POWER, SQRT, EXP, LOG
+- SIN, COS, TAN, RAND
+
+### Temporal
+- CURRENT_DATE, CURRENT_TIME, CURRENT_TIMESTAMP, NOW
+- DATE, DATETIME, DURATION, DATE_TRUNC
+
+### List
+- SIZE, HEAD, LAST, TAIL, REVERSE, RANGE, REDUCE
+
+### Type Conversion
+- TOSTRING, TOINTEGER, TOFLOAT, TOBOOLEAN
+
+### Conditional
+- COALESCE, CASE, NULLIF
+
+### Graph
+- SHORTEST_PATH, ALL_SHORTEST_PATHS, NODES, RELATIONSHIPS
+- PageRank, Betweenness, Louvain
+
+### Geospatial
+- geospatial.distance, point
+
+### Vector
+- COSINE_SIMILARITY, EUCLIDEAN_DISTANCE, DOT_PRODUCT
+
 ## Related Topics
 
-- **GQL Operators**: Operators work alongside functions in expressions
-- **Data Types**: Understand type compatibility for function arguments
-- **Query Optimization**: Optimize function usage for performance
-- **Aggregation**: Deep dive into aggregation patterns
-- **GQL Reference**: Complete function documentation
+- **[GQL Operators](/tags/operators/)**: Operators work alongside functions in expressions
+- **[Data Types](/tags/types/)**: Understand type compatibility for function arguments
+- **[Query Optimization](/tags/optimization/)**: Optimize function usage for performance
+- **[Aggregation](/tags/aggregation/)**: Deep dive into aggregation patterns
+- **[GQL Reference](/tags/gql-reference/)**: Complete function documentation
+- **[User-Defined Functions](/tags/udf/)**: Creating custom functions
+- **[Graph Algorithms](/tags/graph-algorithms/)**: Algorithm implementations
 
 ## Further Reading
 
@@ -487,5 +856,7 @@ ORDER BY day
 - [Query Performance](/tags/performance/) - Optimize function calls
 - [Aggregation Patterns](/tags/aggregation/) - Advanced aggregation techniques
 - [GQL Reference](/tags/gql-reference/) - Complete language documentation
+- Function Performance Guide - Optimization strategies
+- Custom Function Development - UDF best practices
 
 Master Geode's built-in functions to write expressive, powerful queries that transform and analyze your graph data efficiently.

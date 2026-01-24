@@ -407,10 +407,406 @@ Start with slow queries, profile them, add indexes strategically, and measure im
 
 Implement a complete security model with authentication, role-based access, and row-level security for a multi-tenant application.
 
+## Challenge Solutions and Hints
+
+### Shortest Path Challenge Solution
+
+```gql
+-- Find degrees of separation between any two users
+MATCH path = SHORTEST_PATH((a:User {name: 'Alice'})-[:KNOWS*]-(b:User {name: 'Eve'}))
+RETURN length(path) AS degrees_of_separation,
+       [node IN nodes(path) | node.name] AS path_names;
+
+-- Find all paths within certain degree
+MATCH path = (a:User {name: 'Alice'})-[:KNOWS*1..3]-(b:User)
+WHERE a <> b
+RETURN b.name, length(path) AS degree
+ORDER BY degree, b.name;
+```
+
+### Influence Scoring Challenge Solution
+
+```gql
+-- Calculate PageRank-style influence
+WITH collect(DISTINCT n) AS all_users
+UNWIND all_users AS user
+MATCH (user:User)
+OPTIONAL MATCH (user)-[:KNOWS]->(friend:User)
+WITH user,
+     COUNT(friend) AS direct_influence,
+     COLLECT(friend) AS friends
+UNWIND friends AS friend
+OPTIONAL MATCH (friend)-[:KNOWS]->(fof:User)
+WITH user, direct_influence,
+     AVG(COUNT(fof)) AS avg_friend_influence
+RETURN user.name,
+       direct_influence,
+       avg_friend_influence,
+       direct_influence + (avg_friend_influence * 0.5) AS total_influence
+ORDER BY total_influence DESC;
+```
+
+### Real-Time Feed Challenge Solution
+
+```gql
+-- Latest posts from friends with pagination
+MATCH (current:User {id: $user_id})-[:FOLLOWS]->(friend:User)-[:POSTED]->(post:Post)
+RETURN friend.name,
+       post.content,
+       post.timestamp,
+       post.likes_count
+ORDER BY post.timestamp DESC
+SKIP $offset
+LIMIT $page_size;
+
+-- With comment count
+MATCH (current:User {id: $user_id})-[:FOLLOWS]->(friend:User)-[:POSTED]->(post:Post)
+OPTIONAL MATCH (post)<-[:COMMENTED]-(comment:Comment)
+WITH friend, post, COUNT(comment) AS comment_count
+RETURN friend.name,
+       post.content,
+       post.timestamp,
+       post.likes_count,
+       comment_count
+ORDER BY post.timestamp DESC
+SKIP $offset
+LIMIT $page_size;
+```
+
+### Fraud Detection Challenge Solution
+
+```gql
+-- Detect circular payment patterns
+MATCH path = (a:Account)-[:PAYMENT*3..5]->(a)
+WHERE ALL(r IN relationships(path) WHERE r.amount > 1000)
+  AND ALL(n IN nodes(path) WHERE SIZE([(n)-[:PAYMENT]->() | 1]) > 5)
+RETURN path,
+       [r IN relationships(path) | r.amount] AS amounts,
+       REDUCE(total = 0, r IN relationships(path) | total + r.amount) AS total_amount;
+
+-- Velocity check: Too many transactions in short time
+MATCH (a:Account)-[t:PAYMENT]->()
+WHERE t.timestamp > CURRENT_TIMESTAMP - INTERVAL '1' HOUR
+WITH a, COUNT(t) AS tx_count, SUM(t.amount) AS total_amount
+WHERE tx_count > 10 OR total_amount > 50000
+RETURN a.id, tx_count, total_amount
+ORDER BY tx_count DESC;
+
+-- Unusual pattern: Receive then immediately send similar amount
+MATCH (a:Account)<-[r1:PAYMENT]-(sender)
+WHERE r1.timestamp > CURRENT_TIMESTAMP - INTERVAL '24' HOUR
+MATCH (a)-[r2:PAYMENT]->(recipient)
+WHERE r2.timestamp > r1.timestamp
+  AND r2.timestamp < r1.timestamp + INTERVAL '1' HOUR
+  AND ABS(r2.amount - r1.amount) < r1.amount * 0.05  -- Within 5%
+RETURN a.id,
+       sender.id,
+       recipient.id,
+       r1.amount,
+       r2.amount,
+       DURATION.BETWEEN(r1.timestamp, r2.timestamp).minutes AS minutes_between;
+```
+
+## Advanced Hands-On Projects
+
+### Project 1: Build a Recommendation System
+
+**Objective**: Create a complete recommendation engine with multiple algorithms.
+
+**Requirements**:
+1. Collaborative filtering based on user similarity
+2. Content-based recommendations using product attributes
+3. Hybrid approach combining both
+4. A/B testing framework to compare algorithms
+5. Real-time recommendation serving
+
+**Starter Code**:
+
+```python
+class RecommendationEngine:
+    def __init__(self, client):
+        self.client = client
+
+    async def collaborative_filtering(self, user_id, limit=10):
+        """Find products liked by similar users"""
+        return await self.client.execute("""
+            // TODO: Implement collaborative filtering
+            // 1. Find users who bought similar products
+            // 2. Find products those users also bought
+            // 3. Rank by similarity score
+        """, {"user_id": user_id, "limit": limit})
+
+    async def content_based(self, user_id, limit=10):
+        """Recommend based on product attributes"""
+        return await self.client.execute("""
+            // TODO: Implement content-based filtering
+            // 1. Find products user has liked
+            // 2. Find similar products by attributes
+            // 3. Rank by attribute similarity
+        """, {"user_id": user_id, "limit": limit})
+
+    async def hybrid(self, user_id, limit=10):
+        """Combine both approaches"""
+        collab = await self.collaborative_filtering(user_id, limit * 2)
+        content = await self.content_based(user_id, limit * 2)
+
+        # TODO: Implement ranking combination
+        pass
+```
+
+### Project 2: Social Network Analytics Dashboard
+
+**Objective**: Build analytics dashboard for social network insights.
+
+**Features**:
+1. User growth metrics (daily/weekly/monthly active users)
+2. Engagement metrics (posts, likes, comments per user)
+3. Network topology analysis (clusters, influencers)
+4. Content virality tracking
+5. Retention cohort analysis
+
+**Queries to Implement**:
+
+```gql
+-- Daily active users
+MATCH (u:User)-[:ACTION]->(a)
+WHERE a.timestamp >= DATE_TRUNC('day', CURRENT_TIMESTAMP)
+RETURN DATE(a.timestamp) AS date,
+       COUNT(DISTINCT u) AS daily_active_users;
+
+-- Top influencers by engagement
+MATCH (u:User)-[:POSTED]->(p:Post)
+OPTIONAL MATCH (p)<-[:LIKED]-(liker)
+OPTIONAL MATCH (p)<-[:COMMENTED]-(commenter)
+WITH u,
+     COUNT(DISTINCT p) AS post_count,
+     COUNT(DISTINCT liker) AS total_likes,
+     COUNT(DISTINCT commenter) AS total_comments
+RETURN u.name,
+       post_count,
+       total_likes,
+       total_comments,
+       (total_likes + total_comments * 2) AS engagement_score
+ORDER BY engagement_score DESC
+LIMIT 100;
+
+-- Content virality (posts shared most)
+MATCH (p:Post)<-[:SHARED]-(sharer:User)
+WITH p, COUNT(sharer) AS share_count
+WHERE share_count > 5
+MATCH (original_poster:User)-[:POSTED]->(p)
+RETURN original_poster.name,
+       p.content,
+       p.timestamp,
+       share_count,
+       DURATION.BETWEEN(p.timestamp, CURRENT_TIMESTAMP).hours AS hours_since_posted,
+       share_count * 1.0 / DURATION.BETWEEN(p.timestamp, CURRENT_TIMESTAMP).hours AS virality_rate
+ORDER BY virality_rate DESC;
+```
+
+### Project 3: Knowledge Graph Query Engine
+
+**Objective**: Build intelligent query engine over knowledge graph.
+
+**Features**:
+1. Natural language to GQL translation
+2. Entity recognition and linking
+3. Relationship extraction
+4. Answer ranking by relevance
+5. Explanation generation
+
+**Implementation Outline**:
+
+```python
+class KnowledgeGraphQueryEngine:
+    def __init__(self, client, nlp_model):
+        self.client = client
+        self.nlp = nlp_model
+
+    async def query(self, natural_language_question):
+        """Answer question using knowledge graph"""
+
+        # 1. Extract entities
+        entities = self.extract_entities(natural_language_question)
+
+        # 2. Generate GQL queries
+        gql_queries = self.generate_queries(entities, natural_language_question)
+
+        # 3. Execute queries
+        results = []
+        for query in gql_queries:
+            result = await self.client.execute(query)
+            results.append(result)
+
+        # 4. Rank and format answers
+        answers = self.rank_answers(results, natural_language_question)
+
+        return answers
+
+    def extract_entities(self, question):
+        # TODO: Use NLP to extract named entities
+        pass
+
+    def generate_queries(self, entities, question):
+        # TODO: Generate GQL queries based on question type
+        pass
+```
+
+### Project 4: Multi-Tenant SaaS Application
+
+**Objective**: Build complete multi-tenant application with RLS.
+
+**Features**:
+1. Tenant isolation using RLS policies
+2. Per-tenant resource limits
+3. Shared schema with tenant-specific data
+4. Audit logging per tenant
+5. Tenant analytics dashboard
+
+**RLS Policy Examples**:
+
+```gql
+-- Create RLS policy for tenant isolation
+CREATE POLICY tenant_isolation ON User
+FOR ALL
+USING (tenant_id = current_tenant_id());
+
+-- Create policy for hierarchical access
+CREATE POLICY manager_access ON Employee
+FOR SELECT
+USING (
+    employee_id = current_user_id()
+    OR EXISTS {
+        MATCH (current:Employee {id: current_user_id()})-[:MANAGES*]->(emp:Employee)
+        WHERE emp.employee_id = Employee.employee_id
+    }
+);
+
+-- Row-level encryption policy
+CREATE POLICY sensitive_data ON Customer
+FOR SELECT
+USING (
+    has_permission(current_user_id(), 'view_pii')
+    OR customer_id = current_user_id()
+);
+```
+
+## Debugging Exercises
+
+### Exercise: Debug Slow Query
+
+**Problem**: This query is very slow. Fix it.
+
+```gql
+-- Slow query
+MATCH (u:User)
+MATCH (p:Product)
+WHERE EXISTS {
+    MATCH (u)-[:PURCHASED]->(p)
+}
+RETURN u.name, p.name;
+```
+
+**Steps**:
+1. Run EXPLAIN to see execution plan
+2. Identify the problem (hint: Cartesian product)
+3. Rewrite to use proper pattern matching
+4. Verify with PROFILE
+
+<details>
+<summary>Solution</summary>
+
+```gql
+-- Optimized query
+MATCH (u:User)-[:PURCHASED]->(p:Product)
+RETURN u.name, p.name;
+```
+
+The original creates a Cartesian product of ALL users × ALL products, then filters. The optimized version uses pattern matching directly.
+</details>
+
+### Exercise: Fix Transaction Deadlock
+
+**Problem**: Two concurrent transactions are deadlocking.
+
+**Transaction 1**:
+```gql
+BEGIN;
+MATCH (a:Account {id: 1}) SET a.balance = a.balance - 100;
+-- Pause
+MATCH (b:Account {id: 2}) SET b.balance = b.balance + 100;
+COMMIT;
+```
+
+**Transaction 2**:
+```gql
+BEGIN;
+MATCH (b:Account {id: 2}) SET b.balance = b.balance - 50;
+-- Pause
+MATCH (a:Account {id: 1}) SET a.balance = a.balance + 50;
+COMMIT;
+```
+
+**Task**: Identify why deadlock occurs and fix it.
+
+<details>
+<summary>Solution</summary>
+
+Deadlock occurs because:
+- TX1 locks Account 1, then tries to lock Account 2
+- TX2 locks Account 2, then tries to lock Account 1
+
+Fix: Always acquire locks in consistent order:
+
+```gql
+-- Both transactions should lock in same order (by ID)
+BEGIN;
+MATCH (a:Account {id: 1}), (b:Account {id: 2})
+WHERE a.id < b.id
+SET a.balance = a.balance - 100,
+    b.balance = b.balance + 100;
+COMMIT;
+```
+</details>
+
+## Community Challenges
+
+### Weekly Challenge: Graph Algorithm Implementation
+
+Implement these algorithms using only GQL:
+
+1. **Dijkstra's shortest path** with weighted edges
+2. **Triangle counting** for clustering coefficient
+3. **Graph coloring** for conflict-free scheduling
+4. **Maximum flow** in a network
+5. **Minimum spanning tree** for optimization
+
+### Monthly Project: Build a Full Application
+
+Complete projects that combine multiple concepts:
+
+1. **Twitter Clone**: Social graph with posts, likes, retweets, trending topics
+2. **E-commerce Platform**: Products, recommendations, reviews, fraud detection
+3. **Knowledge Base**: Hierarchical documentation with search and recommendations
+4. **Project Management**: Tasks, dependencies, resources, timelines
+5. **Supply Chain**: Logistics network with optimization and tracking
+
 ## Related Topics
 
-- **Tutorials**: Structured learning paths with explanations
-- **Examples**: Copy-paste ready code snippets
-- **Getting Started**: Foundation concepts and setup
-- **Developer Guide**: Complete API reference
-- **Quickstart**: Fast-track guides for immediate productivity
+- **[Tutorials](/tags/tutorials/)**: Structured learning paths with explanations
+- **[Examples](/tags/examples/)**: Copy-paste ready code snippets
+- **[Getting Started](/tags/getting-started/)**: Foundation concepts and setup
+- **[Developer Guide](/tags/developer-guide/)**: Complete API reference
+- **[Quickstart](/tags/quickstart/)**: Fast-track guides for immediate productivity
+- **[Interactive Learning](/tags/interactive-learning/)**: More interactive exercises
+- **[Code Challenges](/tags/code-challenges/)**: Coding challenges and competitions
+
+## Additional Resources
+
+- **Video Walkthroughs**: Watch step-by-step solution videos
+- **Community Forums**: Discuss solutions and get help
+- **Code Templates**: Starter code for common patterns
+- **Solution Repository**: Browse complete working solutions
+- **Office Hours**: Weekly live coding sessions
+
+Start with Exercise 1 and work your way through. Don't skip ahead – each exercise builds essential skills for the next!

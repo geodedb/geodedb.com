@@ -445,6 +445,429 @@ scrape_configs:
           region: 'us-west-2'
 ```
 
+## Advanced Prometheus Patterns
+
+### Dynamic Service Discovery
+
+For dynamic Geode clusters, use service discovery:
+
+```yaml
+# Consul service discovery
+scrape_configs:
+  - job_name: 'geode-consul'
+    consul_sd_configs:
+      - server: 'localhost:8500'
+        services: ['geode']
+    relabel_configs:
+      - source_labels: [__meta_consul_service]
+        target_label: job
+      - source_labels: [__meta_consul_node]
+        target_label: instance
+      - source_labels: [__meta_consul_tags]
+        regex: '.*,environment=([^,]+),.*'
+        target_label: environment
+```
+
+### Custom Exporters
+
+Create custom exporters for Geode-specific metrics:
+
+```python
+# geode_exporter.py
+from prometheus_client import start_http_server, Gauge, Counter
+import asyncio
+from geode_client import GeodeClient
+
+# Define custom metrics
+active_queries_gauge = Gauge('geode_custom_active_queries',
+                             'Currently executing queries',
+                             ['query_type'])
+
+cache_memory_gauge = Gauge('geode_custom_cache_memory_bytes',
+                          'Memory used by query cache')
+
+async def collect_custom_metrics(client):
+    """Collect custom Geode metrics"""
+    while True:
+        # Active queries by type
+        result = await client.execute("""
+            CALL system.active_queries()
+            RETURN query_type, count(*) as count
+        """)
+
+        for row in result.rows:
+            active_queries_gauge.labels(
+                query_type=row['query_type']
+            ).set(row['count'])
+
+        # Cache memory usage
+        cache_stats = await client.execute("""
+            CALL system.cache_stats()
+            RETURN memory_bytes
+        """)
+
+        cache_memory_gauge.set(cache_stats.rows[0]['memory_bytes'])
+
+        await asyncio.sleep(15)  # Scrape interval
+
+if __name__ == '__main__':
+    start_http_server(9090)
+    client = GeodeClient("localhost:3141")
+    asyncio.run(collect_custom_metrics(client))
+```
+
+### Metric Relabeling
+
+Transform metrics during scraping:
+
+```yaml
+scrape_configs:
+  - job_name: 'geode'
+    static_configs:
+      - targets: ['localhost:8080']
+    metric_relabel_configs:
+      # Drop high-cardinality debug metrics in production
+      - source_labels: [__name__]
+        regex: 'geode_debug_.*'
+        action: drop
+
+      # Rename legacy metrics
+      - source_labels: [__name__]
+        regex: 'geode_old_metric_name'
+        target_label: __name__
+        replacement: 'geode_new_metric_name'
+
+      # Aggregate instance-level metrics to cluster level
+      - source_labels: [instance]
+        regex: 'geode-node-.*'
+        target_label: cluster
+        replacement: 'geode-production'
+```
+
+## Alert Management
+
+### Alertmanager Configuration
+
+```yaml
+# alertmanager.yml
+global:
+  resolve_timeout: 5m
+  slack_api_url: 'https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK'
+
+route:
+  group_by: ['alertname', 'cluster']
+  group_wait: 10s
+  group_interval: 10s
+  repeat_interval: 12h
+  receiver: 'team-database'
+  routes:
+    - match:
+        severity: critical
+      receiver: 'team-database-pager'
+      continue: true
+
+    - match:
+        severity: warning
+      receiver: 'team-database-slack'
+
+receivers:
+  - name: 'team-database'
+    email_configs:
+      - to: 'database-team@example.com'
+
+  - name: 'team-database-pager'
+    pagerduty_configs:
+      - service_key: 'YOUR_PAGERDUTY_KEY'
+
+  - name: 'team-database-slack'
+    slack_configs:
+      - channel: '#database-alerts'
+        title: 'Geode Alert'
+        text: '{{ range .Alerts }}{{ .Annotations.summary }}{{ end }}'
+```
+
+### Alert Inhibition Rules
+
+Prevent alert storms with inhibition:
+
+```yaml
+# alertmanager.yml (continued)
+inhibit_rules:
+  # Don't alert on high memory if instance is down
+  - source_match:
+      severity: 'critical'
+      alertname: 'GeodeDown'
+    target_match:
+      severity: 'warning'
+    equal: ['instance']
+
+  # Don't alert on slow queries if database is overloaded
+  - source_match:
+      alertname: 'HighQueryErrorRate'
+    target_match:
+      alertname: 'SlowQueryRateIncreasing'
+    equal: ['instance']
+```
+
+### Alert Templates
+
+Create informative alert messages:
+
+```yaml
+groups:
+  - name: geode_alerts
+    rules:
+      - alert: HighErrorRate
+        expr: |
+          rate(geode_queries_total{status="error"}[5m]) > 10
+        annotations:
+          summary: "High query error rate on {{ $labels.instance }}"
+          description: |
+            Query error rate is {{ $value | humanize }} errors/sec.
+
+            Current stats:
+            - Instance: {{ $labels.instance }}
+            - Error rate: {{ $value | humanize }}/sec
+            - Time: {{ $labels.timestamp }}
+
+            Runbook: https://docs.geodedb.com/runbooks/high-error-rate
+          dashboard: "https://grafana.example.com/d/geode-errors"
+          runbook_url: "https://docs.geodedb.com/runbooks/high-error-rate"
+```
+
+## Grafana Integration
+
+### Provisioning Dashboards
+
+```yaml
+# grafana/provisioning/dashboards/geode.yml
+apiVersion: 1
+
+providers:
+  - name: 'Geode'
+    orgId: 1
+    folder: 'Database'
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 10
+    allowUiUpdates: true
+    options:
+      path: /etc/grafana/dashboards/geode
+```
+
+### Dashboard Variables
+
+Create dynamic dashboards with variables:
+
+```json
+{
+  "templating": {
+    "list": [
+      {
+        "name": "instance",
+        "type": "query",
+        "datasource": "Prometheus",
+        "query": "label_values(geode_up, instance)",
+        "multi": true,
+        "includeAll": true
+      },
+      {
+        "name": "time_range",
+        "type": "interval",
+        "query": "1m,5m,15m,30m,1h,6h,12h,1d",
+        "current": {
+          "text": "5m",
+          "value": "5m"
+        }
+      }
+    ]
+  },
+  "panels": [
+    {
+      "title": "Query Rate",
+      "targets": [
+        {
+          "expr": "sum(rate(geode_queries_total{instance=~\"$instance\"}[$time_range]))"
+        }
+      ]
+    }
+  ]
+}
+```
+
+### Panel Examples
+
+**Heatmap Panel** for query duration distribution:
+
+```json
+{
+  "type": "heatmap",
+  "title": "Query Duration Heatmap",
+  "targets": [
+    {
+      "expr": "sum(rate(geode_query_duration_seconds_bucket{instance=~\"$instance\"}[$time_range])) by (le)",
+      "format": "heatmap",
+      "legendFormat": "{{le}}"
+    }
+  ],
+  "dataFormat": "tsbuckets",
+  "yAxis": {
+    "format": "s"
+  }
+}
+```
+
+**Status Panel** for system health:
+
+```json
+{
+  "type": "stat",
+  "title": "System Status",
+  "targets": [
+    {
+      "expr": "up{job=\"geode\"}",
+      "instant": true
+    }
+  ],
+  "mappings": [
+    {
+      "value": 1,
+      "text": "UP",
+      "color": "green"
+    },
+    {
+      "value": 0,
+      "text": "DOWN",
+      "color": "red"
+    }
+  ]
+}
+```
+
+## Advanced Querying Techniques
+
+### Quantile Aggregation
+
+Calculate percentiles across multiple instances:
+
+```promql
+# P99 query latency across all instances
+histogram_quantile(0.99,
+  sum(rate(geode_query_duration_seconds_bucket[5m])) by (le)
+)
+
+# P99 per instance
+histogram_quantile(0.99,
+  sum(rate(geode_query_duration_seconds_bucket[5m])) by (le, instance)
+)
+```
+
+### Rate Calculation Windows
+
+Choose appropriate time windows:
+
+```promql
+# Very short window (1m) - noisy but responsive
+rate(geode_queries_total[1m])
+
+# Medium window (5m) - balanced
+rate(geode_queries_total[5m])
+
+# Long window (1h) - smooth but slow to react
+rate(geode_queries_total[1h])
+
+# Use irate for instant rate (last 2 samples)
+irate(geode_queries_total[5m])
+```
+
+### Subquery Patterns
+
+Calculate rate of rate (acceleration):
+
+```promql
+# Query acceleration (change in query rate)
+deriv(
+  rate(geode_queries_total[5m])[10m:1m]
+)
+
+# Predict future value
+predict_linear(geode_queries_total[1h], 3600)
+```
+
+## Monitoring at Scale
+
+### Hierarchical Federation
+
+For large deployments with multiple regions:
+
+```yaml
+# Regional Prometheus federates from local instances
+- job_name: 'federate-local'
+  honor_labels: true
+  metrics_path: '/federate'
+  params:
+    'match[]':
+      - '{job="geode"}'
+  static_configs:
+    - targets:
+      - 'prometheus-az1:9090'
+      - 'prometheus-az2:9090'
+      - 'prometheus-az3:9090'
+
+# Global Prometheus federates from regional instances
+- job_name: 'federate-regional'
+  honor_labels: true
+  metrics_path: '/federate'
+  params:
+    'match[]':
+      - '{job="geode"}'
+  static_configs:
+    - targets:
+      - 'prometheus-us-east:9090'
+      - 'prometheus-us-west:9090'
+      - 'prometheus-eu-west:9090'
+```
+
+### Remote Write for Long-Term Storage
+
+Send metrics to long-term storage:
+
+```yaml
+remote_write:
+  - url: "https://prometheus-remote-storage.example.com/api/v1/write"
+    basic_auth:
+      username: 'geode-metrics'
+      password: 'SECRET'
+    write_relabel_configs:
+      # Only send aggregate metrics for long-term storage
+      - source_labels: [__name__]
+        regex: 'geode_(queries_total|query_duration_seconds_bucket|memory_used_bytes)'
+        action: keep
+    queue_config:
+      capacity: 10000
+      max_shards: 10
+      min_shards: 1
+      max_samples_per_send: 5000
+```
+
+### Thanos for Global View
+
+Deploy Thanos for unlimited retention and global querying:
+
+```yaml
+# Prometheus with Thanos sidecar
+global:
+  external_labels:
+    cluster: 'geode-production'
+    region: 'us-east-1'
+
+# Thanos sidecar configuration
+--storage.tsdb.path=/prometheus
+--objstore.config-file=/etc/thanos/bucket.yml
+--grpc-address=0.0.0.0:10901
+--http-address=0.0.0.0:10902
+```
+
 ## Best Practices
 
 **Appropriate Scrape Intervals**: Balance between data resolution and storage overhead. 15-30 seconds works well for most deployments.
@@ -463,6 +886,10 @@ scrape_configs:
 
 **Dashboard Organization**: Create focused dashboards for different personas (developers, operators, executives).
 
+**Metric Naming**: Follow Prometheus naming conventions (unit suffix, descriptive names).
+
+**Cardinality Management**: Keep label cardinality bounded to prevent memory issues.
+
 ## Troubleshooting Common Issues
 
 **Missing Metrics**: Verify Geode metrics endpoint is accessible and Prometheus can reach it.
@@ -472,6 +899,27 @@ scrape_configs:
 **Storage Issues**: Monitor Prometheus disk usage and adjust retention policies as needed.
 
 **Slow Queries**: Use recording rules to pre-aggregate complex queries used in dashboards.
+
+**Scrape Failures**: Check network connectivity, TLS certificates, and authentication.
+
+**Out of Memory**: Reduce retention period, use recording rules, or add more RAM.
+
+**Slow Dashboards**: Optimize queries, use recording rules, reduce time ranges.
+
+## Production Deployment Checklist
+
+- [ ] Scrape intervals configured appropriately
+- [ ] Recording rules created for expensive queries
+- [ ] Alert rules defined and tested
+- [ ] Alertmanager configured with proper routing
+- [ ] Dashboards created for key metrics
+- [ ] Retention period set based on requirements
+- [ ] Backup strategy for Prometheus data
+- [ ] Monitoring of Prometheus itself
+- [ ] High availability setup (if required)
+- [ ] Documentation of metrics and alerts
+- [ ] Runbooks created for common alerts
+- [ ] Load testing of monitoring stack
 
 ## Related Topics
 
@@ -489,3 +937,6 @@ scrape_configs:
 - Alert Runbook Examples
 - Performance Tuning with Metrics
 - Multi-Cluster Monitoring Patterns
+- Prometheus Best Practices
+- Recording Rules Guide
+- Federation Patterns

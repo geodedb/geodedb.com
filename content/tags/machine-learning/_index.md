@@ -491,9 +491,568 @@ async fn get_inference_features(client: &Client, user_id: &str) -> Result<Featur
 }
 ```
 
+## Advanced ML Patterns
+
+### Link Prediction
+
+Predict future relationships using graph features:
+
+```gql
+-- Extract features for link prediction
+MATCH (a:User {id: $user_a}), (b:User {id: $user_b})
+WITH a, b,
+     SIZE([(a)-[:FOLLOWS]->() | 1]) AS a_out_degree,
+     SIZE([()<-[:FOLLOWS]-(a) | 1]) AS a_in_degree,
+     SIZE([(b)-[:FOLLOWS]->() | 1]) AS b_out_degree,
+     SIZE([()<-[:FOLLOWS]-(b) | 1]) AS b_in_degree
+
+// Common neighbors (Jaccard similarity)
+MATCH (a)-[:FOLLOWS]->(common)<-[:FOLLOWS]-(b)
+WITH a, b, a_out_degree, a_in_degree, b_out_degree, b_in_degree,
+     COUNT(DISTINCT common) AS common_neighbors
+
+// Adamic-Adar index
+MATCH (a)-[:FOLLOWS]->(common)<-[:FOLLOWS]-(b)
+WITH a, b, common_neighbors,
+     SUM(1.0 / log(SIZE([(common)-[:FOLLOWS]->() | 1]))) AS adamic_adar
+
+// Preferential attachment
+WITH a, b, common_neighbors, adamic_adar,
+     a_out_degree * b_out_degree AS preferential_attachment
+
+RETURN a.id, b.id,
+       common_neighbors,
+       adamic_adar,
+       preferential_attachment,
+       a_out_degree, a_in_degree,
+       b_out_degree, b_in_degree;
+```
+
+### Node Classification
+
+Extract features for node classification tasks:
+
+```gql
+-- Features for user classification (churn prediction)
+MATCH (user:User {id: $user_id})
+
+// Activity features
+WITH user,
+     SIZE([(user)-[:ACTION]->() | 1]) AS total_actions,
+     SIZE([
+         (user)-[a:ACTION]->()
+         WHERE a.timestamp > CURRENT_TIMESTAMP - INTERVAL '30' DAY
+         | 1
+     ]) AS recent_actions
+
+// Social features
+MATCH (user)-[:FOLLOWS]->(friend)
+WITH user, total_actions, recent_actions,
+     COUNT(friend) AS friend_count,
+     AVG(friend.activity_score) AS avg_friend_activity
+
+// Content features
+MATCH (user)-[:POSTED]->(post:Post)
+WITH user, total_actions, recent_actions, friend_count, avg_friend_activity,
+     AVG(post.like_count) AS avg_post_likes,
+     AVG(LENGTH(post.content)) AS avg_post_length
+
+// Temporal features
+MATCH (user)-[action:ACTION]->()
+WITH user, total_actions, recent_actions, friend_count, avg_friend_activity,
+     avg_post_likes, avg_post_length,
+     MAX(action.timestamp) AS last_action_time
+
+WITH user,
+     total_actions,
+     recent_actions,
+     recent_actions * 1.0 / NULLIF(total_actions, 0) AS activity_trend,
+     friend_count,
+     avg_friend_activity,
+     avg_post_likes,
+     avg_post_length,
+     DURATION.BETWEEN(last_action_time, CURRENT_TIMESTAMP).days AS days_since_last_action
+
+RETURN user.id,
+       total_actions,
+       recent_actions,
+       activity_trend,
+       friend_count,
+       avg_friend_activity,
+       avg_post_likes,
+       avg_post_length,
+       days_since_last_action;
+```
+
+### Graph Convolutional Networks (GCN) Support
+
+Implement GCN layer operations in Geode:
+
+```python
+import numpy as np
+from geode_client import GeodeClient
+
+class GraphConvolutionalLayer:
+    """Simple GCN layer implementation using Geode"""
+
+    def __init__(self, client, input_dim, output_dim):
+        self.client = client
+        self.input_dim = input_dim
+        self.output_dim = output_dim
+        self.weights = np.random.randn(input_dim, output_dim) * 0.01
+
+    async def forward(self, node_ids):
+        """
+        Perform one GCN layer forward pass:
+        H' = σ(D^(-1/2) A D^(-1/2) H W)
+        """
+        # Fetch node features and neighbor information
+        result = await self.client.execute("""
+            UNWIND $node_ids AS node_id
+            MATCH (n:Node {id: node_id})
+            OPTIONAL MATCH (n)-[:EDGE]-(neighbor:Node)
+            WITH n,
+                 n.features AS features,
+                 COLLECT(DISTINCT neighbor.id) AS neighbors,
+                 COUNT(DISTINCT neighbor) + 1 AS degree
+            RETURN n.id, features, neighbors, degree
+        """, {"node_ids": node_ids})
+
+        # Aggregate neighbor features (message passing)
+        aggregated_features = {}
+
+        for row in result.rows:
+            node_id = row['n.id']
+            features = np.array(row['features'])
+            neighbors = row['neighbors']
+            degree = row['degree']
+
+            # Self-loop
+            aggregated = features / np.sqrt(degree)
+
+            # Add neighbor contributions
+            if neighbors:
+                neighbor_result = await self.client.execute("""
+                    UNWIND $neighbor_ids AS nid
+                    MATCH (n:Node {id: nid})
+                    OPTIONAL MATCH (n)-[:EDGE]-()
+                    WITH n, COUNT(*) + 1 AS neighbor_degree
+                    RETURN n.id, n.features, neighbor_degree
+                """, {"neighbor_ids": neighbors})
+
+                for neighbor_row in neighbor_result.rows:
+                    neighbor_features = np.array(neighbor_row['n.features'])
+                    neighbor_degree = neighbor_row['neighbor_degree']
+
+                    # Normalized aggregation
+                    aggregated += neighbor_features / (
+                        np.sqrt(degree) * np.sqrt(neighbor_degree)
+                    )
+
+            # Apply learned weights
+            aggregated_features[node_id] = aggregated @ self.weights
+
+        # Apply activation function (ReLU)
+        for node_id in aggregated_features:
+            aggregated_features[node_id] = np.maximum(0, aggregated_features[node_id])
+
+        return aggregated_features
+
+    async def update_node_embeddings(self, aggregated_features):
+        """Store computed embeddings back to Geode"""
+        await self.client.execute("""
+            UNWIND $updates AS update
+            MATCH (n:Node {id: update.node_id})
+            SET n.embedding = update.embedding,
+                n.embedding_updated = CURRENT_TIMESTAMP
+        """, {
+            "updates": [
+                {"node_id": nid, "embedding": features.tolist()}
+                for nid, features in aggregated_features.items()
+            ]
+        })
+```
+
+### Training Data Sampling
+
+Efficiently sample training data from graph:
+
+```python
+async def sample_training_data(client, batch_size=1000):
+    """
+    Sample balanced training batches for node classification
+    """
+    # Get class distribution
+    class_counts = await client.execute("""
+        MATCH (n:Node)
+        WHERE n.label IS NOT NULL
+        RETURN n.label, COUNT(*) AS count
+    """)
+
+    # Calculate sampling probabilities for balanced batches
+    total = sum(row['count'] for row in class_counts.rows)
+    class_weights = {
+        row['n.label']: total / (len(class_counts.rows) * row['count'])
+        for row in class_counts.rows
+    }
+
+    # Sample with stratification
+    samples_per_class = batch_size // len(class_weights)
+
+    training_nodes = []
+    for label, weight in class_weights.items():
+        samples = await client.execute("""
+            MATCH (n:Node {label: $label})
+            WITH n, RAND() AS random
+            ORDER BY random
+            LIMIT $limit
+            RETURN n.id, n.features, n.label
+        """, {"label": label, "limit": samples_per_class})
+
+        training_nodes.extend(samples.rows)
+
+    return training_nodes
+```
+
+### Graph Attention Networks (GAT) Implementation
+
+Implement attention mechanisms for graph learning:
+
+```python
+async def compute_attention_weights(client, node_id):
+    """
+    Compute attention weights for neighbors using learned attention mechanism
+    """
+    result = await client.execute("""
+        MATCH (center:Node {id: $node_id})
+        MATCH (center)-[e:EDGE]-(neighbor:Node)
+        RETURN center.embedding AS center_emb,
+               neighbor.id AS neighbor_id,
+               neighbor.embedding AS neighbor_emb,
+               e.features AS edge_features
+    """, {"node_id": node_id})
+
+    center_embedding = np.array(result.rows[0]['center_emb'])
+
+    attention_weights = {}
+    for row in result.rows:
+        neighbor_id = row['neighbor_id']
+        neighbor_emb = np.array(row['neighbor_emb'])
+        edge_features = np.array(row['edge_features']) if row['edge_features'] else np.zeros(8)
+
+        # Concatenate embeddings and edge features
+        concat = np.concatenate([center_embedding, neighbor_emb, edge_features])
+
+        # Compute attention score (learned attention parameters)
+        attention_score = np.dot(concat, attention_params)  # attention_params learned during training
+
+        attention_weights[neighbor_id] = attention_score
+
+    # Softmax normalization
+    exp_scores = {nid: np.exp(score) for nid, score in attention_weights.items()}
+    sum_exp = sum(exp_scores.values())
+    normalized_weights = {nid: score / sum_exp for nid, score in exp_scores.items()}
+
+    # Store attention weights for visualization/analysis
+    await client.execute("""
+        UNWIND $weights AS w
+        MATCH (center:Node {id: $center_id})-[e:EDGE]-(neighbor:Node {id: w.neighbor_id})
+        SET e.attention_weight = w.weight
+    """, {
+        "center_id": node_id,
+        "weights": [
+            {"neighbor_id": nid, "weight": weight}
+            for nid, weight in normalized_weights.items()
+        ]
+    })
+
+    return normalized_weights
+```
+
+### Online Learning and Model Updates
+
+Incrementally update models with new data:
+
+```python
+class IncrementalGraphModel:
+    """Online learning model that updates with new graph data"""
+
+    async def partial_fit(self, client, new_nodes, new_edges):
+        """Update model with new nodes and edges"""
+
+        # Extract features for new nodes
+        new_features = await self.extract_features(client, new_nodes)
+
+        # Update embedding for new nodes
+        new_embeddings = self.model.transform(new_features)
+
+        # Store embeddings
+        await client.execute("""
+            UNWIND $embeddings AS emb
+            MATCH (n:Node {id: emb.node_id})
+            SET n.embedding = emb.vector,
+                n.embedding_model_version = $version
+        """, {
+            "embeddings": [
+                {"node_id": nid, "vector": emb.tolist()}
+                for nid, emb in zip(new_nodes, new_embeddings)
+            ],
+            "version": self.model_version
+        })
+
+        # Incrementally update neighbor embeddings (for propagation models)
+        affected_neighbors = await client.execute("""
+            UNWIND $new_nodes AS node_id
+            MATCH (new:Node {id: node_id})-[:EDGE]-(neighbor:Node)
+            RETURN DISTINCT neighbor.id
+        """, {"new_nodes": new_nodes})
+
+        neighbor_ids = [row['neighbor.id'] for row in affected_neighbors.rows]
+
+        # Re-compute embeddings for affected neighbors
+        await self.recompute_embeddings(client, neighbor_ids)
+
+    async def recompute_embeddings(self, client, node_ids):
+        """Re-compute embeddings for nodes affected by graph changes"""
+        for node_id in node_ids:
+            features = await self.extract_node_features(client, node_id)
+            embedding = self.model.transform([features])[0]
+
+            await client.execute("""
+                MATCH (n:Node {id: $node_id})
+                SET n.embedding = $embedding,
+                    n.embedding_updated = CURRENT_TIMESTAMP
+            """, {"node_id": node_id, "embedding": embedding.tolist()})
+```
+
+### Model Monitoring and Drift Detection
+
+Track model performance over time:
+
+```python
+async def monitor_model_drift(client, model_id, prediction_window_days=30):
+    """
+    Detect model drift by comparing prediction distribution
+    over time
+    """
+    # Get recent predictions
+    recent_predictions = await client.execute("""
+        MATCH (n:Node)-[p:PREDICTION]->()
+        WHERE p.model_id = $model_id
+          AND p.timestamp > CURRENT_TIMESTAMP - INTERVAL '$days' DAY
+        RETURN p.predicted_class,
+               p.confidence,
+               p.timestamp
+        ORDER BY p.timestamp
+    """, {"model_id": model_id, "days": prediction_window_days})
+
+    # Split into time windows
+    window_size = prediction_window_days // 7  # Weekly windows
+
+    distributions = []
+    for week in range(7):
+        start = week * window_size
+        end = (week + 1) * window_size
+
+        week_preds = [
+            row for row in recent_predictions.rows
+            if start <= (CURRENT_TIMESTAMP - row['p.timestamp']).days < end
+        ]
+
+        # Calculate distribution
+        class_dist = {}
+        for pred in week_preds:
+            cls = pred['p.predicted_class']
+            class_dist[cls] = class_dist.get(cls, 0) + 1
+
+        distributions.append(class_dist)
+
+    # Detect drift using KL divergence
+    drift_score = calculate_kl_divergence(distributions[0], distributions[-1])
+
+    if drift_score > 0.1:  # Threshold
+        print(f"WARNING: Model drift detected for {model_id}")
+        print(f"KL divergence: {drift_score:.4f}")
+        return True
+
+    return False
+```
+
+### Feature Store Integration
+
+Use Geode as a feature store for ML pipelines:
+
+```python
+class GeodeFeatureStore:
+    """Feature store backed by Geode graph database"""
+
+    def __init__(self, client):
+        self.client = client
+
+    async def register_feature(self, feature_name, feature_query, entity_type):
+        """Register a feature definition"""
+        await self.client.execute("""
+            CREATE (f:Feature {
+                name: $name,
+                query: $query,
+                entity_type: $entity_type,
+                registered_at: CURRENT_TIMESTAMP
+            })
+        """, {
+            "name": feature_name,
+            "query": feature_query,
+            "entity_type": entity_type
+        })
+
+    async def compute_features(self, feature_names, entity_ids):
+        """Compute features for given entities"""
+        features = {}
+
+        for feature_name in feature_names:
+            # Get feature definition
+            definition = await self.client.execute("""
+                MATCH (f:Feature {name: $name})
+                RETURN f.query, f.entity_type
+            """, {"name": feature_name})
+
+            query_template = definition.rows[0]['f.query']
+
+            # Execute feature query for each entity
+            results = await self.client.execute(
+                query_template,
+                {"entity_ids": entity_ids}
+            )
+
+            features[feature_name] = {
+                row['entity_id']: row['feature_value']
+                for row in results.rows
+            }
+
+        # Transpose to entity-centric format
+        entity_features = {}
+        for entity_id in entity_ids:
+            entity_features[entity_id] = {
+                fname: features[fname].get(entity_id)
+                for fname in feature_names
+            }
+
+        return entity_features
+
+    async def materialize_features(self, feature_names, entity_type):
+        """Pre-compute and cache features"""
+        for feature_name in feature_names:
+            await self.client.execute("""
+                MATCH (f:Feature {name: $name})
+                WITH f
+                CALL apoc.cypher.run(f.query, {}) YIELD value
+                MATCH (entity) WHERE entity.type = $entity_type
+                SET entity[$feature_name] = value.feature_value
+            """, {
+                "name": feature_name,
+                "entity_type": entity_type,
+                "feature_name": feature_name
+            })
+```
+
+## Production ML Workflows
+
+### Complete Training Pipeline
+
+```python
+async def train_graph_model(client, model_config):
+    """End-to-end graph ML training pipeline"""
+
+    # 1. Feature extraction
+    print("Extracting features...")
+    features = await extract_graph_features(
+        client,
+        node_label="User",
+        feature_config=model_config['features']
+    )
+
+    # 2. Train/test split
+    from sklearn.model_selection import train_test_split
+    X = [f['features'] for f in features]
+    y = [f['label'] for f in features]
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
+
+    # 3. Train model
+    print("Training model...")
+    model = train_xgboost(X_train, y_train, model_config['params'])
+
+    # 4. Evaluate
+    predictions = model.predict(X_test)
+    accuracy = accuracy_score(y_test, predictions)
+    print(f"Test accuracy: {accuracy:.4f}")
+
+    # 5. Store model and predictions
+    print("Storing model...")
+    await store_model(client, model, model_config, accuracy)
+
+    # 6. Generate predictions for all nodes
+    print("Generating predictions...")
+    all_predictions = model.predict(X)
+    await store_predictions(client, features, all_predictions)
+
+    return model, accuracy
+```
+
+### A/B Testing ML Models
+
+```python
+async def ab_test_models(client, model_a_id, model_b_id, traffic_split=0.5):
+    """A/B test two different models"""
+
+    async def serve_prediction(user_id):
+        # Assign user to variant
+        user_hash = hash(user_id) % 100
+        model_id = model_a_id if user_hash < traffic_split * 100 else model_b_id
+
+        # Get prediction from assigned model
+        result = await client.execute("""
+            MATCH (user:User {id: $user_id})
+            MATCH (model:MLModel {id: $model_id})
+            // Get features and apply model
+            WITH user, model,
+                 extract_features(user) AS features
+            RETURN model.predict(features) AS prediction
+        """, {"user_id": user_id, "model_id": model_id})
+
+        prediction = result.rows[0]['prediction']
+
+        # Log for analysis
+        await client.execute("""
+            CREATE (e:ExperimentEvent {
+                user_id: $user_id,
+                model_id: $model_id,
+                prediction: $prediction,
+                timestamp: CURRENT_TIMESTAMP
+            })
+        """, {
+            "user_id": user_id,
+            "model_id": model_id,
+            "prediction": prediction
+        })
+
+        return prediction
+
+    return serve_prediction
+```
+
 ## Related Topics
 
-- **Embeddings**: See embeddings tag for vector storage and similarity search
-- **Vector Search**: Check vector-search for HNSW-based embedding retrieval
-- **Analytics**: Explore analytics tag for feature engineering patterns
-- **PageRank**: Use pagerank for importance-based features
+- **[Embeddings](/tags/embeddings/)**: Vector storage and similarity search
+- **[Vector Search](/tags/vector-search/)**: HNSW-based embedding retrieval
+- **[Analytics](/tags/analytics/)**: Feature engineering patterns
+- **[PageRank](/tags/pagerank/)**: Importance-based features
+- **[Graph Algorithms](/tags/graph-algorithms/)**: Graph algorithm implementations
+- **[Data Science](/tags/data-science/)**: Data science workflows
+- **[Python Client](/tags/python/)**: Python integration patterns
+
+## Further Reading
+
+- **ML Integration Guide**: `/docs/machine-learning/integration/`
+- **Feature Engineering**: `/docs/machine-learning/feature-engineering/`
+- **GNN Implementations**: `/docs/machine-learning/graph-neural-networks/`
+- **Model Deployment**: `/docs/machine-learning/deployment/`
+- **Feature Store**: `/docs/machine-learning/feature-store/`

@@ -443,12 +443,393 @@ zig build test -Dparallel=8
 # Results: 8-minute suite runs in 1-2 minutes
 ```
 
+## Advanced Testing Techniques
+
+### Property-Based Testing
+
+```zig
+// Property-based testing for parser
+const testing = std.testing;
+const fuzzing = @import("fuzzing");
+
+test "parser handles all valid GQL syntax" {
+    const allocator = testing.allocator;
+
+    // Generate random valid GQL queries
+    var generator = fuzzing.GqlGenerator.init(allocator);
+    defer generator.deinit();
+
+    var i: usize = 0;
+    while (i < 1000) : (i += 1) {
+        const query = try generator.generate_valid_query();
+        defer allocator.free(query);
+
+        var parser = try Parser.init(allocator, query);
+        defer parser.deinit();
+
+        // Should not crash or error on valid input
+        const ast = parser.parse() catch |err| {
+            std.debug.print("Failed on query: {s}\n", .{query});
+            return err;
+        };
+        defer ast.deinit();
+    }
+}
+
+test "lexer rejects all invalid input" {
+    const allocator = testing.allocator;
+
+    const invalid_inputs = [_][]const u8{
+        "MATCH (u:User {unterminated string",
+        "MATCH () ) ((",
+        "RETURN 12.34.56",  // Invalid number
+        "MATCH $$$$$",  // Invalid parameter
+    };
+
+    for (invalid_inputs) |input| {
+        var lexer = try Lexer.init(allocator, input);
+        defer lexer.deinit();
+
+        const result = lexer.tokenize();
+        try testing.expectError(error.ParseError, result);
+    }
+}
+```
+
+### Parameterized Tests
+
+```python
+# geode-client-python/tests/test_parameterized.py
+import pytest
+
+@pytest.mark.parametrize("value,expected_type", [
+    (42, "integer"),
+    (3.14, "float"),
+    ("hello", "string"),
+    (True, "boolean"),
+    (None, "null"),
+    ([1, 2, 3], "list"),
+    ({"key": "value"}, "map"),
+])
+async def test_data_type_handling(client, value, expected_type):
+    """Test all data types are handled correctly"""
+    result = await client.execute(
+        "CREATE (n:Test {value: $value}) RETURN n.value, type(n.value)",
+        {"value": value}
+    )
+
+    assert result.bindings[0]['type(n.value)'] == expected_type
+
+@pytest.mark.parametrize("query,should_error", [
+    ("MATCH (n) RETURN n", False),
+    ("INVALID SYNTAX", True),
+    ("MATCH (n WHERE n.id = 1", True),  # Missing parenthesis
+    ("RETURN 1 + 'string'", True),  # Type mismatch
+])
+async def test_query_validation(client, query, should_error):
+    """Test query validation"""
+    if should_error:
+        with pytest.raises(Exception):
+            await client.execute(query)
+    else:
+        result = await client.execute(query)
+        assert result is not None
+```
+
+### Performance Tests
+
+```zig
+// Benchmark tests
+const std = @import("std");
+const testing = std.testing;
+
+test "query execution performance benchmark" {
+    const allocator = testing.allocator;
+    var db = try TestDatabase.init(allocator);
+    defer db.deinit();
+
+    // Create test data
+    var i: usize = 0;
+    while (i < 10000) : (i += 1) {
+        try db.exec("CREATE (u:User {id: $id, name: 'User $id'})",
+                    .{.id = i});
+    }
+
+    // Benchmark query
+    const iterations = 1000;
+    const start = std.time.nanoTimestamp();
+
+    var j: usize = 0;
+    while (j < iterations) : (j += 1) {
+        const result = try db.exec("MATCH (u:User {id: 5000}) RETURN u");
+        result.deinit();
+    }
+
+    const end = std.time.nanoTimestamp();
+    const duration_ms = @intCast(u64, end - start) / 1_000_000;
+    const qps = iterations * 1000 / duration_ms;
+
+    std.debug.print("Query performance: {} QPS\n", .{qps});
+
+    // Assert minimum performance
+    try testing.expect(qps >= 100);  // At least 100 QPS
+}
+```
+
+### Mutation Testing
+
+```python
+# mutation_test.py
+"""
+Mutation testing verifies test quality by intentionally breaking code
+"""
+
+def run_mutation_tests():
+    mutations = [
+        ("==", "!="),  # Flip equality
+        (">", ">="),   # Change boundary
+        ("and", "or"), # Flip logic
+        ("true", "false"),
+    ]
+
+    results = []
+    for original, mutated in mutations:
+        # Apply mutation
+        apply_mutation(original, mutated)
+
+        # Run tests
+        test_result = run_tests()
+
+        if test_result.all_passed:
+            # Mutation survived - tests didn't catch the bug!
+            results.append({
+                'mutation': f"{original} -> {mutated}",
+                'survived': True,
+                'weakness': 'Tests do not cover this logic'
+            })
+        else:
+            # Mutation caught - tests are working
+            results.append({
+                'mutation': f"{original} -> {mutated}",
+                'survived': False
+            })
+
+        # Revert mutation
+        revert_mutation()
+
+    return results
+```
+
+### Snapshot Testing
+
+```rust
+// geode-client-rust/tests/snapshot_tests.rs
+use insta::assert_snapshot;
+
+#[test]
+fn test_query_plan_snapshot() {
+    let client = GeodeClient::new("localhost:3141").unwrap();
+
+    let plan = client.explain(
+        "MATCH (u:User)-[:KNOWS]->(friend) WHERE u.country = 'USA' RETURN friend.name"
+    ).unwrap();
+
+    // Compare against saved snapshot
+    assert_snapshot!(format!("{:#?}", plan));
+}
+
+#[test]
+fn test_error_message_snapshot() {
+    let client = GeodeClient::new("localhost:3141").unwrap();
+
+    let error = client.execute("INVALID SYNTAX").unwrap_err();
+
+    // Ensure error messages stay consistent
+    assert_snapshot!(error.to_string());
+}
+```
+
+## Test Infrastructure
+
+### Continuous Integration Pipeline
+
+```yaml
+# .github/workflows/test.yml
+name: Test Suite
+
+on: [push, pull_request]
+
+jobs:
+  unit-tests:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup Zig
+        uses: goto-bus-stop/setup-zig@v2
+        with:
+          version: 0.15.1
+
+      - name: Run Geode unit tests
+        run: |
+          cd geode
+          zig build test --summary all
+
+      - name: Generate coverage report
+        run: |
+          cd geode
+          zig build test -Dcoverage=true
+          zig build coverage-report
+
+      - name: Upload coverage
+        uses: codecov/codecov-action@v3
+        with:
+          files: ./geode/coverage/lcov.info
+
+  client-tests:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        client: [go, python, rust, zig]
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Run ${{ matrix.client }} tests
+        run: |
+          cd geode-client-${{ matrix.client }}
+          make test
+
+  integration-tests:
+    runs-on: ubuntu-latest
+    needs: [unit-tests, client-tests]
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Start Geode server
+        run: |
+          cd geode
+          zig build
+          ./zig-out/bin/geode serve &
+          sleep 5
+
+      - name: Run integration tests
+        run: |
+          cd geode-test-harness
+          make test-all
+```
+
+### Test Fixture Management
+
+```python
+# conftest.py - Shared test fixtures
+import pytest
+import asyncio
+from geode_client import GeodeClient
+
+@pytest.fixture(scope="session")
+def event_loop():
+    """Create event loop for async tests"""
+    loop = asyncio.get_event_loop_policy().new_event_loop()
+    yield loop
+    loop.close()
+
+@pytest.fixture(scope="session")
+async def geode_server():
+    """Start Geode server for testing"""
+    import subprocess
+    process = subprocess.Popen(
+        ["./zig-out/bin/geode", "serve", "--test-mode"],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE
+    )
+
+    # Wait for server to be ready
+    await asyncio.sleep(2)
+
+    yield process
+
+    # Cleanup
+    process.terminate()
+    process.wait(timeout=10)
+
+@pytest.fixture
+async def client(geode_server):
+    """Provide test client"""
+    async with GeodeClient("localhost", 3141) as c:
+        yield c
+
+@pytest.fixture
+async def clean_db(client):
+    """Clean database before each test"""
+    await client.execute("MATCH (n) DETACH DELETE n")
+    yield
+    await client.execute("MATCH (n) DETACH DELETE n")
+
+@pytest.fixture
+def sample_graph():
+    """Sample graph data"""
+    return {
+        "nodes": [
+            {"id": 1, "label": "User", "name": "Alice"},
+            {"id": 2, "label": "User", "name": "Bob"},
+        ],
+        "edges": [
+            {"from": 1, "to": 2, "type": "KNOWS"},
+        ]
+    }
+```
+
+## Test Quality Metrics
+
+### Coverage Analysis
+
+```python
+# coverage_analyzer.py
+class CoverageAnalyzer:
+    def analyze_coverage(self, coverage_file):
+        """Analyze test coverage and identify gaps"""
+        with open(coverage_file) as f:
+            coverage_data = json.load(f)
+
+        critical_paths = self.identify_critical_paths()
+        uncovered_critical = []
+
+        for path in critical_paths:
+            if coverage_data.get(path, {}).get('coverage', 0) < 100:
+                uncovered_critical.append({
+                    'path': path,
+                    'coverage': coverage_data.get(path, {}).get('coverage', 0),
+                    'priority': 'high'
+                })
+
+        return {
+            'overall_coverage': coverage_data['summary']['coverage'],
+            'critical_gaps': uncovered_critical,
+            'recommendations': self.generate_recommendations(uncovered_critical)
+        }
+
+    def identify_critical_paths(self):
+        """Identify critical code paths that must be tested"""
+        return [
+            'src/parser/parser.zig',
+            'src/storage/transaction.zig',
+            'src/security/auth.zig',
+            'src/query/executor.zig',
+        ]
+```
+
 ## Related Topics
 
 - **[Integration Tests](/tags/integration-tests/)**: Integration testing strategies
 - **[CI/CD](/tags/ci-cd/)**: Continuous integration
 - **[Continuous Integration](/tags/continuous-integration/)**: Build automation
 - **[Deployment](/tags/deployment/)**: Deployment strategies
+- **[Testing](/tags/testing/)**: General testing practices
+- **[Code Quality](/tags/code-quality/)**: Code quality standards
+- **[TDD](/tags/tdd/)**: Test-driven development
 
 ## Further Reading
 
@@ -456,3 +837,5 @@ zig build test -Dparallel=8
 - **Test Coverage**: `/docs/development/test-coverage/`
 - **GeodeTestLab**: `/docs/development/geodetestlab/`
 - **CANARY Markers**: `/docs/development/canary-markers/`
+- **Test Patterns**: `/docs/development/test-patterns/`
+- **Property-Based Testing**: `/docs/development/property-based-testing/`
