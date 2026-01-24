@@ -1,8 +1,16 @@
 ---
-title: "Tag: API Reference"
-description: "Explore Geode documentation tagged with api-reference. Learn about api-reference features, best practices, and implementation details."
+title: "API Reference Documentation"
+description: "Complete API reference for Geode graph database: client libraries (Python, Go, Rust, Zig), connection management, query execution, and integration patterns."
 keywords:
-  - api-reference
+  - API reference
+  - client libraries
+  - Python client
+  - Go client
+  - Rust client
+  - Zig client
+  - database API
+  - query API
+  - connection management
   - Geode
   - graph database
   - documentation
@@ -13,22 +21,766 @@ params:
     noindex: false
 ---
 
-Documentation tagged with **api-reference** in the Geode graph database. This collection covers various aspects of api-reference as it relates to Geode's implementation, features, and best practices.
+Geode provides comprehensive client libraries for Python, Go, Rust, and Zig, all implementing consistent APIs for connecting to Geode servers, executing GQL queries, and managing transactions. This reference covers all client library APIs and integration patterns.
 
-## What You'll Find
+## Client Library Overview
 
-Articles and guides tagged with api-reference provide:
+### Supported Languages
 
-- Core concepts and fundamentals of api-reference
-- Practical examples and implementation patterns
-- Best practices for using api-reference features in Geode
-- Advanced techniques and optimization strategies
-- Integration with other Geode capabilities
+- **Python**: Async client with aioquic (Python 3.9+)
+- **Go**: database/sql driver implementation (Go 1.24+)
+- **Rust**: Tokio-based async client (Rust 1.70+)
+- **Zig**: Native client with vendored QUIC (Zig 0.15.1+)
 
-## Relevance to Geode Database
+All clients communicate via QUIC+TLS on port 3141 using JSON line protocol.
 
-Geode is an enterprise-ready graph database implementing the ISO/IEC 39075:2024 GQL standard. Understanding api-reference helps you leverage Geode's full capabilities for your graph workloads, from development through production deployment.
+### Common Capabilities
 
-## Explore More
+- Connection pooling and management
+- Parameterized query execution
+- Transaction support (BEGIN, COMMIT, ROLLBACK, SAVEPOINT)
+- Prepared statements
+- Row-level security (RLS) policy management
+- Error handling with GQL status codes
+- Async/await patterns (where applicable)
 
-Browse the tagged content below to discover documentation, tutorials, and guides related to api-reference. Each article provides practical insights into using this aspect of Geode effectively.
+## Python Client API
+
+### Installation
+
+```bash
+pip install geode-client
+# or
+pip install -r requirements.txt
+```
+
+### Connection Management
+
+```python
+from geode_client import GeodeClient
+import asyncio
+
+# Context manager (recommended)
+async def example():
+    async with GeodeClient("localhost:3141") as client:
+        result = await client.query("MATCH (n) RETURN COUNT(n) AS count")
+        async for row in result:
+            print(row['count'])
+
+# Manual connection
+async def manual_example():
+    client = GeodeClient("localhost:3141")
+    await client.connect()
+    try:
+        result = await client.query("MATCH (n) RETURN n LIMIT 10")
+        async for row in result:
+            print(row)
+    finally:
+        await client.close()
+
+# Connection pool configuration
+client = GeodeClient(
+    "localhost:3141",
+    max_connections=100,
+    connection_timeout=30,
+    verify_tls=True,
+    ca_file="/path/to/ca.pem"
+)
+```
+
+### Query Execution
+
+```python
+# Simple query
+result = await client.query("MATCH (u:User) RETURN u.name")
+async for row in result:
+    print(row['name'])
+
+# Parameterized query (named parameters)
+result = await client.query("""
+    MATCH (u:User)
+    WHERE u.age >= $min_age AND u.verified = $verified
+    RETURN u.name, u.age
+""", {
+    "min_age": 18,
+    "verified": True
+})
+
+# Parameterized query (positional parameters)
+result = await client.query("""
+    MATCH (u:User)
+    WHERE u.age >= $1 AND u.verified = $2
+    RETURN u.name, u.age
+""", [18, True])
+
+# Execute with no results (INSERT, UPDATE, DELETE)
+affected = await client.execute("""
+    CREATE (u:User {
+        name: $name,
+        email: $email,
+        created_at: CURRENT_TIMESTAMP
+    })
+""", {"name": "Alice", "email": "alice@example.com"})
+print(f"Created {affected} nodes")
+```
+
+### Transaction Management
+
+```python
+# Transaction context manager
+async with client.transaction() as tx:
+    await tx.execute("CREATE (u:User {name: $name})", {"name": "Alice"})
+    await tx.execute("CREATE (u:User {name: $name})", {"name": "Bob"})
+    # Auto-commits on successful exit, rolls back on exception
+
+# Manual transaction control
+tx = await client.begin_transaction()
+try:
+    await tx.execute("CREATE (u:User {name: 'Alice'})")
+    await tx.execute("CREATE (u:User {name: 'Bob'})")
+    await tx.commit()
+except Exception as e:
+    await tx.rollback()
+    raise
+
+# Savepoints
+async with client.transaction() as tx:
+    await tx.execute("CREATE (u:User {name: 'Alice'})")
+
+    sp = await tx.savepoint("before_bob")
+    try:
+        await tx.execute("CREATE (u:User {name: 'Bob', invalid: ???})")
+    except:
+        await tx.rollback_to(sp)  # Rollback to savepoint
+
+    await tx.execute("CREATE (u:User {name: 'Charlie'})")
+    # Commits Alice and Charlie, Bob rolled back
+```
+
+### Prepared Statements
+
+```python
+# Prepare statement
+stmt = await client.prepare("""
+    MATCH (u:User {id: $user_id})
+    RETURN u.name, u.email
+""")
+
+# Execute multiple times with different parameters
+for user_id in [1, 2, 3, 4, 5]:
+    result = await stmt.execute({"user_id": user_id})
+    async for row in result:
+        print(f"{row['name']}: {row['email']}")
+
+# Close statement
+await stmt.close()
+```
+
+### Error Handling
+
+```python
+from geode_client import (
+    GeodeError,
+    ConnectionError,
+    QueryError,
+    TransactionError,
+    AuthenticationError
+)
+
+try:
+    result = await client.query("MATCH (u:User) WHERE u.invalid_syntax")
+except QueryError as e:
+    print(f"Query error: {e.message}")
+    print(f"Status code: {e.status_code}")
+    print(f"Query: {e.query}")
+except ConnectionError as e:
+    print(f"Connection failed: {e}")
+except GeodeError as e:
+    print(f"Geode error: {e}")
+```
+
+### Row-Level Security (RLS)
+
+```python
+# Set RLS policy for session
+await client.set_rls_policy("user_policy", {"user_id": 123})
+
+# Query with RLS enforced
+result = await client.query("""
+    MATCH (u:User)-[:POSTED]->(p:Post)
+    RETURN p.title
+""")
+# Only returns posts accessible under policy
+
+# Clear RLS policy
+await client.clear_rls_policy()
+```
+
+## Go Client API
+
+### Installation
+
+```bash
+go get go.codepros.org/geode
+```
+
+### Connection Management
+
+```go
+import (
+    "database/sql"
+    _ "go.codepros.org/geode"
+)
+
+// Open connection
+db, err := sql.Open("geode", "geode://localhost:3141")
+if err != nil {
+    log.Fatal(err)
+}
+defer db.Close()
+
+// Configure connection pool
+db.SetMaxOpenConns(100)
+db.SetMaxIdleConns(10)
+db.SetConnMaxLifetime(time.Hour)
+
+// Test connection
+if err := db.Ping(); err != nil {
+    log.Fatal("Cannot connect:", err)
+}
+
+// Connection string options
+// geode://host:port?tls=true&ca_file=/path/to/ca.pem&timeout=30s
+db, err := sql.Open("geode", "geode://localhost:3141?tls=true&timeout=30s")
+```
+
+### Query Execution
+
+```go
+// Query with rows
+rows, err := db.Query(`
+    MATCH (u:User)
+    WHERE u.age >= $1 AND u.verified = $2
+    RETURN u.name, u.age
+`, 18, true)
+if err != nil {
+    log.Fatal(err)
+}
+defer rows.Close()
+
+for rows.Next() {
+    var name string
+    var age int
+    if err := rows.Scan(&name, &age); err != nil {
+        log.Fatal(err)
+    }
+    fmt.Printf("%s: %d\n", name, age)
+}
+if err := rows.Err(); err != nil {
+    log.Fatal(err)
+}
+
+// Single row query
+var name string
+var email string
+err = db.QueryRow(`
+    MATCH (u:User {id: $1})
+    RETURN u.name, u.email
+`, 123).Scan(&name, &email)
+if err == sql.ErrNoRows {
+    fmt.Println("User not found")
+} else if err != nil {
+    log.Fatal(err)
+}
+
+// Execute (no result rows)
+result, err := db.Exec(`
+    CREATE (u:User {
+        name: $1,
+        email: $2,
+        created_at: CURRENT_TIMESTAMP
+    })
+`, "Alice", "alice@example.com")
+if err != nil {
+    log.Fatal(err)
+}
+affected, _ := result.RowsAffected()
+fmt.Printf("Created %d nodes\n", affected)
+```
+
+### Transaction Management
+
+```go
+// Begin transaction
+tx, err := db.Begin()
+if err != nil {
+    log.Fatal(err)
+}
+
+// Execute within transaction
+_, err = tx.Exec("CREATE (u:User {name: $1})", "Alice")
+if err != nil {
+    tx.Rollback()
+    log.Fatal(err)
+}
+
+_, err = tx.Exec("CREATE (u:User {name: $1})", "Bob")
+if err != nil {
+    tx.Rollback()
+    log.Fatal(err)
+}
+
+// Commit transaction
+if err = tx.Commit(); err != nil {
+    log.Fatal(err)
+}
+
+// Transaction with defer pattern
+tx, err := db.Begin()
+if err != nil {
+    return err
+}
+defer func() {
+    if p := recover(); p != nil {
+        tx.Rollback()
+        panic(p)
+    } else if err != nil {
+        tx.Rollback()
+    } else {
+        err = tx.Commit()
+    }
+}()
+
+_, err = tx.Exec("CREATE (u:User {name: 'Alice'})")
+// ... more operations
+```
+
+### Prepared Statements
+
+```go
+// Prepare statement
+stmt, err := db.Prepare(`
+    MATCH (u:User {id: $1})
+    RETURN u.name, u.email
+`)
+if err != nil {
+    log.Fatal(err)
+}
+defer stmt.Close()
+
+// Execute multiple times
+for _, id := range []int64{1, 2, 3, 4, 5} {
+    var name, email string
+    err = stmt.QueryRow(id).Scan(&name, &email)
+    if err != nil {
+        log.Println(err)
+        continue
+    }
+    fmt.Printf("%s: %s\n", name, email)
+}
+```
+
+### Error Handling
+
+```go
+import "go.codepros.org/geode/geoderr"
+
+rows, err := db.Query("MATCH (u:User) WHERE invalid")
+if err != nil {
+    if geodeErr, ok := err.(*geoderr.Error); ok {
+        fmt.Printf("Geode error: %s\n", geodeErr.Message)
+        fmt.Printf("Status code: %s\n", geodeErr.StatusCode)
+    } else {
+        log.Fatal("Other error:", err)
+    }
+}
+```
+
+## Rust Client API
+
+### Installation
+
+```toml
+# Cargo.toml
+[dependencies]
+geode-client = "0.18"
+tokio = { version = "1", features = ["full"] }
+```
+
+### Connection Management
+
+```rust
+use geode_client::{Client, Config};
+
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    // Simple connection
+    let client = Client::connect("localhost:3141").await?;
+
+    // Connection with configuration
+    let config = Config::builder()
+        .address("localhost:3141")
+        .max_connections(100)
+        .connection_timeout(std::time::Duration::from_secs(30))
+        .tls_enabled(true)
+        .ca_file("/path/to/ca.pem")
+        .build()?;
+
+    let client = Client::with_config(config).await?;
+
+    // Connection pool management
+    let pool = geode_client::Pool::new("localhost:3141", 100).await?;
+    let client = pool.get().await?;
+
+    Ok(())
+}
+```
+
+### Query Execution
+
+```rust
+use geode_client::Value;
+
+// Simple query
+let result = client.query(
+    "MATCH (u:User) RETURN u.name, u.age",
+    &[],
+).await?;
+
+for row in result.rows() {
+    let name: String = row.get("name")?;
+    let age: i64 = row.get("age")?;
+    println!("{}: {}", name, age);
+}
+
+// Parameterized query (named)
+let result = client.query(
+    r#"
+        MATCH (u:User)
+        WHERE u.age >= $min_age AND u.verified = $verified
+        RETURN u.name, u.age
+    "#,
+    &[
+        ("min_age", &Value::Integer(18)),
+        ("verified", &Value::Boolean(true)),
+    ],
+).await?;
+
+// Parameterized query (positional)
+let result = client.query(
+    r#"
+        MATCH (u:User {id: $1})
+        RETURN u.name, u.email
+    "#,
+    &[&Value::Integer(123)],
+).await?;
+
+// Execute (no results)
+let affected = client.execute(
+    r#"
+        CREATE (u:User {
+            name: $name,
+            email: $email,
+            created_at: CURRENT_TIMESTAMP
+        })
+    "#,
+    &[
+        ("name", &Value::String("Alice".into())),
+        ("email", &Value::String("alice@example.com".into())),
+    ],
+).await?;
+println!("Created {} nodes", affected);
+```
+
+### Transaction Management
+
+```rust
+// Transaction
+let mut tx = client.begin_transaction().await?;
+
+tx.execute(
+    "CREATE (u:User {name: $1})",
+    &[&Value::String("Alice".into())],
+).await?;
+
+tx.execute(
+    "CREATE (u:User {name: $1})",
+    &[&Value::String("Bob".into())],
+).await?;
+
+tx.commit().await?;
+
+// Transaction with error handling
+let mut tx = client.begin_transaction().await?;
+let result = async {
+    tx.execute("CREATE (u:User {name: 'Alice'})", &[]).await?;
+    tx.execute("CREATE (u:User {name: 'Bob'})", &[]).await?;
+    Ok::<(), geode_client::Error>(())
+}.await;
+
+match result {
+    Ok(_) => tx.commit().await?,
+    Err(e) => {
+        tx.rollback().await?;
+        return Err(e.into());
+    }
+}
+
+// Savepoint
+let mut tx = client.begin_transaction().await?;
+tx.execute("CREATE (u:User {name: 'Alice'})", &[]).await?;
+
+let sp = tx.savepoint("before_bob").await?;
+match tx.execute("CREATE (u:User {invalid: ???})", &[]).await {
+    Ok(_) => {},
+    Err(_) => {
+        tx.rollback_to_savepoint(&sp).await?;
+    }
+}
+
+tx.commit().await?;
+```
+
+### Prepared Statements
+
+```rust
+// Prepare statement
+let stmt = client.prepare(r#"
+    MATCH (u:User {id: $1})
+    RETURN u.name, u.email
+"#).await?;
+
+// Execute multiple times
+for id in [1, 2, 3, 4, 5] {
+    let result = stmt.query(&[&Value::Integer(id)]).await?;
+    for row in result.rows() {
+        let name: String = row.get("name")?;
+        let email: String = row.get("email")?;
+        println!("{}: {}", name, email);
+    }
+}
+```
+
+### Error Handling
+
+```rust
+use geode_client::{Error, ErrorKind};
+
+match client.query("MATCH (u:User) WHERE invalid", &[]).await {
+    Ok(result) => { /* handle result */ },
+    Err(Error::Query(e)) => {
+        eprintln!("Query error: {}", e.message);
+        eprintln!("Status: {}", e.status_code);
+    },
+    Err(Error::Connection(e)) => {
+        eprintln!("Connection error: {}", e);
+    },
+    Err(e) => {
+        eprintln!("Other error: {}", e);
+    }
+}
+```
+
+## Zig Client API
+
+### Integration
+
+```zig
+const std = @import("std");
+const geode = @import("geode_client");
+
+pub fn main() !void {
+    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    defer _ = gpa.deinit();
+    const allocator = gpa.allocator();
+
+    // Connect
+    var client = try geode.Client.connect(allocator, "localhost", 3141);
+    defer client.deinit();
+
+    // Query
+    const result = try client.query("MATCH (n:User) RETURN n.name LIMIT 10", .{});
+    defer result.deinit();
+
+    while (try result.next()) |row| {
+        const name = row.get("name").?;
+        std.debug.print("Name: {s}\n", .{name.string});
+    }
+}
+```
+
+## Common Integration Patterns
+
+### Connection Pooling
+
+```python
+# Python: Built-in connection pool
+client = GeodeClient("localhost:3141", max_connections=100)
+
+# Go: Standard database/sql pooling
+db.SetMaxOpenConns(100)
+db.SetMaxIdleConns(10)
+
+# Rust: Custom pool
+let pool = Pool::new("localhost:3141", 100).await?;
+```
+
+### Retry Logic
+
+```python
+# Python with exponential backoff
+import asyncio
+
+async def query_with_retry(client, query, params, max_retries=3):
+    for attempt in range(max_retries):
+        try:
+            return await client.query(query, params)
+        except ConnectionError:
+            if attempt == max_retries - 1:
+                raise
+            await asyncio.sleep(2 ** attempt)  # Exponential backoff
+```
+
+```go
+// Go with retry
+func queryWithRetry(db *sql.DB, query string, args ...interface{}) (*sql.Rows, error) {
+    maxRetries := 3
+    for i := 0; i < maxRetries; i++ {
+        rows, err := db.Query(query, args...)
+        if err == nil {
+            return rows, nil
+        }
+        if i < maxRetries-1 {
+            time.Sleep(time.Duration(1<<uint(i)) * time.Second)
+        }
+    }
+    return nil, fmt.Errorf("query failed after %d retries", maxRetries)
+}
+```
+
+### Batch Operations
+
+```python
+# Python batch insert
+async with client.transaction() as tx:
+    for i in range(1000):
+        await tx.execute("""
+            CREATE (u:User {
+                id: $id,
+                name: $name,
+                created_at: CURRENT_TIMESTAMP
+            })
+        """, {"id": i, "name": f"User{i}"})
+```
+
+```go
+// Go batch insert
+tx, _ := db.Begin()
+stmt, _ := tx.Prepare("CREATE (u:User {id: $1, name: $2})")
+for i := 0; i < 1000; i++ {
+    _, err := stmt.Exec(i, fmt.Sprintf("User%d", i))
+    if err != nil {
+        tx.Rollback()
+        return err
+    }
+}
+stmt.Close()
+tx.Commit()
+```
+
+### Stream Processing
+
+```python
+# Python async streaming
+async def process_large_result():
+    result = await client.query("MATCH (n:User) RETURN n")
+    async for row in result:
+        await process_user(row)
+        # Memory efficient: only one row in memory at a time
+```
+
+```rust
+// Rust streaming
+let result = client.query("MATCH (n:User) RETURN n", &[]).await?;
+for row in result.rows() {
+    process_user(&row)?;
+    // Stream-based iteration
+}
+```
+
+## Best Practices
+
+1. **Use Connection Pooling**: Configure appropriate pool sizes for your workload
+2. **Parameterize Queries**: Always use parameters to prevent injection attacks
+3. **Handle Errors**: Implement proper error handling and retry logic
+4. **Transaction Management**: Use context managers or defer patterns for safety
+5. **Close Resources**: Always close connections, statements, and result sets
+6. **Streaming**: Use streaming for large result sets to manage memory
+7. **Monitoring**: Track connection pool metrics and query performance
+8. **TLS**: Enable TLS for production deployments
+
+## Performance Tips
+
+### Connection Reuse
+
+```python
+# Good: Reuse client connection
+async with GeodeClient("localhost:3141") as client:
+    for i in range(100):
+        await client.query("MATCH (n:User {id: $id}) RETURN n", {"id": i})
+
+# Avoid: Creating new connection per query
+for i in range(100):
+    async with GeodeClient("localhost:3141") as client:
+        await client.query("MATCH (n:User {id: $id}) RETURN n", {"id": i})
+```
+
+### Prepared Statements
+
+```go
+// Good: Prepare once, execute many
+stmt, _ := db.Prepare("MATCH (u:User {id: $1}) RETURN u")
+defer stmt.Close()
+for _, id := range ids {
+    stmt.QueryRow(id).Scan(&result)
+}
+
+// Avoid: Preparing repeatedly
+for _, id := range ids {
+    stmt, _ := db.Prepare("MATCH (u:User {id: $1}) RETURN u")
+    stmt.QueryRow(id).Scan(&result)
+    stmt.Close()
+}
+```
+
+### Batch Transactions
+
+```python
+# Good: Single transaction for batch
+async with client.transaction() as tx:
+    for item in items:
+        await tx.execute("CREATE (n:Node {data: $data})", {"data": item})
+
+# Avoid: Transaction per operation
+for item in items:
+    async with client.transaction() as tx:
+        await tx.execute("CREATE (n:Node {data: $data})", {"data": item})
+```
+
+## Related Topics
+
+- **Query Language**: GQL query syntax
+- **Transactions**: Transaction management
+- **Security**: Authentication and authorization
+- **Performance**: Query optimization
+- **Deployment**: Production deployment
+
+## Further Reading
+
+- [Python Client](/docs/clients/python/) - Complete Python API documentation
+- [Go Client](/docs/clients/go/) - Complete Go API documentation
+- [Rust Client](/docs/clients/rust/) - Complete Rust API documentation
+- [Zig Client](/docs/clients/zig/) - Complete Zig API documentation
+- [Query Language](/tags/query-language/) - GQL syntax reference
+
+Geode's client libraries provide consistent, production-ready APIs across multiple languages, enabling seamless integration with your application stack while maintaining high performance and reliability.
