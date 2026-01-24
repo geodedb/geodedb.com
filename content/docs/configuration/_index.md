@@ -8,6 +8,8 @@ weight: 35
 
 This comprehensive guide covers all configuration options for the Geode graph database server and client.
 
+> **See also**: [Server Configuration Reference](/docs/configuration/server-configuration/) - Complete reference with deployment scenarios, TLS setup, and production configuration examples.
+
 ## Configuration Methods
 
 Geode supports three configuration methods (in order of precedence):

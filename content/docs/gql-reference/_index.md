@@ -82,15 +82,15 @@ ORDER BY population DESC
 
 ## Detailed Topics
 
-Explore the following sections for comprehensive coverage:
+For comprehensive GQL coverage, see:
 
-- **[Pattern Matching](pattern-matching/)** - Node and relationship patterns
-- **[Path Expressions](path-expressions/)** - Variable-length paths and shortest path
-- **[Data Manipulation](data-manipulation/)** - CREATE, UPDATE, DELETE operations
-- **[Aggregations](aggregations/)** - GROUP BY, aggregate functions
-- **[Set Operations](set-operations/)** - UNION, INTERSECT, EXCEPT
-- **[Functions](functions/)** - Built-in and user-defined functions
-- **[Operators](operators/)** - Comparison, logical, arithmetic operators
+- **[GQL Guide](/docs/gql/guide/)** - Complete query language guide
+- **[Data Types Reference](/docs/data-types/)** - All 50+ supported types
+- **[API Reference](/docs/api-reference/)** - Functions and operators
+- **[Query Performance Tuning](/docs/query/performance-tuning/)** - Optimization guide
+- **[Troubleshooting Guide](/docs/guides/troubleshooting/)** - Common query issues
+
+> **Note**: Additional detailed GQL reference pages (pattern matching, path expressions, aggregations, etc.) will be added in future updates.
 
 ## ISO/IEC 39075:2024 Compliance
 
