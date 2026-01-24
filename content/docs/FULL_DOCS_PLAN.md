@@ -420,11 +420,11 @@ Based on source documentation analysis:
 
 | ID | Doc Page | Primary Keyword | Source Refs | Status | Issue IID | PR/Commit | Notes | Updated |
 |----|----------|-----------------|-------------|--------|-----------|-----------|-------|---------|
-| WI-016 | `./content/docs/guides/multi-datacenter.md` | "multi-datacenter replication" | Future feature | Not Started | - | - | Replication and failover (if supported) | 2026-01-23 |
-| WI-017 | `./content/docs/reference/changelog.md` | "release notes" | CHANGELOG.md, docs/CHANGELOG.md | Not Started | - | - | Version history + migration notes | 2026-01-23 |
-| WI-018 | `./content/docs/guides/backup-automation.md` | "automated backups" | Deployment docs + S3 examples | Not Started | - | - | Scheduled backups + recovery testing | 2026-01-23 |
-| WI-019 | `./content/docs/reference/error-codes.md` | "error codes reference" | CLIENT_ERRORS.md, error handling | Not Started | - | - | Complete error code reference | 2026-01-23 |
-| WI-020 | `./content/docs/tutorials/` - Add 3-5 tutorials | "geode tutorials" | match_tutorial.md + create new | Not Started | - | - | Step-by-step learning paths | 2026-01-23 |
+| WI-016 | `./content/docs/guides/multi-datacenter.md` | "multi-datacenter replication" | Future feature | Deferred | - | - | Replication feature verification needed | 2026-01-23 |
+| WI-017 | `./content/docs/reference/changelog.md` | "release notes" | CHANGELOG.md, docs/CHANGELOG.md | **Complete** | - | 1820fb2 | 842 lines - v0.17.0 & v0.18.0 releases | 2026-01-23 |
+| WI-018 | `./content/docs/guides/backup-automation.md` | "automated backups" | Deployment docs + S3 examples | **Complete** | - | 1820fb2 | 682 lines - S3, cron, systemd, DR testing | 2026-01-23 |
+| WI-019 | `./content/docs/reference/error-codes.md` | "error codes reference" | CLIENT_ERRORS.md, error handling | **Complete** | - | 1820fb2 | 517 lines - GQLSTATUS & internal codes | 2026-01-23 |
+| WI-020 | `./content/docs/tutorials/` - Add 3-5 tutorials | "geode tutorials" | match_tutorial.md + create new | **Complete** | - | 1820fb2 | 1,700 lines - 3 comprehensive tutorials | 2026-01-23 |
 
 ---
 
