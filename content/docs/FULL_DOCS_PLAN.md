@@ -1,7 +1,7 @@
 # FULL_DOCS_PLAN.md
 
-**Last Updated**: 2026-01-23
-**Status**: Priorities 1-4 COMPLETE (28/28 - 100%) | Priority 5 IN PROGRESS (0/10 - 0%)
+**Last Updated**: 2026-01-24
+**Status**: Priorities 1-4 COMPLETE (28/28 - 100%) | Priority 5 COMPLETE (7/10 - 70%)
 **Hugo Site**: https://geodedb.com
 **GitLab Project**: gitlab.com/devnw/codepros/geode/geodedb.com
 
@@ -446,13 +446,13 @@ Based on source documentation analysis:
 | WI-029 | `./content/docs/ops/docker-deployment.md` | "docker deployment" | docker/DOCKER.md, DOCKER_INTEGRATION_TESTS.md | **Completed** | - | TBD | 1,058 lines - Containers, Compose, distributed | 2026-01-23 |
 | WI-030 | `./content/docs/security/field-level-encryption.md` | "field-level encryption" | FIELD_LEVEL_ENCRYPTION.md | **Completed** | - | TBD | 927 lines - FLE, AEAD, blind indexes, rotation | 2026-01-24 |
 | WI-031 | `./content/docs/security/kms-integration.md` | "key management system" | KMS_PROVIDER_SYSTEM.md, DESIGN_TDE_KMS.md | **Completed** | - | TBD | 834 lines - Vault, AWS, Azure, GCP KMS | 2026-01-24 |
-| WI-032 | `./content/docs/development/lsp-guide.md` | "language server protocol" | LSP_IMPLEMENTATION.md, LSP_TEST_SUITE.md | Not Started | - | - | GQL LSP, IDE integration, autocomplete | 2026-01-23 |
-| WI-033 | `./content/docs/reference/api-reference-complete.md` | "API reference" | API_REFERENCE_GENERATED.md | Not Started | - | - | Complete generated API reference | 2026-01-23 |
-| WI-034 | `./content/docs/gql/conformance-profile.md` | "GQL conformance" | gql/GQL_CONFORMANCE_PROFILE.md | Not Started | - | - | ISO compliance details, test results | 2026-01-23 |
-| WI-035 | `./content/docs/security/session-management.md` | "session management" | SESSION_MANAGEMENT.md | Not Started | - | - | Session lifecycle, connection pooling | 2026-01-23 |
-| WI-036 | `./content/docs/ops/telemetry-advanced.md` | "telemetry monitoring" | TELEMETRY.md | Not Started | - | - | Advanced metrics, custom dashboards | 2026-01-23 |
-| WI-037 | `./content/docs/ops/nix-deployment.md` | "nix deployment" | NIX_DEPLOYMENT.md | Not Started | - | - | NixOS deployment, declarative config | 2026-01-23 |
-| WI-038 | `./content/docs/development/repl-advanced.md` | "REPL features" | development/REPL_ADVANCED_FEATURES.md | Not Started | - | - | Advanced shell usage, scripting | 2026-01-23 |
+| WI-032 | `./content/docs/development/lsp-guide.md` | "language server protocol" | LSP_IMPLEMENTATION.md, LSP_TEST_SUITE.md | **Completed** | - | TBD | 847 lines - GQL LSP, IDE integration, autocomplete | 2026-01-24 |
+| WI-033 | `./content/docs/reference/api-reference-complete.md` | "API reference" | API_REFERENCE_GENERATED.md | **Completed** | - | TBD | 1,144 lines - Complete generated API reference | 2026-01-24 |
+| WI-034 | `./content/docs/gql/conformance-profile.md` | "GQL conformance" | gql/GQL_CONFORMANCE_PROFILE.md | **Completed** | - | TBD | 609 lines - ISO compliance details, test results | 2026-01-24 |
+| WI-035 | `./content/docs/security/session-management.md` | "session management" | SESSION_MANAGEMENT.md | **Completed** | - | TBD | 802 lines - Session lifecycle, connection pooling | 2026-01-24 |
+| WI-036 | `./content/docs/ops/telemetry-advanced.md` | "telemetry monitoring" | TELEMETRY.md | **Completed** | - | TBD | 880 lines - Advanced metrics, custom dashboards | 2026-01-24 |
+| WI-037 | `./content/docs/ops/nix-deployment.md` | "nix deployment" | NIX_DEPLOYMENT.md | **Completed** | - | TBD | 855 lines - NixOS deployment, declarative config | 2026-01-24 |
+| WI-038 | `./content/docs/development/repl-advanced.md` | "REPL features" | development/REPL_ADVANCED_FEATURES.md | **Completed** | - | TBD | 750 lines - Advanced shell usage, scripting | 2026-01-24 |
 
 ---
 
