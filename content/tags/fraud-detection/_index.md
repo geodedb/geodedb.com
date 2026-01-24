@@ -481,3 +481,410 @@ async fn detect_fraud_ring(client: &Client, min_accounts: i32) -> Result<Vec<Fra
 - **Pattern Matching**: Check patterns tag for complex graph pattern queries
 - **Real-Time Analytics**: Explore real-time-analytics for streaming fraud detection
 - **Security**: Review security tag for authentication and access control integration
+
+## Advanced Fraud Detection Patterns
+
+### Money Laundering Detection (Layering & Integration)
+
+Detect complex money laundering schemes:
+
+```gql
+-- Detect smurfing (structuring to avoid reporting thresholds)
+MATCH (a:Account)-[t:TRANSACTION]->()
+WHERE t.timestamp > datetime().minusDays(7)
+  AND t.amount BETWEEN 9000 AND 9999  // Just below $10k reporting threshold
+WITH a,
+     COUNT(t) AS near_threshold_count,
+     SUM(t.amount) AS total_amount,
+     COUNT(DISTINCT date.truncate('day', t.timestamp)) AS days_active
+WHERE near_threshold_count >= 5
+  AND total_amount > 40000
+RETURN a.account_id,
+       near_threshold_count,
+       total_amount,
+       days_active,
+       'STRUCTURING' AS fraud_pattern;
+
+-- Fan-out / Fan-in patterns (integration phase)
+MATCH (origin:Account)-[t1:TRANSFER]->(layer1:Account)
+      -[t2:TRANSFER]->(layer2:Account)
+WHERE t1.timestamp > datetime().minusDays(3)
+  AND t2.timestamp > t1.timestamp
+  AND t2.timestamp < t1.timestamp + duration('PT2H')
+WITH origin, layer2, COUNT(DISTINCT layer1) AS intermediaries
+WHERE intermediaries >= 3
+MATCH (layer2)-[t3:TRANSFER]->(destination:Account)
+WHERE t3.timestamp > datetime().minusDays(3)
+WITH origin, destination,
+     COUNT(DISTINCT layer2) AS layering_nodes,
+     SUM(t3.amount) AS final_amount
+WHERE layering_nodes >= 2 AND final_amount > 50000
+RETURN origin.account_id AS source,
+       destination.account_id AS sink,
+       layering_nodes,
+       final_amount,
+       'LAYERING_NETWORK' AS fraud_type;
+```
+
+### Identity Verification Fraud
+
+Detect fake identities and account takeovers:
+
+```gql
+-- Synthetic identity detection
+MATCH (a:Account)
+WHERE a.created_date > datetime().minusDays(180)
+WITH a,
+     COUNT { (a)-[:HAS_PHONE]->(:Phone) } AS phone_count,
+     COUNT { (a)-[:HAS_EMAIL]->(:Email) } AS email_count,
+     COUNT { (a)-[:USES]->(:Device) } AS device_count,
+     COUNT { (a)-[:FROM_IP]->(:IPAddress) } AS ip_count,
+     SIZE((a)-[:SHARES_SSN]->()) AS ssn_matches
+WHERE phone_count > 3
+   OR device_count > 15
+   OR ip_count > 25
+   OR ssn_matches > 5
+WITH a, phone_count, device_count, ip_count, ssn_matches,
+     phone_count * 2 + device_count * 3 + ip_count + ssn_matches * 10 AS synthetic_score
+WHERE synthetic_score > 30
+RETURN a.account_id,
+       a.name,
+       phone_count,
+       device_count,
+       ip_count,
+       ssn_matches,
+       synthetic_score
+ORDER BY synthetic_score DESC;
+
+-- Account takeover detection
+MATCH (a:Account)-[login:LOGIN]->(device:Device)
+WHERE login.timestamp > datetime().minusDays(30)
+WITH a,
+     COLLECT(DISTINCT device.fingerprint) AS recent_devices,
+     COUNT { (a)-[:LOGIN]->() WHERE login.timestamp < datetime().minusDays(30) } AS historical_logins
+WITH a, recent_devices,
+     SIZE([d IN recent_devices WHERE NOT EXISTS {
+         (a)-[:LOGIN]->(:Device {fingerprint: d})
+         WHERE login.timestamp < datetime().minusDays(30)
+     }]) AS new_device_count
+WHERE new_device_count >= 3
+MATCH (a)-[recent_login:LOGIN]->(:Device)
+WHERE recent_login.timestamp > datetime().minusDays(7)
+  AND recent_login.failed_attempts > 3
+WITH a, new_device_count, COUNT(recent_login) AS failed_login_attempts
+WHERE failed_login_attempts > 10
+RETURN a.account_id,
+       new_device_count,
+       failed_login_attempts,
+       'ACCOUNT_TAKEOVER_SUSPECTED' AS alert;
+```
+
+### Card-Not-Present (CNP) Fraud
+
+Detect online payment fraud:
+
+```gql
+-- Card testing patterns (small transactions before large purchase)
+MATCH (card:CreditCard)<-[t:TRANSACTION]-(merchant:Merchant)
+WHERE t.timestamp > datetime().minusHours(24)
+WITH card,
+     COUNT(t) AS tx_count,
+     [t IN COLLECT(t) ORDER BY t.timestamp | t.amount] AS amounts
+WITH card, tx_count, amounts,
+     [a IN amounts WHERE a < 5.0] AS small_amounts,
+     [a IN amounts WHERE a > 500.0] AS large_amounts
+WHERE SIZE(small_amounts) >= 5
+  AND SIZE(large_amounts) >= 1
+  AND amounts[-1] > 500  // Latest transaction is large
+RETURN card.card_number_last4,
+       tx_count,
+       SIZE(small_amounts) AS test_transactions,
+       amounts[-1] AS large_purchase_amount,
+       'CARD_TESTING' AS fraud_indicator;
+
+-- Cross-border fraud velocity
+MATCH (card:CreditCard)<-[t:TRANSACTION]-(merchant:Merchant)
+WHERE t.timestamp > datetime().minusDays(7)
+WITH card, merchant.country AS country, COUNT(t) AS tx_in_country
+WITH card, COUNT(DISTINCT country) AS countries_used, SUM(tx_in_country) AS total_tx
+WHERE countries_used >= 5 AND total_tx >= 10
+MATCH (card)<-[recent:TRANSACTION]-(m:Merchant)
+WHERE recent.timestamp > datetime().minusHours(12)
+WITH card, countries_used,
+     COLLECT(DISTINCT m.country) AS recent_countries
+WHERE SIZE(recent_countries) >= 3
+RETURN card.card_number_last4,
+       countries_used,
+       recent_countries,
+       'GEOGRAPHIC_VELOCITY' AS fraud_type;
+```
+
+## Machine Learning-Based Fraud Detection
+
+### Feature Engineering for ML Models
+
+```gql
+-- Extract fraud detection features
+MATCH (a:Account)
+OPTIONAL MATCH (a)-[t:TRANSACTION]->()
+WHERE t.timestamp > datetime().minusDays(90)
+WITH a,
+     COUNT(t) AS tx_count_90d,
+     AVG(t.amount) AS avg_tx_amount,
+     STDDEV(t.amount) AS stddev_tx_amount,
+     MAX(t.amount) AS max_tx_amount,
+     COUNT(DISTINCT date.truncate('day', t.timestamp)) AS active_days,
+     COUNT(DISTINCT t.merchant_id) AS unique_merchants
+WITH a, tx_count_90d, avg_tx_amount, stddev_tx_amount, max_tx_amount, active_days, unique_merchants,
+     SIZE((a)-[:USES]->(:Device)) AS device_count,
+     SIZE((a)-[:FROM_IP]->(:IPAddress)) AS ip_count
+OPTIONAL MATCH (a)-[:TRANSACTED_WITH]-(other:Account {flagged: true})
+WITH a, tx_count_90d, avg_tx_amount, stddev_tx_amount, max_tx_amount,
+     active_days, unique_merchants, device_count, ip_count,
+     COUNT(DISTINCT other) AS flagged_connections
+RETURN a.account_id,
+       tx_count_90d,
+       avg_tx_amount,
+       stddev_tx_amount,
+       max_tx_amount,
+       active_days,
+       unique_merchants,
+       device_count,
+       ip_count,
+       flagged_connections,
+       tx_count_90d * 1.0 / NULLIF(active_days, 0) AS tx_per_active_day,
+       max_tx_amount / NULLIF(avg_tx_amount, 0) AS amount_volatility,
+       flagged_connections * 100.0 / NULLIF(device_count + ip_count, 0) AS network_risk_ratio;
+```
+
+### Graph Neural Network (GNN) Fraud Detection
+
+```gql
+-- Store GNN embeddings computed externally
+MATCH (a:Account {account_id: $account_id})
+SET a.gnn_embedding = $embedding_vector;
+
+-- Query using learned representations
+MATCH (suspicious:Account)
+WHERE suspicious.gnn_fraud_score > 0.8  // Score from external GNN model
+MATCH (suspicious)-[:TRANSACTED_WITH*1..2]-(connected:Account)
+WITH connected,
+     AVG(suspicious.gnn_fraud_score) AS avg_neighbor_fraud_score,
+     COUNT(DISTINCT suspicious) AS suspicious_connections
+WHERE avg_neighbor_fraud_score > 0.6
+  AND suspicious_connections >= 3
+RETURN connected.account_id,
+       avg_neighbor_fraud_score,
+       suspicious_connections,
+       'GUILT_BY_ASSOCIATION' AS detection_method;
+```
+
+## Rule-Based Expert Systems
+
+### Configurable Fraud Rules Engine
+
+```gql
+-- Define fraud rules as data
+CREATE (rule:FraudRule {
+    rule_id: 'RULE_001',
+    name: 'High Velocity Small Transactions',
+    condition: 'tx_count > 20 AND max_amount < 100 AND time_window_hours < 1',
+    score: 0.7,
+    action: 'BLOCK',
+    enabled: true
+});
+
+CREATE (rule:FraudRule {
+    rule_id: 'RULE_002',
+    name: 'Geographic Impossibility',
+    condition: 'distance_km > 500 AND time_diff_minutes < 60',
+    score: 0.9,
+    action: 'BLOCK',
+    enabled: true
+});
+
+-- Execute rules engine
+MATCH (tx:Transaction {transaction_id: $tx_id})
+MATCH (rule:FraudRule {enabled: true})
+CALL fraud.evaluate_rule(tx, rule)
+YIELD matched, score
+WHERE matched = true
+WITH tx, SUM(score) AS total_fraud_score,
+     COLLECT(rule.name) AS triggered_rules
+WITH tx, total_fraud_score, triggered_rules,
+     CASE
+         WHEN total_fraud_score > 0.9 THEN 'BLOCK'
+         WHEN total_fraud_score > 0.6 THEN 'REVIEW'
+         WHEN total_fraud_score > 0.3 THEN 'FLAG'
+         ELSE 'APPROVE'
+     END AS decision
+RETURN tx.transaction_id,
+       decision,
+       total_fraud_score,
+       triggered_rules;
+```
+
+## Production Deployment Patterns
+
+### Real-Time Fraud Scoring Pipeline
+
+```gql
+-- Inline transaction scoring (< 50ms latency requirement)
+MATCH (tx:PendingTransaction {transaction_id: $tx_id})
+MATCH (account:Account {account_id: tx.account_id})
+
+// Parallel risk checks
+CALL {
+    WITH account
+    // Check 1: Account velocity
+    MATCH (account)-[recent:TRANSACTION]->()
+    WHERE recent.timestamp > datetime().minusHours(1)
+    WITH COUNT(recent) AS recent_count
+    RETURN CASE WHEN recent_count > 10 THEN 0.3 ELSE 0.0 END AS velocity_risk
+}
+CALL {
+    WITH account
+    // Check 2: Device reputation
+    MATCH (account)-[:USES]->(device:Device)
+    WITH device.reputation_score AS device_rep
+    RETURN CASE WHEN device_rep < 0.5 THEN 0.4 ELSE 0.0 END AS device_risk
+}
+CALL {
+    WITH account, tx
+    // Check 3: Amount anomaly
+    MATCH (account)-[hist:TRANSACTION]->()
+    WHERE hist.timestamp > datetime().minusDays(30)
+    WITH AVG(hist.amount) AS avg_amount, STDDEV(hist.amount) AS stddev_amount
+    WITH ABS(tx.amount - avg_amount) / NULLIF(stddev_amount, 0) AS z_score
+    RETURN CASE WHEN z_score > 3 THEN 0.3 ELSE 0.0 END AS amount_risk
+}
+
+WITH tx,
+     velocity_risk + device_risk + amount_risk AS fraud_score
+SET tx.fraud_score = fraud_score,
+    tx.decision = CASE
+        WHEN fraud_score > 0.8 THEN 'BLOCK'
+        WHEN fraud_score > 0.5 THEN 'REVIEW'
+        ELSE 'APPROVE'
+    END,
+    tx.scored_at = datetime()
+RETURN tx.transaction_id, tx.decision, tx.fraud_score;
+```
+
+### Batch Fraud Sweep (Daily/Weekly)
+
+```gql
+-- Comprehensive fraud analysis for all accounts
+MATCH (a:Account)
+WHERE a.last_fraud_check < datetime().minusDays(1)
+CALL {
+    WITH a
+    // Run full suite of checks
+    CALL fraud.check_network_anomalies(a) YIELD network_score
+    CALL fraud.check_behavioral_patterns(a) YIELD behavior_score
+    CALL fraud.check_transaction_patterns(a) YIELD transaction_score
+    
+    WITH network_score + behavior_score + transaction_score AS total_score
+    WHERE total_score > 0.6
+    
+    SET a.fraud_risk_score = total_score,
+        a.last_fraud_check = datetime(),
+        a.requires_review = true
+    
+    RETURN a.account_id, total_score
+} IN TRANSACTIONS OF 10000 ROWS
+
+RETURN COUNT(*) AS accounts_flagged;
+```
+
+### Feedback Loop and Model Retraining
+
+```gql
+-- Collect feedback from fraud analysts
+MATCH (tx:Transaction {flagged: true})
+MATCH (review:FraudReview {transaction_id: tx.transaction_id})
+WHERE review.analyst_decision IS NOT NULL
+WITH tx,
+     review.analyst_decision AS true_label,  // 'FRAUD' or 'LEGITIMATE'
+     tx.fraud_score AS predicted_score
+WITH COLLECT({
+    transaction_id: tx.transaction_id,
+    features: tx.features,
+    predicted_score: predicted_score,
+    true_label: true_label
+}) AS training_data
+// Export for model retraining
+RETURN training_data;
+
+-- Track model performance metrics
+WITH [review IN fraud_reviews WHERE review.created_at > datetime().minusDays(30)] AS reviews
+WITH SIZE([r IN reviews WHERE r.predicted = 'FRAUD' AND r.actual = 'FRAUD']) AS true_positives,
+     SIZE([r IN reviews WHERE r.predicted = 'FRAUD' AND r.actual = 'LEGITIMATE']) AS false_positives,
+     SIZE([r IN reviews WHERE r.predicted = 'LEGITIMATE' AND r.actual = 'FRAUD']) AS false_negatives,
+     SIZE([r IN reviews WHERE r.predicted = 'LEGITIMATE' AND r.actual = 'LEGITIMATE']) AS true_negatives
+RETURN true_positives * 1.0 / (true_positives + false_positives) AS precision,
+       true_positives * 1.0 / (true_positives + false_negatives) AS recall,
+       2 * precision * recall / (precision + recall) AS f1_score;
+```
+
+## Compliance and Regulatory Requirements
+
+### AML/KYC Transaction Monitoring
+
+```gql
+-- Monitor for suspicious activity reports (SARs)
+MATCH (a:Account)-[t:TRANSACTION]->()
+WHERE t.timestamp > datetime().minusDays(30)
+WITH a,
+     SUM(CASE WHEN t.amount >= 10000 THEN 1 ELSE 0 END) AS large_tx_count,
+     SUM(CASE WHEN t.amount BETWEEN 9000 AND 9999 THEN 1 ELSE 0 END) AS structuring_count,
+     COUNT(DISTINCT t.destination_country) AS international_countries,
+     SUM(t.amount) AS total_volume
+WHERE large_tx_count >= 5
+   OR structuring_count >= 3
+   OR international_countries >= 10
+   OR total_volume >= 100000
+WITH a, large_tx_count, structuring_count, international_countries, total_volume,
+     CASE
+         WHEN structuring_count >= 3 THEN 'STRUCTURING'
+         WHEN large_tx_count >= 10 THEN 'HIGH_VOLUME'
+         WHEN international_countries >= 15 THEN 'INTERNATIONAL_SUSPICIOUS'
+         ELSE 'REVIEW_REQUIRED'
+     END AS sar_reason
+CREATE (sar:SuspiciousActivityReport {
+    sar_id: uuid(),
+    account_id: a.account_id,
+    reason: sar_reason,
+    large_tx_count: large_tx_count,
+    structuring_count: structuring_count,
+    international_countries: international_countries,
+    total_volume: total_volume,
+    created_at: datetime(),
+    status: 'PENDING_REVIEW'
+});
+```
+
+## Best Practices
+
+1. **Multi-Layered Defense**: Combine rule-based, statistical, and ML approaches
+2. **Real-Time + Batch**: Inline scoring for authorization, deep analysis offline
+3. **Low Latency**: Target < 50ms for real-time fraud checks
+4. **Explainability**: Always provide reason codes for fraud decisions
+5. **Feedback Loops**: Collect analyst decisions to improve models
+6. **False Positive Management**: Balance security with user experience
+7. **Privacy**: Anonymize data in analytics, log access to sensitive information
+8. **Monitoring**: Track precision, recall, F1-score, and false positive rates
+9. **Adaptive Thresholds**: Adjust sensitivity based on risk appetite and trends
+10. **Cross-Channel**: Detect fraud across web, mobile, API, and physical channels
+
+## Further Reading
+
+- **Fraud Detection**: Graph-Based Approaches for Financial Crime
+- **Money Laundering Detection**: Layering, Structuring, and Integration Patterns
+- **Machine Learning for Fraud**: GNNs, Autoencoders, and Ensemble Methods
+- **Real-Time Scoring**: Low-Latency Architectures and Optimization
+- **AML/KYC Compliance**: Regulatory Requirements and Implementation
+- **Identity Fraud**: Synthetic Identities and Account Takeover Detection
+- **Payment Fraud**: Card-Not-Present, Card Testing, and Authorization Fraud
+
+Browse the tagged content below for comprehensive fraud detection documentation and case studies.

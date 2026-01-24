@@ -351,3 +351,173 @@ Embeddings complement Geode's graph capabilities:
 - **Path Ranking**: Score graph paths by semantic relevance using node embeddings
 
 Browse the tagged content below to discover documentation, tutorials, and guides for implementing vector embeddings in your Geode applications.
+
+## Advanced Embedding Techniques
+
+### Contextual Embeddings
+
+Use transformer models for context-aware representations:
+
+```gql
+-- Store contextualized embeddings (BERT, GPT)
+MATCH (doc:Document {doc_id: $doc_id})
+SET doc.bert_embedding = $bert_vector,  // [CLS] token embedding
+    doc.sentence_embeddings = $sentence_vectors;  // Per-sentence embeddings
+
+-- Query with semantic similarity
+MATCH (d:Document)
+WHERE vector.similarity(d.bert_embedding, $query_embedding, 'cosine') > 0.75
+RETURN d.title, d.content, vector.similarity(d.bert_embedding, $query_embedding) AS score
+ORDER BY score DESC;
+```
+
+### Multi-Modal Embeddings
+
+Combine text, image, and other modalities:
+
+```gql
+-- Store CLIP embeddings (text + image)
+MATCH (product:Product {product_id: $product_id})
+SET product.text_embedding = $text_embedding,
+    product.image_embedding = $image_embedding,
+    product.combined_embedding = vector.concatenate($text_embedding, $image_embedding);
+
+-- Multi-modal search
+MATCH (p:Product)
+WITH p,
+     vector.similarity(p.text_embedding, $text_query_emb, 'cosine') AS text_sim,
+     vector.similarity(p.image_embedding, $image_query_emb, 'cosine') AS image_sim
+WITH p, 0.6 * text_sim + 0.4 * image_sim AS combined_score
+WHERE combined_score > 0.7
+RETURN p.name, p.description, combined_score
+ORDER BY combined_score DESC;
+```
+
+## Graph Embeddings
+
+### Node2Vec and DeepWalk
+
+Learn structural embeddings:
+
+```gql
+-- Store Node2Vec embeddings (computed externally)
+MATCH (n:Node {node_id: $node_id})
+SET n.node2vec_embedding = $embedding;
+
+-- Find structurally similar nodes
+MATCH (target:Node {node_id: $target_id})
+MATCH (candidate:Node)
+WHERE candidate <> target
+  AND vector.similarity(candidate.node2vec_embedding, target.node2vec_embedding, 'cosine') > 0.8
+RETURN candidate.node_id,
+       vector.similarity(candidate.node2vec_embedding, target.node2vec_embedding) AS structural_similarity
+ORDER BY structural_similarity DESC
+LIMIT 20;
+```
+
+### Graph Neural Network (GNN) Embeddings
+
+```gql
+-- Store GNN node embeddings
+MATCH (entity:Entity {entity_id: $entity_id})
+SET entity.gnn_embedding = $gnn_vector;
+
+-- Link prediction using learned embeddings
+MATCH (a:Entity {entity_id: $entity_a})
+MATCH (b:Entity {entity_id: $entity_b})
+WHERE NOT EXISTS((a)-[:RELATED]-(b))
+WITH a, b,
+     vector.similarity(a.gnn_embedding, b.gnn_embedding, 'cosine') AS link_probability
+WHERE link_probability > 0.85
+RETURN b.entity_id, link_probability
+ORDER BY link_probability DESC;
+```
+
+## Embedding Quality and Evaluation
+
+### Embedding Normalization
+
+```python
+# Normalize embeddings to unit vectors
+import numpy as np
+from geode_client import GeodeClient
+
+async def normalize_embeddings(client):
+    # Fetch embeddings
+    result = await client.execute("""
+        MATCH (d:Document)
+        WHERE d.embedding IS NOT NULL
+        RETURN d.doc_id AS id, d.embedding AS embedding
+    """)
+    
+    for row in result.rows:
+        doc_id, embedding = row['id'], np.array(row['embedding'])
+        normalized = embedding / np.linalg.norm(embedding)
+        
+        # Update with normalized version
+        await client.execute("""
+            MATCH (d:Document {doc_id: $id})
+            SET d.embedding = $normalized_embedding
+        """, {"id": doc_id, "normalized_embedding": normalized.tolist()})
+```
+
+### Dimensionality Reduction
+
+```python
+# Reduce embedding dimensions with PCA
+from sklearn.decomposition import PCA
+
+# Load high-dim embeddings
+embeddings_1536d = load_embeddings()  # OpenAI ada-002
+
+# Reduce to 384 dimensions
+pca = PCA(n_components=384)
+embeddings_384d = pca.fit_transform(embeddings_1536d)
+
+# Explained variance: typically > 95%
+print(f"Explained variance: {pca.explained_variance_ratio_.sum():.2%}")
+
+# Store reduced embeddings
+for doc_id, embedding in zip(doc_ids, embeddings_384d):
+    await client.execute("""
+        MATCH (d:Document {doc_id: $id})
+        SET d.embedding_reduced = $embedding
+    """, {"id": doc_id, "embedding": embedding.tolist()})
+```
+
+## Production Patterns
+
+### Embedding Generation Pipeline
+
+```python
+async def embedding_pipeline(client, batch_size=100):
+    # Find documents needing embeddings
+    docs = await client.execute("""
+        MATCH (d:Document)
+        WHERE d.embedding IS NULL AND d.content IS NOT NULL
+        RETURN d.doc_id AS id, d.content AS text
+        LIMIT $batch_size
+    """, {"batch_size": batch_size})
+    
+    # Batch embed
+    texts = [row['text'] for row in docs.rows]
+    embeddings = sentence_transformer.encode(texts, batch_size=32)
+    
+    # Store in Geode
+    for doc, embedding in zip(docs.rows, embeddings):
+        await client.execute("""
+            MATCH (d:Document {doc_id: $id})
+            SET d.embedding = $embedding,
+                d.embedding_model = 'all-MiniLM-L6-v2',
+                d.embedding_generated_at = datetime()
+        """, {"id": doc['id'], "embedding": embedding.tolist()})
+```
+
+## Further Reading
+
+- **Embedding Models**: BERT, RoBERTa, Sentence Transformers, OpenAI
+- **Graph Embeddings**: Node2Vec, DeepWalk, GraphSAGE, GCN
+- **Multi-Modal Embeddings**: CLIP, ALIGN, ImageBind
+- **Evaluation**: Embedding Quality Metrics and Benchmarks
+
+Browse tagged content for comprehensive embedding documentation.

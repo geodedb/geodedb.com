@@ -460,3 +460,137 @@ async fn pagerank_analysis(client: &Client) -> Result<Vec<(String, f64)>> {
 - **Community Detection**: Use community-detection for clustering and group identification
 - **Centrality Measures**: Explore patterns tag for betweenness and closeness centrality
 - **Performance Tuning**: Check optimization and performance tags for query optimization strategies
+
+## Advanced PageRank Variants
+
+### Weighted PageRank with Damping
+
+```gql
+-- Edge-weighted PageRank
+MATCH (n:Page)
+SET n.pagerank = 1.0 / COUNT { MATCH (p:Page) };
+
+MATCH (source:Page)-[link:LINKS_TO]->(target:Page)
+WITH target,
+     SUM(link.weight * source.pagerank /
+         SUM { (source)-[l:LINKS_TO]->() | l.weight })
+     AS weighted_contribution
+SET target.pagerank_new = 0.15 + 0.85 * weighted_contribution;
+```
+
+### Topic-Sensitive PageRank (Personalization)
+
+```gql
+-- Bias random jumps toward topic nodes
+MATCH (topic:Topic {name: $topic_name})<-[:BELONGS_TO]-(seed:Page)
+WITH COLLECT(seed) AS topic_pages
+MATCH (n:Page)
+SET n.personalized_pr = CASE
+    WHEN n IN topic_pages THEN 1.0 / SIZE(topic_pages)
+    ELSE 0.0
+END;
+
+-- Iterate with personalization vector
+MATCH (source:Page)-[:LINKS_TO]->(target:Page)
+WITH target,
+     SUM(source.personalized_pr / COUNT { (source)-[:LINKS_TO]->() }) AS propagated,
+     target.personalized_pr AS teleport
+SET target.pr_new = 0.15 * teleport + 0.85 * propagated;
+```
+
+## Large-Scale PageRank Optimization
+
+### Block Striped PageRank
+
+Partition for parallel computation:
+
+```gql
+-- Partition nodes into blocks
+MATCH (n:Page)
+SET n.block_id = ID(n) % $num_blocks;
+
+-- Process blocks in parallel
+MATCH (source:Page {block_id: $block})-[:LINKS_TO]->(target:Page)
+WITH target, SUM(source.pagerank / source.out_degree) AS contribution
+SET target.pagerank_delta = contribution
+CALL IN TRANSACTIONS OF 100000 ROWS;
+
+-- Aggregate deltas
+MATCH (n:Page)
+SET n.pagerank = 0.15 + 0.85 * n.pagerank_delta,
+    n.pagerank_delta = null;
+```
+
+### Incremental PageRank
+
+Update only affected subgraph:
+
+```gql
+-- After adding edge (u, v), identify affected nodes
+MATCH (u:Page {id: $new_source}), (v:Page {id: $new_target})
+CREATE (u)-[:LINKS_TO]->(v);
+
+-- Mark affected region (forward reachable from v)
+MATCH (v:Page {id: $new_target})-[:LINKS_TO*0..3]->(affected:Page)
+SET affected.needs_update = true;
+
+-- Incremental update (only marked nodes)
+MATCH (source:Page)-[:LINKS_TO]->(target:Page)
+WHERE target.needs_update = true
+WITH target, SUM(source.pagerank / source.out_degree) AS new_contrib
+SET target.pagerank = 0.15 + 0.85 * new_contrib,
+    target.needs_update = false;
+```
+
+## Practical Applications
+
+### Search Engine Ranking
+
+```gql
+-- Combine PageRank with content relevance
+MATCH (page:Page)
+WHERE page.content CONTAINS $query
+WITH page,
+     page.pagerank AS authority_score,
+     // TF-IDF score from full-text index
+     text_score(page, $query) AS relevance_score
+RETURN page.url,
+       page.title,
+       authority_score,
+       relevance_score,
+       0.7 * relevance_score + 0.3 * authority_score AS combined_score
+ORDER BY combined_score DESC
+LIMIT 20;
+```
+
+### Influence Propagation in Social Networks
+
+```gql
+-- Find influential nodes for viral marketing
+MATCH (user:User)
+SET user.influence = 1.0 / COUNT { MATCH (u:User) };
+
+-- Propagate through follower graph
+MATCH (follower:User)-[:FOLLOWS]->(leader:User)
+WITH leader, SUM(follower.influence / follower.following_count) AS follower_influence
+SET leader.influence_new = 0.15 + 0.85 * follower_influence;
+
+-- Select top influencers for campaign
+MATCH (influencer:User)
+WHERE influencer.influence > $threshold
+RETURN influencer.username,
+       influencer.influence,
+       COUNT { (influencer)<-[:FOLLOWS]-() } AS followers,
+       influencer.influence * COUNT { (influencer)<-[:FOLLOWS]-() } AS reach_score
+ORDER BY reach_score DESC
+LIMIT 100;
+```
+
+## Further Reading
+
+- **PageRank**: The Original Algorithm and Modern Variants
+- **Personalized PageRank**: Topic-Sensitive and Query-Dependent Ranking
+- **Scalable PageRank**: Distributed and Incremental Computation
+- **Link Analysis**: HITS, TrustRank, and Other Algorithms
+
+Browse tagged content for complete PageRank documentation.

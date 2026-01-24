@@ -373,3 +373,184 @@ WITH (metric = 'cosine', dimensions = 768, m = 32);
 - **OpenAI Embeddings**: https://platform.openai.com/docs/guides/embeddings
 - **Geode Vector Search Guide**: `/docs/advanced-features/vector-search/`
 - **Performance Tuning**: `/docs/performance/vector-optimization/`
+
+## Advanced Vector Search Techniques
+
+### Hybrid Dense-Sparse Search
+
+Combine vector similarity with keyword matching:
+
+```gql
+-- Hybrid search: HNSW + BM25
+MATCH (d:Document)
+WHERE text_search(d.content, $keyword_query)
+  AND vector_similarity(d.embedding, $vector_query, 'cosine') > 0.6
+WITH d,
+     text_score(d, $keyword_query) AS bm25_score,
+     vector_similarity(d.embedding, $vector_query) AS vector_score
+RETURN d.doc_id,
+       d.title,
+       bm25_score,
+       vector_score,
+       0.5 * bm25_score + 0.5 * vector_score AS hybrid_score
+ORDER BY hybrid_score DESC
+LIMIT 20;
+```
+
+### Multi-Vector Search
+
+Search across multiple embedding spaces:
+
+```gql
+-- Search using both content and title embeddings
+MATCH (d:Document)
+WITH d,
+     vector_similarity(d.content_embedding, $content_query_emb, 'cosine') AS content_sim,
+     vector_similarity(d.title_embedding, $title_query_emb, 'cosine') AS title_sim
+WITH d,
+     0.7 * content_sim + 0.3 * title_sim AS combined_similarity
+WHERE combined_similarity > 0.75
+RETURN d.doc_id, d.title, combined_similarity
+ORDER BY combined_similarity DESC;
+```
+
+## Query-Time Optimizations
+
+### Pre-Filtering vs Post-Filtering
+
+```gql
+-- Efficient: Pre-filter then vector search
+MATCH (d:Document)
+WHERE d.category = 'technical'
+  AND d.publish_date > date('2024-01-01')
+  AND d.language = 'en'
+WITH d
+WHERE vector_similarity(d.embedding, $query, 'cosine') > 0.7
+RETURN d
+ORDER BY vector_similarity(d.embedding, $query) DESC
+LIMIT 10;
+
+-- Less efficient: Vector search then filter
+CALL vector.search({index: 'docs', query: $query, k: 1000})
+YIELD node
+WHERE node.category = 'technical'  // Post-filter loses HNSW efficiency
+RETURN node
+LIMIT 10;
+```
+
+### Cascaded Search
+
+Fast approximate search followed by reranking:
+
+```gql
+-- Stage 1: Fast approximate retrieval (top 100)
+CALL vector.search({
+    index: 'products',
+    query: $query_embedding,
+    k: 100,
+    ef: 50  // Lower ef for speed
+})
+YIELD node AS candidate, similarity AS approx_score
+
+-- Stage 2: Precise reranking (top 20)
+WITH candidate,
+     vector.similarity(candidate.high_quality_embedding, $query_embedding, 'cosine') AS precise_score
+ORDER BY precise_score DESC
+LIMIT 20
+RETURN candidate, precise_score;
+```
+
+## Approximate Nearest Neighbors (ANN) Tuning
+
+### HNSW Parameter Impact
+
+**M (connections per layer)**:
+- M=4: ~10MB/million vectors, 85% recall
+- M=16: ~40MB/million vectors, 95% recall
+- M=32: ~80MB/million vectors, 98% recall
+
+**ef_construction**:
+- ef_construction=100: Fast index build, 90% quality
+- ef_construction=200: Balanced (recommended)
+- ef_construction=400: Slow build, 98% quality
+
+**ef_search** (query-time):
+- ef_search=16: <1ms latency, 85% recall
+- ef_search=64: ~2ms latency, 95% recall
+- ef_search=256: ~10ms latency, 99% recall
+
+### Dynamic ef_search Tuning
+
+```gql
+-- Adjust ef_search based on query importance
+CALL vector.search({
+    index: 'embeddings',
+    query: $query,
+    k: 10,
+    ef: CASE WHEN $user_tier = 'premium' THEN 200 ELSE 50 END
+})
+YIELD node, similarity
+RETURN node, similarity;
+```
+
+## Quantization and Compression
+
+### Scalar Quantization
+
+Reduce memory by 4x with minimal accuracy loss:
+
+```python
+# Quantize float32 to int8
+def quantize_embeddings(embeddings):
+    # Find min/max for normalization
+    min_val, max_val = embeddings.min(), embeddings.max()
+    
+    # Scale to [0, 255]
+    quantized = ((embeddings - min_val) / (max_val - min_val) * 255).astype(np.uint8)
+    
+    return quantized, min_val, max_val
+
+# Store quantized embeddings
+await client.execute("""
+    MATCH (d:Document {doc_id: $id})
+    SET d.embedding_quantized = $quantized,
+        d.quantization_min = $min_val,
+        d.quantization_max = $max_val
+""", {"id": doc_id, "quantized": quantized.tolist(), 
+      "min_val": min_val, "max_val": max_val})
+```
+
+### Product Quantization (PQ)
+
+Compress 1536d to ~96 bytes:
+
+```python
+# Use Faiss for product quantization
+import faiss
+
+# Train PQ codec
+d = 1536  # Original dimension
+m = 48    # Number of subquantizers
+nbits = 8 # Bits per code
+
+pq = faiss.IndexPQ(d, m, nbits)
+pq.train(training_embeddings)
+
+# Encode embeddings
+codes = pq.sa_encode(embeddings)
+
+# Store compressed codes
+await client.execute("""
+    MATCH (d:Document {doc_id: $id})
+    SET d.embedding_pq = $codes
+""", {"id": doc_id, "codes": codes.tolist()})
+```
+
+## Further Reading
+
+- **Vector Search**: HNSW, LSH, and IVF Algorithms
+- **Hybrid Search**: Combining Dense and Sparse Retrieval
+- **Quantization**: Scalar, Product, and Binary Quantization
+- **Performance**: Benchmarking and Optimization Techniques
+
+Browse tagged content for comprehensive vector search documentation.

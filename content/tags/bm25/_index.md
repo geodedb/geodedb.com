@@ -450,3 +450,252 @@ LIMIT 20;
 - [BM25 Algorithm Paper](https://www.staff.city.ac.uk/~sbrp622/papers/foundations_bm25_review.pdf) - Academic paper
 
 Geode's BM25 implementation provides powerful keyword-based search that integrates seamlessly with graph traversal, enabling rich text search applications combined with relationship-based filtering and ranking.
+
+## Advanced BM25 Techniques
+
+### BM25+ (Improved Variant)
+
+BM25+ adds a delta parameter to prevent negative IDF values:
+
+```
+BM25+(D, Q) = Σ IDF(qi) × ((k1 + 1) × f(qi, D)) / (k1 × (1 - b + b × |D| / avgdl) + f(qi, D)) + δ
+
+Where δ = typically 1.0
+```
+
+**Advantages**:
+- Never penalizes term presence
+- Better performance on verbose queries
+- More robust to long documents
+
+### BM25F (Field-Weighted)
+
+Weight different document fields separately:
+
+```gql
+-- BM25F: weighted fields
+MATCH (d:Document)
+WHERE text_search(d.title, $query) OR text_search(d.content, $query)
+WITH d,
+     text_score(d.title, $query) AS title_score,
+     text_score(d.content, $query) AS content_score,
+     text_score(d.abstract, $query) AS abstract_score
+WITH d,
+     0.5 * title_score +    // Title boost: 2x
+     0.3 * abstract_score + // Abstract boost: 1.5x
+     0.2 * content_score    // Content: baseline
+     AS weighted_score
+WHERE weighted_score > 0
+RETURN d.doc_id, d.title, weighted_score
+ORDER BY weighted_score DESC
+LIMIT 20;
+```
+
+## Query Expansion and Relevance Feedback
+
+### Pseudo-Relevance Feedback
+
+Expand query using top results:
+
+```gql
+-- Stage 1: Initial retrieval
+CALL fulltext.search({
+    index: 'documents',
+    query: $original_query,
+    limit: 10
+})
+YIELD node AS top_doc, score
+
+-- Stage 2: Extract expansion terms
+WITH top_doc
+MATCH (top_doc)-[:HAS_TERM]->(term:Term)
+WITH term, SUM(term.tfidf_score) AS term_importance
+ORDER BY term_importance DESC
+LIMIT 5
+WITH COLLECT(term.text) AS expansion_terms
+
+-- Stage 3: Expanded query
+WITH $original_query + ' ' + join(expansion_terms, ' ') AS expanded_query
+CALL fulltext.search({
+    index: 'documents',
+    query: expanded_query,
+    limit: 50
+})
+YIELD node, score
+RETURN node.title, score
+ORDER BY score DESC;
+```
+
+### Query Relaxation
+
+Progressively relax boolean constraints:
+
+```gql
+-- Strict: All terms required
+MATCH (d:Document)
+WHERE text_search(d.content, '+term1 +term2 +term3')
+WITH COUNT(d) AS strict_count
+
+-- Relaxed: At least 2 of 3 terms
+MATCH (d:Document)
+WHERE strict_count = 0
+  AND text_search(d.content, 'term1 term2 term3')
+WITH d, text_score(d) AS score
+WHERE score > 0.5  // Higher threshold for relaxed query
+RETURN d.title, score
+ORDER BY score DESC;
+```
+
+## Text Processing and Analyzers
+
+### Language-Specific Analyzers
+
+```gql
+-- English with stemming and stopword removal
+CREATE TEXT INDEX docs_en FOR (d:Document) ON (d.content)
+OPTIONS {
+    analyzer: 'english',
+    stopwords: ['the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at'],
+    stemmer: 'porter',
+    k1: 1.2,
+    b: 0.75
+};
+
+-- German with compound word handling
+CREATE TEXT INDEX docs_de FOR (d:Document) ON (d.content)
+OPTIONS {
+    analyzer: 'german',
+    stemmer: 'snowball_german',
+    compound_splitting: true
+};
+
+-- Multi-language with automatic detection
+CREATE TEXT INDEX docs_multi FOR (d:Document) ON (d.content)
+OPTIONS {
+    analyzer: 'icu',  // Unicode-aware tokenization
+    language_detection: true,
+    k1: 1.5,
+    b: 0.75
+};
+```
+
+### Custom Analyzers
+
+```gql
+-- Code search analyzer (no stemming, preserve case)
+CREATE TEXT INDEX code_search FOR (c:Code) ON (c.source)
+OPTIONS {
+    analyzer: 'code',
+    tokenizer: 'whitespace',
+    filters: ['lowercase'],
+    preserve_original: true,
+    k1: 1.2,
+    b: 0.0  // No length normalization for code
+};
+
+-- Product SKU search (exact matching)
+CREATE TEXT INDEX product_sku FOR (p:Product) ON (p.sku)
+OPTIONS {
+    analyzer: 'keyword',  // No tokenization
+    case_sensitive: true,
+    k1: 2.0  // Higher term frequency boost
+};
+```
+
+## Performance Optimization
+
+### Index Sharding
+
+Partition large indexes:
+
+```gql
+-- Create date-partitioned indexes
+CREATE TEXT INDEX docs_2024 FOR (d:Document) ON (d.content)
+WHERE d.publish_date >= date('2024-01-01')
+OPTIONS {analyzer: 'english'};
+
+CREATE TEXT INDEX docs_2023 FOR (d:Document) ON (d.content)
+WHERE d.publish_date >= date('2023-01-01')
+  AND d.publish_date < date('2024-01-01')
+OPTIONS {analyzer: 'english'};
+
+-- Query specific partition
+MATCH (d:Document)
+WHERE d.publish_date >= date('2024-01-01')
+  AND text_search(d.content, $query)
+RETURN d.title, text_score(d) AS score
+ORDER BY score DESC;
+```
+
+### Caching Strategies
+
+```python
+# Cache frequent query results
+from functools import lru_cache
+
+@lru_cache(maxsize=1000)
+async def cached_search(query: str, limit: int = 20):
+    return await client.execute("""
+        MATCH (d:Document)
+        WHERE text_search(d.content, $query)
+        RETURN d.doc_id, d.title, text_score(d) AS score
+        ORDER BY score DESC
+        LIMIT $limit
+    """, {"query": query, "limit": limit})
+```
+
+## Evaluation and Tuning
+
+### Precision/Recall Analysis
+
+```gql
+-- Compute precision@k and recall@k
+WITH ['doc1', 'doc2', 'doc3', 'doc4', 'doc5'] AS relevant_docs
+MATCH (d:Document)
+WHERE text_search(d.content, $query)
+WITH d, text_score(d) AS score, relevant_docs
+ORDER BY score DESC
+LIMIT 10
+WITH COLLECT(d.doc_id) AS retrieved_docs, relevant_docs
+WITH SIZE([id IN retrieved_docs WHERE id IN relevant_docs]) AS hits,
+     SIZE(retrieved_docs) AS k,
+     SIZE(relevant_docs) AS total_relevant
+RETURN hits * 1.0 / k AS precision_at_10,
+       hits * 1.0 / total_relevant AS recall_at_10,
+       2 * (precision_at_10 * recall_at_10) / (precision_at_10 + recall_at_10) AS f1_score;
+```
+
+### Parameter Tuning
+
+```gql
+-- Grid search for optimal k1 and b
+WITH [0.5, 1.0, 1.2, 1.5, 2.0] AS k1_values,
+     [0.0, 0.25, 0.5, 0.75, 1.0] AS b_values
+UNWIND k1_values AS k1
+UNWIND b_values AS b
+
+CALL {
+    WITH k1, b
+    // Recreate index with parameters
+    DROP INDEX IF EXISTS test_index;
+    CREATE TEXT INDEX test_index FOR (d:Document) ON (d.content)
+    OPTIONS {k1: k1, b: b};
+    
+    // Run evaluation queries
+    CALL evaluate_queries() YIELD avg_ndcg
+    RETURN k1, b, avg_ndcg
+}
+RETURN k1, b, avg_ndcg
+ORDER BY avg_ndcg DESC
+LIMIT 1;
+```
+
+## Further Reading
+
+- **BM25 Algorithm**: Theory, Variants (BM25+, BM25F), and Applications
+- **Text Analysis**: Tokenization, Stemming, and Language Processing
+- **Query Expansion**: Pseudo-Relevance Feedback and Synonym Handling
+- **Hybrid Search**: Combining BM25 with Vector Search (HNSW)
+- **Index Optimization**: Sharding, Compression, and Caching
+
+Browse tagged content for complete BM25 and full-text search documentation.

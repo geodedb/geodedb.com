@@ -492,3 +492,339 @@ Anomaly detection leverages:
 - **Row-Level Security**: Control access to sensitive anomaly detection results
 
 Browse the tagged content below to discover documentation, tutorials, and guides for implementing anomaly detection in your Geode applications.
+
+## Statistical Methods for Anomaly Detection
+
+### Z-Score Analysis
+
+Detect outliers using standard deviation:
+
+```gql
+-- Multi-dimensional z-score anomaly detection
+MATCH (a:Account)-[t:TRANSACTION]->()
+WITH a,
+     COUNT(t) AS tx_count,
+     AVG(t.amount) AS avg_amount,
+     STDDEV(t.amount) AS stddev_amount,
+     MAX(t.amount) AS max_amount
+WITH AVG(tx_count) AS global_avg_count,
+     STDDEV(tx_count) AS global_stddev_count,
+     AVG(avg_amount) AS global_avg_amount,
+     STDDEV(avg_amount) AS global_stddev_amount,
+     COLLECT({account: a, tx_count: tx_count, avg_amount: avg_amount}) AS accounts
+
+UNWIND accounts AS acc_data
+WITH acc_data,
+     (acc_data.tx_count - global_avg_count) / NULLIF(global_stddev_count, 0) AS z_count,
+     (acc_data.avg_amount - global_avg_amount) / NULLIF(global_stddev_amount, 0) AS z_amount
+WITH acc_data,
+     SQRT(z_count ^ 2 + z_amount ^ 2) AS mahalanobis_distance
+WHERE mahalanobis_distance > 3.0  // 3-sigma threshold
+RETURN acc_data.account.account_id,
+       acc_data.tx_count,
+       acc_data.avg_amount,
+       mahalanobis_distance AS anomaly_score
+ORDER BY mahalanobis_distance DESC;
+```
+
+### Interquartile Range (IQR) Method
+
+Robust to outliers:
+
+```gql
+-- IQR-based outlier detection
+MATCH (t:Transaction)
+WITH t.amount AS amount
+ORDER BY amount
+WITH COLLECT(amount) AS amounts,
+     percentile_cont(amount, 0.25) AS q1,
+     percentile_cont(amount, 0.75) AS q3
+WITH amounts, q1, q3, q3 - q1 AS iqr,
+     q1 - 1.5 * (q3 - q1) AS lower_fence,
+     q3 + 1.5 * (q3 - q1) AS upper_fence
+
+MATCH (t:Transaction)
+WHERE t.amount < lower_fence OR t.amount > upper_fence
+RETURN t.transaction_id,
+       t.amount,
+       lower_fence,
+       upper_fence,
+       CASE WHEN t.amount < lower_fence THEN 'LOW_OUTLIER'
+            ELSE 'HIGH_OUTLIER' END AS outlier_type;
+```
+
+## Graph-Based Anomaly Scores
+
+### Local Outlier Factor (LOF)
+
+Density-based outlier detection:
+
+```gql
+-- Compute Local Outlier Factor
+MATCH (n:Node)
+CALL {
+    WITH n
+    MATCH (n)-[:CONNECTED*1..2]-(neighbor:Node)
+    WITH n, neighbor, COUNT(*) AS path_count
+    ORDER BY path_count DESC
+    LIMIT 20
+    RETURN COLLECT(neighbor) AS k_neighbors
+}
+
+WITH n, k_neighbors,
+     AVG([neighbor IN k_neighbors | 
+         SIZE((neighbor)-[:CONNECTED]-())]) AS avg_neighbor_density
+WITH n, k_neighbors, avg_neighbor_density,
+     SIZE((n)-[:CONNECTED]-()) AS node_density
+WITH n,
+     avg_neighbor_density / NULLIF(node_density, 0) AS lof_score
+WHERE lof_score > 1.5  // LOF > 1 indicates outlier
+RETURN n.id, lof_score, node_density
+ORDER BY lof_score DESC;
+```
+
+### Isolation Forest Adaptation
+
+Random partitioning for anomaly detection:
+
+```gql
+-- Graph-based isolation scoring
+MATCH (n:Node)
+CALL {
+    WITH n
+    MATCH path = (n)-[:EDGE*1..5]-(other:Node)
+    WITH n, COUNT(DISTINCT other) AS reachable_nodes,
+         AVG(LENGTH(path)) AS avg_distance
+    RETURN reachable_nodes, avg_distance
+}
+WITH AVG(reachable_nodes) AS global_avg_reach,
+     STDDEV(reachable_nodes) AS global_stddev_reach
+MATCH (n:Node)
+CALL {
+    WITH n
+    MATCH path = (n)-[:EDGE*1..5]-(other:Node)
+    WITH COUNT(DISTINCT other) AS node_reach
+    RETURN node_reach
+}
+WITH n, node_reach, global_avg_reach, global_stddev_reach,
+     (global_avg_reach - node_reach) / NULLIF(global_stddev_reach, 0) AS isolation_score
+WHERE isolation_score > 2.0
+RETURN n.id, node_reach, isolation_score
+ORDER BY isolation_score DESC;
+```
+
+## Time-Series Anomaly Detection
+
+### ARIMA-Style Forecasting
+
+Detect deviations from predicted values:
+
+```gql
+-- Simple moving average anomaly detection
+MATCH (a:Account)-[t:TRANSACTION]->()
+WHERE t.timestamp >= datetime().minusDays(30)
+WITH a, date.truncate('day', t.timestamp) AS day, SUM(t.amount) AS daily_amount
+ORDER BY a, day
+WITH a, day, daily_amount,
+     AVG(daily_amount) OVER (
+         PARTITION BY a
+         ORDER BY day
+         ROWS BETWEEN 7 PRECEDING AND 1 PRECEDING
+     ) AS moving_avg_7d,
+     STDDEV(daily_amount) OVER (
+         PARTITION BY a
+         ORDER BY day
+         ROWS BETWEEN 7 PRECEDING AND 1 PRECEDING
+     ) AS moving_stddev_7d
+WHERE ABS(daily_amount - moving_avg_7d) > 3 * moving_stddev_7d
+RETURN a.account_id,
+       day,
+       daily_amount,
+       moving_avg_7d,
+       (daily_amount - moving_avg_7d) / NULLIF(moving_stddev_7d, 0) AS z_score
+ORDER BY ABS(z_score) DESC;
+```
+
+### Seasonal Decomposition
+
+Account for cyclic patterns:
+
+```gql
+-- Weekly seasonality-adjusted anomaly detection
+MATCH (u:User)-[t:TRANSACTION]->()
+WITH u,
+     t.timestamp.dayOfWeek AS dow,
+     t.timestamp.hourOfDay AS hour,
+     COUNT(t) AS tx_count,
+     SUM(t.amount) AS total_amount
+WITH dow, hour,
+     AVG(tx_count) AS typical_count,
+     STDDEV(tx_count) AS stddev_count,
+     AVG(total_amount) AS typical_amount
+ORDER BY dow, hour
+
+MATCH (u:User)-[recent:TRANSACTION]->()
+WHERE recent.timestamp > datetime().minusDays(1)
+WITH u,
+     recent.timestamp.dayOfWeek AS current_dow,
+     recent.timestamp.hourOfDay AS current_hour,
+     COUNT(recent) AS current_count
+// Join with historical patterns...
+WHERE current_count > typical_count + 3 * stddev_count
+RETURN u.user_id, current_count, typical_count, 'SEASONAL_ANOMALY' AS type;
+```
+
+## Ensemble Anomaly Detection
+
+Combine multiple detection methods:
+
+```gql
+-- Multi-method ensemble scoring
+MATCH (a:Account)
+CALL {
+    WITH a
+    // Method 1: Transaction volume anomaly
+    MATCH (a)-[t:TRANSACTION]->()
+    WITH a, COUNT(t) AS tx_count
+    WITH a, tx_count,
+         (tx_count - $global_avg_tx) / $global_stddev_tx AS z_volume
+    RETURN CASE WHEN ABS(z_volume) > 2 THEN 0.3 ELSE 0.0 END AS volume_score
+}
+CALL {
+    WITH a
+    // Method 2: Unusual connection pattern
+    MATCH (a)-[:TRANSACTED_WITH]-(other:Account)
+    WITH a, COUNT(DISTINCT other) AS unique_connections
+    WHERE unique_connections > 50
+    RETURN 0.4 AS pattern_score
+}
+CALL {
+    WITH a
+    // Method 3: Suspicious timing
+    MATCH (a)-[t:TRANSACTION]->()
+    WHERE t.timestamp.hour BETWEEN 2 AND 5
+    WITH a, COUNT(t) AS late_night_tx
+    WHERE late_night_tx > 5
+    RETURN 0.3 AS timing_score
+}
+WITH a,
+     volume_score + pattern_score + timing_score AS ensemble_score
+WHERE ensemble_score > 0.5
+RETURN a.account_id,
+       ensemble_score,
+       'ENSEMBLE_DETECTION' AS method
+ORDER BY ensemble_score DESC;
+```
+
+## Real-Time Streaming Anomaly Detection
+
+### Incremental Statistics Update
+
+```gql
+-- Update running statistics incrementally
+MATCH (stats:GlobalStats {metric: 'daily_transactions'})
+MATCH (new_tx:Transaction {processed: false})
+WITH stats,
+     COUNT(new_tx) AS new_count,
+     AVG(new_tx.amount) AS new_avg,
+     STDDEV(new_tx.amount) AS new_stddev
+SET stats.count = stats.count + new_count,
+    stats.mean = (stats.mean * stats.count + new_avg * new_count) / (stats.count + new_count),
+    stats.M2 = stats.M2 + new_stddev ^ 2 * new_count,  // Welford's algorithm
+    stats.last_updated = datetime();
+
+// Mark transactions as processed
+MATCH (new_tx:Transaction {processed: false})
+SET new_tx.processed = true;
+```
+
+### Sliding Window Anomaly Detection
+
+```gql
+-- Fixed-size sliding window
+WITH datetime().minusHours(1) AS window_start
+MATCH (a:Account)-[t:TRANSACTION]->()
+WHERE t.timestamp >= window_start
+WITH a,
+     COUNT(t) AS window_tx_count,
+     SUM(t.amount) AS window_total
+WITH a, window_tx_count, window_total,
+     window_tx_count * 1.0 / 3600 AS tx_per_second
+WHERE tx_per_second > 1.0  // More than 1 tx/second
+RETURN a.account_id,
+       window_tx_count,
+       window_total,
+       tx_per_second,
+       'HIGH_VELOCITY' AS anomaly_type;
+```
+
+## Domain-Specific Anomaly Detection
+
+### Healthcare: Patient Risk Scoring
+
+```gql
+-- Detect high-risk patient patterns
+MATCH (p:Patient)-[v:VISIT]->(provider:Provider)
+WHERE v.date > date().minusMonths(12)
+WITH p,
+     COUNT(DISTINCT v) AS visit_count,
+     COUNT(DISTINCT provider) AS provider_count,
+     SUM(v.cost) AS total_cost
+WITH p, visit_count, provider_count, total_cost,
+     visit_count * 1.0 / 12 AS visits_per_month
+WHERE visits_per_month > 3 OR provider_count > 10 OR total_cost > 100000
+WITH p, visits_per_month, provider_count, total_cost,
+     CASE WHEN visits_per_month > 5 THEN 0.4 ELSE 0.0 END +
+     CASE WHEN provider_count > 15 THEN 0.3 ELSE 0.0 END +
+     CASE WHEN total_cost > 150000 THEN 0.3 ELSE 0.0 END AS risk_score
+WHERE risk_score > 0.5
+RETURN p.patient_id, p.name, risk_score, visits_per_month, provider_count, total_cost
+ORDER BY risk_score DESC;
+```
+
+### Cybersecurity: Intrusion Detection
+
+```gql
+-- Network intrusion anomaly detection
+MATCH (host:Host)-[conn:CONNECTION]->(target:Host)
+WHERE conn.timestamp > datetime().minusHours(24)
+WITH host,
+     target.ip_address AS dest_ip,
+     COUNT(conn) AS connection_count,
+     SUM(conn.bytes_sent) AS total_bytes,
+     COUNT(DISTINCT target.port) AS unique_ports
+WHERE connection_count > 1000
+   OR unique_ports > 100
+   OR total_bytes > 10000000000  // 10 GB
+WITH host, dest_ip, connection_count, unique_ports, total_bytes,
+     CASE
+         WHEN connection_count > 10000 THEN 'PORT_SCAN'
+         WHEN unique_ports > 500 THEN 'RECONNAISSANCE'
+         WHEN total_bytes > 100000000000 THEN 'DATA_EXFILTRATION'
+         ELSE 'SUSPICIOUS_ACTIVITY'
+     END AS threat_type
+RETURN host.hostname, dest_ip, connection_count, unique_ports, total_bytes, threat_type
+ORDER BY connection_count DESC;
+```
+
+## Best Practices and Optimization
+
+1. **Set Domain-Appropriate Thresholds**: Financial fraud (3σ), network security (2σ), manufacturing QA (6σ)
+2. **Combine Statistical and Graph Methods**: Leverage both attribute-based and structural anomalies
+3. **Handle False Positives**: Implement feedback loops to tune detection sensitivity
+4. **Use Incremental Updates**: Update statistics without full recomputation
+5. **Monitor Concept Drift**: Periodically retrain models as normal behavior evolves
+6. **Explainability**: Provide clear reasons for anomaly flags
+7. **Multi-Tier Alerting**: Low/Medium/High/Critical based on composite scores
+8. **Privacy Preservation**: Aggregate statistics without exposing individual records
+
+## Further Reading
+
+- **Anomaly Detection**: Theory and Practice in Large-Scale Systems
+- **Graph-Based Outlier Detection**: LOF, Isolation Forest, and DBSCAN
+- **Time-Series Anomalies**: ARIMA, Seasonal Decomposition, and Prophet
+- **Ensemble Methods**: Combining Multiple Detection Algorithms
+- **Real-Time Anomaly Detection**: Streaming Analytics and Incremental Learning
+- **Domain Applications**: Fraud, Healthcare, Cybersecurity, Manufacturing
+
+Browse the tagged content below to discover documentation, tutorials, and guides for implementing anomaly detection in your Geode applications.

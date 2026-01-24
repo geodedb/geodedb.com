@@ -442,3 +442,285 @@ RETURN node, similarity;
 - [Original HNSW Paper](https://arxiv.org/abs/1603.09320) - Academic paper
 
 Geode's HNSW implementation brings state-of-the-art vector similarity search to graph databases, enabling powerful AI applications that combine semantic understanding with graph relationships.
+
+## Advanced HNSW Implementation Details
+
+### Layer Assignment Probability
+
+HNSW layers are assigned using exponential decay:
+
+```
+P(layer = l) = (1/M)^l
+
+For M = 4:
+- Layer 0: 100% of nodes
+- Layer 1: 25% of nodes
+- Layer 2: 6.25% of nodes
+- Layer 3: 1.56% of nodes
+```
+
+### Connection Strategy
+
+Each node maintains:
+- **M connections** at layers > 0
+- **2M connections** at layer 0 (base layer for higher recall)
+
+**Heuristic selection**: Choose neighbors that maximize navigability:
+```
+score(candidate) = distance(query, candidate) - distance(query, current_best)
+```
+
+## Query Optimization Strategies
+
+### Adaptive ef_search
+
+Dynamically adjust search effort:
+
+```gql
+-- High-stakes query: maximize recall
+CALL vector.search({
+    index: 'critical_docs',
+    query: $query,
+    k: 10,
+    ef: 500  // Deep search
+})
+YIELD node, similarity;
+
+-- Batch processing: optimize throughput
+CALL vector.search({
+    index: 'product_catalog',
+    query: $query,
+    k: 10,
+    ef: 32  // Fast approximate search
+})
+YIELD node, similarity;
+```
+
+### Early Termination
+
+Stop search when confidence is high:
+
+```python
+async def adaptive_vector_search(client, query_emb, min_confidence=0.95):
+    for ef in [32, 64, 128, 256, 512]:
+        results = await client.execute("""
+            CALL vector.search({
+                index: 'embeddings',
+                query: $query,
+                k: 10,
+                ef: $ef
+            })
+            YIELD node, similarity
+            RETURN node, similarity
+            ORDER BY similarity DESC
+        """, {"query": query_emb, "ef": ef})
+        
+        top_score = results.rows[0]['similarity']
+        if top_score >= min_confidence:
+            return results.rows  # Early termination
+    
+    return results.rows  # Max effort reached
+```
+
+## Index Construction Strategies
+
+### Bulk Loading Optimization
+
+Build index from sorted data:
+
+```gql
+-- Sort nodes by degree (high-degree nodes first)
+MATCH (n:Node)
+WITH n, SIZE((n)-[:RELATED]-()) AS degree
+ORDER BY degree DESC
+
+-- Insert in batches
+CALL {
+    WITH n
+    SET n.embedding = $computed_embedding
+} IN TRANSACTIONS OF 10000 ROWS;
+
+-- Rebuild index after bulk load
+DROP INDEX embeddings_idx;
+CREATE VECTOR INDEX embeddings_idx FOR (n:Node) ON (n.embedding)
+OPTIONS {m: 16, ef_construction: 200};
+```
+
+### Incremental Index Maintenance
+
+```gql
+-- Track index quality metric
+MATCH (stats:IndexStats {index_name: 'embeddings_idx'})
+WITH stats.inserts_since_rebuild AS inserts,
+     stats.total_vectors AS total
+WITH inserts * 1.0 / total AS insert_ratio
+WHERE insert_ratio > 0.1  // 10% growth
+
+-- Trigger rebuild
+CALL vector.index.rebuild('embeddings_idx', {
+    m: 20,  // Increase connections for larger graph
+    ef_construction: 300
+});
+```
+
+## Distance Metrics Deep Dive
+
+### Cosine Similarity
+
+Best for normalized vectors:
+
+```
+cosine(u, v) = (u · v) / (||u|| × ||v||)
+             = Σ(ui × vi) / sqrt(Σui²) × sqrt(Σvi²)
+
+Range: [-1, 1]
+- 1: Identical direction
+- 0: Orthogonal
+- -1: Opposite direction
+```
+
+**Optimization**: Pre-normalize vectors to unit length, then use dot product:
+```gql
+-- Pre-normalize at insertion
+MATCH (n:Node)
+SET n.embedding = vector.normalize(n.embedding);
+
+-- Use dot product (equivalent to cosine for normalized vectors)
+CALL vector.search({
+    index: 'normalized_embeddings',
+    query: vector.normalize($query),
+    metric: 'dot_product'  // Faster than cosine
+});
+```
+
+### Euclidean Distance (L2)
+
+Measures absolute distance:
+
+```
+euclidean(u, v) = sqrt(Σ(ui - vi)²)
+
+Properties:
+- Sensitive to magnitude
+- Triangle inequality holds
+- Metric space properties
+```
+
+### Manhattan Distance (L1)
+
+Sum of absolute differences:
+
+```
+manhattan(u, v) = Σ|ui - vi|
+
+Use cases:
+- Sparse vectors
+- Grid-based distances
+- Outlier-robust similarity
+```
+
+## Production Deployment Patterns
+
+### Multi-Index Strategy
+
+Separate indexes for different embedding types:
+
+```gql
+-- Text embeddings (768d, BERT)
+CREATE VECTOR INDEX text_embeddings FOR (d:Document) ON (d.text_embedding)
+OPTIONS {dimensions: 768, metric: 'cosine', m: 16};
+
+-- Image embeddings (512d, CLIP)
+CREATE VECTOR INDEX image_embeddings FOR (p:Product) ON (p.image_embedding)
+OPTIONS {dimensions: 512, metric: 'cosine', m: 20};
+
+-- User embeddings (128d, custom)
+CREATE VECTOR INDEX user_embeddings FOR (u:User) ON (u.behavior_embedding)
+OPTIONS {dimensions: 128, metric: 'euclidean', m: 12};
+
+-- Query appropriate index
+CALL vector.search({index: 'text_embeddings', query: $text_query})
+YIELD node;
+```
+
+### Backup and Recovery
+
+```gql
+-- Export index state
+CALL vector.index.export('embeddings_idx', '/backup/embeddings_idx_20250124.bin');
+
+-- Restore from backup
+CALL vector.index.import('embeddings_idx', '/backup/embeddings_idx_20250124.bin');
+
+-- Verify index integrity
+CALL vector.index.verify('embeddings_idx')
+YIELD vectors, corrupted_entries, avg_degree
+WHERE corrupted_entries = 0
+RETURN 'Index healthy' AS status;
+```
+
+## Benchmarking and Performance
+
+### Recall Measurement
+
+```python
+async def measure_recall(client, test_queries, ground_truth, k=10):
+    recalls = []
+    
+    for query_emb, true_neighbors in zip(test_queries, ground_truth):
+        # HNSW approximate search
+        results = await client.execute("""
+            CALL vector.search({
+                index: 'test_index',
+                query: $query,
+                k: $k
+            })
+            YIELD node
+            RETURN node.id AS id
+        """, {"query": query_emb, "k": k})
+        
+        retrieved = {row['id'] for row in results.rows}
+        relevant = set(true_neighbors[:k])
+        
+        recall = len(retrieved & relevant) / k
+        recalls.append(recall)
+    
+    return np.mean(recalls)
+
+# Typical results:
+# ef_search=50, M=16: recall@10 ≈ 0.93, latency ≈ 2ms
+# ef_search=100, M=16: recall@10 ≈ 0.97, latency ≈ 5ms
+# ef_search=200, M=32: recall@10 ≈ 0.99, latency ≈ 15ms
+```
+
+### Throughput vs Latency Trade-offs
+
+```python
+# Latency-optimized (single query)
+config_latency = {
+    "m": 12,
+    "ef_construction": 100,
+    "ef_search": 32,
+    "batch_size": 1
+}
+# Latency: 1-2ms, Recall: 90-93%
+
+# Throughput-optimized (batch queries)
+config_throughput = {
+    "m": 16,
+    "ef_construction": 200,
+    "ef_search": 64,
+    "batch_size": 100
+}
+# QPS: 5000-10000, Recall: 95-97%
+```
+
+## Further Reading
+
+- **HNSW Original Paper**: Malkov & Yashunin (2016) - Efficient and Robust ANN Search
+- **Graph-Based ANN**: NSW, HNSW, NSG, and DiskANN Algorithms
+- **Distance Metrics**: Cosine, Euclidean, Inner Product, and Custom Metrics
+- **Index Tuning**: M, ef_construction, ef_search Parameter Optimization
+- **Production Systems**: Scaling to Billions of Vectors
+
+Browse tagged content for comprehensive HNSW and vector search documentation.
