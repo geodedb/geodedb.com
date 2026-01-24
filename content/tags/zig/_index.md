@@ -1,11 +1,14 @@
 ---
-title: "Tag: Zig"
-description: "Explore Geode documentation tagged with zig. Learn about zig features, best practices, and implementation details."
+title: "Zig Client"
+description: "Geode Zig client with compile-time memory safety, high performance, comptime features, and vendored QUIC implementation for systems programming."
 keywords:
-  - zig
+  - Zig
+  - Zig client
+  - systems programming
+  - memory safety
+  - comptime
   - Geode
   - graph database
-  - documentation
 draft: false
 params:
   seo:
@@ -13,22 +16,73 @@ params:
     noindex: false
 ---
 
-Documentation tagged with **zig** in the Geode graph database. This collection covers various aspects of zig as it relates to Geode's implementation, features, and best practices.
+# Zig Client
 
-## What You'll Find
+The Geode Zig client provides compile-time memory safety, high performance (8,000+ queries/second), and low-level control for systems programming. With comptime features and a vendored QUIC implementation, it requires no external dependencies.
 
-Articles and guides tagged with zig provide:
+## Installation
 
-- Core concepts and fundamentals of zig
-- Practical examples and implementation patterns
-- Best practices for using zig features in Geode
-- Advanced techniques and optimization strategies
-- Integration with other Geode capabilities
+Add to `build.zig.zon`:
 
-## Relevance to Geode Database
+```zig
+.dependencies = .{
+    .geode_client = .{
+        .url = "https://github.com/geodedb/geode-client-zig/archive/v0.18.0.tar.gz",
+        .hash = "...",
+    },
+}
+```
 
-Geode is an enterprise-ready graph database implementing the ISO/IEC 39075:2024 GQL standard. Understanding zig helps you leverage Geode's full capabilities for your graph workloads, from development through production deployment.
+Requirements: Zig 0.15.1+
 
-## Explore More
+## Quick Start
 
-Browse the tagged content below to discover documentation, tutorials, and guides related to zig. Each article provides practical insights into using this aspect of Geode effectively.
+```zig
+const std = @import("std");
+const geode = @import("geode_client");
+
+pub fn main() !void {
+    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    defer _ = gpa.deinit();
+    const allocator = gpa.allocator();
+
+    var client = try geode.Client.connect(allocator, "localhost:3141");
+    defer client.deinit();
+
+    const query =
+        \\MATCH (p:Person)-[:KNOWS]->(friend:Person)
+        \\WHERE p.name = $name
+        \\RETURN friend.name, friend.age
+    ;
+
+    var params = geode.Params.init(allocator);
+    defer params.deinit();
+    try params.put("name", .{ .string = "Alice" });
+
+    var result = try client.execute(query, params);
+    defer result.deinit();
+
+    while (try result.next()) |row| {
+        const name = try row.getString("friend.name");
+        const age = try row.getInt("friend.age");
+        std.debug.print("{s} is {d} years old\n", .{ name, age });
+    }
+}
+```
+
+## Key Features
+
+- **Memory Safety**: Compile-time memory management
+- **Performance**: 8,000+ queries/second
+- **Comptime**: Compile-time query validation
+- **Vendored QUIC**: No external dependencies
+- **Cross-Platform**: Linux, macOS, Windows
+
+## Related Topics
+
+- [Client Libraries](/tags/client-libraries/)
+- [SDK](/tags/sdk/)
+
+## Documentation
+
+Full guide: [Zig Client Documentation](/docs/clients/zig/)
