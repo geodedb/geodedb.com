@@ -1,11 +1,15 @@
 ---
-title: "Category: Performance"
-description: "Comprehensive performance documentation for Geode graph database including guides, tutorials, and reference materials."
+title: "Category: Performance Optimization & Tuning"
+description: "Performance optimization documentation covering query tuning, indexing strategies, profiling, benchmarking, and system-level performance improvements."
 keywords:
   - performance
-  - Geode
-  - graph database
-  - documentation
+  - optimization
+  - query tuning
+  - indexing
+  - profiling
+  - benchmarking
+  - throughput
+  - latency
 draft: false
 params:
   seo:
@@ -13,23 +17,43 @@ params:
     noindex: false
 ---
 
-The **performance** category contains comprehensive documentation for Geode graph database. This collection brings together related topics to help you understand and implement performance effectively.
+The **Performance Optimization & Tuning** category provides comprehensive guidance for maximizing Geode's performance. From query optimization and index selection through system tuning and capacity planning, these resources help achieve optimal throughput and latency for your workloads.
+
+## Introduction
+
+Database performance optimization is both art and science, requiring understanding of query patterns, data characteristics, and system architecture. Geode provides extensive tooling for performance analysis: EXPLAIN shows query execution plans; PROFILE measures actual execution time; metrics expose system bottlenecks; and tracing reveals query lifecycle. Combined with proper indexing, query optimization, and system tuning, these tools enable achieving excellent performance.
+
+This category covers performance optimization at all levels: query-level optimization through better GQL patterns and index usage; system-level tuning through configuration and resource allocation; and operational optimization through monitoring and capacity planning. Whether optimizing a single slow query or scaling to millions of queries per second, these resources provide actionable guidance.
 
 ## What You'll Find
 
-The performance category includes:
+- Query optimization techniques and patterns
+- Index selection and design strategies
+- EXPLAIN and PROFILE for query analysis
+- System configuration for performance
+- Benchmarking methodologies
+- Capacity planning and scaling
+- Performance troubleshooting
+- Real-world optimization case studies
 
-- Foundational concepts and architectural overview
-- Step-by-step guides and tutorials
-- Best practices and design patterns
-- Advanced features and optimization techniques
-- Real-world examples and use cases
-- Reference documentation and API details
+## Related Categories
 
-## Relevance to Geode Database
+- [Query Language](/categories/query-language/) - Query writing
+- [Architecture](/categories/architecture/) - System architecture
+- [Operations](/categories/operations/) - Production operations
+- [Best Practices](/categories/best-practices/) - Performance guidelines
 
-Geode is a production-ready graph database with 100% ISO/IEC 39075:2024 GQL compliance, 97.4% test coverage, and enterprise features including ACID transactions, distributed architecture, and comprehensive security. The performance documentation helps you leverage these capabilities effectively.
+## Related Tags
 
-## Getting Started
+- [Query Optimization](/tags/query-optimization/) - Query tuning
+- [Indexing](/tags/indexing/) - Index strategies
+- [Profiling](/tags/profiling/) - Performance profiling
+- [EXPLAIN](/tags/explain/) - Query plans
+- [Benchmarking](/tags/benchmarking/) - Performance testing
 
-Explore the articles below to dive deep into performance. Whether you're just getting started with Geode or optimizing a production deployment, this category provides the knowledge you need.
+## Further Reading
+
+- [Performance Tuning Guide](/docs/performance-tuning/) - Comprehensive optimization guide
+- [Query Optimization](/docs/query-optimization/) - Query-level tuning
+- [Index Design](/docs/index-design/) - Indexing strategies
+- [Benchmarking Guide](/docs/benchmarking/) - Performance testing
