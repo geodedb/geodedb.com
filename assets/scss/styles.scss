@@ -1,11 +1,2062 @@
-// Geode Database Custom Styles
-// Imports theme styles and adds amethyst geode color scheme
+@use "sass:string";
+// @use "fonts";
 
-// Import all theme styles first
-@forward "../../themes/ultra/assets/scss/styles.scss";
+@use "variables" as *;
+// @use "base";
 
-// Import custom amethyst geode theme
-@use "custom";
+// @use "typography";
+@use "layout";
+@use "highlight";
+@use "background";
+@use "banner";
+@use "webawesome-integration";
+@use "icons";
+@use "cover";
+@use "fixes";
+@use "codepros-theme";
 
-// Import homepage-specific styles
-@use "homepage";
+*,
+::after,
+::before {
+  box-sizing: border-box;
+}
+
+.container {
+  max-width: 100%;
+}
+
+.rounded {
+  border-radius: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075) !important;
+}
+
+.shadow-lg {
+  box-shadow: 0 0rem 5rem rgb(0 146 167 / 90%) !important;
+}
+
+.post-readtime {
+  padding-top: 5px;
+}
+
+/* ===== Icon Spacing and Navigation Improvements ===== */
+/* Fix icon spacing - add margin to icons next to text */
+wa-icon:not(:last-child) {
+  margin-right: 0.5rem;
+}
+
+/* Specific spacing for navigation icons */
+.nav-link wa-icon {
+  margin-right: 0.5rem;
+}
+
+/* Footer navigation icon spacing */
+.nav-link wa-icon[name="tags"] {
+  margin-right: 0.5rem;
+}
+
+/* Badge icon spacing */
+.badge wa-icon {
+  margin-right: 0.25rem;
+}
+
+/* Post meta styling improvements */
+.post-meta {
+  .post-authors {
+    .authors-label {
+      font-size: 0.875rem;
+      font-weight: 500;
+      margin-right: 0.5rem;
+    }
+
+    .post-author {
+      background-color: var(--bs-secondary) !important;
+      color: var(--bs-white) !important;
+      font-size: 0.8rem;
+      padding: 0.25rem 0.5rem;
+
+      &:hover {
+        background-color: var(--bs-secondary-dark, #495057) !important;
+        text-decoration: none;
+      }
+
+      wa-icon {
+        font-size: 0.75rem;
+      }
+    }
+  }
+
+  .post-taxonomies {
+    .taxonomy-categories {
+      background-color: #fd7e14 !important; // Bootstrap warning color
+      color: white !important;
+
+      &:hover {
+        background-color: #e76707 !important;
+        text-decoration: none;
+      }
+    }
+
+    .taxonomy-tags {
+      background-color: #0d6efd !important; // Bootstrap primary color
+      color: white !important;
+
+      &:hover {
+        background-color: #0b5ed7 !important;
+        text-decoration: none;
+      }
+    }
+
+    .taxonomy-series {
+      background-color: #198754 !important; // Bootstrap success color
+      color: white !important;
+
+      &:hover {
+        background-color: #157347 !important;
+        text-decoration: none;
+      }
+    }
+
+    // Generic taxonomy styling for any other taxonomy types
+    .post-taxonomy:not(.taxonomy-categories):not(.taxonomy-tags):not(
+        .taxonomy-series
+      ) {
+      background-color: #6c757d !important; // Bootstrap secondary color
+      color: white !important;
+
+      &:hover {
+        background-color: #5c636a !important;
+        text-decoration: none;
+      }
+    }
+
+    .post-taxonomy {
+      font-size: 0.8rem;
+      padding: 0.25rem 0.5rem;
+      margin: 0.125rem;
+
+      wa-icon {
+        font-size: 0.75rem;
+      }
+    }
+  }
+
+  .post-readtime {
+    padding-top: 0;
+
+    .post-reading-time {
+      font-size: 0.875rem;
+      color: var(--bs-text-muted);
+
+      wa-icon {
+        font-size: 0.875rem;
+      }
+    }
+  }
+}
+
+/* Button icon spacing */
+.btn wa-icon {
+  margin-right: 0.25rem;
+}
+
+/* Social link icon spacing - but not for icons that are standalone */
+.social-link i {
+  margin-right: 0;
+}
+
+/* Page header with gradient background */
+.article-header {
+  background: linear-gradient(
+    135deg,
+    var(--bs-primary),
+    var(--bs-secondary)
+  ) !important;
+
+  h1,
+  h2 {
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  }
+}
+
+.copyright {
+  color: #f8f9fa !important; /* Improved contrast */
+  background-color: transparent !important;
+}
+
+.list-text {
+  text-overflow: ellipsis;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+/* Dark table rows - specific to #pcap-files-table */
+#pcap-files-table tbody tr {
+  background-color: #222 !important; /* Improved contrast */
+  color: #f8f9fa !important; /* Improved contrast */
+}
+
+/* Table header style */
+#pcap-files-table thead {
+  background-color: #111 !important; /* Improved contrast */
+  color: #f8f9fa !important; /* Improved contrast */
+}
+
+/* Lighter links in table rows */
+#pcap-files-table tbody a {
+  color: #0dcaf0 !important; /* Lighter blue link color */
+  text-decoration: none !important; /* Remove underline */
+}
+
+#pcap-files-table tbody a:hover {
+  text-decoration: underline !important; /* Add underline on hover */
+  color: #0d6efd !important; /* Brighter blue for hover */
+}
+
+/* Dark table rows - specific to #reportsTable */
+#reportsTable tbody tr {
+  background-color: #222 !important; /* Improved contrast */
+  color: #f8f9fa !important; /* Improved contrast */
+}
+
+/* Table header style */
+#reportsTable thead {
+  background-color: #111 !important; /* Improved contrast */
+  color: #f8f9fa !important; /* Improved contrast */
+}
+
+/* Lighter links in table rows */
+#reportsTable tbody a {
+  color: #0dcaf0 !important; /* Lighter blue link color */
+  text-decoration: none !important; /* Remove underline */
+}
+
+#reportsTable tbody a:hover {
+  text-decoration: underline !important; /* Add underline on hover */
+  color: #0d6efd !important; /* Brighter blue for hover */
+}
+
+/* Input group adjustments */
+.input-group .input-group-text {
+  background-color: $dark;
+  color: #dee2e6;
+  border: none;
+}
+
+.form-control {
+  border: 1px solid $border-color;
+  border-right: none;
+  box-shadow: none;
+  background-color: #fff;
+  color: #222;
+}
+
+.form-control:focus {
+  border-color: #0d6efd;
+  box-shadow: 0 0 5px rgba(13, 110, 253, 0.5);
+  background-color: #fff;
+  color: #222;
+}
+
+.input-group .form-control:focus + .input-group-text {
+  background-color: #0d6efd;
+  color: #fff;
+}
+
+.btn-primary {
+  border: $button-border-primary;
+  background-color: $button-bg-primary;
+  color: $button-color-primary;
+  text-shadow: #fff 0 0 1px;
+  padding: 0.6em 1.4em;
+  margin: 0.5em 0.5em 0.5em 0;
+  position: relative;
+  overflow: hidden;
+  text-align: center;
+  text-transform: uppercase;
+  transition: 0.3s;
+  z-index: 1;
+  font-family: inherit;
+
+  &:hover {
+    border: $button-border-primary;
+    background-color: $button-bg-primary;
+    color: #fff;
+  }
+
+  &:hover::before {
+    width: 105%;
+  }
+
+  &::before {
+    content: "";
+    width: 0;
+    height: 800%;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) rotate(45deg);
+    background-color: $button-before-bg-primary;
+    transition: 0.5s ease;
+    display: block;
+    z-index: -1;
+  }
+
+  // disabled
+  &:disabled {
+    background-color: $button-bg-primary;
+    color: $button-color-primary;
+    cursor: not-allowed;
+  }
+}
+
+.btn-secondary {
+  @extend .btn-primary;
+  border: $button-border-secondary;
+  background-color: $button-bg-secondary;
+  color: $button-color-secondary;
+
+  &:hover {
+    border: $button-border-secondary;
+    background-color: $button-bg-secondary;
+  }
+
+  &::before {
+    background-color: $button-before-bg-secondary;
+  }
+}
+
+.btn-danger {
+  @extend .btn-primary;
+  border: $button-border-danger;
+  background-color: $button-bg-danger;
+  color: $button-color-danger;
+
+  &:hover {
+    border: $button-border-danger;
+    background-color: $button-bg-danger;
+  }
+
+  &::before {
+    background-color: $button-before-bg-danger;
+  }
+}
+
+input[type="file"] {
+  @extend .btn-primary;
+  border: $input-file-border;
+  background-color: $input-file-bg;
+  color: $input-file-color;
+
+  &:hover {
+    border: $input-file-border-hover;
+    background-color: $input-file-bg;
+  }
+
+  &::before {
+    background-color: $input-file-bg;
+  }
+}
+
+input {
+  background-color: $dark;
+  color: #dee2e6;
+}
+
+dropdown {
+  background-color: $dark;
+  color: #dee2e6;
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideDown {
+  from {
+    transform: translateY(-20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* Dark mode form controls */
+[data-bs-theme="dark"] .form-control,
+[data-bs-theme="auto"] .form-control {
+  color: #f8f9fa; /* Improved contrast */
+  background-color: #222; /* Improved contrast */
+  border: 1px solid #495057;
+}
+
+[data-bs-theme="dark"] .form-control:focus,
+[data-bs-theme="auto"] .form-control:focus {
+  color: #f8f9fa; /* Improved contrast */
+  background-color: #222; /* Improved contrast */
+  border-color: #2894e5; /* CodePros Lightest instead of cyan */
+  outline: none;
+  box-shadow: 0 0 5px rgba(40, 148, 229, 0.5); /* CodePros blue glow */
+}
+
+/* Remove duplicate/specific table rules - consolidated into more general rules above */
+
+/* Remove duplicate metrics-card rules - consider if these are actually used */
+/* .metrics-card h2, .metrics-grid, .metric-item styles - check if needed */
+
+/* Dark mode form controls - simplified */
+[data-bs-theme="dark"] .form-control,
+[data-bs-theme="auto"] .form-control {
+  color: #f8f9fa !important; /* Improved contrast */
+  background-color: #222 !important; /* Improved contrast */
+  border: 1px solid #495057;
+}
+
+[data-bs-theme="dark"] .form-control:focus,
+[data-bs-theme="auto"] .form-control:focus {
+  color: #f8f9fa !important; /* Improved contrast */
+  background-color: #222 !important; /* Improved contrast */
+  border-color: #2894e5 !important; /* CodePros Lightest instead of cyan */
+  outline: none;
+  box-shadow: 0 0 5px rgba(40, 148, 229, 0.5); /* CodePros blue glow */
+}
+/* Metrics Card */
+.metrics-card h2 {
+  margin-bottom: 20px;
+  color: #fff;
+}
+
+.metrics-grid {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+  justify-content: space-around;
+}
+
+.metric-item {
+  background: #2a2a2a;
+  border: 1px solid #444;
+  border-radius: 8px;
+  padding: 20px;
+  text-align: center;
+  flex: 1 1 200px;
+  box-shadow: 1px 1px 3px rgba(0, 0, 0, 0.5);
+  color: #fff;
+}
+
+.metric-icon {
+  font-size: 5em;
+  margin-bottom: 10px;
+}
+
+.metric-value {
+  font-size: 1.5em;
+  font-weight: bold;
+  margin-bottom: 5px;
+  color: #fff;
+}
+
+.metric-value-subnet {
+  font-size: 1.5em;
+  font-weight: bold;
+  margin-bottom: 5px;
+  color: #fff;
+}
+
+.metric-label {
+  font-size: 1.3em;
+  color: #bbb;
+}
+
+.upload-section {
+  margin-top: 20px;
+}
+
+.card {
+  border-radius: 5px;
+  border: 2px solid $border-color;
+  box-shadow: 4px 4px #00c3cc;
+}
+
+.card-header {
+  background-color: $card-header-bg-color;
+  color: $card-header-color;
+  font-size: $card-header-font-size;
+  text-align: center;
+  padding: 20px 10px;
+  border-bottom: none;
+
+  &.h2 {
+    margin: 0;
+  }
+}
+
+.card-footer {
+  background-color: $card-header-bg-color;
+  color: $card-header-color;
+  font-size: $card-header-font-size;
+}
+
+.card-body {
+  background-color: $bg-secondary;
+  color: $body-color;
+}
+
+.nav {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+/* The area for bottom-placed elements. */
+.nav-bottom {
+  margin-top: auto;
+  padding-bottom: 1rem;
+}
+
+.nav-link {
+  color: $link-color;
+}
+
+/* ============================================================
+   THEME-RESPONSIVE STYLES FOR LIGHT/DARK MODE
+   ============================================================ */
+
+/* Logo visibility controls */
+.logo-light {
+  display: inline-block; /* Default to light theme logo */
+}
+
+.logo-dark {
+  display: none;
+}
+
+/* Responsive logo sizing */
+.navbar-brand img {
+  max-height: 3.5rem;
+  min-height: 2rem;
+  width: auto;
+  height: auto;
+  transition: all 0.3s ease;
+}
+
+/* Responsive breakpoints for logo sizing */
+@media (max-width: 768px) {
+  .navbar-brand img {
+    max-height: 3rem;
+    height: 2.5rem;
+    min-height: 1rem;
+  }
+}
+
+@media (max-width: 576px) {
+  .navbar-brand img {
+    max-height: 2rem;
+    height: 2rem;
+    min-height: 1rem;
+  }
+}
+
+@media (max-width: 400px) {
+  .navbar-brand img {
+    max-height: 1.5rem;
+    height: 1.5rem;
+    min-height: 1rem;
+  }
+}
+
+@media (max-width: 320px) {
+  .navbar-brand img {
+    max-height: 1.5rem;
+    height: 1.5rem;
+    min-height: 1rem;
+  }
+}
+
+/* Fix logo display in container-fluid navbar */
+.navbar .container-fluid .navbar-brand {
+  flex-shrink: 0;
+  min-width: auto;
+}
+
+.navbar .container-fluid .navbar-brand img {
+  display: block;
+  max-width: 100%;
+}
+
+/* Light Theme Overrides - CodePros Color Palette */
+[data-bs-theme="light"] {
+  /* Bootstrap CSS custom properties for light theme - CodePros Colors */
+  --bs-body-bg: #ffffff; /* White - Main background for readability */
+  --bs-body-color: #231f20; /* CP Black - Text */
+  --bs-secondary-bg: #f8f9fa; /* Very light grey - Secondary background */
+  --bs-primary: #2894e5; /* Lightest - Primary actions */
+  --bs-primary-rgb: 40, 148, 229; /* Lightest RGB */
+  --bs-secondary: #6d7391; /* Logo Grey - Secondary elements */
+  --bs-secondary-rgb: 109, 115, 145; /* Logo Grey RGB */
+  --bs-success: #86c03f; /* Shield Green - Success states */
+  --bs-success-rgb: 134, 192, 63; /* Shield Green RGB */
+  --bs-warning: #f5aa40; /* Light Orange - Warning states */
+  --bs-warning-rgb: 245, 170, 64; /* Light Orange RGB */
+  --bs-danger: #eb5a28; /* Dark Orange - Error/danger states */
+  --bs-danger-rgb: 235, 90, 40; /* Dark Orange RGB */
+  --bs-info: #3397dd; /* Graph Node - Info states */
+  --bs-info-rgb: 51, 151, 221; /* Graph Node RGB */
+  --bs-light: #b5d2ff; /* Light Blueish */
+  --bs-light-rgb: 181, 210, 255; /* Light Blueish RGB */
+  --bs-dark: #0e2a6e; /* Darkest */
+  --bs-dark-rgb: 14, 42, 110; /* Darkest RGB */
+
+  /* Logo visibility for light theme */
+  .logo-light {
+    display: inline-block !important;
+  }
+  .logo-dark {
+    display: none !important;
+  }
+
+  /* Border and text emphasis colors */
+  --bs-border-color: #6d7391; /* Logo Grey */
+  --bs-border-color-translucent: rgba(109, 115, 145, 0.175);
+  --bs-emphasis-color: #231f20; /* CP Black */
+  --bs-emphasis-color-rgb: 35, 31, 32;
+
+  /* Link colors */
+  --bs-link-color: #2894e5; /* Lightest */
+  --bs-link-color-rgb: 40, 148, 229;
+  --bs-link-hover-color: #1961af; /* Mid */
+  --bs-link-hover-color-rgb: 25, 97, 175;
+
+  .list-header {
+    background-color: var(
+      --bs-secondary-bg
+    ) !important; /* Light grey for list headers */
+  }
+
+  .list-title a {
+    color: var(--bs-link-color) !important; /* Lightest for links */
+  }
+
+  .list-title a:hover {
+    color: var(--bs-link-hover-color) !important; /* Mid for hover state */
+  }
+
+  .list-link {
+    color: var(--bs-link-color) !important; /* Lightest for links */
+  }
+
+  .list-link:hover {
+    color: var(--bs-link-hover-color) !important; /* Mid for hover state */
+  }
+
+  /* Body and main containers */
+  body,
+  main,
+  .page-content {
+    background-color: #ffffff !important; /* White background for readability */
+    color: #231f20 !important; /* CP Black */
+  }
+
+  .badge {
+    color: var(--bs-body-color) !important; /* CP Black */
+  }
+
+  /* Bootstrap bg-body class override */
+  .bg-body {
+    background-color: #ffffff !important; /* White background */
+  }
+
+  /* Cards and content areas */
+  .card,
+  .card-body {
+    background-color: var(
+      --bs-secondary-bg
+    ) !important; /* Keep cards white for readability */
+    color: #231f20 !important; /* CP Black */
+    border-color: var(--bs-secondary) !important; /* Logo Grey */
+  }
+
+  .card-header,
+  .card-footer {
+    background-color: #f8f9fa !important; /* Light grey instead of Alt Light Blue */
+    color: #231f20 !important; /* CP Black */
+    border-color: #6d7391 !important; /* Logo Grey */
+  }
+
+  /* Post and article content */
+  .post-content,
+  .article-content,
+  .single-header {
+    color: #231f20 !important; /* CP Black */
+  }
+
+  /* Headings and titles */
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6,
+  .post-title,
+  .article-title,
+  .card-title {
+    color: #0e2a6e !important; /* Darkest - Strong headings */
+  }
+
+  .single-header h1,
+  .single-header h2 {
+    color: #0e2a6e !important; /* Darkest - Strong headings */
+  }
+
+  /* Text content */
+  p,
+  li,
+  blockquote,
+  .text-content {
+    color: #231f20 !important; /* CP Black */
+  }
+
+  /* Code and pre blocks */
+  code {
+    background-color: #f8f9fa !important; /* Light grey instead of Light Blueish */
+    color: #eb5a28 !important; /* Dark Orange - For code highlighting */
+  }
+
+  pre {
+    background-color: #f8f9fa !important; /* Light grey instead of Light Blueish */
+    color: #231f20 !important; /* CP Black */
+    border: 1px solid #6d7391 !important; /* Logo Grey */
+  }
+
+  /* Blockquotes */
+  blockquote {
+    background-color: rgba(
+      40,
+      148,
+      229,
+      0.1
+    ) !important; /* Lightest with opacity */
+    border-left-color: #2894e5 !important; /* Lightest */
+    color: #231f20 !important; /* CP Black */
+  }
+
+  /* Logo visibility */
+  .logo-light {
+    display: inline-block !important;
+  }
+  .logo-dark {
+    display: none !important;
+  }
+
+  /* Navigation */
+  .navbar {
+    background-color: #ffffff !important; /* Keep navbar white for contrast */
+  }
+
+  .navbar-brand,
+  .nav-link {
+    color: #0e2a6e !important; /* Darkest - Strong navigation text */
+  }
+
+  .nav-link:hover {
+    color: #2894e5 !important; /* Lightest - Hover state */
+  }
+
+  .offcanvas {
+    background-color: #ffffff !important; /* Keep white for readability */
+    color: #231f20 !important; /* CP Black */
+  }
+
+  .offcanvas-header {
+    background-color: #f8f9fa !important; /* Light grey */
+    border-bottom: 1px solid #6d7391; /* Logo Grey */
+  }
+
+  /* Breadcrumbs */
+  .breadcrumb {
+    background-color: #f8f9fa !important; /* Light grey */
+    color: #231f20 !important; /* CP Black */
+  }
+
+  .breadcrumb .breadcrumb-item a {
+    color: #2894e5 !important; /* Lightest - Links */
+  }
+
+  /* Search Page & Section */
+  .search-section,
+  #main,
+  main {
+    background-color: #ffffff !important; /* White background */
+    color: #231f20 !important; /* CP Black */
+  }
+
+  /* Search Box & Search Bar - More specific selectors */
+  .search-box,
+  .search-bar,
+  .search-box .row,
+  .search-bar .input-group {
+    background-color: #ffffff !important; /* Keep search areas white */
+  }
+
+  .search-box .form-control,
+  .search-bar .form-control,
+  #footerSearchInput,
+  .form-control {
+    background-color: #ffffff !important;
+    color: #231f20 !important; /* CP Black */
+    border-color: #6d7391 !important; /* Logo Grey */
+  }
+  .search-box .form-control,
+  .search-bar .form-control,
+  #footerSearchInput,
+  .form-control {
+    background-color: #ffffff !important;
+    color: #231f20 !important; /* CP Black */
+    border-color: #6d7391 !important; /* Logo Grey */
+  }
+
+  .search-box .btn,
+  .search-bar .btn,
+  .btn-outline-primary {
+    color: #2894e5 !important; /* Lightest - Primary buttons */
+    border-color: #2894e5 !important; /* Lightest */
+    background-color: #ffffff !important;
+  }
+
+  .search-box .btn:hover,
+  .search-bar .btn:hover,
+  .btn-outline-primary:hover {
+    background-color: #2894e5 !important; /* Lightest */
+    color: #ffffff !important;
+  }
+
+  /* Footer */
+  .footer {
+    background-color: #0e2a6e !important; /* Darkest - Strong footer */
+    color: #ffffff !important;
+    border-top: 1px solid #6d7391; /* Logo Grey */
+  }
+
+  /* Social Links - More specific */
+  .social-nav,
+  .social-nav .nav,
+  .social-link {
+    background-color: transparent !important;
+  }
+
+  .social-nav .nav-link,
+  .social-link {
+    color: #6d7391 !important; /* Logo Grey */
+    background-color: transparent !important;
+  }
+
+  .social-nav .nav-link:hover,
+  .social-link:hover {
+    color: #2894e5 !important; /* Lightest - Hover state */
+    background-color: transparent !important;
+  }
+
+  /* Footer Navigation Links */
+  .footer .nav-link {
+    color: #6d7391 !important; /* Logo Grey */
+    background-color: transparent !important;
+  }
+
+  .footer .nav-link:hover {
+    color: #2894e5 !important; /* Lightest - Hover state */
+    background-color: transparent !important;
+  }
+
+  /* List Pages - Better readability */
+  .list-page,
+  .taxonomy-page,
+  .section-page {
+    background-color: #ffffff !important; /* White background */
+    color: #231f20 !important; /* CP Black */
+  }
+
+  .list-header {
+    background-color: #f8f9fa !important; /* Light grey header */
+    color: #0e2a6e !important; /* Darkest for strong headings */
+    border-bottom: 1px solid #6d7391; /* Logo Grey border */
+  }
+
+  .list-title,
+  .list-title a {
+    color: #0e2a6e !important; /* Darkest for titles */
+  }
+
+  .list-title a:hover {
+    color: #2894e5 !important; /* Lightest for hover */
+  }
+
+  .list-link {
+    color: #2894e5 !important; /* Lightest for links */
+  }
+
+  .list-link:hover {
+    color: #1961af !important; /* Mid for hover */
+  }
+
+  .list-text,
+  .list-summary {
+    color: #231f20 !important; /* CP Black for readability */
+  }
+
+  /* Single Pages - Better readability */
+  .single-page,
+  .article-page {
+    background-color: #ffffff !important; /* White background */
+    color: #231f20 !important; /* CP Black */
+  }
+
+  .single-header,
+  .article-header {
+    background-color: #ffffff !important; /* White background for headers */
+    color: #0e2a6e !important; /* Darkest for strong headings */
+    border-bottom: 2px solid #2894e5; /* Lightest accent border */
+    padding: 2rem 0;
+  }
+
+  .single-content,
+  .article-content,
+  .post-content {
+    background-color: #ffffff !important; /* White background */
+    color: #231f20 !important; /* CP Black */
+    padding: 2rem 0;
+  }
+
+  /* Fix problematic cyan colors */
+  .form-control:focus {
+    border-color: #2894e5 !important; /* Use CodePros Lightest instead of cyan */
+    box-shadow: 0 0 5px rgba(40, 148, 229, 0.5) !important; /* CodePros blue glow */
+  }
+
+  .input-group .form-control:focus + .input-group-text {
+    background-color: #2894e5 !important; /* CodePros Lightest */
+    color: #ffffff !important;
+  }
+
+  .dark-mode .form-control:focus {
+    background-color: #ffffff !important;
+    border-color: #2894e5 !important; /* Use CodePros blue instead of cyan */
+  }
+}
+
+/* Dark Theme Overrides */
+[data-bs-theme="dark"] {
+  /* Bootstrap CSS custom properties for dark theme */
+  --bs-body-bg: #212529;
+  --bs-body-color: #ffffff;
+  --bs-secondary-bg: #343a40;
+
+  .list-header {
+    background-color: $bg-secondary;
+  }
+
+  .list-title a {
+    color: $highlight-color;
+  }
+
+  .list-title a:hover {
+    color: $highlight-bg;
+  }
+
+  .list-link {
+    color: $highlight-color;
+  }
+
+  .list-link:hover {
+    color: $highlight-bg;
+  }
+
+  /* Body and main containers */
+  body,
+  main,
+  .page-content {
+    background-color: #212529 !important;
+    color: #ffffff !important;
+  }
+
+  .badge {
+    color: #eb5a28 !important;
+  }
+
+  /* Bootstrap bg-body class override */
+  .bg-body {
+    background-color: #212529 !important;
+  }
+
+  /* Cards and content areas */
+  .card,
+  .card-body {
+    background-color: #343a40 !important;
+    color: #ffffff !important;
+    border-color: #495057 !important;
+  }
+
+  .card-header,
+  .card-footer {
+    background-color: #495057 !important;
+    color: #ffffff !important;
+    border-color: #6c757d !important;
+  }
+
+  /* Post and article content */
+  .post-content,
+  .article-content,
+  .single-header {
+    color: #ffffff !important;
+  }
+
+  /* Headings and titles */
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6,
+  .post-title,
+  .article-title,
+  .card-title {
+    color: #ffffff !important;
+  }
+
+  .popular-terms {
+    h5 {
+      color: #000000 !important;
+    }
+  }
+
+  .single-header h1,
+  .single-header h2 {
+    color: #ffffff !important;
+  }
+
+  /* Text content */
+  p,
+  li,
+  blockquote,
+  .text-content {
+    color: #ffffff !important;
+  }
+
+  /* Code and pre blocks */
+  code {
+    background-color: #495057 !important;
+    color: #f8f9fa !important;
+  }
+
+  pre {
+    background-color: #495057 !important;
+    color: #f8f9fa !important;
+    border: 1px solid #6c757d !important;
+  }
+
+  /* Blockquotes */
+  blockquote {
+    background-color: rgba(13, 202, 240, 0.1) !important;
+    border-left-color: #0dcaf0 !important;
+    color: #ffffff !important;
+  }
+
+  /* Logo visibility */
+  .logo-light {
+    display: none !important;
+  }
+  .logo-dark {
+    display: inline-block !important;
+  }
+
+  /* Navigation */
+  .navbar {
+    background-color: #212529 !important;
+  }
+
+  .navbar-brand,
+  .nav-link {
+    color: #ffffff !important;
+  }
+
+  .nav-link:hover {
+    color: #0dcaf0 !important;
+  }
+
+  .offcanvas {
+    background-color: #212529 !important;
+    color: #ffffff !important;
+  }
+
+  .offcanvas-header {
+    background-color: #343a40 !important;
+    border-bottom: 1px solid #495057;
+  }
+
+  /* Breadcrumbs */
+  .breadcrumb {
+    background-color: #343a40 !important;
+    color: #ffffff !important;
+  }
+
+  .breadcrumb .breadcrumb-item a {
+    color: #0dcaf0 !important;
+  }
+
+  /* Search Box & Search Bar - More specific selectors */
+  .search-box,
+  .search-bar,
+  .search-box .row,
+  .search-bar .input-group {
+    background-color: #212529 !important;
+  }
+
+  .search-box .form-control,
+  .search-bar .form-control,
+  #footerSearchInput {
+    background-color: #343a40 !important;
+    color: #ffffff !important;
+    border-color: #495057 !important;
+  }
+
+  .search-box .btn,
+  .search-bar .btn,
+  .btn-outline-primary {
+    color: #0dcaf0 !important;
+    border-color: #0dcaf0 !important;
+    background-color: #212529 !important;
+  }
+
+  .search-box .btn:hover,
+  .search-bar .btn:hover,
+  .btn-outline-primary:hover {
+    background-color: #0dcaf0 !important;
+    color: #000000 !important;
+  }
+
+  /* Footer */
+  .footer {
+    background-color: #212529 !important;
+    color: #ffffff !important;
+    border-top: 1px solid #495057;
+  }
+
+  /* Social Links - More specific */
+  .social-nav,
+  .social-nav .nav,
+  .social-link {
+    background-color: transparent !important;
+  }
+
+  .social-nav .nav-link,
+  .social-link {
+    color: #f8f9fa !important;
+    background-color: transparent !important;
+  }
+
+  .social-nav .nav-link:hover,
+  .social-link:hover {
+    color: #0dcaf0 !important;
+    background-color: transparent !important;
+  }
+
+  /* Footer Navigation Links */
+  .footer .nav-link {
+    color: #f8f9fa !important;
+    background-color: transparent !important;
+  }
+
+  .footer .nav-link:hover {
+    color: #0dcaf0 !important;
+    background-color: transparent !important;
+  }
+}
+
+/* Auto Theme (follows system preference) */
+@media (prefers-color-scheme: light) {
+  [data-bs-theme="auto"] {
+    /* Bootstrap CSS custom properties for light theme */
+    --bs-body-bg: #ffffff;
+    --bs-body-color: #212529;
+    --bs-secondary-bg: #f8f9fa;
+
+    .bg-body {
+      background-color: #ffffff !important;
+    }
+
+    /* Body and main containers */
+    body,
+    main,
+    .page-content {
+      background-color: #ffffff !important;
+      color: #212529 !important;
+    }
+
+    /* Cards and content areas */
+    .card,
+    .card-body {
+      background-color: #ffffff !important;
+      color: #212529 !important;
+      border-color: #dee2e6 !important;
+    }
+
+    .card-header,
+    .card-footer {
+      background-color: #f8f9fa !important;
+      color: #212529 !important;
+      border-color: #dee2e6 !important;
+    }
+
+    /* Post and article content */
+    .post-content,
+    .article-content,
+    .single-header {
+      color: #212529 !important;
+    }
+
+    /* Headings and titles */
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6,
+    .post-title,
+    .article-title,
+    .card-title {
+      color: #212529 !important;
+    }
+
+    .single-header h1,
+    .single-header h2 {
+      color: #212529 !important;
+    }
+
+    /* Text content */
+    p,
+    li,
+    blockquote,
+    .text-content {
+      color: #212529 !important;
+    }
+
+    /* Code and pre blocks */
+    code {
+      background-color: #f8f9fa !important;
+      color: #e83e8c !important;
+    }
+
+    pre {
+      background-color: #f8f9fa !important;
+      color: #212529 !important;
+      border: 1px solid #dee2e6 !important;
+    }
+
+    /* Blockquotes */
+    blockquote {
+      background-color: rgba(13, 110, 253, 0.1) !important;
+      border-left-color: #0d6efd !important;
+      color: #212529 !important;
+    }
+
+    /* Logo visibility */
+    .logo-light {
+      display: inline-block !important;
+    }
+    .logo-dark {
+      display: none !important;
+    }
+
+    /* Apply light theme styles */
+    .navbar {
+      background-color: #ffffff !important;
+      border-bottom: 1px solid #dee2e6;
+    }
+
+    .navbar-brand,
+    .nav-link {
+      color: #212529 !important;
+    }
+
+    .nav-link:hover {
+      color: #0d6efd !important;
+    }
+
+    .offcanvas {
+      background-color: #ffffff !important;
+      color: #212529 !important;
+    }
+
+    .offcanvas-header {
+      background-color: #f8f9fa !important;
+      border-bottom: 1px solid #dee2e6;
+    }
+
+    .breadcrumb {
+      background-color: #f8f9fa !important;
+      color: #212529 !important;
+    }
+
+    .breadcrumb .breadcrumb-item a {
+      color: #0d6efd !important;
+    }
+
+    .search-box,
+    .search-bar {
+      background-color: #ffffff !important;
+    }
+
+    .form-control {
+      background-color: #ffffff !important;
+      color: #212529 !important;
+      border-color: #ced4da !important;
+    }
+
+    .btn-outline-primary {
+      color: #0d6efd !important;
+      border-color: #0d6efd !important;
+      background-color: transparent !important;
+    }
+
+    .btn-outline-primary:hover {
+      background-color: #0d6efd !important;
+      color: #ffffff !important;
+    }
+
+    .footer {
+      background-color: #f8f9fa !important;
+      color: #212529 !important;
+      border-top: 1px solid #dee2e6;
+    }
+
+    .social-nav .nav-link {
+      color: #6c757d !important;
+    }
+
+    .social-nav .nav-link:hover {
+      color: #0d6efd !important;
+    }
+
+    .footer .nav-link {
+      color: #6c757d !important;
+    }
+
+    .footer .nav-link:hover {
+      color: #0d6efd !important;
+    }
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  [data-bs-theme="auto"] {
+    /* Bootstrap CSS custom properties for dark theme */
+    --bs-body-bg: #212529;
+    --bs-body-color: #ffffff;
+    --bs-secondary-bg: #343a40;
+
+    .bg-body {
+      background-color: #212529 !important;
+    }
+
+    /* Body and main containers */
+    body,
+    main,
+    .page-content {
+      background-color: #212529 !important;
+      color: #ffffff !important;
+    }
+
+    /* Cards and content areas */
+    .card,
+    .card-body {
+      background-color: #343a40 !important;
+      color: #ffffff !important;
+      border-color: #495057 !important;
+    }
+
+    .card-header,
+    .card-footer {
+      background-color: #495057 !important;
+      color: #ffffff !important;
+      border-color: #6c757d !important;
+    }
+
+    /* Post and article content */
+    .post-content,
+    .article-content,
+    .single-header {
+      color: #ffffff !important;
+    }
+
+    /* Headings and titles */
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6,
+    .post-title,
+    .article-title,
+    .card-title {
+      color: #ffffff !important;
+    }
+
+    .single-header h1,
+    .single-header h2 {
+      color: #ffffff !important;
+    }
+
+    /* Text content */
+    p,
+    li,
+    blockquote,
+    .text-content {
+      color: #ffffff !important;
+    }
+
+    /* Code and pre blocks */
+    code {
+      background-color: #495057 !important;
+      color: #f8f9fa !important;
+    }
+
+    pre {
+      background-color: #495057 !important;
+      color: #f8f9fa !important;
+      border: 1px solid #6c757d !important;
+    }
+
+    /* Blockquotes */
+    blockquote {
+      background-color: rgba(13, 202, 240, 0.1) !important;
+      border-left-color: #0dcaf0 !important;
+      color: #ffffff !important;
+    }
+
+    /* Logo visibility */
+    .logo-light {
+      display: none !important;
+    }
+    .logo-dark {
+      display: inline-block !important;
+    }
+
+    /* Apply dark theme styles */
+    .navbar {
+      background-color: #212529 !important;
+      border-bottom: 1px solid #495057;
+    }
+
+    .navbar-brand,
+    .nav-link {
+      color: #ffffff !important;
+    }
+
+    .nav-link:hover {
+      color: #0dcaf0 !important;
+    }
+
+    .offcanvas {
+      background-color: #212529 !important;
+      color: #ffffff !important;
+    }
+
+    .offcanvas-header {
+      background-color: #343a40 !important;
+      border-bottom: 1px solid #495057;
+    }
+
+    .breadcrumb {
+      background-color: #343a40 !important;
+      color: #ffffff !important;
+    }
+
+    .breadcrumb .breadcrumb-item a {
+      color: #0dcaf0 !important;
+    }
+
+    .search-box,
+    .search-bar {
+      background-color: #212529 !important;
+    }
+
+    .form-control {
+      background-color: #343a40 !important;
+      color: #ffffff !important;
+      border-color: #495057 !important;
+    }
+
+    .btn-outline-primary {
+      color: #0dcaf0 !important;
+      border-color: #0dcaf0 !important;
+      background-color: transparent !important;
+    }
+
+    .btn-outline-primary:hover {
+      background-color: #0dcaf0 !important;
+      color: #000000 !important;
+    }
+
+    .footer {
+      background-color: #212529 !important;
+      color: #ffffff !important;
+      border-top: 1px solid #495057;
+    }
+
+    .social-nav .nav-link {
+      color: #f8f9fa !important;
+    }
+
+    .social-nav .nav-link:hover {
+      color: #0dcaf0 !important;
+    }
+
+    .footer .nav-link {
+      color: #f8f9fa !important;
+    }
+
+    .footer .nav-link:hover {
+      color: #0dcaf0 !important;
+    }
+  }
+}
+
+/* ============================================================
+   CONTENT AND POST STYLING - THEME RESPONSIVE
+   ============================================================ */
+
+/* Post and article styling */
+.post,
+.article,
+.blog-post {
+  .card-body {
+    /* Ensure readability */
+    line-height: 1.7;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    margin-top: 1.5rem;
+    margin-bottom: 1rem;
+    font-weight: 600;
+  }
+
+  p {
+    margin-bottom: 1rem;
+    line-height: 1.7;
+  }
+
+  blockquote {
+    margin: 1.5rem 0;
+    padding: 1rem 1.5rem;
+    border-left: 4px solid #007bff;
+    background-color: rgba(0, 123, 255, 0.1);
+  }
+
+  code {
+    padding: 0.2rem 0.4rem;
+    font-size: 87.5%;
+    border-radius: 0.25rem;
+  }
+
+  pre {
+    margin: 1.5rem 0;
+    padding: 1rem;
+    border-radius: 0.5rem;
+    overflow-x: auto;
+  }
+}
+
+/* Single post header styling */
+.single-header {
+  h1,
+  h2 {
+    margin-bottom: 0.5rem;
+  }
+}
+
+/* Series and taxonomy links */
+.series-link,
+.taxonomy-entries {
+  margin: 1rem 0;
+
+  .badge {
+    margin: 0.25rem 0.25rem 0.25rem 0;
+  }
+}
+
+/* ============================================================
+   ENHANCED IMAGE STYLES
+   ============================================================ */
+
+/* Responsive images base styles */
+.img-fluid {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Picture element styling */
+picture {
+  display: block;
+
+  img {
+    max-width: 100%;
+    height: auto;
+  }
+}
+
+/* Figure and caption styling */
+.figure {
+  margin-bottom: 1rem;
+  display: inline-block;
+
+  .figure-caption {
+    padding-top: 0.25rem;
+    font-size: 0.875em;
+    color: #6c757d;
+  }
+
+  /* Center aligned figures */
+  &.text-center {
+    display: block;
+    text-align: center;
+  }
+}
+
+/* Image positioning classes */
+.float-start {
+  float: left;
+}
+
+.float-end {
+  float: right;
+}
+
+.mx-auto {
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.d-block {
+  display: block;
+}
+
+/* Image styling enhancements */
+img {
+  /* Improve image rendering */
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
+
+  /* Smooth transitions for hover effects */
+  transition:
+    transform 0.3s ease,
+    box-shadow 0.3s ease;
+
+  /* Ensure images don't break layout */
+  max-width: 100%;
+  height: auto;
+
+  /* Rounded corners */
+  &.rounded {
+    border-radius: 0.375rem;
+  }
+
+  &.rounded-circle {
+    border-radius: 50%;
+  }
+
+  /* Hover effects for interactive images */
+  &:hover {
+    transform: scale(1.02);
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+  }
+}
+
+/* Dark theme image adjustments */
+[data-bs-theme="dark"] {
+  .figure-caption {
+    color: #f8f9fa;
+  }
+
+  img {
+    /* Slight brightness adjustment for dark theme */
+    filter: brightness(0.95);
+  }
+}
+
+/* Light theme image adjustments */
+[data-bs-theme="light"] {
+  .figure-caption {
+    color: #6c757d;
+  }
+
+  img {
+    filter: none;
+  }
+}
+
+/* Auto theme follows system preference */
+@media (prefers-color-scheme: dark) {
+  [data-bs-theme="auto"] {
+    .figure-caption {
+      color: #f8f9fa;
+    }
+
+    img {
+      filter: brightness(0.95);
+    }
+  }
+}
+
+@media (prefers-color-scheme: light) {
+  [data-bs-theme="auto"] {
+    .figure-caption {
+      color: #6c757d;
+    }
+
+    img {
+      filter: none;
+    }
+  }
+}
+
+/* Responsive breakpoints for images */
+@media (max-width: 576px) {
+  .float-start,
+  .float-end {
+    float: none;
+    display: block;
+    margin: 0 auto 1rem auto;
+  }
+}
+
+/* Print styles for images */
+@media print {
+  img {
+    max-width: 100% !important;
+    page-break-inside: avoid;
+  }
+
+  figure {
+    page-break-inside: avoid;
+  }
+}
+
+/* ============================================================
+   RESPONSIVE BANNER IMAGE STYLES
+   ============================================================ */
+
+/* Banner image responsive sizing (reduced max widths) */
+.banner-image {
+  max-width: clamp(200px, 60vw, 400px); /* smaller default */
+  width: 100%;
+  height: auto;
+  display: block;
+  margin-inline: auto; /* logical shorthand */
+}
+
+@media (max-width: 768px) {
+  .banner-image {
+    max-width: clamp(180px, 70vw, 320px);
+  }
+}
+
+@media (max-width: 480px) {
+  .banner-image {
+    max-width: clamp(160px, 80vw, 260px);
+  }
+}
+
+/* ============================================================
+   RESPONSIVE BANNER TEXT STYLES
+   ============================================================ */
+
+/* Banner text responsive typography classes */
+.banner-primary-text {
+  font-size: clamp(2rem, 5vw, 4rem);
+  line-height: 1.2;
+  font-weight: 600;
+  margin-bottom: 1rem;
+}
+
+.banner-secondary-text {
+  font-size: clamp(1.5rem, 4vw, 3rem);
+  line-height: 1.3;
+  font-weight: 500;
+  margin-bottom: 1rem;
+}
+
+.banner-tertiary-text {
+  font-size: clamp(1.25rem, 3vw, 2rem);
+  line-height: 1.4;
+  font-weight: 400;
+  margin-bottom: 1rem;
+}
+
+/* Banner icon sizing to match text */
+.banner-primary-text wa-icon,
+.banner-primary-text i {
+  font-size: inherit;
+  margin-right: 0.5rem;
+}
+
+.banner-secondary-text wa-icon,
+.banner-secondary-text i {
+  font-size: inherit;
+  margin-left: 0.5rem;
+}
+
+.banner-tertiary-text wa-icon,
+.banner-tertiary-text i {
+  font-size: inherit;
+  margin-right: 0.5rem;
+}
+
+/* Banner divider styling */
+.banner-divider {
+  border: none;
+  border-top: 2px solid var(--bs-border-color);
+  margin: 1.5rem 0;
+  opacity: 0.7;
+}
+
+/* Responsive banner container spacing */
+.banner {
+  padding: clamp(2rem, 5vh, 4rem) 0;
+}
+
+.banner .container {
+  max-width: 1200px;
+}
+
+/* Banner text container responsive spacing */
+.banner-text-container {
+  text-align: center;
+  padding: 0 1rem;
+}
+
+/* Fine-tuned responsive breakpoints for banner text */
+@media (max-width: 1200px) {
+  .banner-primary-text {
+    font-size: clamp(1.8rem, 4.5vw, 3.5rem);
+  }
+
+  .banner-secondary-text {
+    font-size: clamp(1.3rem, 3.5vw, 2.5rem);
+  }
+
+  .banner-tertiary-text {
+    font-size: clamp(1.1rem, 2.5vw, 1.8rem);
+  }
+}
+
+@media (max-width: 768px) {
+  .banner-primary-text {
+    font-size: clamp(1.5rem, 4vw, 2.5rem);
+  }
+
+  .banner-secondary-text {
+    font-size: clamp(1.2rem, 3vw, 2rem);
+  }
+
+  .banner-tertiary-text {
+    font-size: clamp(1rem, 2.2vw, 1.5rem);
+  }
+
+  .banner {
+    padding: clamp(1.5rem, 3vh, 2.5rem) 0;
+  }
+
+  .banner-divider {
+    margin: 1rem 0;
+  }
+}
+
+@media (max-width: 480px) {
+  .banner-primary-text {
+    font-size: clamp(1.3rem, 3.5vw, 2rem);
+  }
+
+  .banner-secondary-text {
+    font-size: clamp(1.1rem, 2.8vw, 1.6rem);
+  }
+
+  .banner-tertiary-text {
+    font-size: clamp(1rem, 2vw, 1.3rem);
+  }
+
+  .banner {
+    padding: clamp(1rem, 2vh, 2rem) 0;
+  }
+
+  .banner-text-container {
+    padding: 0 0.5rem;
+  }
+}
+
+@media (max-width: 320px) {
+  .banner-primary-text {
+    font-size: 1.3rem;
+  }
+
+  .banner-secondary-text {
+    font-size: 1.1rem;
+  }
+
+  .banner-tertiary-text {
+    font-size: 1rem;
+  }
+}
+
+/* ============================================================
+   RESPONSIVE SERVICE AND CONTENT ICONS
+   ============================================================ */
+
+/* Service icon responsive sizing */
+.service-icon {
+  font-size: clamp(2rem, 4vw, 3rem);
+  display: inline-block;
+  transition: transform 0.3s ease;
+}
+
+.service-icon:hover {
+  transform: scale(1.1);
+}
+
+/* Display heading responsive adjustments */
+.display-5 {
+  font-size: clamp(1.5rem, 4vw, 2.5rem) !important;
+}
+
+.display-4 {
+  font-size: clamp(1.75rem, 5vw, 3rem) !important;
+}
+
+.display-3 {
+  font-size: clamp(2rem, 6vw, 3.5rem) !important;
+}
+
+.display-2 {
+  font-size: clamp(2.5rem, 7vw, 4rem) !important;
+}
+
+.display-1 {
+  font-size: clamp(3rem, 8vw, 5rem) !important;
+}
+
+/* Lead text responsive sizing */
+.lead {
+  font-size: clamp(1rem, 2.5vw, 1.25rem) !important;
+  line-height: 1.6 !important;
+}
+
+/* Card title responsive sizing */
+.card-title {
+  font-size: clamp(1rem, 2vw, 1.25rem) !important;
+  line-height: 1.4 !important;
+}
+
+/* Responsive heading adjustments */
+h1 {
+  font-size: clamp(1.5rem, 4vw, 2.5rem) !important;
+}
+
+h2 {
+  font-size: clamp(1.3rem, 3.5vw, 2rem) !important;
+}
+
+h3 {
+  font-size: clamp(1.2rem, 3vw, 1.75rem) !important;
+}
+
+h4 {
+  font-size: clamp(1.1rem, 2.5vw, 1.5rem) !important;
+}
+
+h5 {
+  font-size: clamp(1rem, 2vw, 1.25rem) !important;
+}
+
+h6 {
+  font-size: clamp(0.9rem, 1.5vw, 1rem) !important;
+}
+
+/* ============================================================
+   MOBILE HEADER SIZE & SPACING TUNING
+   Reduce oversized headers on small screens (phones)
+   ============================================================ */
+@media (max-width: 576px) {
+  /* Tighten vertical space for common header blocks */
+  header.article-header,
+  header[role="banner"].bg-secondary,
+  .taxonomy-hero,
+  .event-hero,
+  .single-header {
+    padding-top: 0.75rem !important;
+    padding-bottom: 0.75rem !important;
+  }
+
+  /* Make H1s in header areas more compact on mobile */
+  header.article-header .container h1.display-5,
+  header[role="banner"] h1.display-5,
+  .taxonomy-hero h1,
+  .event-hero h1,
+  .single-header h1 {
+    font-size: clamp(1.25rem, 5vw, 1.75rem) !important;
+  }
+
+  /* Subtitle/lead text beneath titles */
+  header.article-header .container p.h5,
+  header[role="banner"] .h5,
+  .taxonomy-hero .lead,
+  .event-hero .lead {
+    font-size: clamp(0.95rem, 3.5vw, 1.1rem) !important;
+    line-height: 1.4 !important;
+  }
+}
+
+/* ============================================================
+   RESPONSIVE SHORTCODE ELEMENTS
+   ============================================================ */
+
+/* Packet shortcode responsive styling */
+.packet-title {
+  font-size: clamp(0.7rem, 1.2vw, 0.8rem) !important;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+/* Note shortcode responsive styling */
+.alert {
+  font-size: clamp(0.9rem, 1.8vw, 1rem) !important;
+}
+
+/* Quote shortcode responsive styling */
+blockquote {
+  font-size: clamp(1rem, 2.2vw, 1.125rem) !important;
+  line-height: 1.6 !important;
+}
+
+/* General button responsive sizing */
+.btn {
+  font-size: clamp(0.875rem, 1.8vw, 1rem) !important;
+  padding: clamp(0.375rem, 1vw, 0.75rem) clamp(0.75rem, 2vw, 1.5rem) !important;
+}
+
+.btn-lg {
+  font-size: clamp(1rem, 2.2vw, 1.25rem) !important;
+  padding: clamp(0.5rem, 1.5vw, 1rem) clamp(1rem, 3vw, 2rem) !important;
+}
+
+.btn-sm {
+  font-size: clamp(0.75rem, 1.5vw, 0.875rem) !important;
+  padding: clamp(0.25rem, 0.8vw, 0.5rem) clamp(0.5rem, 1.5vw, 1rem) !important;
+}

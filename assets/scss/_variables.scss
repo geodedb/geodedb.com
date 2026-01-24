@@ -1,0 +1,234 @@
+// ───────────────────────────────────────────────────────────
+//  LOAD ALL VALUES EXPOSED BY HUGO'S  scss_variables  MAP
+// ───────────────────────────────────────────────────────────
+@use "sass:string"; // Must be loaded BEFORE hugo:vars to fix deprecation warnings
+@use "hugo:vars" as h; // <──  hugo variables are referenced with  h.$…
+@use "sass:color";
+
+// ───────────────────────────────────────────────────────────
+//  THEME COLOUR MAP  (Bootstrap expects this)
+// ───────────────────────────────────────────────────────────
+$theme-colors: (
+  "primary": h.$primary,
+  "secondary": h.$secondary,
+  "tertiary": h.$tertiary,
+  "success": h.$success,
+  "info": h.$info,
+  "warning": h.$warning,
+  "danger": h.$danger,
+  "light": h.$light,
+  "dark": h.$dark,
+  "black": h.$black,
+  "white": h.$white,
+  "muted": h.$muted,
+);
+
+// ───────────────────────────────────────────────────────────
+//  SEMANTIC COLOURS
+// ───────────────────────────────────────────────────────────
+$primary: h.$primary;
+$secondary: h.$secondary;
+$tertiary: h.$tertiary;
+$success: h.$success;
+$info: h.$info;
+$warning: h.$warning;
+$danger: h.$danger;
+$light: h.$light;
+$dark: h.$dark;
+$black: h.$black;
+$white: h.$white;
+$muted: h.$muted;
+
+// ───────────────────────────────────────────────────────────
+//  TEXT COLOURS
+// ───────────────────────────────────────────────────────────
+$text-primary: h.$text_primary;
+$text-secondary: h.$text_secondary;
+$text-tertiary: h.$text_tertiary;
+$text-muted: h.$text_muted;
+$text-dark: h.$text_dark;
+$text-light: h.$text_light;
+$text-success: h.$text_success;
+$text-info: h.$text_info;
+$text-warning: h.$text_warning;
+$text-danger: h.$text_danger;
+$text-white: h.$text_white;
+
+// ───────────────────────────────────────────────────────────
+//  BACKGROUND / BODY
+// ───────────────────────────────────────────────────────────
+$body-bg: h.$body_bg;
+$body-color: h.$body_color;
+$heading-color: inherit; // unchanged
+
+$bg-primary: h.$bg_primary;
+$bg-secondary: h.$bg_secondary;
+$bg-tertiary: h.$bg_tertiary;
+$bg-light: h.$bg_light;
+$bg-dark: h.$bg_dark;
+$bg-success: h.$bg_success;
+$bg-danger: h.$bg_danger;
+$bg-warning: h.$bg_warning;
+$bg-info: h.$bg_info;
+$bg-white: h.$bg_white;
+
+// ───────────────────────────────────────────────────────────
+//  BANNER / HIGHLIGHT HELPERS
+// ───────────────────────────────────────────────────────────
+$banner-fade-in-color: h.$banner_fade_in_color;
+$banner-line-color: h.$banner_line_color;
+$highlight-color: $primary;
+$highlight-bg: $dark;
+$code-color: $tertiary;
+
+// ───────────────────────────────────────────────────────────
+//  LINKS
+// ───────────────────────────────────────────────────────────
+$link-color: h.$link_color;
+$link-hover-color: h.$link_hover_color;
+$link-focus-color: h.$link_focus_color;
+$link-active-color: h.$link_active_color;
+$link-visited-color: h.$link_visited_color;
+$link-disabled-color: h.$link_disabled_color;
+
+// ───────────────────────────────────────────────────────────
+//  BORDERS / SHADOWS
+// ───────────────────────────────────────────────────────────
+$border-color: $dark; // default border colour
+$border-color-translucent: rgba(255, 255, 255, 0.15);
+$border-radius: h.$border_radius;
+
+$box-shadow-default:
+  0 4px 6px -1px rgba(0, 0, 0, 0.1),
+  0 2px 4px -1px rgba(0, 0, 0, 0.06);
+
+// ───────────────────────────────────────────────────────────
+//  GLOBAL LAYOUT
+// ───────────────────────────────────────────────────────────
+$container-max-width: h.$container_max_width;
+
+// ───────────────────────────────────────────────────────────
+//  TYPOGRAPHY
+// ───────────────────────────────────────────────────────────
+$font-family-base:
+  h.$font_family_base,
+  system-ui,
+  -apple-system,
+  sans-serif;
+$font-size-base: h.$font_size_base;
+$font-weight-base: h.$font_weight_base;
+$line-height-base: h.$line_height_base;
+
+$font-size-codeblock: h.$font_size_codeblock;
+
+$font-size-h1: h.$font_size_h1;
+$font-size-h2: h.$font_size_h2;
+$font-size-h3: h.$font_size_h3;
+$font-size-h4: h.$font_size_h4;
+$font-size-h5: h.$font_size_h5;
+$font-size-h6: h.$font_size_h6;
+
+$font-size-h1-mobile: h.$font_size_h1_mobile;
+$font-size-h2-mobile: h.$font_size_h2_mobile;
+$font-size-h3-mobile: h.$font_size_h3_mobile;
+$font-size-h4-mobile: h.$font_size_h4_mobile;
+$font-size-h5-mobile: h.$font_size_h5_mobile;
+$font-size-h6-mobile: h.$font_size_h6_mobile;
+
+$font-size-base-mobile: h.$font_size_base_mobile;
+$line-height-base-mobile: h.$line_height_base_mobile;
+
+// ───────────────────────────────────────────────────────────
+//  ICON SIZES  (kept static – not in yaml)
+// ───────────────────────────────────────────────────────────
+$icon-size-xs: 1rem;
+$icon-size-sm: 1.25rem;
+$icon-size-md: 1.5rem;
+$icon-size-lg: 2rem;
+$icon-size-xl: 2.5rem;
+$icon-size-xxl: 3rem;
+$icon-size-xxxl: 3.5rem;
+
+// ───────────────────────────────────────────────────────────
+//  HEADING-ANCHOR / BACK-TO-TOP
+// ───────────────────────────────────────────────────────────
+$h-anchor-size: h.$h_anchor_size;
+$h-anchor-color: h.$h_anchor_color;
+$h-anchor-hover-color: h.$h_anchor_hover_color;
+
+$h-top-size: h.$h_top_size;
+$h-top-color: h.$h_top_color;
+$h-top-hover-color: h.$h_top_hover_color;
+
+// ───────────────────────────────────────────────────────────
+//  BUTTONS (Updated with modern SASS syntax)
+// ───────────────────────────────────────────────────────────
+$button-border-primary: 2px solid $primary;
+$button-color-primary: $white;
+$button-bg-primary: $primary;
+$button-before-bg-primary: color.adjust($primary, $lightness: -5%);
+
+$button-border-secondary: 2px solid $secondary;
+$button-color-secondary: $white;
+$button-bg-secondary: $secondary;
+$button-before-bg-secondary: color.adjust($secondary, $lightness: -5%);
+
+$button-border-tertiary: 2px solid $tertiary;
+$button-color-tertiary: $white;
+$button-bg-tertiary: $tertiary;
+$button-before-bg-tertiary: color.adjust($tertiary, $lightness: -5%);
+
+$button-border-success: 2px solid $success;
+$button-color-success: $white;
+$button-bg-success: $success;
+$button-before-bg-success: color.adjust($success, $lightness: -5%);
+
+$button-border-info: 2px solid $info;
+$button-color-info: $white;
+$button-bg-info: $info;
+$button-before-bg-info: color.adjust($info, $lightness: -5%);
+
+$button-border-warning: 2px solid $warning;
+$button-color-warning: $white;
+$button-bg-warning: $warning;
+$button-before-bg-warning: color.adjust($warning, $lightness: -5%);
+
+$button-border-danger: 2px solid $danger;
+$button-color-danger: $white;
+$button-bg-danger: $danger;
+$button-before-bg-danger: color.adjust($danger, $lightness: -5%);
+
+$button-border-light: 2px solid $light;
+$button-color-light: $dark;
+$button-bg-light: $light;
+$button-before-bg-light: color.adjust($light, $lightness: -5%);
+
+$button-border-dark: 2px solid $dark;
+$button-color-dark: $light;
+$button-bg-dark: $dark;
+$button-before-bg-dark: color.adjust($dark, $lightness: 5%);
+
+// ───────────────────────────────────────────────────────────
+//  INPUT-FILE COMPONENT
+// ───────────────────────────────────────────────────────────
+$input-file-color: $body-color;
+$input-file-bg: rgba($dark, 0.6);
+$input-file-border: 1px solid $primary;
+$input-file-border-hover: 1px solid color.adjust($primary, $lightness: 10%);
+$input-file-border-focus: 1px solid color.adjust($primary, $lightness: 20%);
+
+// ───────────────────────────────────────────────────────────
+//  CARD COMPONENT
+// ───────────────────────────────────────────────────────────
+$card-spacer-x: 1.25rem;
+$card-spacer-y: 1.25rem;
+$card-border-color: $border-color;
+$card-border-radius: $border-radius;
+$card-header-bg-color: rgba($dark, 0.8);
+$card-header-color: $body-color;
+$card-header-font-size: 1.25rem;
+
+// ───────────────────────────────────────────────────────────
+//  OPTIONAL – IMAGE / BACKGROUND URLS (handy in css)
+// ───────────────────────────────────────────────────────────
+$body-bg-img-url: h.$body_bg_img_url;
