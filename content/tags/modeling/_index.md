@@ -361,3 +361,476 @@ print(f"Query took {elapsed:.2f}s, returned {len(result)} rows")
 - [Transaction Management](/tags/transactions/) - Ensure data integrity
 
 Graph modeling is both an art and science. Start with a clear understanding of your domain, iterate based on query patterns, and continuously validate with realistic workloads to achieve optimal performance and maintainability.
+
+## Domain-Driven Graph Modeling
+
+### Social Network Example
+
+Model a social network with rich relationship semantics:
+
+```gql
+-- Core entities
+CREATE (:User {
+  id: INTEGER,
+  username: STRING,
+  email: STRING,
+  bio: TEXT,
+  joined_at: TIMESTAMP,
+  last_active: TIMESTAMP
+})
+
+CREATE (:Post {
+  id: INTEGER,
+  content: TEXT,
+  created_at: TIMESTAMP,
+  edited_at: TIMESTAMP,
+  visibility: STRING  -- 'public', 'friends', 'private'
+})
+
+CREATE (:Comment {
+  id: INTEGER,
+  content: TEXT,
+  created_at: TIMESTAMP
+})
+
+-- Relationships with properties
+CREATE (u1:User)-[:FOLLOWS {
+  since: TIMESTAMP,
+  notification_enabled: BOOLEAN
+}]->(u2:User)
+
+CREATE (u:User)-[:POSTED {
+  posted_at: TIMESTAMP
+}]->(p:Post)
+
+CREATE (u:User)-[:LIKED {
+  liked_at: TIMESTAMP,
+  reaction_type: STRING  -- 'like', 'love', 'laugh', etc.
+}]->(p:Post)
+
+CREATE (u:User)-[:COMMENTED {
+  commented_at: TIMESTAMP
+}]->(c:Comment)-[:ON]->(p:Post)
+
+-- Constraints
+CREATE CONSTRAINT ON (u:User) ASSERT u.id IS UNIQUE;
+CREATE CONSTRAINT ON (u:User) ASSERT u.email IS UNIQUE;
+CREATE CONSTRAINT ON (p:Post) ASSERT p.id IS UNIQUE;
+
+-- Indexes for common queries
+CREATE INDEX FOR (u:User) ON (u.username);
+CREATE INDEX FOR (p:Post) ON (p.created_at);
+CREATE INDEX FOR (u:User) ON (u.last_active);
+```
+
+Common query patterns:
+
+```gql
+-- User feed: posts from followed users
+MATCH (me:User {id: $my_id})-[:FOLLOWS]->(friend:User)
+MATCH (friend)-[:POSTED]->(post:Post)
+WHERE post.created_at > datetime().minusDays(7)
+RETURN post, friend.username
+ORDER BY post.created_at DESC
+LIMIT 50
+
+-- Friend recommendations: friends of friends
+MATCH (me:User {id: $my_id})-[:FOLLOWS]->()-[:FOLLOWS]->(suggestion:User)
+WHERE NOT (me)-[:FOLLOWS]->(suggestion)
+  AND suggestion.id != $my_id
+WITH suggestion, COUNT(*) AS mutual_friends
+ORDER BY mutual_friends DESC
+LIMIT 10
+RETURN suggestion, mutual_friends
+
+-- Trending posts: high engagement recently
+MATCH (p:Post)
+WHERE p.created_at > datetime().minusHours(24)
+WITH p,
+     COUNT{(p)<-[:LIKED]-()} AS likes,
+     COUNT{(p)<-[:ON]-(c:Comment)} AS comments
+WITH p, (likes * 1.0 + comments * 2.0) AS engagement_score
+ORDER BY engagement_score DESC
+LIMIT 20
+RETURN p, engagement_score
+```
+
+### E-Commerce Platform
+
+Model products, inventory, and orders:
+
+```gql
+-- Product catalog
+CREATE (:Product {
+  sku: STRING,
+  name: STRING,
+  description: TEXT,
+  price: DECIMAL,
+  currency: STRING,
+  stock_quantity: INTEGER,
+  reorder_point: INTEGER,
+  discontinued: BOOLEAN
+})
+
+CREATE (:Category {
+  id: INTEGER,
+  name: STRING,
+  slug: STRING,
+  parent_id: INTEGER  -- Self-referential hierarchy
+})
+
+CREATE (:Brand {
+  id: INTEGER,
+  name: STRING,
+  logo_url: STRING
+})
+
+-- Relationships
+CREATE (p:Product)-[:IN_CATEGORY]->(c:Category)
+CREATE (p:Product)-[:MADE_BY]->(b:Brand)
+CREATE (p1:Product)-[:SIMILAR_TO {
+  similarity_score: FLOAT,
+  algorithm: STRING
+}]->(p2:Product)
+
+-- Orders and customers
+CREATE (:Customer {
+  id: INTEGER,
+  email: STRING,
+  name: STRING,
+  lifetime_value: DECIMAL
+})
+
+CREATE (:Order {
+  id: INTEGER,
+  order_number: STRING,
+  status: STRING,  -- 'pending', 'confirmed', 'shipped', 'delivered'
+  total: DECIMAL,
+  created_at: TIMESTAMP,
+  shipped_at: TIMESTAMP,
+  delivered_at: TIMESTAMP
+})
+
+CREATE (:OrderItem {
+  quantity: INTEGER,
+  unit_price: DECIMAL,
+  discount: DECIMAL
+})
+
+-- Order relationships
+CREATE (c:Customer)-[:PLACED]->(o:Order)
+CREATE (o:Order)-[:CONTAINS]->(item:OrderItem)-[:OF_PRODUCT]->(p:Product)
+
+-- Indexes for e-commerce queries
+CREATE INDEX FOR (p:Product) ON (p.sku);
+CREATE INDEX FOR (p:Product) ON (p.price);
+CREATE INDEX FOR (p:Product) ON (p.stock_quantity);
+CREATE INDEX FOR (o:Order) ON (o.status);
+CREATE INDEX FOR (o:Order) ON (o.created_at);
+```
+
+E-commerce query patterns:
+
+```gql
+-- Product search with filters
+MATCH (p:Product)-[:IN_CATEGORY]->(c:Category)
+WHERE p.price BETWEEN $min_price AND $max_price
+  AND c.slug = $category
+  AND p.stock_quantity > 0
+  AND p.discontinued = false
+RETURN p
+ORDER BY p.popularity_score DESC
+LIMIT 24
+
+-- Shopping cart recommendations
+MATCH (cart_product:Product {id IN $cart_product_ids})
+MATCH (cart_product)-[:SIMILAR_TO]->(rec:Product)
+WHERE NOT rec.id IN $cart_product_ids
+  AND rec.stock_quantity > 0
+WITH rec, AVG(similarity_score) AS avg_similarity
+ORDER BY avg_similarity DESC
+LIMIT 10
+RETURN rec
+
+-- Inventory reordering
+MATCH (p:Product)
+WHERE p.stock_quantity <= p.reorder_point
+  AND p.discontinued = false
+WITH p, p.reorder_point + 100 AS reorder_quantity
+RETURN p.sku, p.name, p.stock_quantity, reorder_quantity
+ORDER BY p.stock_quantity ASC
+```
+
+## Advanced Modeling Patterns
+
+### Graph Versioning
+
+Track changes over time:
+
+```gql
+-- Version-aware entities
+CREATE (:Document {
+  id: INTEGER,
+  version: INTEGER,
+  content: TEXT,
+  valid_from: TIMESTAMP,
+  valid_to: TIMESTAMP,
+  is_current: BOOLEAN
+})
+
+-- Version chain
+CREATE (doc_v1:Document {id: 1, version: 1, valid_from: '2024-01-01T00:00:00Z'})
+CREATE (doc_v2:Document {id: 1, version: 2, valid_from: '2024-01-15T10:30:00Z'})
+CREATE (doc_v1)-[:NEXT_VERSION]->(doc_v2)
+
+-- Query specific version
+MATCH (d:Document {id: $doc_id})
+WHERE d.valid_from <= $timestamp
+  AND (d.valid_to IS NULL OR d.valid_to > $timestamp)
+RETURN d
+
+-- Query current version
+MATCH (d:Document {id: $doc_id, is_current: true})
+RETURN d
+```
+
+### Bipartite Graphs
+
+Model two distinct node types with relationships:
+
+```gql
+-- Users and movies (recommendation system)
+CREATE (:User {id: INTEGER, name: STRING})
+CREATE (:Movie {id: INTEGER, title: STRING, genre: STRING})
+
+CREATE (u:User)-[:RATED {
+  rating: FLOAT,  -- 1.0 to 5.0
+  timestamp: TIMESTAMP
+}]->(m:Movie)
+
+-- Collaborative filtering query
+MATCH (me:User {id: $my_id})-[r1:RATED]->(m:Movie)<-[r2:RATED]-(similar:User)
+WHERE ABS(r1.rating - r2.rating) < 1.0  -- Similar ratings
+WITH similar, COUNT(m) AS common_movies
+ORDER BY common_movies DESC
+LIMIT 10
+
+MATCH (similar)-[r:RATED]->(rec:Movie)
+WHERE NOT (me)-[:RATED]->(rec)
+  AND r.rating >= 4.0
+RETURN rec.title, AVG(r.rating) AS avg_rating
+ORDER BY avg_rating DESC
+LIMIT 20
+```
+
+### Knowledge Graphs
+
+Model entities and semantic relationships:
+
+```gql
+-- Entities with types
+CREATE (:Entity {
+  id: STRING,
+  name: STRING,
+  type: STRING,  -- 'person', 'organization', 'location', 'event'
+  description: TEXT
+})
+
+-- Semantic relationships
+CREATE (e1:Entity)-[:WORKED_AT {
+  from_date: DATE,
+  to_date: DATE,
+  role: STRING
+}]->(e2:Entity)
+
+CREATE (e1:Entity)-[:LOCATED_IN]->(e2:Entity)
+CREATE (e1:Entity)-[:FOUNDED {founding_date: DATE}]->(e2:Entity)
+
+-- Knowledge graph queries
+MATCH path = (person:Entity {type: 'person', name: 'Alice'})
+             -[:WORKED_AT*1..2]->
+             (company:Entity {type: 'organization'})
+RETURN path
+
+-- Find connections between entities
+MATCH path = shortestPath(
+  (e1:Entity {name: 'Alice'})-[*..5]-(e2:Entity {name: 'Bob'})
+)
+RETURN path, LENGTH(path) AS degree_of_separation
+```
+
+### Geospatial Modeling
+
+Model location-based data:
+
+```gql
+-- Locations with coordinates
+CREATE (:Place {
+  id: INTEGER,
+  name: STRING,
+  latitude: FLOAT,
+  longitude: FLOAT,
+  category: STRING  -- 'restaurant', 'hotel', 'attraction'
+})
+
+-- Spatial index (for distance queries)
+CREATE SPATIAL INDEX FOR (p:Place) ON (p.latitude, p.longitude);
+
+-- Distance-based queries
+MATCH (p:Place)
+WHERE distance(
+  point({latitude: p.latitude, longitude: p.longitude}),
+  point({latitude: $my_lat, longitude: $my_lon})
+) < $radius_meters
+  AND p.category = 'restaurant'
+RETURN p, distance(...) AS distance_m
+ORDER BY distance_m
+LIMIT 10
+```
+
+## Performance Modeling
+
+### Hotspot Avoidance
+
+Prevent dense nodes (supernodes):
+
+```gql
+-- BAD: Single popular user with millions of followers
+(:User {id: 'celebrity'})<-[:FOLLOWS]-(:User) [x1,000,000]
+
+-- GOOD: Partition followers by time
+(:User {id: 'celebrity'})
+  <-[:MANAGED_BY]-(:FollowerList {period: '2024-01'})
+    <-[:IN_LIST]-(:User) [x100,000]
+
+(:User {id: 'celebrity'})
+  <-[:MANAGED_BY]-(:FollowerList {period: '2024-02'})
+    <-[:IN_LIST]-(:User) [x100,000]
+
+-- Query pattern
+MATCH (celebrity:User {id: $celebrity_id})
+      <-[:MANAGED_BY]-(list:FollowerList)
+      <-[:IN_LIST]-(follower:User)
+WHERE list.period >= $start_period
+RETURN follower
+```
+
+### Materialized Aggregations
+
+Pre-compute expensive aggregations:
+
+```gql
+-- Expensive query (computed on-demand)
+MATCH (u:User {id: $user_id})-[:POSTED]->(p:Post)
+RETURN u, COUNT(p) AS post_count
+
+-- Better: Maintain denormalized count
+CREATE (:User {
+  id: INTEGER,
+  post_count: INTEGER  -- Updated by trigger
+})
+
+-- Trigger keeps count in sync
+CREATE TRIGGER maintain_post_count
+AFTER INSERT OR DELETE ON [:POSTED]
+FOR EACH RELATIONSHIP
+EXECUTE GQL
+  MATCH (u:User)
+  WHERE id(u) = id(startNode(COALESCE(NEW, OLD)))
+  SET u.post_count = u.post_count + CASE WHEN INSERTING THEN 1 ELSE -1 END
+
+-- Fast query
+MATCH (u:User {id: $user_id})
+RETURN u.post_count
+```
+
+### Index Coverage
+
+Design indexes to cover query patterns:
+
+```gql
+-- Compound index for multi-property queries
+CREATE INDEX FOR (p:Product) ON (p.category, p.price, p.stock_quantity);
+
+-- This index covers:
+MATCH (p:Product)
+WHERE p.category = 'electronics'
+  AND p.price < 1000
+  AND p.stock_quantity > 0
+RETURN p
+-- Index-only scan, no table lookup needed
+```
+
+## Schema Evolution
+
+### Adding Properties
+
+Add properties with default values:
+
+```gql
+-- Add new property to existing nodes
+MATCH (u:User)
+WHERE NOT EXISTS(u.email_verified)
+SET u.email_verified = false
+
+-- Or use COALESCE in queries
+MATCH (u:User)
+RETURN u.name, COALESCE(u.email_verified, false) AS verified
+```
+
+### Migrating Relationships
+
+Change relationship structure:
+
+```gql
+-- Old model: direct relationship
+(u:User)-[:FRIEND]->(f:User)
+
+-- New model: relationship as node (to add properties)
+(u:User)-[:FRIENDSHIP_REQUEST]->(fr:FriendRequest {
+  status: 'accepted',
+  requested_at: TIMESTAMP,
+  accepted_at: TIMESTAMP
+})<-[:FRIENDSHIP_REQUEST]-(f:User)
+
+-- Migration query
+MATCH (u1:User)-[old:FRIEND]->(u2:User)
+CREATE (u1)-[:FRIENDSHIP_REQUEST]->(fr:FriendRequest {
+  status: 'accepted',
+  requested_at: old.since,
+  accepted_at: old.since
+})<-[:FRIENDSHIP_REQUEST]-(u2)
+DELETE old
+```
+
+### Schema Versioning
+
+Track schema changes:
+
+```gql
+-- Schema metadata
+CREATE (:SchemaVersion {
+  version: INTEGER,
+  applied_at: TIMESTAMP,
+  description: TEXT
+})
+
+-- Migration scripts
+-- v1_to_v2.gql
+CREATE CONSTRAINT ON (u:User) ASSERT u.email IS UNIQUE;
+ALTER LABEL User ADD PROPERTY email_verified BOOLEAN DEFAULT false;
+INSERT (:SchemaVersion {version: 2, applied_at: datetime(), description: 'Add email verification'})
+```
+
+## Further Reading
+
+- [GQL Data Types](/tags/types/) - Understand available property types
+- [Indexing Strategies](/tags/indexing/) - Optimize query performance
+- [Query Performance](/tags/performance/) - Performance tuning techniques
+- [GQL Reference](/tags/gql-reference/) - Complete language reference
+- [Transaction Management](/tags/transactions/) - Ensure data integrity
+- [Graph Algorithms for Data Science](https://www.oreilly.com/library/view/graph-algorithms/9781492047674/)
+- [NoSQL Distilled](https://martinfowler.com/books/nosql.html) - Data modeling patterns
+- [Graph Databases](https://www.oreilly.com/library/view/graph-databases-2nd/9781491930892/) - O'Reilly guide
+
+Graph modeling is both an art and science. Start with a clear understanding of your domain, iterate based on query patterns, and continuously validate with realistic workloads to achieve optimal performance and maintainability.

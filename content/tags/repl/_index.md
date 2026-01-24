@@ -422,6 +422,391 @@ geode> MATCH (p:Person {email: 'alice@example.com'}) RETURN p;
 - [Debugging](/tags/debugging/) - Query debugging techniques
 - [Query Optimization](/tags/query-optimization/) - Performance tuning
 
+## Advanced REPL Features
+
+### Query History and Search
+
+The REPL maintains a searchable history of all commands:
+
+```
+geode> \history
+  1: MATCH (n) RETURN count(n);
+  2: MATCH (p:Person) RETURN p.name LIMIT 10;
+  3: MATCH (p:Person {name: 'Alice'}) RETURN p;
+  ...
+
+geode> # Search history with Ctrl+R
+(reverse-i-search)`MATCH': MATCH (p:Person) RETURN p.name LIMIT 10;
+
+geode> # Re-execute previous command with !!
+geode> !!
+MATCH (p:Person) RETURN p.name LIMIT 10;
+
+geode> # Execute specific history entry with !<number>
+geode> !2
+MATCH (p:Person) RETURN p.name LIMIT 10;
+```
+
+### Session Persistence
+
+Save and load REPL sessions:
+
+```
+geode> \save session.gql
+Saved 15 queries to session.gql
+
+geode> \load session.gql
+Loading and executing session.gql...
+Query 1/15: MATCH (n) RETURN count(n); ✓
+Query 2/15: CREATE INDEX FOR (p:Person) ON (p.email); ✓
+...
+Session loaded successfully.
+
+geode> \export results.json
+Exporting query results to results.json...
+Exported 1523 rows
+```
+
+### Variable Binding and Reuse
+
+Bind query results to variables for reuse:
+
+```
+geode> @high_value_users := MATCH (u:User)
+                            WHERE u.lifetime_value > 10000
+                            RETURN u.id, u.name, u.email;
+Bound 142 rows to @high_value_users
+
+geode> # Use bound variable in subsequent queries
+geode> MATCH (u:User)
+       WHERE u.id IN [x.id FOR x IN @high_value_users]
+       MATCH (u)-[:PURCHASED]->(p:Product)
+       RETURN u.name, count(p) AS purchases
+       ORDER BY purchases DESC;
+
+╭──────────────┬────────────╮
+│ u.name       │ purchases  │
+├──────────────┼────────────┤
+│ Alice Smith  │ 87         │
+│ Bob Johnson  │ 72         │
+...
+╰──────────────┴────────────╯
+```
+
+### Multi-Line Query Editing
+
+Advanced editing capabilities for complex queries:
+
+```
+geode> # Press Ctrl+X Ctrl+E to open query in $EDITOR
+geode> # Edit multi-line query with full text editor support
+
+# Opens in vim/emacs/nano with syntax highlighting:
+MATCH (u:User)-[:WORKS_AT]->(c:Company),
+      (u)-[:LIVES_IN]->(city:City)
+WHERE c.industry = 'Technology'
+  AND city.name IN ['San Francisco', 'Seattle', 'Austin']
+  AND u.salary > 100000
+WITH u, c, city,
+     duration.between(u.hire_date, date()) AS tenure
+WHERE tenure.years > 2
+RETURN u.name AS employee,
+       c.name AS company,
+       city.name AS location,
+       u.salary AS salary,
+       tenure.years AS years_employed
+ORDER BY u.salary DESC
+LIMIT 50;
+
+# Save and exit editor, query executes in REPL
+```
+
+### Advanced Meta-Commands
+
+Comprehensive database introspection:
+
+```
+geode> \d Person
+Label: Person
+Properties:
+  id          INTEGER       PRIMARY KEY, INDEXED
+  name        STRING        NOT NULL
+  email       STRING        UNIQUE, INDEXED
+  age         INTEGER
+  city        STRING        INDEXED
+  created_at  TIMESTAMP     DEFAULT now()
+
+Indexes:
+  person_id_idx (id) - BTREE
+  person_email_idx (email) - UNIQUE BTREE
+  person_city_idx (city) - BTREE
+  person_embedding_idx (embedding) - HNSW
+
+Constraints:
+  person_id_unique (id IS UNIQUE)
+  person_email_unique (email IS UNIQUE)
+  person_name_exists (name IS NOT NULL)
+
+Relationships:
+  (Person)-[:WORKS_AT]->(Company)        14523 relationships
+  (Person)-[:FRIEND]->(Person)           35621 relationships
+  (Person)-[:LIVES_IN]->(City)           14523 relationships
+
+geode> \timing on
+Timing is on.
+
+geode> \explain on
+Query plans will be displayed.
+
+geode> MATCH (p:Person {email: 'alice@example.com'}) RETURN p;
+
+Query Plan:
+┌─ IndexScan (person_email_idx)
+│  ├─ Condition: email = 'alice@example.com'
+│  ├─ Estimated rows: 1
+│  └─ Cost: 0.1
+└─ Return
+   ├─ Columns: p
+   └─ Cost: 0.01
+
+Execution: 0.8ms (1 row)
+
+geode> \watch 5
+Repeating query every 5 seconds. Press Ctrl+C to stop.
+
+geode> MATCH (u:User) WHERE u.online = true RETURN count(u);
+╭──────────╮
+│ count(u) │
+├──────────┤
+│ 1523     │
+╰──────────╯
+[2024-01-15 14:30:00]
+
+╭──────────╮
+│ count(u) │
+├──────────┤
+│ 1531     │
+╰──────────╯
+[2024-01-15 14:30:05]
+
+...
+```
+
+### Output Formatting Options
+
+Control result display format:
+
+```
+geode> \format table
+Output format set to table.
+
+geode> MATCH (p:Person) RETURN p.name, p.age LIMIT 3;
+╭──────────────┬──────╮
+│ p.name       │ p.age│
+├──────────────┼──────┤
+│ Alice Smith  │ 32   │
+│ Bob Johnson  │ 28   │
+│ Carol Davis  │ 45   │
+╰──────────────┴──────╯
+
+geode> \format json
+Output format set to JSON.
+
+geode> MATCH (p:Person) RETURN p.name, p.age LIMIT 3;
+[
+  {"p.name": "Alice Smith", "p.age": 32},
+  {"p.name": "Bob Johnson", "p.age": 28},
+  {"p.name": "Carol Davis", "p.age": 45}
+]
+
+geode> \format csv
+Output format set to CSV.
+
+geode> MATCH (p:Person) RETURN p.name, p.age LIMIT 3;
+p.name,p.age
+Alice Smith,32
+Bob Johnson,28
+Carol Davis,45
+
+geode> \format vertical
+Output format set to vertical.
+
+geode> MATCH (p:Person) RETURN p.name, p.email, p.age LIMIT 1;
+─────────────── Row 1 ───────────────
+p.name  │ Alice Smith
+p.email │ alice@example.com
+p.age   │ 32
+```
+
+### Batch Operations
+
+Execute multiple queries efficiently:
+
+```
+geode> \batch
+Batch mode enabled. Commands will queue until '\execute'.
+
+batch> CREATE (:User {id: 1, name: 'Alice'});
+Queued (1)
+
+batch> CREATE (:User {id: 2, name: 'Bob'});
+Queued (2)
+
+batch> CREATE (:User {id: 3, name: 'Carol'});
+Queued (3)
+
+batch> MATCH (a:User {id: 1}), (b:User {id: 2})
+       CREATE (a)-[:FRIEND]->(b);
+Queued (4)
+
+batch> \execute
+Executing 4 queued queries in transaction...
+✓ Query 1 completed (1.2ms)
+✓ Query 2 completed (0.9ms)
+✓ Query 3 completed (0.8ms)
+✓ Query 4 completed (1.1ms)
+Batch completed: 4/4 succeeded (4.0ms total)
+```
+
+### Remote Server Management
+
+Manage Geode servers from REPL:
+
+```
+geode> \connect production-db.example.com:3141
+Connecting to production-db.example.com:3141...
+Connected to Geode v0.18.0 (cluster mode, 5 nodes)
+
+geode> \cluster status
+Cluster Status:
+┌────────┬─────────────────────┬─────────┬────────┬────────────┐
+│ Node   │ Address             │ Role    │ Status │ Lag (ms)   │
+├────────┼─────────────────────┼─────────┼────────┼────────────┤
+│ node1  │ 10.0.1.10:7000      │ Leader  │ Healthy│ 0          │
+│ node2  │ 10.0.1.11:7000      │ Follower│ Healthy│ 2          │
+│ node3  │ 10.0.1.12:7000      │ Follower│ Healthy│ 1          │
+│ node4  │ 10.0.2.10:7000      │ Observer│ Healthy│ 45         │
+│ node5  │ 10.0.2.11:7000      │ Observer│ Healthy│ 48         │
+└────────┴─────────────────────┴─────────┴────────┴────────────┘
+
+geode> \admin rebalance
+Initiating cluster rebalance...
+Progress: [████████████████████████████████] 100% (15.2s)
+Rebalanced 128 shards across 5 nodes
+
+geode> \admin backup /backups/prod-$(date +%Y%m%d)
+Starting backup to /backups/prod-20240115...
+Backing up data files... ████████████████ 100% (2.1GB)
+Backing up WAL files... ████████████████ 100% (512MB)
+Backup completed: /backups/prod-20240115.tar.gz (2.6GB)
+```
+
+### Keyboard Shortcuts Reference
+
+```
+Navigation:
+  Ctrl+A / Home       - Beginning of line
+  Ctrl+E / End        - End of line
+  Ctrl+F / →          - Forward one character
+  Ctrl+B / ←          - Backward one character
+  Alt+F               - Forward one word
+  Alt+B               - Backward one word
+
+Editing:
+  Ctrl+D / Delete     - Delete character
+  Ctrl+H / Backspace  - Delete previous character
+  Ctrl+K              - Kill (cut) to end of line
+  Ctrl+U              - Kill to beginning of line
+  Ctrl+W              - Kill previous word
+  Alt+D               - Kill next word
+  Ctrl+Y              - Yank (paste) killed text
+
+History:
+  Ctrl+R              - Reverse search history
+  Ctrl+S              - Forward search history
+  ↑ / Ctrl+P          - Previous command
+  ↓ / Ctrl+N          - Next command
+  Alt+<               - First command in history
+  Alt+>               - Last command in history
+
+Completion:
+  Tab                 - Auto-complete
+  Alt+?               - List all completions
+
+Control:
+  Ctrl+C              - Cancel current input
+  Ctrl+D              - Exit (if input empty)
+  Ctrl+L              - Clear screen
+  Ctrl+X Ctrl+E       - Edit query in $EDITOR
+```
+
+### Scripting with REPL
+
+Automate tasks with REPL scripts:
+
+```bash
+#!/usr/bin/env bash
+# Daily analytics script
+
+geode shell --non-interactive <<'EOF'
+-- Daily user activity report
+\output daily_report_$(date +%Y%m%d).csv
+\format csv
+
+MATCH (u:User)-[:PERFORMED]->(e:Event)
+WHERE e.timestamp > datetime().minusDays(1)
+WITH u, count(e) AS event_count, collect(DISTINCT e.type) AS event_types
+ORDER BY event_count DESC
+RETURN u.id, u.name, event_count, event_types
+LIMIT 1000;
+
+-- Export to JSON for downstream processing
+\output user_cohorts.json
+\format json
+
+MATCH (u:User)
+WITH u,
+     duration.between(u.created_at, datetime()).days AS days_since_signup
+WITH CASE
+       WHEN days_since_signup <= 7 THEN 'new'
+       WHEN days_since_signup <= 30 THEN 'active'
+       ELSE 'established'
+     END AS cohort,
+     count(u) AS user_count
+RETURN cohort, user_count;
+
+\quit
+EOF
+
+echo "Reports generated:"
+ls -lh daily_report_*.csv user_cohorts.json
+```
+
+### IDE Integration
+
+Use REPL output in development workflows:
+
+```bash
+# Generate schema documentation
+geode shell --execute "\dt" > docs/schema.txt
+
+# Extract sample data for testing
+geode shell --execute "
+  MATCH (u:User) RETURN u LIMIT 100;
+  \format json
+" > test/fixtures/users.json
+
+# Monitor query performance
+geode shell --execute "
+  \timing on
+  \profile
+  MATCH (u:User)-[:PURCHASED]->(p:Product)
+  WHERE p.category = 'Electronics'
+  RETURN u.name, count(p) AS purchases
+  ORDER BY purchases DESC LIMIT 10;
+" > performance_report.txt
+```
+
 ## Further Reading
 
 - [REPL User Guide](/docs/repl-user-guide/) - Complete REPL documentation
@@ -429,3 +814,5 @@ geode> MATCH (p:Person {email: 'alice@example.com'}) RETURN p;
 - [Meta-Commands Reference](/docs/meta-commands/) - All REPL commands
 - [Query Development Best Practices](/docs/query-development/) - Development workflow
 - [Interactive Query Tutorial](/tutorials/interactive-queries/) - Hands-on REPL tutorial
+- [Readline Documentation](https://tiswww.case.edu/php/chet/readline/rluserman.html) - Keyboard shortcuts
+- [PostgreSQL psql](https://www.postgresql.org/docs/current/app-psql.html) - Inspiration for meta-commands

@@ -432,3 +432,438 @@ Real-time processing leverages:
 - **Telemetry**: Real-time performance metrics via Prometheus
 
 Browse the tagged content below to discover documentation, tutorials, and guides for building real-time graph applications with Geode.
+
+## Real-Time Application Architecture
+
+### Event-Driven Microservices
+
+Build responsive systems with event-driven architecture:
+
+```python
+# Microservice reacting to graph changes in real-time
+from geode_client import Client, ChangeStreamConsumer
+import asyncio
+
+class OrderProcessingService:
+    def __init__(self, geode_client):
+        self.client = geode_client
+        self.consumer = ChangeStreamConsumer(client, 'order_stream')
+
+    async def start(self):
+        """Process order events in real-time"""
+        async for change in self.consumer.stream():
+            if change.event_type == 'CREATED':
+                await self.process_new_order(change.after)
+            elif change.event_type == 'UPDATED':
+                await self.handle_order_update(change.before, change.after)
+
+    async def process_new_order(self, order):
+        """Handle new order with sub-10ms latency"""
+        # Validate inventory (indexed lookup, <1ms)
+        available = await self.client.execute("""
+            MATCH (p:Product {id: $product_id})
+            WHERE p.stock_quantity >= $quantity
+            RETURN p.stock_quantity
+        """, {"product_id": order['product_id'], "quantity": order['quantity']})
+
+        if available:
+            # Reserve inventory atomically
+            await self.client.execute("""
+                MATCH (p:Product {id: $product_id})
+                SET p.stock_quantity = p.stock_quantity - $quantity
+                CREATE (o:Order {id: $order_id, status: 'confirmed'})
+                CREATE (o)-[:RESERVES]->(p)
+            """, {
+                "product_id": order['product_id'],
+                "quantity": order['quantity'],
+                "order_id": order['id']
+            })
+
+            # Trigger downstream services (payment, shipping)
+            await self.notify_payment_service(order)
+            await self.notify_fulfillment_service(order)
+```
+
+### Real-Time Dashboard Backend
+
+Power live dashboards with streaming queries:
+
+```python
+from fastapi import FastAPI, WebSocket
+from geode_client import Client
+
+app = FastAPI()
+
+@app.websocket("/ws/dashboard")
+async def dashboard_stream(websocket: WebSocket):
+    """Stream real-time metrics to dashboard"""
+    await websocket.accept()
+
+    client = await Client.connect("localhost:3141")
+
+    try:
+        while True:
+            # Compute real-time metrics every second
+            metrics = await asyncio.gather(
+                # Active users (last 5 minutes)
+                client.execute("""
+                    MATCH (e:Event {type: 'user_active'})
+                    WHERE e.timestamp > datetime().minusMinutes(5)
+                    RETURN COUNT(DISTINCT e.user_id) AS active_users
+                """),
+
+                # Orders per minute
+                client.execute("""
+                    MATCH (o:Order)
+                    WHERE o.created_at > datetime().minusMinutes(1)
+                    RETURN COUNT(o) AS orders_per_minute
+                """),
+
+                # Revenue (last hour)
+                client.execute("""
+                    MATCH (o:Order {status: 'completed'})
+                    WHERE o.completed_at > datetime().minusHours(1)
+                    RETURN SUM(o.total) AS revenue_last_hour
+                """),
+
+                # Top products
+                client.execute("""
+                    MATCH (o:Order)-[:CONTAINS]->(p:Product)
+                    WHERE o.created_at > datetime().minusHours(1)
+                    RETURN p.name, COUNT(o) AS orders
+                    ORDER BY orders DESC
+                    LIMIT 5
+                """)
+            )
+
+            # Send to WebSocket (< 20ms total latency)
+            await websocket.send_json({
+                "timestamp": datetime.now().isoformat(),
+                "active_users": metrics[0].bindings[0]['active_users'],
+                "orders_per_minute": metrics[1].bindings[0]['orders_per_minute'],
+                "revenue_last_hour": metrics[2].bindings[0]['revenue_last_hour'],
+                "top_products": metrics[3].bindings
+            })
+
+            await asyncio.sleep(1)  # Update every second
+
+    finally:
+        await client.close()
+```
+
+### Live Recommendation Engine
+
+Generate personalized recommendations with <10ms latency:
+
+```python
+class RecommendationEngine:
+    def __init__(self, client):
+        self.client = client
+        # Prepare frequently-used queries
+        self.similar_products_stmt = None
+
+    async def initialize(self):
+        """Prepare statements for faster execution"""
+        self.similar_products_stmt = await self.client.prepare("""
+            MATCH (viewed:Product {id: $product_id})-[:SIMILAR_TO]-(similar:Product)
+            WHERE similar.in_stock = true
+              AND NOT EXISTS {
+                  MATCH (u:User {id: $user_id})-[:PURCHASED]->(similar)
+              }
+            WITH similar,
+                 similar.popularity_score AS popularity,
+                 COUNT{(similar)<-[:PURCHASED]-(:User)} AS purchase_count
+            RETURN similar.id AS product_id,
+                   similar.name AS name,
+                   similar.price AS price,
+                   (popularity * 0.3 + purchase_count * 0.7) AS score
+            ORDER BY score DESC
+            LIMIT $limit
+        """)
+
+    async def get_recommendations(self, user_id, context):
+        """Real-time recommendations with <5ms latency"""
+        # Use prepared statement for hot path
+        recommendations = await self.similar_products_stmt.execute({
+            "user_id": user_id,
+            "product_id": context['current_product_id'],
+            "limit": 20
+        })
+
+        # Apply real-time personalization filters
+        filtered = await self._apply_user_preferences(
+            user_id,
+            recommendations.bindings
+        )
+
+        return filtered
+
+    async def _apply_user_preferences(self, user_id, candidates):
+        """Filter by user preferences (cached, <1ms)"""
+        # User preferences cached in-memory or Redis
+        prefs = await self.get_user_preferences(user_id)
+
+        return [
+            rec for rec in candidates
+            if rec['price'] <= prefs['max_price']
+            and rec['category'] in prefs['preferred_categories']
+        ]
+```
+
+## Real-Time Analytics Patterns
+
+### Sliding Time Windows
+
+Compute metrics over rolling time windows:
+
+```python
+async def compute_rolling_metrics():
+    """Calculate metrics over sliding windows"""
+    client = await Client.connect("localhost:3141")
+
+    # 5-minute rolling average of response times
+    result = await client.execute("""
+        MATCH (req:Request)
+        WHERE req.timestamp > datetime().minusMinutes(5)
+        WITH req.timestamp AS ts, req.duration_ms AS duration
+        ORDER BY ts
+        WITH collect({ts: ts, duration: duration}) AS samples
+        UNWIND range(0, SIZE(samples) - 1) AS i
+        WITH samples[i].ts AS timestamp,
+             [x IN samples[i..i+59] | x.duration] AS window
+        RETURN timestamp,
+               AVG(window) AS avg_response_time,
+               PERCENTILE_CONT(window, 0.95) AS p95_response_time
+    """)
+
+    for row in result.bindings:
+        print(f"{row['timestamp']}: avg={row['avg_response_time']}ms, "
+              f"p95={row['p95_response_time']}ms")
+```
+
+### Real-Time Anomaly Detection
+
+Detect anomalies as they occur:
+
+```python
+async def detect_anomalies():
+    """Real-time anomaly detection on graph patterns"""
+    client = await Client.connect("localhost:3141")
+
+    # Detect unusual user behavior patterns
+    anomalies = await client.execute("""
+        MATCH (u:User)-[a:ACTION]->(resource)
+        WHERE a.timestamp > datetime().minusMinutes(5)
+        WITH u,
+             COUNT(a) AS action_count,
+             COUNT(DISTINCT resource) AS unique_resources,
+             AVG(a.duration_ms) AS avg_duration
+        WHERE action_count > 100  -- Unusually high activity
+           OR unique_resources > 50  -- Accessing many resources
+           OR avg_duration < 10  -- Suspiciously fast
+        RETURN u.id,
+               action_count,
+               unique_resources,
+               avg_duration,
+               'potential_bot' AS anomaly_type
+    """)
+
+    for anomaly in anomalies.bindings:
+        await alert_security_team(anomaly)
+        await throttle_user(anomaly['u.id'])
+```
+
+### Stream Joins
+
+Join real-time event streams with graph data:
+
+```python
+async def join_streams_with_graph():
+    """Enrich event stream with graph context"""
+    # Event stream from Kafka/Kinesis
+    event_stream = KafkaConsumer('user-events')
+
+    client = await Client.connect("localhost:3141")
+
+    async for event in event_stream:
+        # Enrich event with user graph context
+        context = await client.execute("""
+            MATCH (u:User {id: $user_id})
+            OPTIONAL MATCH (u)-[:FRIEND]->(friend:User)
+            OPTIONAL MATCH (u)-[:MEMBER_OF]->(group:Group)
+            RETURN u.name, u.tier,
+                   COUNT(friend) AS friend_count,
+                   COLLECT(group.name) AS groups
+        """, {"user_id": event['user_id']})
+
+        enriched_event = {
+            **event,
+            "user_context": context.bindings[0]
+        }
+
+        # Forward to downstream processing
+        await process_enriched_event(enriched_event)
+```
+
+## Optimization Techniques
+
+### Index-Optimized Queries
+
+Ensure queries use indexes for consistent low latency:
+
+```gql
+-- Create indexes on lookup properties
+CREATE INDEX FOR (u:User) ON (u.id);
+CREATE INDEX FOR (u:User) ON (u.email);
+CREATE INDEX FOR (p:Product) ON (p.sku);
+CREATE INDEX FOR (e:Event) ON (e.timestamp);
+
+-- Compound index for multi-property lookups
+CREATE INDEX FOR (o:Order) ON (o.user_id, o.status);
+
+-- Verify index usage with EXPLAIN
+EXPLAIN
+MATCH (u:User {email: $email})
+RETURN u;
+-- Should show: IndexScan (user_email_idx)
+
+-- Queries using indexes have predictable latency
+MATCH (u:User {email: 'alice@example.com'})  -- <1ms
+RETURN u;
+
+MATCH (u:User {id: 12345})  -- <1ms
+RETURN u;
+
+MATCH (o:Order {user_id: 12345, status: 'pending'})  -- <2ms
+RETURN o;
+```
+
+### Connection Pooling for High Throughput
+
+Optimize connection management for concurrent workloads:
+
+```python
+from geode_client import ConnectionPool
+
+# Configure pool for real-time workload
+pool = ConnectionPool(
+    host="localhost",
+    port=3141,
+    min_connections=20,      # Always ready
+    max_connections=200,     # Scale under load
+    connection_timeout=5,    # Fail fast
+    idle_timeout=300,        # Reap idle connections
+    health_check_interval=60 # Verify connection health
+)
+
+async def handle_request(user_id):
+    """Process request with pooled connection"""
+    async with pool.acquire() as client:
+        # Connection acquired from pool (no handshake overhead)
+        result = await client.execute("""
+            MATCH (u:User {id: $user_id})-[:RECENT]->(items)
+            RETURN items
+            LIMIT 10
+        """, {"user_id": user_id})
+        return result.bindings
+
+# Concurrent request handling
+async def main():
+    requests = [handle_request(i) for i in range(10000)]
+    results = await asyncio.gather(*requests)
+    # Pool manages connection allocation efficiently
+```
+
+### Query Result Caching
+
+Cache frequently accessed data at application layer:
+
+```python
+import asyncio
+from cachetools import TTLCache
+
+class CachedGeodeClient:
+    def __init__(self, client):
+        self.client = client
+        # TTL cache: 1000 entries, 60-second TTL
+        self.cache = TTLCache(maxsize=1000, ttl=60)
+
+    async def get_user(self, user_id):
+        """Get user with caching"""
+        cache_key = f"user:{user_id}"
+
+        if cache_key in self.cache:
+            return self.cache[cache_key]  # Cache hit (<0.1ms)
+
+        # Cache miss - query database
+        result = await self.client.execute("""
+            MATCH (u:User {id: $id})
+            RETURN u
+        """, {"id": user_id})
+
+        user = result.bindings[0] if result.bindings else None
+        self.cache[cache_key] = user
+        return user
+
+    async def invalidate_user(self, user_id):
+        """Invalidate cache on updates"""
+        cache_key = f"user:{user_id}"
+        self.cache.pop(cache_key, None)
+```
+
+## Production Deployment
+
+### Load Balancing
+
+Distribute real-time queries across replicas:
+
+```python
+from geode_client import LoadBalancedClient
+
+# Connect to multiple Geode nodes
+client = LoadBalancedClient(
+    nodes=[
+        "node1.example.com:3141",
+        "node2.example.com:3141",
+        "node3.example.com:3141"
+    ],
+    strategy="least_loaded",  # Route to least loaded node
+    health_check_interval=30  # Check node health every 30s
+)
+
+# Queries automatically distributed
+async def query_with_lb():
+    # Routes to healthy, least-loaded node
+    result = await client.execute("MATCH (u:User) RETURN count(u)")
+```
+
+### Monitoring Real-Time Performance
+
+Track real-time query performance:
+
+```python
+from prometheus_client import Histogram, Counter
+
+# Metrics
+query_duration = Histogram('geode_query_duration_seconds',
+                           'Query execution time')
+query_errors = Counter('geode_query_errors_total',
+                       'Total query errors')
+
+async def execute_with_metrics(client, query, params):
+    """Execute query with performance tracking"""
+    with query_duration.time():
+        try:
+            result = await client.execute(query, params)
+            return result
+        except Exception as e:
+            query_errors.inc()
+            raise
+
+# Grafana dashboard queries Prometheus metrics:
+# - P50, P95, P99 latency
+# - QPS (queries per second)
+# - Error rate
+```
+
+Browse the tagged content below to discover documentation, tutorials, and guides for building real-time graph applications with Geode.

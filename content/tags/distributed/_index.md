@@ -446,9 +446,397 @@ Handle partitions gracefully:
 - [Scalability](/tags/scalability) - Horizontal scaling approaches
 - [High Availability](/tags/high-availability) - Availability patterns
 
+## Production Deployment Patterns
+
+### Multi-Region Deployment
+
+Deploy Geode across geographic regions:
+
+```yaml
+# Global cluster configuration
+cluster:
+  regions:
+    - name: us-east
+      nodes: 3
+      role: primary
+      replication: sync
+    - name: eu-west
+      nodes: 3
+      role: secondary
+      replication: async
+    - name: ap-south
+      nodes: 2
+      role: observer
+      replication: async
+```
+
+**Benefits**:
+- Low latency for global users
+- Disaster recovery across regions
+- Compliance with data residency requirements
+
+**Challenges**:
+- Cross-region network latency (50-200ms)
+- Consistency vs. availability tradeoffs
+- Complex failover scenarios
+
+### Active-Active Configuration
+
+Run multiple active clusters:
+
+```yaml
+cluster:
+  mode: active-active
+  conflict_resolution: last_write_wins
+  nodes:
+    cluster_a:
+      - node1.us-east.example.com
+      - node2.us-east.example.com
+      - node3.us-east.example.com
+    cluster_b:
+      - node1.eu-west.example.com
+      - node2.eu-west.example.com
+      - node3.eu-west.example.com
+```
+
+Both clusters accept writes independently, with conflict resolution handling divergent updates.
+
+### Zero-Downtime Upgrades
+
+Rolling upgrade strategy:
+
+1. Upgrade observers first (read-only impact)
+2. Upgrade followers one at a time
+3. Fail over leader to upgraded follower
+4. Upgrade old leader last
+
+```bash
+# Upgrade script
+for node in observer1 observer2; do
+  geode admin upgrade $node --version 0.19.0
+done
+
+for node in follower1 follower2; do
+  geode admin upgrade $node --version 0.19.0
+  geode admin wait-for-sync $node
+done
+
+geode admin failover leader1 --to follower1
+geode admin upgrade leader1 --version 0.19.0
+```
+
+## Advanced Consensus Patterns
+
+### Multi-Raft for Scalability
+
+Partition data across multiple Raft groups:
+
+```
+Raft Group 1 (Shards 0-15)    Raft Group 2 (Shards 16-31)
+  Leader: Node A                 Leader: Node B
+  Followers: B, C                Followers: A, C
+
+Raft Group 3 (Shards 32-47)    Raft Group 4 (Shards 48-63)
+  Leader: Node C                 Leader: Node A
+  Followers: A, B                Followers: B, C
+```
+
+This distributes leadership and write load across nodes.
+
+### Read-Your-Writes Consistency
+
+Ensure clients see their own writes:
+
+```python
+from geode_client import GeodeClient
+
+async with GeodeClient('localhost:3141') as client:
+    # Write operation returns LSN
+    lsn = await client.execute("""
+        CREATE (u:User {id: 123, name: 'Alice'})
+    """)
+
+    # Read from replica with LSN requirement
+    result = await client.execute("""
+        MATCH (u:User {id: 123}) RETURN u
+    """, read_lsn=lsn)  # Waits until replica reaches this LSN
+```
+
+### Bounded Staleness
+
+Allow reads to be slightly stale for performance:
+
+```gql
+-- Allow reads up to 5 seconds stale
+SET READ STALENESS 5 seconds;
+
+MATCH (u:User)
+WHERE u.active = true
+RETURN COUNT(u);
+-- May read from stale replica for better performance
+```
+
+## Conflict Resolution Strategies
+
+### Last-Write-Wins (LWW)
+
+Use timestamps to resolve conflicts:
+
+```gql
+-- Update with timestamp
+MATCH (u:User {id: 123})
+SET u.name = 'Alice',
+    u.updated_at = NOW();
+
+-- On conflict, keep latest timestamp
+MERGE ON (u:User {id: 123})
+  ON MATCH SET u.name = CASE
+    WHEN $timestamp > u.updated_at THEN $new_name
+    ELSE u.name
+  END
+```
+
+### Application-Level Resolution
+
+Expose conflicts to application:
+
+```python
+try:
+    await client.execute("""
+        MATCH (u:User {id: 123, version: $expected_version})
+        SET u.balance = $new_balance,
+            u.version = $expected_version + 1
+    """, {
+        "expected_version": current_version,
+        "new_balance": new_balance
+    })
+except ConflictError as e:
+    # Application decides how to resolve
+    resolved = await resolve_balance_conflict(e.conflicting_versions)
+    await retry_with_resolved(resolved)
+```
+
+### CRDTs for Automatic Resolution
+
+Use Conflict-Free Replicated Data Types:
+
+```gql
+-- Counter CRDT (increment-only)
+MATCH (page:Page {id: 'home'})
+SET page.view_count = page.view_count + 1;  -- Commutative, always merges correctly
+
+-- Set CRDT (add/remove elements)
+MATCH (u:User {id: 123})
+SET u.tags = u.tags + ['verified'];  -- Set union
+```
+
+## Network Topology Optimization
+
+### Rack-Aware Placement
+
+Spread replicas across physical racks:
+
+```yaml
+cluster:
+  topology:
+    rack_awareness: true
+    failure_domains:
+      - rack: rack-1
+        nodes: [node1, node2]
+      - rack: rack-2
+        nodes: [node3, node4]
+      - rack: rack-3
+        nodes: [node5, node6]
+
+  replication:
+    strategy: rack_aware
+    min_racks: 2  # Each replica set spans at least 2 racks
+```
+
+### Zone-Aware Replication
+
+Distribute across availability zones:
+
+```gql
+ALTER GRAPH social SET REPLICATION (
+    zones: ['us-east-1a', 'us-east-1b', 'us-east-1c'],
+    replicas_per_zone: 1,
+    leader_preference: 'us-east-1a'
+);
+```
+
+Ensures cluster survives zone failures.
+
+### Latency-Optimized Routing
+
+Route queries to nearest replica:
+
+```python
+# Client automatically selects low-latency replica
+client = GeodeClient(
+    nodes=[
+        'node1.us-east.example.com:3141',
+        'node2.eu-west.example.com:3141',
+        'node3.ap-south.example.com:3141'
+    ],
+    routing_strategy='latency',  # Measure and route to fastest
+    latency_probe_interval=60    # Re-probe every 60 seconds
+)
+```
+
+## Disaster Recovery Procedures
+
+### Backup Cluster Configuration
+
+```bash
+# Backup cluster state
+geode admin backup \
+  --include-config \
+  --include-wal \
+  --output /backups/cluster-state-$(date +%Y%m%d).tar.gz
+
+# Backup includes:
+# - Node configurations
+# - Cluster topology
+# - Replication settings
+# - WAL files for point-in-time recovery
+```
+
+### Restore from Backup
+
+```bash
+# Restore cluster
+geode admin restore \
+  --from /backups/cluster-state-20260124.tar.gz \
+  --target-cluster new-cluster \
+  --verify-integrity
+
+# Steps performed:
+# 1. Validate backup integrity
+# 2. Restore data files
+# 3. Replay WAL to consistent state
+# 4. Rebuild cluster topology
+# 5. Verify replication
+```
+
+### Failover Scenarios
+
+**Leader Failure**:
+1. Followers detect missing heartbeats (5s timeout)
+2. Election timer expires (random 150-300ms)
+3. Candidate requests votes
+4. New leader elected with majority votes
+5. Clients automatically reconnect to new leader
+
+**Majority Partition Failure**:
+1. Minority partition cannot elect leader
+2. Minority rejects all writes
+3. Majority partition continues operating
+4. When partition heals, minority syncs from majority
+
+**Full Cluster Failure**:
+1. Restore from backup or cold storage
+2. Replay WAL to latest state
+3. Verify data integrity
+4. Resume operation
+
+## Security in Distributed Systems
+
+### TLS Mutual Authentication
+
+Encrypt and authenticate inter-node communication:
+
+```yaml
+cluster:
+  security:
+    tls:
+      enabled: true
+      mutual_auth: true
+      cert: /etc/geode/certs/node.crt
+      key: /etc/geode/certs/node.key
+      ca_cert: /etc/geode/certs/ca.crt
+      verify_hostname: true
+```
+
+### Network Segmentation
+
+Isolate cluster communication:
+
+```yaml
+cluster:
+  network:
+    # Client traffic
+    client_interface: 0.0.0.0:3141
+    client_subnet: 10.0.0.0/24
+
+    # Inter-node traffic (separate network)
+    cluster_interface: 192.168.0.10:7000
+    cluster_subnet: 192.168.0.0/16
+```
+
+### Encryption at Rest
+
+Encrypt data files and WAL:
+
+```yaml
+storage:
+  encryption:
+    enabled: true
+    algorithm: AES-256-GCM
+    key_source: kms://aws-kms/key-id
+    rotate_keys: true
+    rotation_period: 90d
+```
+
+## Capacity Planning
+
+### Sizing Clusters
+
+**Small Cluster** (Development/Testing):
+- 3 nodes
+- 4 cores, 16GB RAM per node
+- 500GB SSD per node
+- Throughput: ~10,000 queries/sec
+
+**Medium Cluster** (Production):
+- 5-7 nodes
+- 16 cores, 64GB RAM per node
+- 2TB NVMe SSD per node
+- Throughput: ~100,000 queries/sec
+
+**Large Cluster** (Enterprise):
+- 9+ nodes across 3 regions
+- 32 cores, 256GB RAM per node
+- 10TB NVMe SSD per node
+- Throughput: ~1,000,000 queries/sec
+
+### Growth Planning
+
+Monitor cluster utilization:
+
+```gql
+SELECT
+    node_id,
+    cpu_utilization,
+    memory_utilization,
+    disk_utilization,
+    query_latency_p99
+FROM SYSTEM.cluster_metrics
+WHERE timestamp > NOW() - INTERVAL '7 days'
+ORDER BY timestamp;
+```
+
+Add nodes when:
+- CPU > 70% sustained
+- Memory > 80% sustained
+- Disk > 75% utilized
+- P99 latency exceeds SLO
+
 ## Learn More
 
 - [Designing Data-Intensive Applications](https://dataintensive.net/)
 - [Distributed Systems for Practitioners](https://distributed-systems.github.io/)
 - [The Raft Consensus Algorithm](https://raft.github.io/)
 - [Consistency Models](https://jepsen.io/consistency)
+- [Google Spanner Paper](https://research.google/pubs/pub39966/)
+- [Amazon DynamoDB Architecture](https://www.allthingsdistributed.com/files/amazon-dynamo-sosp2007.pdf)

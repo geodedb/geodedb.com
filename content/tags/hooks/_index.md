@@ -409,7 +409,393 @@ EXECUTE GQL ...;
 - [Validation](/tags/validation) - Data validation
 - [Constraints](/tags/constraints) - Schema constraints
 
+## Real-World Hook Implementations
+
+### Multi-Tenancy Enforcement
+
+Automatically add tenant context to all data:
+
+```gql
+-- Inject tenant_id on all creates
+CREATE TRIGGER enforce_tenancy
+BEFORE INSERT ON Person, Company, Product
+FOR EACH ROW
+EXECUTE GQL
+  SET NEW.tenant_id = CURRENT_TENANT_ID(),
+      NEW.created_by = CURRENT_USER();
+
+-- Prevent cross-tenant access
+CREATE TRIGGER validate_tenant_access
+BEFORE UPDATE OR DELETE ON Person, Company, Product
+FOR EACH ROW
+WHEN (OLD.tenant_id != CURRENT_TENANT_ID())
+EXECUTE GQL
+  SIGNAL 'Access denied: cross-tenant operation not allowed';
+```
+
+### Data Retention Policy
+
+Automatically archive or delete old data:
+
+```gql
+-- Archive records older than 7 years
+CREATE TRIGGER enforce_retention_policy
+AFTER UPDATE ON Event
+FOR EACH ROW
+WHEN (NEW.timestamp < datetime().minusYears(7))
+EXECUTE GQL
+  -- Move to archive
+  CREATE (a:ArchivedEvent {
+    original_id: NEW.id,
+    data: NEW.properties,
+    archived_at: datetime()
+  })
+  IN GRAPH archive_db;
+
+  -- Delete from active
+  DELETE NEW;
+
+-- Schedule periodic retention checks
+CREATE SCHEDULED TRIGGER retention_cleanup
+EVERY '1 day'
+EXECUTE GQL
+  MATCH (e:Event)
+  WHERE e.timestamp < datetime().minusYears(7)
+  WITH e LIMIT 1000
+  DELETE e;
+```
+
+### Bi-Directional Relationship Sync
+
+Maintain symmetric relationships:
+
+```gql
+-- When A friends B, also create B friends A
+CREATE TRIGGER bidirectional_friendship
+AFTER INSERT ON [:FRIEND]
+FOR EACH RELATIONSHIP
+WHEN NOT EXISTS {
+  MATCH (target)-[:FRIEND]->(source)
+  WHERE source = startNode(NEW)
+    AND target = endNode(NEW)
+}
+EXECUTE GQL
+  MATCH (a), (b)
+  WHERE id(a) = id(startNode(NEW))
+    AND id(b) = id(endNode(NEW))
+  CREATE (b)-[:FRIEND {
+    created_at: NEW.created_at,
+    bidirectional: true
+  }]->(a);
+
+-- When A unfriends B, also remove B friends A
+CREATE TRIGGER bidirectional_unfriend
+AFTER DELETE ON [:FRIEND]
+FOR EACH RELATIONSHIP
+EXECUTE GQL
+  MATCH (target)-[r:FRIEND]->(source)
+  WHERE source = startNode(OLD)
+    AND target = endNode(OLD)
+  DELETE r;
+```
+
+### Denormalization Maintenance
+
+Keep denormalized data in sync:
+
+```gql
+-- Update user's post count when posts created/deleted
+CREATE TRIGGER maintain_post_count
+AFTER INSERT OR DELETE ON Post
+FOR EACH ROW
+EXECUTE GQL
+  MATCH (u:User {id: COALESCE(NEW.author_id, OLD.author_id)})
+  WITH u, CASE
+    WHEN INSERTING THEN 1
+    WHEN DELETING THEN -1
+  END AS delta
+  SET u.post_count = u.post_count + delta,
+      u.last_post_at = CASE
+        WHEN INSERTING THEN datetime()
+        ELSE u.last_post_at
+      END;
+
+-- Maintain aggregated statistics
+CREATE TRIGGER update_category_stats
+AFTER INSERT OR UPDATE OR DELETE ON Product
+FOR EACH ROW
+EXECUTE GQL
+  MATCH (c:Category {id: COALESCE(NEW.category_id, OLD.category_id)})
+  WITH c,
+       COUNT{(c)<-[:IN_CATEGORY]-(p:Product)} AS product_count,
+       AVG{(c)<-[:IN_CATEGORY]-(p:Product) | p.price} AS avg_price
+  SET c.product_count = product_count,
+      c.average_price = avg_price,
+      c.last_updated = datetime();
+```
+
+### Soft Delete Implementation
+
+Mark records as deleted instead of removing them:
+
+```gql
+-- Intercept deletes and convert to soft delete
+CREATE TRIGGER soft_delete_user
+INSTEAD OF DELETE ON Person
+FOR EACH ROW
+EXECUTE GQL
+  MATCH (p:Person)
+  WHERE id(p) = id(OLD)
+  SET p.deleted_at = datetime(),
+      p.deleted_by = CURRENT_USER(),
+      p.status = 'deleted'
+  REMOVE p:Active
+  SET p:Deleted;
+
+-- Hide soft-deleted records from normal queries
+CREATE VIEW ActivePersons AS
+  MATCH (p:Person)
+  WHERE p.deleted_at IS NULL
+  RETURN p;
+```
+
+## Hook Performance Optimization
+
+### Conditional Execution
+
+Minimize trigger overhead:
+
+```gql
+-- Only execute for significant changes
+CREATE TRIGGER notify_price_change
+AFTER UPDATE ON Product
+FOR EACH ROW
+WHEN (ABS(NEW.price - OLD.price) / OLD.price > 0.1)  -- >10% change
+EXECUTE GQL
+  CREATE (n:PriceChangeNotification {
+    product_id: NEW.id,
+    old_price: OLD.price,
+    new_price: NEW.price,
+    change_percent: (NEW.price - OLD.price) / OLD.price * 100,
+    timestamp: datetime()
+  });
+```
+
+### Batching Hook Actions
+
+Process multiple rows efficiently:
+
+```gql
+-- Per-statement trigger (not per-row)
+CREATE TRIGGER batch_audit_inserts
+AFTER INSERT ON User
+FOR EACH STATEMENT
+EXECUTE GQL
+  -- NEW represents all inserted rows
+  WITH NEW
+  UNWIND NEW AS user
+  CREATE (a:AuditLog {
+    action: 'user_created',
+    user_ids: [u IN NEW | u.id],
+    count: SIZE(NEW),
+    timestamp: datetime()
+  });
+```
+
+### Async Hook Execution
+
+Defer non-critical work:
+
+```gql
+-- Queue for async processing
+CREATE TRIGGER queue_welcome_email
+AFTER INSERT ON User
+FOR EACH ROW
+EXECUTE GQL
+  CREATE (job:AsyncJob {
+    type: 'send_welcome_email',
+    user_id: NEW.id,
+    user_email: NEW.email,
+    queued_at: datetime(),
+    status: 'pending'
+  });
+
+-- Background worker processes jobs
+-- (separate process, no blocking on insert)
+```
+
+## Hook Testing Strategies
+
+### Unit Testing Hooks
+
+Test trigger logic in isolation:
+
+```python
+import pytest
+from geode_client import Client
+
+@pytest.fixture
+async def client():
+    client = await Client.connect("localhost:3141")
+    yield client
+    await client.close()
+
+@pytest.mark.asyncio
+async def test_audit_trigger(client):
+    """Test audit log trigger creates entries"""
+    # Insert user (triggers audit hook)
+    await client.execute("""
+        CREATE (:User {id: 123, name: 'Test User', email: 'test@example.com'})
+    """)
+
+    # Verify audit log created
+    result = await client.execute("""
+        MATCH (a:AuditLog)
+        WHERE a.action = 'user_created'
+          AND a.record_id = 123
+        RETURN a
+    """)
+
+    assert len(result.bindings) == 1
+    audit = result.bindings[0]['a']
+    assert audit['action'] == 'user_created'
+    assert 'test@example.com' in audit['details']
+
+@pytest.mark.asyncio
+async def test_validation_trigger(client):
+    """Test validation trigger rejects invalid data"""
+    with pytest.raises(Exception, match="Invalid age value"):
+        await client.execute("""
+            CREATE (:Person {id: 456, name: 'Invalid', age: -5})
+        """)
+
+    # Verify no record created
+    result = await client.execute("""
+        MATCH (p:Person {id: 456}) RETURN p
+    """)
+    assert len(result.bindings) == 0
+```
+
+### Integration Testing
+
+Test hooks with full workflows:
+
+```python
+@pytest.mark.asyncio
+async def test_bidirectional_friendship(client):
+    """Test bidirectional friendship trigger"""
+    # Create users
+    await client.execute("""
+        CREATE (:User {id: 1, name: 'Alice'})
+        CREATE (:User {id: 2, name: 'Bob'})
+    """)
+
+    # Create friendship (triggers bidirectional hook)
+    await client.execute("""
+        MATCH (a:User {id: 1}), (b:User {id: 2})
+        CREATE (a)-[:FRIEND {created_at: datetime()}]->(b)
+    """)
+
+    # Verify both directions exist
+    result = await client.execute("""
+        MATCH (a:User {id: 1})-[:FRIEND]->(b:User {id: 2}),
+              (b)-[:FRIEND]->(a)
+        RETURN a.name, b.name
+    """)
+
+    assert len(result.bindings) == 1
+```
+
+## Debugging Hooks
+
+### Trigger Execution Log
+
+Track trigger executions:
+
+```gql
+-- Enable trigger logging
+SET trigger_logging = true;
+
+-- Execute operation
+CREATE (:User {id: 789, name: 'Debug User'});
+
+-- View trigger log
+SELECT trigger_name,
+       execution_time_ms,
+       status,
+       error_message
+FROM SYSTEM.trigger_execution_log
+WHERE timestamp > datetime().minusMinutes(5)
+ORDER BY timestamp DESC;
+```
+
+### Trigger Profiling
+
+Identify slow triggers:
+
+```gql
+-- Profile trigger execution
+PROFILE TRIGGER audit_new_users;
+
+-- Returns:
+-- Trigger: audit_new_users
+-- Execution time: 2.5ms
+-- Breakdown:
+--   Pattern matching: 0.3ms
+--   Property access: 0.1ms
+--   Insert operation: 2.1ms
+```
+
+## Migration Strategies
+
+### Adding Hooks to Existing Data
+
+Apply triggers to historical data:
+
+```gql
+-- Create trigger
+CREATE TRIGGER compute_full_name
+BEFORE INSERT OR UPDATE ON Person
+FOR EACH ROW
+EXECUTE GQL
+  SET NEW.full_name = NEW.first_name || ' ' || NEW.last_name;
+
+-- Backfill existing data
+MATCH (p:Person)
+WHERE p.full_name IS NULL
+WITH p LIMIT 1000
+SET p.full_name = p.first_name || ' ' || p.last_name;
+-- Repeat until all records updated
+```
+
+### Versioning Hooks
+
+Manage hook changes over time:
+
+```gql
+-- Drop old trigger
+DROP TRIGGER IF EXISTS audit_new_users_v1;
+
+-- Create new version
+CREATE TRIGGER audit_new_users_v2
+AFTER INSERT ON Person
+FOR EACH ROW
+EXECUTE GQL
+  INSERT (a:AuditLog {
+    version: 2,  -- Track trigger version
+    action: 'user_created',
+    user_id: NEW.id,
+    timestamp: NOW(),
+    details: NEW.properties,
+    ip_address: CURRENT_IP(),  -- New field in v2
+    user_agent: CURRENT_USER_AGENT()  -- New field in v2
+  });
+```
+
 ## Learn More
 
 - [Database Triggers (PostgreSQL)](https://www.postgresql.org/docs/current/triggers.html)
 - [Trigger Design Patterns](https://use-the-index-luke.com/sql/dml/insert)
+- [Oracle Triggers Documentation](https://docs.oracle.com/en/database/oracle/oracle-database/19/lnpls/plsql-triggers.html)
+- [Event-Driven Architecture](https://martinfowler.com/articles/201701-event-driven.html)
+- [Database Automation Best Practices](https://www.postgresql.org/docs/current/plpgsql-trigger.html)

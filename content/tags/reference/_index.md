@@ -405,3 +405,471 @@ SET index_cache_size = '2GB';
 - [Protocol](/tags/protocol/) - Wire protocol specification
 
 This reference provides the complete API surface for building applications with Geode, from GQL queries to client library integration and protocol-level communication.
+
+## Comprehensive GQL Functions Reference
+
+### String Functions
+
+```gql
+-- String manipulation
+RETURN upper('hello');              -- 'HELLO'
+RETURN lower('WORLD');              -- 'world'
+RETURN substring('Geode', 0, 3);    -- 'Geo'
+RETURN trim('  text  ');            -- 'text'
+RETURN replace('foo bar', 'bar', 'baz');  -- 'foo baz'
+RETURN split('a,b,c', ',');         -- ['a', 'b', 'c']
+RETURN concat('Hello', ' ', 'World');  -- 'Hello World'
+RETURN length('Geode');             -- 5
+RETURN reverse('abc');              -- 'cba'
+```
+
+### Numeric Functions
+
+```gql
+-- Math operations
+RETURN abs(-42);                    -- 42
+RETURN ceil(3.14);                  -- 4
+RETURN floor(3.99);                 -- 3
+RETURN round(3.567, 2);             -- 3.57
+RETURN sqrt(16);                    -- 4.0
+RETURN pow(2, 8);                   -- 256
+RETURN log(100);                    -- 4.605 (natural log)
+RETURN log10(1000);                 -- 3.0
+RETURN exp(1);                      -- 2.718
+RETURN sin(0);                      -- 0.0
+RETURN cos(0);                      -- 1.0
+RETURN rand();                      -- Random float [0.0, 1.0)
+```
+
+### Date/Time Functions
+
+```gql
+-- Current timestamp
+RETURN now();                       -- Current timestamp
+RETURN date();                      -- Current date
+RETURN time();                      -- Current time
+
+-- Date construction
+RETURN datetime('2024-01-15T10:30:00Z');
+RETURN date({year: 2024, month: 1, day: 15});
+RETURN time({hour: 14, minute: 30, second: 0});
+
+-- Date arithmetic
+RETURN datetime() + duration({days: 7});        -- One week from now
+RETURN datetime() - duration({hours: 24});      -- Yesterday
+RETURN duration.between(date('2024-01-01'), date('2024-12-31'));
+
+-- Date extraction
+RETURN year(datetime());            -- 2024
+RETURN month(datetime());           -- 1
+RETURN day(datetime());             -- 15
+RETURN hour(datetime());            -- 14
+RETURN minute(datetime());          -- 30
+RETURN second(datetime());          -- 0
+RETURN dayOfWeek(datetime());       -- 1-7 (Monday=1)
+```
+
+### Aggregation Functions
+
+```gql
+-- Basic aggregations
+MATCH (u:User)
+RETURN
+    count(u) AS total_users,
+    count(DISTINCT u.city) AS unique_cities,
+    sum(u.age) AS total_age,
+    avg(u.age) AS average_age,
+    min(u.age) AS youngest,
+    max(u.age) AS oldest,
+    stdev(u.age) AS age_std_dev,
+    percentile_cont(u.age, 0.5) AS median_age,
+    percentile_cont(u.age, 0.95) AS p95_age;
+
+-- Collection aggregations
+MATCH (u:User)
+RETURN
+    collect(u.name) AS all_names,
+    collect(DISTINCT u.city) AS all_cities;
+```
+
+### List Functions
+
+```gql
+-- List operations
+RETURN size([1, 2, 3, 4, 5]);                   -- 5
+RETURN head([1, 2, 3]);                         -- 1
+RETURN last([1, 2, 3]);                         -- 3
+RETURN tail([1, 2, 3]);                         -- [2, 3]
+RETURN [x IN [1, 2, 3, 4, 5] WHERE x > 2];     -- [3, 4, 5]
+RETURN [x IN [1, 2, 3] | x * 2];               -- [2, 4, 6]
+RETURN reduce(s = 0, x IN [1, 2, 3] | s + x);  -- 6
+RETURN range(0, 10, 2);                         -- [0, 2, 4, 6, 8, 10]
+```
+
+### Graph Functions
+
+```gql
+-- Node and relationship functions
+MATCH (n:User)
+RETURN
+    id(n) AS node_id,
+    labels(n) AS node_labels,
+    keys(n) AS property_keys,
+    properties(n) AS all_properties;
+
+MATCH (a)-[r]->(b)
+RETURN
+    id(r) AS relationship_id,
+    type(r) AS relationship_type,
+    startNode(r) AS start,
+    endNode(r) AS end;
+
+-- Path functions
+MATCH path = (a:User)-[:KNOWS*1..3]->(b:User)
+RETURN
+    length(path) AS path_length,
+    nodes(path) AS path_nodes,
+    relationships(path) AS path_relationships;
+```
+
+### Type Checking and Coercion
+
+```gql
+-- Type checking
+RETURN toBoolean('true');           -- true
+RETURN toFloat('3.14');             -- 3.14
+RETURN toInteger('42');             -- 42
+RETURN toString(123);               -- '123'
+
+-- Type predicates
+WITH value
+RETURN
+    value IS NULL AS is_null,
+    value IS NOT NULL AS is_not_null;
+```
+
+## Advanced Query Patterns
+
+### Common Table Expressions (WITH)
+
+```gql
+-- Multi-stage query with WITH
+MATCH (u:User)-[:PURCHASED]->(p:Product)
+WITH u, count(p) AS purchase_count
+WHERE purchase_count > 5
+
+MATCH (u)-[:LIVES_IN]->(c:City)
+WITH u, purchase_count, c
+ORDER BY purchase_count DESC
+LIMIT 100
+
+MATCH (u)-[:FRIEND]->(f:User)
+WHERE (f)-[:LIVES_IN]->(c)
+RETURN u.name, purchase_count, c.name, count(f) AS local_friends
+ORDER BY local_friends DESC;
+```
+
+### Conditional Logic (CASE)
+
+```gql
+MATCH (u:User)
+RETURN u.name,
+    CASE
+        WHEN u.age < 18 THEN 'minor'
+        WHEN u.age < 65 THEN 'adult'
+        ELSE 'senior'
+    END AS age_category,
+    CASE u.subscription_tier
+        WHEN 'free' THEN 0
+        WHEN 'premium' THEN 9.99
+        WHEN 'enterprise' THEN 99.99
+        ELSE 0
+    END AS monthly_cost;
+```
+
+### Window Functions
+
+```gql
+-- Ranking and partitioning
+MATCH (u:User)-[:PURCHASED]->(p:Product)
+RETURN
+    u.name,
+    p.category,
+    p.price,
+    row_number() OVER (PARTITION BY p.category ORDER BY p.price DESC) AS category_rank,
+    rank() OVER (ORDER BY p.price DESC) AS overall_rank,
+    percent_rank() OVER (PARTITION BY p.category ORDER BY p.price) AS price_percentile;
+```
+
+### Recursive Queries
+
+```gql
+-- Recursive traversal (organizational hierarchy)
+MATCH path = (emp:Employee {id: $employee_id})-[:REPORTS_TO*0..]->(mgr:Employee)
+RETURN emp.name AS employee,
+       [n IN nodes(path) | n.name] AS reporting_chain,
+       length(path) AS levels_up;
+
+-- Fixed-depth recursion
+MATCH (start:Category {name: 'Electronics'})-[:SUBCATEGORY*3]->(end:Category)
+RETURN end.name AS subcategory_3_levels_down;
+```
+
+## Client Library Advanced Features
+
+### Python Client: Streaming Results
+
+```python
+from geode_client import GeodeClient
+
+async with GeodeClient('localhost:3141') as client:
+    # Stream large result sets
+    async for batch in client.query_stream("""
+        MATCH (u:User)
+        RETURN u.id, u.name, u.email
+    """, batch_size=1000):
+        # Process batch of 1000 rows
+        await process_users(batch)
+        # Memory efficient for millions of rows
+```
+
+### Python Client: Query Builders
+
+```python
+from geode_client import QueryBuilder
+
+# Programmatic query construction
+qb = QueryBuilder()
+query = (qb
+    .match("(u:User)")
+    .where("u.age > $min_age")
+    .where("u.city = $city")
+    .return_("u.name", "u.age")
+    .order_by("u.age DESC")
+    .limit(10)
+    .build())
+
+result = await client.execute(query, {"min_age": 25, "city": "Seattle"})
+```
+
+### Go Client: Context and Timeouts
+
+```go
+import (
+    "context"
+    "time"
+    "go.codepros.org/geode"
+)
+
+// Query with timeout
+ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+defer cancel()
+
+rows, err := db.QueryContext(ctx, `
+    MATCH (u:User)-[:PURCHASED]->(p:Product)
+    WHERE p.category = $1
+    RETURN u.name, count(p) AS purchases
+    ORDER BY purchases DESC
+    LIMIT 100
+`, "Electronics")
+
+if err == context.DeadlineExceeded {
+    // Query timed out
+}
+```
+
+### Go Client: Bulk Insert
+
+```go
+// Efficient bulk insert with prepared statement
+stmt, err := db.Prepare("CREATE (:User {id: $1, name: $2, email: $3})")
+defer stmt.Close()
+
+tx, err := db.Begin()
+defer tx.Rollback()
+
+for _, user := range users {
+    _, err = tx.Stmt(stmt).Exec(user.ID, user.Name, user.Email)
+    if err != nil {
+        return err
+    }
+}
+
+err = tx.Commit()  // Commit all inserts atomically
+```
+
+### Rust Client: Type-Safe Query Results
+
+```rust
+use geode_client::{GeodeClient, FromRow};
+use serde::{Deserialize, Serialize};
+
+#[derive(Debug, Deserialize, Serialize, FromRow)]
+struct User {
+    id: i64,
+    name: String,
+    email: String,
+    age: Option<i32>,
+}
+
+let client = GeodeClient::connect("localhost:3141").await?;
+
+// Type-safe result deserialization
+let users: Vec<User> = client
+    .query("MATCH (u:User) WHERE u.active = true RETURN u.id, u.name, u.email, u.age")
+    .await?
+    .try_into()?;
+
+for user in users {
+    println!("{}: {} ({})", user.id, user.name, user.email);
+}
+```
+
+## Protocol Deep Dive
+
+### Connection Handshake
+
+```json
+// Client sends HELLO
+{
+  "type": "HELLO",
+  "version": "1.0",
+  "client": "geode-python/0.18.0",
+  "auth": {
+    "method": "basic",
+    "username": "admin",
+    "password": "secret"
+  },
+  "capabilities": {
+    "streaming": true,
+    "prepared_statements": true,
+    "transactions": true
+  }
+}
+
+// Server responds with welcome
+{
+  "type": "WELCOME",
+  "version": "1.0",
+  "server": "geode/0.18.0",
+  "session_id": "550e8400-e29b-41d4-a716-446655440000",
+  "capabilities": {
+    "max_query_size": 1048576,
+    "supported_isolation_levels": ["READ_COMMITTED", "REPEATABLE_READ", "SERIALIZABLE"]
+  }
+}
+```
+
+### Query Execution Flow
+
+```json
+// Client sends query
+{
+  "type": "RUN_GQL",
+  "query": "MATCH (u:User {id: $id}) RETURN u.name, u.email",
+  "params": {"id": 123},
+  "options": {
+    "timeout_ms": 30000,
+    "include_stats": true
+  }
+}
+
+// Server sends schema
+{
+  "type": "SCHEMA",
+  "fields": [
+    {"name": "u.name", "type": "STRING", "nullable": false},
+    {"name": "u.email", "type": "STRING", "nullable": true}
+  ]
+}
+
+// Server streams results
+{
+  "type": "BINDINGS",
+  "data": [
+    {"u.name": "Alice", "u.email": "alice@example.com"}
+  ]
+}
+
+// Server sends success
+{
+  "type": "SUCCESS",
+  "summary": {
+    "rows": 1,
+    "time_ms": 2.5,
+    "nodes_scanned": 1,
+    "index_hits": 1
+  }
+}
+```
+
+### Transaction Protocol
+
+```json
+// BEGIN
+{"type": "BEGIN", "isolation_level": "SERIALIZABLE"}
+{"type": "SUCCESS", "transaction_id": "tx-98765"}
+
+// RUN_GQL (within transaction)
+{"type": "RUN_GQL", "transaction_id": "tx-98765", "query": "CREATE (:User {name: 'Bob'})"}
+{"type": "SUCCESS", "summary": {"nodes_created": 1}}
+
+// COMMIT
+{"type": "COMMIT", "transaction_id": "tx-98765"}
+{"type": "SUCCESS", "summary": {"committed": true}}
+```
+
+## Performance Tuning Reference
+
+### Query Hints
+
+```gql
+-- Force index usage
+MATCH (u:User)
+USING INDEX u:User(email)
+WHERE u.email = 'alice@example.com'
+RETURN u;
+
+-- Disable index (force scan)
+MATCH (u:User)
+WITHOUT INDEX
+WHERE u.age > 30
+RETURN u;
+
+-- Join hint
+MATCH (u:User), (p:Product)
+WHERE u.id = p.user_id
+USING JOIN ON u.id = p.user_id
+RETURN u, p;
+```
+
+### Query Plan Analysis
+
+```gql
+EXPLAIN
+MATCH (u:User)-[:PURCHASED]->(p:Product)
+WHERE u.city = 'Seattle' AND p.price > 100
+RETURN u.name, p.name;
+
+-- Returns execution plan:
+-- IndexScan (User.city = 'Seattle')
+--   -> Expand ([:PURCHASED])
+--     -> Filter (Product.price > 100)
+--       -> Return
+```
+
+### Configuration Parameters
+
+```gql
+-- Set session parameters
+SET query_timeout = 60000;              -- 60 second timeout
+SET max_memory_per_query = '2GB';       -- Memory limit
+SET enable_parallel_scan = true;        -- Parallel execution
+SET work_mem = '256MB';                 -- Sort/hash memory
+
+-- View current settings
+SHOW ALL;
+SHOW query_timeout;
+```
+
+This reference provides the complete API surface for building applications with Geode, from GQL queries to client library integration and protocol-level communication.
