@@ -1,0 +1,220 @@
+{{/* ──────────────────────────────────────────────────────────────
+  Documentation List/Index Page Layout
+  - Displays documentation section overview with organized page listings
+  - 2-column responsive layout: nav sidebar + content area
+  - SEO optimized with proper headings and structure
+  ────────────────────────────────────────────────────────────────
+*/}}
+
+{{ $container := partial "helpers/container.html" (dict "Page" .) }}
+
+{{ partial "header.html" . }}
+
+{{/* Documentation section header */}}
+<header class="docs-header bg-gradient py-4 border-bottom" role="banner">
+  <div class="{{ $container }}">
+    <div class="row">
+      <div class="col-12">
+        {{/* Breadcrumb navigation */}}
+        {{ partial "breadcrumb.html" . }}
+
+        {{/* Section title and description */}}
+        <div class="mt-3">
+          <h1 class="display-5 fw-bold mb-2">{{ .Title }}</h1>
+          {{ with .Description }}
+            <p class="lead text-muted mb-0">{{ . }}</p>
+          {{ end }}
+
+          {{/* Page count indicator */}}
+          {{ $pages := where .Pages ".Params.draft" "!=" true }}
+          {{ if gt (len $pages) 0 }}
+            <div class="text-muted small mt-2">
+              <wa-icon name="file-lines" class="me-1" aria-hidden="true"></wa-icon>
+              {{ len $pages }} {{ if eq (len $pages) 1 }}{{ i18n "page" | default "page" }}{{ else }}{{ i18n "pages" | default "pages" }}{{ end }}
+            </div>
+          {{ end }}
+        </div>
+      </div>
+    </div>
+  </div>
+</header>
+
+{{/* Main content area */}}
+<div class="{{ $container }} py-4">
+  <div class="row">
+
+    {{/* ─────────────────────────────────────────────────────────────
+      LEFT SIDEBAR: Navigation Catalog
+      ───────────────────────────────────────────────────────────────
+    */}}
+    <aside class="col-12 col-lg-3 col-xl-2 order-0 mb-4 mb-lg-0" role="navigation" aria-label="Documentation navigation">
+      {{/* Mobile toggle button */}}
+      <div class="d-lg-none mb-3">
+        <button
+          class="btn btn-outline-secondary w-100 d-flex align-items-center justify-content-between"
+          type="button"
+          data-bs-toggle="collapse"
+          data-bs-target="#docsNav"
+          aria-expanded="false"
+          aria-controls="docsNav"
+        >
+          <span>
+            <wa-icon name="bars" class="me-2" aria-hidden="true"></wa-icon>
+            {{ i18n "documentation_menu" | default "Documentation Menu" }}
+          </span>
+          <wa-icon name="chevron-down" aria-hidden="true"></wa-icon>
+        </button>
+      </div>
+
+      {{/* Navigation catalog */}}
+      <div class="collapse d-lg-block" id="docsNav">
+        <div class="docs-sidebar-nav position-sticky" style="top: 1rem; max-height: calc(100vh - 2rem); overflow-y: auto;">
+          {{/* Search box */}}
+          {{ partial "docs/search-box" . }}
+
+          {{/* Navigation catalog - use enhanced version for better UX */}}
+          {{ partial "docs/catalog-enhanced" . }}
+        </div>
+      </div>
+    </aside>
+
+    {{/* ─────────────────────────────────────────────────────────────
+      MAIN CONTENT: Section overview and page listings
+      ───────────────────────────────────────────────────────────────
+    */}}
+    <main class="col-12 col-lg-9 col-xl-10 order-1" id="main" role="main">
+
+      {{/* Section introduction (from _index.md content) */}}
+      {{ with .Content }}
+        <article class="docs-section-intro mb-5">
+          <div class="card border-0 shadow-sm">
+            <div class="card-body">
+              {{ . }}
+            </div>
+          </div>
+        </article>
+      {{ end }}
+
+      {{/* Documentation pages in this section */}}
+      {{ $pages := where .Pages ".Params.draft" "!=" true }}
+      {{ $regularPages := where $pages "Kind" "page" }}
+      {{ $sections := where $pages "Kind" "section" }}
+
+      {{/* Display subsections first */}}
+      {{ if gt (len $sections) 0 }}
+        <section class="docs-subsections mb-5">
+          <h2 class="h4 mb-4 d-flex align-items-center">
+            <wa-icon name="folder-open" class="me-2 text-primary" aria-hidden="true"></wa-icon>
+            {{ i18n "subsections" | default "Subsections" }}
+          </h2>
+          <div class="row g-4">
+            {{ range $sections.ByWeight }}
+              <div class="col-md-6 col-xl-4">
+                <div class="card h-100 border-0 shadow-sm hover-lift">
+                  <div class="card-body">
+                    <h3 class="card-title h5 mb-2">
+                      <a href="{{ .Permalink }}" class="text-decoration-none stretched-link">
+                        {{ .Title }}
+                      </a>
+                    </h3>
+                    {{ with .Description }}
+                      <p class="card-text text-muted small mb-2">{{ . }}</p>
+                    {{ end }}
+
+                    {{/* Count of pages in subsection */}}
+                    {{ $subPages := where .Pages ".Params.draft" "!=" true }}
+                    {{ if gt (len $subPages) 0 }}
+                      <div class="text-muted small">
+                        <wa-icon name="file-lines" class="me-1" aria-hidden="true"></wa-icon>
+                        {{ len $subPages }} {{ if eq (len $subPages) 1 }}{{ i18n "page" | default "page" }}{{ else }}{{ i18n "pages" | default "pages" }}{{ end }}
+                      </div>
+                    {{ end }}
+                  </div>
+                </div>
+              </div>
+            {{ end }}
+          </div>
+        </section>
+      {{ end }}
+
+      {{/* Display regular pages in this section */}}
+      {{ if gt (len $regularPages) 0 }}
+        <section class="docs-pages">
+          <h2 class="h4 mb-4 d-flex align-items-center">
+            <wa-icon name="book-open" class="me-2 text-primary" aria-hidden="true"></wa-icon>
+            {{ if gt (len $sections) 0 }}
+              {{ i18n "pages_in_section" | default "Pages in This Section" }}
+            {{ else }}
+              {{ i18n "pages" | default "Pages" }}
+            {{ end }}
+          </h2>
+
+          <div class="list-group list-group-flush">
+            {{ range $regularPages.ByWeight }}
+              <a
+                href="{{ .Permalink }}"
+                class="list-group-item list-group-item-action border-0 border-bottom px-0"
+              >
+                <div class="d-flex w-100 justify-content-between align-items-start">
+                  <div class="flex-grow-1">
+                    <h3 class="h6 mb-1 fw-semibold">{{ .Title }}</h3>
+                    {{ with .Description }}
+                      <p class="mb-1 text-muted small">{{ . }}</p>
+                    {{ end }}
+
+                    {{/* Reading time estimate */}}
+                    {{ if gt .ReadingTime 0 }}
+                      <div class="text-muted small">
+                        <wa-icon name="clock" class="me-1" aria-hidden="true"></wa-icon>
+                        {{ .ReadingTime }} {{ i18n "min_read" | default "min read" }}
+                      </div>
+                    {{ end }}
+                  </div>
+
+                  <div class="flex-shrink-0 ms-3 text-muted">
+                    <wa-icon name="arrow-right" aria-hidden="true"></wa-icon>
+                  </div>
+                </div>
+              </a>
+            {{ end }}
+          </div>
+        </section>
+      {{ end }}
+
+      {{/* Empty state - no pages yet */}}
+      {{ if and (eq (len $regularPages) 0) (eq (len $sections) 0) }}
+        <div class="alert alert-info d-flex align-items-center" role="alert">
+          <wa-icon name="circle-info" class="me-2 flex-shrink-0" aria-hidden="true"></wa-icon>
+          <div>
+            {{ i18n "no_pages_yet" | default "No documentation pages in this section yet. Check back soon!" }}
+          </div>
+        </div>
+      {{ end }}
+
+      {{/* Optional: Pagination for very large sections */}}
+      {{ if gt .Paginator.TotalPages 1 }}
+        <nav class="mt-5" aria-label="Documentation pagination">
+          {{ partial "pagination" (dict "page" . "paginator" .Paginator) }}
+        </nav>
+      {{ end }}
+
+    </main>
+
+  </div>
+</div>
+
+{{/* Add custom CSS for hover effect */}}
+<style>
+  .hover-lift {
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+  }
+  .hover-lift:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+  }
+  .list-group-item-action:hover {
+    background-color: rgba(0, 0, 0, 0.02);
+  }
+</style>
+
+{{ partial "footer-wrapper.html" . }}

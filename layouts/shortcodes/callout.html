@@ -1,0 +1,43 @@
+{{/* ──────────────────────────────────────────────────────────────
+  Callout/Admonition Shortcode
+  Usage in markdown:
+    {{< callout type="note" >}}
+    This is important information
+    {{< /callout >}}
+
+  Types: note, tip, warning, danger, info
+  ────────────────────────────────────────────────────────────────
+*/}}
+
+{{- $type := .Get "type" | default "note" -}}
+{{- $title := .Get "title" -}}
+
+{{- $icon := "circle-info" -}}
+{{- if eq $type "tip" -}}
+  {{- $icon = "lightbulb" -}}
+{{- else if eq $type "warning" -}}
+  {{- $icon = "triangle-exclamation" -}}
+{{- else if eq $type "danger" -}}
+  {{- $icon = "circle-exclamation" -}}
+{{- else if eq $type "note" -}}
+  {{- $icon = "circle-info" -}}
+{{- else if eq $type "important" -}}
+  {{- $icon = "star" -}}
+{{- end -}}
+
+<div class="callout callout-{{ $type }}">
+  {{ if $title }}
+    <div class="callout-title">
+      <wa-icon name="{{ $icon }}" aria-hidden="true"></wa-icon>
+      <span>{{ $title }}</span>
+    </div>
+  {{ else }}
+    <div class="callout-title">
+      <wa-icon name="{{ $icon }}" aria-hidden="true"></wa-icon>
+      <span>{{ humanize $type }}</span>
+    </div>
+  {{ end }}
+  <div class="callout-content">
+    {{ .Inner | markdownify }}
+  </div>
+</div>

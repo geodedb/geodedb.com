@@ -1,0 +1,60 @@
+{{/* ──────────────────────────────────────────────────────────────
+  Tabs Shortcode for Documentation
+  Usage:
+    {{< tabs >}}
+    {{< tab "Go" >}}
+    ```go
+    fmt.Println("Hello")
+    ```
+    {{< /tab >}}
+    {{< tab "Python" >}}
+    ```python
+    print("Hello")
+    ```
+    {{< /tab >}}
+    {{< /tabs >}}
+  ────────────────────────────────────────────────────────────────
+*/}}
+
+{{- $id := printf "tabs-%d" (now.UnixNano) -}}
+
+<div class="docs-tabs mb-4">
+  <ul class="nav nav-tabs" id="{{ $id }}" role="tablist">
+    {{- $tabs := findRE `(?s)<tab.*?>(.*?)</tab>` .Inner -}}
+    {{- range $index, $tab := $tabs -}}
+      {{- $tabTitle := replaceRE `(?s)<tab\s+["]([^"]+)["].*` "$1" $tab -}}
+      {{- $tabId := printf "%s-tab-%d" $id $index -}}
+      {{- $active := eq $index 0 -}}
+      <li class="nav-item" role="presentation">
+        <button
+          class="nav-link{{ if $active }} active{{ end }}"
+          id="{{ $tabId }}-tab"
+          data-bs-toggle="tab"
+          data-bs-target="#{{ $tabId }}"
+          type="button"
+          role="tab"
+          aria-controls="{{ $tabId }}"
+          aria-selected="{{ if $active }}true{{ else }}false{{ end }}"
+        >
+          {{ $tabTitle }}
+        </button>
+      </li>
+    {{- end -}}
+  </ul>
+
+  <div class="tab-content border border-top-0 rounded-bottom p-3" id="{{ $id }}-content">
+    {{- range $index, $tab := $tabs -}}
+      {{- $tabId := printf "%s-tab-%d" $id $index -}}
+      {{- $active := eq $index 0 -}}
+      {{- $content := replaceRE `(?s)<tab\s+["].*?["]\s*>(.*?)</tab>` "$1" $tab -}}
+      <div
+        class="tab-pane fade{{ if $active }} show active{{ end }}"
+        id="{{ $tabId }}"
+        role="tabpanel"
+        aria-labelledby="{{ $tabId }}-tab"
+      >
+        {{ $content | markdownify }}
+      </div>
+    {{- end -}}
+  </div>
+</div>

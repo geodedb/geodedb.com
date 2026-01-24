@@ -1,0 +1,124 @@
+{{/* ──────────────────────────────────────────────────────────────
+  Enhanced Table of Contents for Documentation
+  - Sticky positioning for easy navigation
+  - Smooth scroll behavior
+  - Active section highlighting (requires JS)
+  - Collapsed state for mobile
+  ────────────────────────────────────────────────────────────────
+*/}}
+
+{{- $enable := and (default true .Params.toc) (default true .Site.Params.toc) -}}
+{{- $toc := .TableOfContents -}}
+{{- $valid := and $toc (and (ne $toc "<nav id=\"TableOfContents\"></nav>") (gt .WordCount (default 300 .Site.Params.tocWordCount))) -}}
+
+{{- if and $enable $valid -}}
+  <nav
+    class="docs-toc-nav card border-0 shadow-sm mb-4"
+    id="docsTOC"
+    role="navigation"
+    aria-labelledby="tocTitle"
+  >
+    <div class="card-header bg-transparent border-bottom">
+      <h2 class="h6 mb-0 fw-semibold d-flex align-items-center" id="tocTitle">
+        <wa-icon name="list-ul" class="me-2 text-primary" aria-hidden="true"></wa-icon>
+        {{ i18n "on_this_page" | default "On This Page" }}
+      </h2>
+    </div>
+    <div class="card-body py-3 px-3">
+      <div class="docs-toc-content small">
+        {{ $toc | safeHTML }}
+      </div>
+    </div>
+  </nav>
+
+  {{/* Enhanced TOC styling */}}
+  <style>
+    /* TOC specific styles */
+    .docs-toc-content nav ul {
+      list-style: none;
+      padding-left: 0;
+      margin-bottom: 0;
+    }
+
+    .docs-toc-content nav ul ul {
+      padding-left: 1rem;
+      margin-top: 0.5rem;
+    }
+
+    .docs-toc-content nav ul li {
+      margin-bottom: 0.5rem;
+      line-height: 1.5;
+    }
+
+    .docs-toc-content nav a {
+      color: var(--bs-body-color);
+      text-decoration: none;
+      display: block;
+      padding: 0.25rem 0.5rem;
+      border-left: 2px solid transparent;
+      transition: all 0.15s ease-in-out;
+    }
+
+    .docs-toc-content nav a:hover {
+      color: var(--bs-primary);
+      background-color: rgba(var(--bs-primary-rgb), 0.05);
+      border-left-color: var(--bs-primary);
+    }
+
+    .docs-toc-content nav a.active {
+      color: var(--bs-primary);
+      font-weight: 600;
+      background-color: rgba(var(--bs-primary-rgb), 0.1);
+      border-left-color: var(--bs-primary);
+    }
+
+    /* Smooth scroll behavior */
+    html {
+      scroll-behavior: smooth;
+    }
+
+    /* Scroll margin for anchor targets (accounts for fixed header) */
+    :target {
+      scroll-margin-top: 5rem;
+    }
+
+    h1[id], h2[id], h3[id], h4[id], h5[id], h6[id] {
+      scroll-margin-top: 5rem;
+    }
+  </style>
+
+  {{/* Optional: Active section highlighting script */}}
+  <script>
+    (function() {
+      // Intersection Observer for active TOC highlighting
+      if ('IntersectionObserver' in window) {
+        const observer = new IntersectionObserver((entries) => {
+          entries.forEach(entry => {
+            const id = entry.target.getAttribute('id');
+            if (!id) return;
+
+            const tocLink = document.querySelector(`.docs-toc-content a[href="#${id}"]`);
+            if (!tocLink) return;
+
+            if (entry.intersectionRatio > 0) {
+              // Remove active from all links
+              document.querySelectorAll('.docs-toc-content a.active').forEach(link => {
+                link.classList.remove('active');
+              });
+              // Add active to current link
+              tocLink.classList.add('active');
+            }
+          });
+        }, {
+          rootMargin: '-80px 0px -80% 0px',
+          threshold: 0
+        });
+
+        // Observe all headings with IDs
+        document.querySelectorAll('h1[id], h2[id], h3[id], h4[id], h5[id], h6[id]').forEach(heading => {
+          observer.observe(heading);
+        });
+      }
+    })();
+  </script>
+{{- end -}}

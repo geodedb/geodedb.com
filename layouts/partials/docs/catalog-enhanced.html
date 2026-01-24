@@ -1,0 +1,194 @@
+{{/* ──────────────────────────────────────────────────────────────
+  Enhanced Documentation Navigation Catalog
+  - Hierarchical navigation with collapsible sections
+  - Active state highlighting for current page
+  - Better mobile experience
+  - Improved visual hierarchy
+  ────────────────────────────────────────────────────────────────
+*/}}
+
+<nav class="docs-catalog-nav mb-4" aria-label="{{ i18n "documentation_navigation" | default "Documentation navigation" }}">
+  <div class="card border-0 shadow-sm">
+    <div class="card-header bg-transparent border-bottom">
+      <h2 class="h6 mb-0 fw-semibold d-flex align-items-center">
+        <wa-icon name="book" class="me-2 text-primary" aria-hidden="true"></wa-icon>
+        {{ i18n "documentation" | default "Documentation" }}
+      </h2>
+    </div>
+    <div class="card-body p-0">
+      {{ template "walk-catalog-enhanced" (dict "section" .FirstSection "page" .) }}
+    </div>
+  </div>
+</nav>
+
+{{- define "walk-catalog-enhanced" -}}
+  {{- $section := .section -}}
+  {{- $page := .page -}}
+
+  <ul class="list-unstyled mb-0 docs-nav-list">
+    {{- range ($section.Pages.GroupBy "Weight" "desc") -}}
+      {{- range sort .Pages "Title" -}}
+        {{- if .IsSection -}}
+          {{- $sectionId := printf "catalog-%s" (.File.UniqueID | default .Title) -}}
+          {{- $active := false -}}
+          {{- if hasPrefix $page.Permalink .Permalink -}}
+            {{- $active = true -}}
+          {{- end -}}
+
+          <li class="docs-nav-item{{ if eq .Permalink $page.Permalink }} active{{ end }}">
+            <div class="docs-nav-section d-flex align-items-center justify-content-between">
+              <a
+                href="{{ .Permalink }}"
+                class="docs-nav-link flex-grow-1{{ if $active }} active{{ end }}"
+              >
+                <wa-icon name="folder{{ if $active }}-open{{ end }}" class="me-2" aria-hidden="true"></wa-icon>
+                {{ .LinkTitle }}
+              </a>
+
+              {{/* Collapse toggle button */}}
+              <button
+                class="btn btn-sm btn-link docs-nav-toggle p-1{{ if not $active }} collapsed{{ end }}"
+                type="button"
+                data-bs-toggle="collapse"
+                data-bs-target="#{{ $sectionId }}"
+                aria-expanded="{{ if $active }}true{{ else }}false{{ end }}"
+                aria-controls="{{ $sectionId }}"
+                aria-label="{{ i18n "toggle_section" | default "Toggle section" }}"
+              >
+                <wa-icon
+                  name="chevron-down"
+                  class="docs-nav-chevron"
+                  aria-hidden="true"
+                ></wa-icon>
+              </button>
+            </div>
+
+            {{/* Nested subsections/pages */}}
+            <div
+              class="collapse{{ if $active }} show{{ end }}"
+              id="{{ $sectionId }}"
+            >
+              <div class="docs-nav-nested">
+                {{ template "walk-catalog-enhanced" (dict "section" . "page" $page) }}
+              </div>
+            </div>
+          </li>
+
+        {{- else -}}
+          {{/* Regular page */}}
+          <li class="docs-nav-item{{ if eq .Permalink $page.Permalink }} active{{ end }}">
+            <a
+              href="{{ .Permalink }}"
+              class="docs-nav-link{{ if eq .Permalink $page.Permalink }} active{{ end }}"
+              {{ if .Params.redirect }}target="_blank" rel="noopener"{{ end }}
+            >
+              <wa-icon name="file-lines" class="me-2" aria-hidden="true"></wa-icon>
+              {{ .LinkTitle }}
+              {{- if .Params.redirect -}}
+                <wa-icon name="arrow-up-right-from-square" class="ms-1 small" aria-hidden="true"></wa-icon>
+              {{- end -}}
+            </a>
+          </li>
+        {{- end -}}
+      {{- end -}}
+    {{- end -}}
+  </ul>
+{{- end -}}
+
+{{/* Enhanced catalog styles */}}
+<style>
+  /* Navigation list */
+  .docs-nav-list {
+    padding: 0.5rem 0;
+  }
+
+  .docs-nav-item {
+    position: relative;
+  }
+
+  /* Navigation links */
+  .docs-nav-link {
+    display: flex;
+    align-items: center;
+    padding: 0.5rem 1rem;
+    color: var(--bs-body-color);
+    text-decoration: none;
+    border-left: 3px solid transparent;
+    transition: all 0.15s ease-in-out;
+    font-size: 0.9rem;
+  }
+
+  .docs-nav-link:hover {
+    background-color: rgba(var(--bs-primary-rgb), 0.05);
+    color: var(--bs-primary);
+    border-left-color: rgba(var(--bs-primary-rgb), 0.3);
+  }
+
+  .docs-nav-link.active {
+    background-color: rgba(var(--bs-primary-rgb), 0.1);
+    color: var(--bs-primary);
+    font-weight: 600;
+    border-left-color: var(--bs-primary);
+  }
+
+  /* Section header */
+  .docs-nav-section {
+    padding: 0;
+  }
+
+  /* Toggle button */
+  .docs-nav-toggle {
+    border: none;
+    color: var(--bs-body-color);
+    opacity: 0.6;
+    transition: transform 0.2s ease-in-out, opacity 0.2s ease-in-out;
+  }
+
+  .docs-nav-toggle:hover {
+    opacity: 1;
+  }
+
+  .docs-nav-toggle:not(.collapsed) .docs-nav-chevron {
+    transform: rotate(180deg);
+  }
+
+  .docs-nav-chevron {
+    transition: transform 0.2s ease-in-out;
+  }
+
+  /* Nested navigation */
+  .docs-nav-nested {
+    padding-left: 1rem;
+    border-left: 1px solid rgba(0, 0, 0, 0.1);
+    margin-left: 1rem;
+    margin-top: 0.25rem;
+  }
+
+  .docs-nav-nested .docs-nav-link {
+    padding: 0.4rem 1rem;
+    font-size: 0.85rem;
+  }
+
+  .docs-nav-nested .docs-nav-nested {
+    padding-left: 0.75rem;
+    margin-left: 0.75rem;
+  }
+
+  /* Icons */
+  .docs-nav-link wa-icon {
+    opacity: 0.7;
+    flex-shrink: 0;
+  }
+
+  .docs-nav-link.active wa-icon,
+  .docs-nav-link:hover wa-icon {
+    opacity: 1;
+  }
+
+  /* Dark mode adjustments */
+  @media (prefers-color-scheme: dark) {
+    .docs-nav-nested {
+      border-left-color: rgba(255, 255, 255, 0.1);
+    }
+  }
+</style>

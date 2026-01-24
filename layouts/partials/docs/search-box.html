@@ -1,0 +1,52 @@
+{{/* ──────────────────────────────────────────────────────────────
+  Documentation Search Box
+  - Integrates with site search functionality
+  - Keyboard accessible (Alt+K or Cmd+K shortcut)
+  - Mobile responsive
+  ────────────────────────────────────────────────────────────────
+*/}}
+
+{{ if .Site.Params.search.enable }}
+  <div class="docs-search mb-4">
+    <div class="card border-0 shadow-sm">
+      <div class="card-body p-3">
+        <form action="/search" method="get" role="search">
+          <div class="input-group">
+            <span class="input-group-text bg-transparent border-end-0">
+              <wa-icon name="magnifying-glass" aria-hidden="true"></wa-icon>
+            </span>
+            <input
+              type="search"
+              name="q"
+              class="form-control border-start-0 ps-0"
+              placeholder="{{ i18n "search_docs" | default "Search documentation..." }}"
+              aria-label="{{ i18n "search_docs" | default "Search documentation" }}"
+              autocomplete="off"
+            />
+            <button type="submit" class="btn btn-primary">
+              {{ i18n "search" | default "Search" }}
+            </button>
+          </div>
+          <div class="small text-muted mt-2">
+            <kbd>Alt</kbd> + <kbd>K</kbd> {{ i18n "to_focus" | default "to focus" }}
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  {{/* Keyboard shortcut */}}
+  <script>
+    document.addEventListener('keydown', function(e) {
+      // Alt+K or Cmd+K to focus search
+      if ((e.altKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault();
+        const searchInput = document.querySelector('.docs-search input[type="search"]');
+        if (searchInput) {
+          searchInput.focus();
+          searchInput.select();
+        }
+      }
+    });
+  </script>
+{{ end }}
