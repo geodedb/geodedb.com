@@ -1,532 +1,708 @@
 ---
-title: "API and Interfaces"
-description: "Complete guide to Geode's APIs including client libraries, protocol specification, language bindings, REST endpoints, and programmatic database access patterns."
-keywords:
-  - api
-  - client library
-  - protocol
-  - REST API
-  - language bindings
-  - Geode
-  - graph database
-draft: false
-params:
-  seo:
-    canonical: "https://geodedb.com/tags/api/"
-    noindex: false
+title: "API Development"
+description: "Best practices for building APIs with Geode, including REST, GraphQL, and native client libraries"
+keywords: ["API", "REST API", "GraphQL", "client libraries", "API design", "API versioning", "rate limiting", "API documentation", "SDK development"]
+weight: 10
 ---
 
-# API and Interfaces
+# API Development
 
-Geode provides multiple API interfaces for programmatic database access, from native client libraries in Go, Python, Rust, and Zig, to low-level protocol access and HTTP endpoints. All APIs are designed around the ISO/IEC 39075:2024 GQL standard, ensuring consistency across languages and platforms.
+API development encompasses the design, implementation, and documentation of interfaces for accessing Geode's graph database functionality. Well-designed APIs enable developers to build powerful applications while maintaining security, performance, and backward compatibility.
 
-## Introduction to Geode APIs
+## Geode Client Libraries
 
-Geode's API architecture prioritizes developer experience, performance, and standards compliance. The system provides multiple access methods tailored to different use cases: native client libraries for optimal performance, database/sql driver for Go applications, HTTP/REST endpoints for cross-platform access, and direct QUIC protocol access for custom implementations.
+### Native Protocol
 
-All APIs communicate via the same underlying JSON line protocol over QUIC+TLS, ensuring consistent behavior regardless of language or platform. The protocol is fully documented and versioned, enabling third-party client implementations.
+Geode's native protocol uses QUIC over TLS for efficient, secure communication:
 
-## Client Libraries
+**Transport** - QUIC (UDP-based, multiplexed)
+**Security** - TLS 1.3 required
+**Format** - JSON line protocol
+**Port** - 3141 (standard) or 8443 (alternative)
 
-### Go Client
+```
+Client Message Format:
+{"type": "RUN_GQL", "query": "MATCH (n) RETURN n LIMIT 10"}
 
-The Go client implements the standard `database/sql` interface for seamless integration with Go applications:
+Server Response Format:
+{"type": "SCHEMA", "columns": ["n"]}
+{"type": "BINDINGS", "row": [{"id": "1", "labels": ["Person"]}]}
+{"type": "BINDINGS", "row": [{"id": "2", "labels": ["Person"]}]}
+```
+
+### Go Client Library
+
+Full-featured Go client with `database/sql` compatibility:
 
 ```go
 import (
     "database/sql"
-    "fmt"
     _ "go.codepros.org/geode"
 )
 
-// Open database connection
-db, err := sql.Open("geode", "geode://localhost:3141/graph")
+// Open connection
+db, err := sql.Open("geode", "geode://localhost:3141?tls=true")
 if err != nil {
-    return err
+    log.Fatal(err)
 }
 defer db.Close()
 
-// Execute GQL query
-rows, err := db.Query(`
-    MATCH (p:Person)-[:KNOWS]->(friend:Person)
-    WHERE p.name = $name
-    RETURN friend.name, friend.age
-`, "Alice")
+// Execute query
+rows, err := db.Query("MATCH (p:Person) WHERE p.age > ? RETURN p", 18)
 if err != nil {
-    return err
+    log.Fatal(err)
 }
 defer rows.Close()
 
-// Iterate results
+// Process results
 for rows.Next() {
-    var name string
-    var age int
-    if err := rows.Scan(&name, &age); err != nil {
-        return err
+    var person Person
+    if err := rows.Scan(&person); err != nil {
+        log.Fatal(err)
     }
-    fmt.Printf("%s is %d years old\n", name, age)
+    fmt.Printf("Person: %+v\n", person)
 }
-
-// Prepared statements
-stmt, err := db.Prepare(`
-    CREATE (p:Person {name: $name, age: $age})
-    RETURN p
-`)
-defer stmt.Close()
-
-_, err = stmt.Exec("Bob", 30)
 ```
 
-The Go client provides connection pooling, prepared statement caching, transaction support with savepoints, context-aware cancellation, and full integration with database/sql ecosystem.
+Features:
+- Connection pooling
+- Prepared statements
+- Transaction support
+- Context-aware operations
+- Type-safe query builders
 
-### Python Client
+### Python Client Library
 
-The Python client is async-first with type-safe interfaces:
+Async Python client built on aioquic:
 
 ```python
-from geode_client import GeodeClient
 import asyncio
+from geode_client import GeodeClient
 
 async def main():
-    # Create client with connection pool
-    async with GeodeClient("localhost:3141") as client:
-        # Execute query with parameters
-        result = await client.execute("""
-            MATCH (p:Person)-[:KNOWS]->(friend:Person)
-            WHERE p.name = $name
-            RETURN friend.name AS name, friend.age AS age
-        """, {"name": "Alice"})
-
-        # Access results
-        for row in result:
-            print(f"{row['name']} is {row['age']} years old")
-
-        # Transactions
-        async with client.transaction() as tx:
-            await tx.execute("""
-                CREATE (p:Person {name: $name, age: $age})
-            """, {"name": "Charlie", "age": 35})
-
-            # Savepoint
-            await tx.savepoint("before_update")
-
-            await tx.execute("""
-                MATCH (p:Person {name: $name})
-                SET p.age = $age
-            """, {"name": "Charlie", "age": 36})
-
-            # Can rollback to savepoint if needed
-            # await tx.rollback_to("before_update")
-
-            await tx.commit()
-
-        # Query builder
-        from geode_client import QueryBuilder
-
-        query = (QueryBuilder()
-            .match("(p:Person)")
-            .where("p.age > $min_age")
-            .return_("p.name", "p.age")
-            .order_by("p.age DESC")
-            .limit(10))
-
-        result = await client.execute(query, {"min_age": 25})
+    # Connect to database
+    async with GeodeClient("localhost", 3141, use_tls=True) as client:
+        # Execute query
+        result = await client.execute(
+            "MATCH (p:Person) WHERE p.age > $age RETURN p",
+            {"age": 18}
+        )
+        
+        # Process results
+        async for row in result:
+            print(f"Person: {row['p']}")
 
 asyncio.run(main())
 ```
 
-Features include async/await with asyncio, connection pooling (1000+ queries/second), type-safe query builders, row-level security support, and comprehensive error handling.
+Features:
+- Full async/await support
+- Connection pooling (1000+ QPS)
+- Query builders
+- Row-Level Security policy management
+- Savepoint support
 
-### Rust Client
+### Rust Client Library
 
-The Rust client provides zero-cost abstractions with tokio:
+High-performance Rust client with tokio:
 
 ```rust
-use geode_client::{Client, Error};
-use tokio;
+use geode_client::{Client, Query};
 
 #[tokio::main]
-async fn main() -> Result<(), Error> {
-    // Connect to Geode
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    // Connect to database
     let client = Client::connect("localhost:3141").await?;
-
-    // Execute query with parameters
-    let results = client.execute(
-        "MATCH (p:Person)-[:KNOWS]->(friend:Person)
-         WHERE p.name = $name
-         RETURN friend.name, friend.age",
-        &[("name", "Alice")]
-    ).await?;
-
+    
+    // Execute query
+    let query = Query::new("MATCH (p:Person) WHERE p.age > $age RETURN p")
+        .param("age", 18);
+    
+    let mut result = client.execute(query).await?;
+    
     // Process results
-    for row in results {
-        let name: String = row.get("friend.name")?;
-        let age: i64 = row.get("friend.age")?;
-        println!("{} is {} years old", name, age);
+    while let Some(row) = result.next().await? {
+        println!("Person: {:?}", row.get::<Person>("p")?);
     }
-
-    // Transactions
-    let mut tx = client.transaction().await?;
-
-    tx.execute(
-        "CREATE (p:Person {name: $name, age: $age})",
-        &[("name", "David"), ("age", 40i64)]
-    ).await?;
-
-    tx.commit().await?;
-
-    // Type-safe query builder
-    use geode_client::query::*;
-
-    let query = Query::new()
-        .match_pattern("(p:Person)")
-        .where_clause("p.age > $min_age")
-        .return_fields(&["p.name", "p.age"])
-        .order_by("p.age", Order::Desc)
-        .limit(10);
-
-    let results = client.execute_query(&query, &[("min_age", 25i64)]).await?;
-
+    
     Ok(())
 }
 ```
 
-The Rust client offers high performance (10,000+ queries/second), compile-time type safety, zero-cost abstractions, tokio integration, and connection pooling.
+Features:
+- Zero-cost abstractions
+- Type-safe query builders
+- Connection pooling (10,000+ QPS)
+- Transaction support
+- Compile-time query validation
 
-### Zig Client
+### Zig Client Library
 
-The Zig client provides low-level control with safety:
+Native Zig client for systems programming:
 
 ```zig
-const std = @import("std");
-const geode = @import("geode_client");
+const geode = @import("geode");
 
 pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     defer _ = gpa.deinit();
-    const allocator = gpa.allocator();
-
-    // Connect to Geode
-    var client = try geode.Client.connect(allocator, "localhost:3141");
+    
+    // Connect to database
+    var client = try geode.Client.connect(
+        gpa.allocator(),
+        "localhost",
+        3141,
+        .{ .tls = true }
+    );
     defer client.deinit();
-
+    
     // Execute query
-    const query =
-        \\MATCH (p:Person)-[:KNOWS]->(friend:Person)
-        \\WHERE p.name = $name
-        \\RETURN friend.name, friend.age
-    ;
-
-    var params = geode.Params.init(allocator);
-    defer params.deinit();
-    try params.put("name", .{ .string = "Alice" });
-
-    var result = try client.execute(query, params);
+    var result = try client.execute(
+        "MATCH (p:Person) WHERE p.age > $age RETURN p",
+        .{ .age = 18 }
+    );
     defer result.deinit();
-
+    
     // Process results
     while (try result.next()) |row| {
-        const name = try row.getString("friend.name");
-        const age = try row.getInt("friend.age");
-        std.debug.print("{s} is {d} years old\n", .{ name, age });
+        const person = try row.get("p", Person);
+        std.debug.print("Person: {}\n", .{person});
     }
-
-    // Transaction
-    var tx = try client.transaction();
-    defer tx.deinit();
-
-    try tx.execute(
-        "CREATE (p:Person {name: $name, age: $age})",
-        .{ .name = "Eve", .age = 28 }
-    );
-
-    try tx.commit();
 }
 ```
 
-## Protocol Specification
+## REST API Design
 
-### JSON Line Protocol
+### RESTful Endpoints
 
-Geode uses a JSON line protocol where each message is a single JSON object terminated by a newline:
+Design clean, resource-oriented APIs:
 
-```json
-# Client sends HELLO
-{"type": "HELLO", "version": "1.0", "client": "geode-client-python/0.18.0"}
+```
+GET    /api/v1/graphs                    # List graphs
+POST   /api/v1/graphs                    # Create graph
+GET    /api/v1/graphs/{id}               # Get graph details
+DELETE /api/v1/graphs/{id}               # Delete graph
 
-# Server responds
-{"type": "HELLO_ACK", "server_version": "0.18.0", "session_id": "sess_abc123"}
+GET    /api/v1/graphs/{id}/nodes         # List nodes
+POST   /api/v1/graphs/{id}/nodes         # Create node
+GET    /api/v1/graphs/{id}/nodes/{nid}   # Get node
+PUT    /api/v1/graphs/{id}/nodes/{nid}   # Update node
+DELETE /api/v1/graphs/{id}/nodes/{nid}   # Delete node
 
-# Client executes query
-{"type": "RUN_GQL", "query": "MATCH (n:User) RETURN n LIMIT 10", "params": {}}
-
-# Server sends schema
-{"type": "SCHEMA", "fields": [{"name": "n", "type": "NODE"}]}
-
-# Server sends results
-{"type": "BINDINGS", "values": [[{"labels": ["User"], "properties": {"id": 1, "name": "Alice"}}]]}
-{"type": "BINDINGS", "values": [[{"labels": ["User"], "properties": {"id": 2, "name": "Bob"}}]]}
-
-# Server signals completion
-{"type": "SUCCESS", "metadata": {"rows_returned": 2, "execution_time_ms": 5}}
+POST   /api/v1/graphs/{id}/query         # Execute GQL query
 ```
 
-### Message Types
+### Request/Response Format
 
-Client messages:
-- `HELLO` - Initiate connection handshake
-- `RUN_GQL` - Execute GQL query with parameters
-- `PULL` - Request more result rows
-- `BEGIN` - Start transaction
-- `COMMIT` - Commit transaction
-- `ROLLBACK` - Rollback transaction
-- `PING` - Keep-alive heartbeat
+Use consistent JSON format:
 
-Server responses:
-- `HELLO_ACK` - Acknowledge connection
-- `SCHEMA` - Result set schema information
-- `BINDINGS` - Result rows
-- `SUCCESS` - Query completed successfully
-- `ERROR` - Error occurred with details
-- `EXPLAIN` - Query execution plan
-- `PROFILE` - Performance profiling data
+```json
+// Request
+POST /api/v1/graphs/social/query
+{
+  "query": "MATCH (p:Person) WHERE p.age > $age RETURN p",
+  "parameters": {
+    "age": 18
+  },
+  "consistency": "strong"
+}
+
+// Response
+{
+  "status": "success",
+  "schema": {
+    "columns": [
+      {"name": "p", "type": "node"}
+    ]
+  },
+  "data": [
+    {
+      "p": {
+        "id": "person:123",
+        "labels": ["Person"],
+        "properties": {
+          "name": "Alice",
+          "age": 25
+        }
+      }
+    }
+  ],
+  "metadata": {
+    "rows": 1,
+    "execution_time_ms": 12,
+    "cached": false
+  }
+}
+```
 
 ### Error Handling
 
-Errors follow ISO/IEC 39075:2024 status codes:
+Return meaningful error responses:
+
+```json
+// Error Response
+{
+  "status": "error",
+  "error": {
+    "code": "INVALID_QUERY",
+    "message": "Syntax error at line 1, column 15",
+    "details": {
+      "line": 1,
+      "column": 15,
+      "expected": "WHERE or RETURN",
+      "got": "FROM"
+    }
+  },
+  "request_id": "req_abc123"
+}
+```
+
+Standard error codes:
+- 400 - Bad Request (invalid syntax)
+- 401 - Unauthorized (authentication required)
+- 403 - Forbidden (insufficient permissions)
+- 404 - Not Found (resource doesn't exist)
+- 409 - Conflict (constraint violation)
+- 429 - Too Many Requests (rate limited)
+- 500 - Internal Server Error
+
+## GraphQL API
+
+### Schema Definition
+
+Define GraphQL schema for graph access:
+
+```graphql
+type Person {
+  id: ID!
+  name: String!
+  age: Int!
+  friends: [Person!]!
+  posts: [Post!]!
+}
+
+type Post {
+  id: ID!
+  title: String!
+  content: String!
+  author: Person!
+  comments: [Comment!]!
+}
+
+type Query {
+  person(id: ID!): Person
+  people(filter: PersonFilter, limit: Int): [Person!]!
+  
+  post(id: ID!): Post
+  posts(filter: PostFilter, limit: Int): [Post!]!
+}
+
+type Mutation {
+  createPerson(input: CreatePersonInput!): Person!
+  updatePerson(id: ID!, input: UpdatePersonInput!): Person!
+  deletePerson(id: ID!): Boolean!
+  
+  createPost(input: CreatePostInput!): Post!
+}
+
+input PersonFilter {
+  minAge: Int
+  maxAge: Int
+  name: String
+}
+```
+
+### Resolver Implementation
+
+Map GraphQL to GQL queries:
+
+```javascript
+const resolvers = {
+  Query: {
+    person: async (_, { id }, { geode }) => {
+      const result = await geode.execute(
+        'MATCH (p:Person {id: $id}) RETURN p',
+        { id }
+      );
+      return result.rows[0]?.p;
+    },
+    
+    people: async (_, { filter, limit = 100 }, { geode }) => {
+      let query = 'MATCH (p:Person)';
+      const params = {};
+      
+      if (filter?.minAge) {
+        query += ' WHERE p.age >= $minAge';
+        params.minAge = filter.minAge;
+      }
+      
+      query += ' RETURN p LIMIT $limit';
+      params.limit = limit;
+      
+      const result = await geode.execute(query, params);
+      return result.rows.map(row => row.p);
+    }
+  },
+  
+  Person: {
+    friends: async (person, _, { geode }) => {
+      const result = await geode.execute(
+        'MATCH (p:Person {id: $id})-[:FRIEND]->(f:Person) RETURN f',
+        { id: person.id }
+      );
+      return result.rows.map(row => row.f);
+    }
+  }
+};
+```
+
+### Query Optimization
+
+Optimize GraphQL queries:
+
+**DataLoader** - Batch and cache database requests
+**Query Depth Limiting** - Prevent excessive nesting
+**Complexity Analysis** - Estimate query cost
+**Persisted Queries** - Pre-approve query patterns
+
+## API Versioning
+
+### Versioning Strategies
+
+Support multiple API versions:
+
+**URL Versioning** - `/api/v1/`, `/api/v2/`
+**Header Versioning** - `Accept: application/vnd.geode.v2+json`
+**Content Negotiation** - Different formats per version
+
+```
+// URL versioning (recommended)
+GET /api/v1/graphs/social/nodes
+GET /api/v2/graphs/social/nodes
+
+// Header versioning
+GET /api/graphs/social/nodes
+Accept: application/vnd.geode.v2+json
+
+// Query parameter versioning
+GET /api/graphs/social/nodes?version=2
+```
+
+### Deprecation Policy
+
+Gracefully deprecate old versions:
+
+1. **Announce** - Notify users of deprecation timeline
+2. **Warn** - Include deprecation headers in responses
+3. **Support** - Maintain old version for grace period (6-12 months)
+4. **Sunset** - Remove support with final notice
+
+```
+Deprecation: true
+Sunset: Sat, 31 Dec 2026 23:59:59 GMT
+Link: <https://docs.geode.io/api/v3>; rel="successor-version"
+```
+
+## Rate Limiting
+
+### Rate Limit Configuration
+
+Protect API from abuse:
+
+```yaml
+rate_limiting:
+  enabled: true
+  strategies:
+    - name: per_user
+      limit: 1000
+      window: 1h
+      
+    - name: per_ip
+      limit: 100
+      window: 1m
+      
+    - name: burst
+      limit: 50
+      window: 1s
+```
+
+### Rate Limit Headers
+
+Communicate limits to clients:
+
+```
+X-RateLimit-Limit: 1000
+X-RateLimit-Remaining: 742
+X-RateLimit-Reset: 1640995200
+Retry-After: 3600
+```
+
+### Rate Limit Response
+
+Return clear error when limited:
 
 ```json
 {
-  "type": "ERROR",
-  "code": "22012",
-  "category": "DATA_EXCEPTION",
-  "message": "Division by zero",
-  "details": {
-    "query": "RETURN 10 / 0",
-    "position": {"line": 1, "column": 11}
+  "status": "error",
+  "error": {
+    "code": "RATE_LIMIT_EXCEEDED",
+    "message": "Rate limit exceeded. Retry after 3600 seconds.",
+    "limit": 1000,
+    "window": "1h",
+    "reset_at": "2026-01-24T12:00:00Z"
   }
 }
 ```
 
-Common error categories:
-- `00000` - Success
-- `22xxx` - Data exception
-- `23xxx` - Constraint violation
-- `42xxx` - Syntax error
-- `40xxx` - Transaction error
-- `08xxx` - Connection error
+## Authentication and Authorization
 
-## HTTP/REST API
+### API Key Authentication
 
-### REST Endpoints
-
-For environments where QUIC is unavailable, Geode provides HTTP endpoints:
+Simple authentication for service accounts:
 
 ```bash
-# Execute query
-curl -X POST https://geode.example.com/api/v1/query \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer token_abc123" \
-  -d '{
-    "query": "MATCH (n:User) RETURN n LIMIT 10",
-    "parameters": {}
-  }'
+# Include API key in request
+curl -H "X-API-Key: gd_live_abc123..." \
+  https://api.geode.io/v1/graphs
+```
 
-# Response
-{
-  "schema": {
-    "fields": [{"name": "n", "type": "NODE"}]
-  },
-  "data": [
-    {"n": {"labels": ["User"], "properties": {"id": 1, "name": "Alice"}}},
-    {"n": {"labels": ["User"], "properties": {"id": 2, "name": "Bob"}}}
-  ],
-  "metadata": {
-    "rows_returned": 2,
-    "execution_time_ms": 5
+### OAuth 2.0
+
+Standard OAuth flow for user authorization:
+
+```
+1. Client redirects to authorization endpoint
+   GET /oauth/authorize?client_id=...&response_type=code
+
+2. User authenticates and grants permission
+
+3. Client receives authorization code
+   GET /callback?code=abc123
+
+4. Client exchanges code for access token
+   POST /oauth/token
+   { "code": "abc123", "grant_type": "authorization_code" }
+
+5. Client uses access token
+   GET /api/v1/graphs
+   Authorization: Bearer eyJhbGc...
+```
+
+### JWT Tokens
+
+Use JWT for stateless authentication:
+
+```javascript
+// Verify JWT token
+const jwt = require('jsonwebtoken');
+
+function authenticate(req, res, next) {
+  const token = req.headers.authorization?.split(' ')[1];
+  
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    req.user = decoded;
+    next();
+  } catch (err) {
+    res.status(401).json({ error: 'Invalid token' });
   }
 }
 ```
 
-Available endpoints:
-- `POST /api/v1/query` - Execute GQL query
-- `POST /api/v1/transaction/begin` - Start transaction
-- `POST /api/v1/transaction/{id}/commit` - Commit transaction
-- `POST /api/v1/transaction/{id}/rollback` - Rollback transaction
-- `GET /api/v1/health` - Health check
-- `GET /api/v1/metrics` - Prometheus metrics
+## API Documentation
 
-### Authentication
+### OpenAPI Specification
 
-HTTP API supports multiple authentication methods:
+Document REST APIs with OpenAPI:
+
+```yaml
+openapi: 3.0.0
+info:
+  title: Geode Graph Database API
+  version: 1.0.0
+  description: RESTful API for Geode graph database
+
+paths:
+  /graphs/{graphId}/query:
+    post:
+      summary: Execute GQL query
+      parameters:
+        - name: graphId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                query:
+                  type: string
+                parameters:
+                  type: object
+      responses:
+        '200':
+          description: Query results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QueryResult'
+```
+
+### Interactive Documentation
+
+Provide interactive API exploration:
+
+**Swagger UI** - Browse and test REST endpoints
+**GraphiQL** - Interactive GraphQL IDE
+**Postman Collections** - Pre-built API requests
+
+### SDK Documentation
+
+Generate client library documentation:
 
 ```bash
-# Bearer token
-curl -H "Authorization: Bearer token_abc123" \
-  https://geode.example.com/api/v1/query
+# Generate Go documentation
+godoc -http=:6060
 
-# Basic authentication
-curl -u username:password \
-  https://geode.example.com/api/v1/query
+# Generate Python documentation
+pdoc --html geode_client
 
-# API key
-curl -H "X-API-Key: key_abc123" \
-  https://geode.example.com/api/v1/query
-```
-
-## Advanced API Patterns
-
-### Connection Pooling
-
-Implement efficient connection pooling:
-
-```python
-from geode_client import ConnectionPool
-
-# Create pool
-pool = ConnectionPool(
-    url="localhost:3141",
-    min_connections=10,
-    max_connections=100,
-    max_idle_time=300,
-    connection_timeout=10
-)
-
-# Acquire connection
-async with pool.acquire() as client:
-    result = await client.execute("MATCH (n) RETURN COUNT(n)")
-
-# Pool automatically manages connections
-```
-
-### Batch Operations
-
-Execute multiple queries efficiently:
-
-```python
-async with client.transaction() as tx:
-    # Batch create nodes
-    for i in range(1000):
-        await tx.execute("""
-            CREATE (p:Person {
-                id: $id,
-                name: $name,
-                created: $timestamp
-            })
-        """, {
-            "id": i,
-            "name": f"Person{i}",
-            "timestamp": datetime.now()
-        })
-
-    await tx.commit()
-```
-
-### Streaming Large Results
-
-Stream large result sets efficiently:
-
-```python
-# Stream results without loading all into memory
-async for row in client.stream("""
-    MATCH (n:Person)
-    RETURN n
-"""):
-    process_row(row)
-    # Each row is processed as it arrives
-```
-
-### Prepared Statements
-
-Use prepared statements for repeated queries:
-
-```go
-// Prepare statement once
-stmt, err := db.Prepare(`
-    MATCH (p:Person {id: $id})
-    RETURN p.name, p.age
-`)
-defer stmt.Close()
-
-// Execute many times
-for id := 1; id <= 1000; id++ {
-    var name string
-    var age int
-    err := stmt.QueryRow(id).Scan(&name, &age)
-    // Process result
-}
+# Generate Rust documentation
+cargo doc --open
 ```
 
 ## Best Practices
 
-1. **Connection Pooling**: Always use connection pools in production applications
-2. **Parameterization**: Use parameterized queries to prevent injection attacks
-3. **Error Handling**: Handle errors with proper retry logic and fallback strategies
-4. **Timeouts**: Set appropriate timeouts for all operations
-5. **Transactions**: Use transactions for multi-statement operations requiring atomicity
-6. **Resource Cleanup**: Always close connections, statements, and result sets
-7. **Monitoring**: Monitor API usage, latency, and error rates
-8. **Versioning**: Pin client library versions for production stability
+### API Design Principles
 
-## Troubleshooting
+Follow REST best practices:
 
-### Connection Issues
+- Use nouns for resources, verbs for actions
+- Return appropriate HTTP status codes
+- Support filtering, sorting, and pagination
+- Version APIs from the start
+- Use HTTPS for all endpoints
 
-```python
-from geode_client import GeodeClient, ConnectionError
+### Performance Optimization
 
-try:
-    client = GeodeClient("localhost:3141", connect_timeout=5)
-except ConnectionError as e:
-    print(f"Connection failed: {e}")
-    # Implement retry logic or fallback
+Optimize API performance:
+
+**Caching** - Cache GET responses with ETags
+**Compression** - Enable gzip/brotli compression
+**Connection Pooling** - Reuse database connections
+**Pagination** - Limit result set sizes
+**Field Selection** - Allow clients to specify needed fields
+
+### Error Handling
+
+Provide helpful error messages:
+
+- Include error codes for programmatic handling
+- Provide human-readable messages
+- Include request IDs for debugging
+- Suggest corrective actions
+- Log errors for analysis
+
+### Security Considerations
+
+Secure API endpoints:
+
+- Require authentication for all endpoints
+- Use HTTPS exclusively
+- Validate and sanitize inputs
+- Implement rate limiting
+- Audit API access
+- Rotate credentials regularly
+
+## Testing APIs
+
+### Unit Testing
+
+Test API handlers in isolation:
+
+```javascript
+describe('POST /graphs/{id}/query', () => {
+  it('executes valid GQL query', async () => {
+    const response = await request(app)
+      .post('/api/v1/graphs/social/query')
+      .send({
+        query: 'MATCH (n) RETURN n LIMIT 1'
+      });
+    
+    expect(response.status).toBe(200);
+    expect(response.body.status).toBe('success');
+  });
+  
+  it('returns error for invalid query', async () => {
+    const response = await request(app)
+      .post('/api/v1/graphs/social/query')
+      .send({
+        query: 'INVALID QUERY'
+      });
+    
+    expect(response.status).toBe(400);
+    expect(response.body.error.code).toBe('INVALID_QUERY');
+  });
+});
 ```
 
-### Query Performance
+### Integration Testing
+
+Test end-to-end API flows:
 
 ```python
-# Use EXPLAIN to diagnose slow queries
-result = await client.execute("""
-    EXPLAIN
-    MATCH (p:Person)-[:KNOWS*1..3]->(friend)
-    WHERE p.name = $name
-    RETURN friend.name
-""", {"name": "Alice"})
-
-print(result.execution_plan)
+def test_user_workflow():
+    # Create user
+    response = client.post('/api/v1/users', json={
+        'name': 'Alice',
+        'email': 'alice@example.com'
+    })
+    assert response.status_code == 201
+    user_id = response.json()['id']
+    
+    # Get user
+    response = client.get(f'/api/v1/users/{user_id}')
+    assert response.status_code == 200
+    assert response.json()['name'] == 'Alice'
+    
+    # Delete user
+    response = client.delete(f'/api/v1/users/{user_id}')
+    assert response.status_code == 204
 ```
 
-### Memory Management
+### Contract Testing
 
-```go
-// Properly close resources to prevent leaks
-rows, err := db.Query("MATCH (n) RETURN n")
-if err != nil {
-    return err
-}
-defer rows.Close()  // Critical for freeing resources
+Verify API contracts:
 
-for rows.Next() {
-    // Process rows
-}
-
-if err := rows.Err(); err != nil {
-    return err
-}
+```yaml
+# Pact contract test
+interactions:
+  - description: Get person by ID
+    request:
+      method: GET
+      path: /api/v1/persons/123
+    response:
+      status: 200
+      body:
+        id: 123
+        name: string
+        age: integer
 ```
 
 ## Related Topics
 
-- [Client Libraries](/tags/client-library/) - Detailed client library documentation
-- [Protocol](/tags/protocol/) - QUIC protocol and wire format
-- [Authentication](/tags/authentication/) - Authentication methods
-- [Performance](/tags/performance/) - API performance optimization
-- [Examples](/tags/examples/) - API usage examples
+- [Client Libraries](/tags/client-libraries) - Native client implementations
+- [Security](/tags/security) - API security best practices
+- [Performance](/tags/performance) - API optimization techniques
+- [REST](/tags/rest) - RESTful API design
 
-## Further Reading
+## Learn More
 
-- [Go Client Documentation](/docs/clients/go/) - Complete Go client guide
-- [Python Client Documentation](/docs/clients/python/) - Python client reference
-- [Rust Client Documentation](/docs/clients/rust/) - Rust client guide
-- [Protocol Specification](/docs/protocol/) - Wire protocol details
-- [REST API Reference](/docs/api/rest/) - HTTP API documentation
+- [REST API Design Best Practices](https://restfulapi.net/)
+- [GraphQL Best Practices](https://graphql.org/learn/best-practices/)
+- [OpenAPI Specification](https://swagger.io/specification/)
+- [OAuth 2.0](https://oauth.net/2/)

@@ -1,455 +1,454 @@
 ---
-title: "Distributed Systems Architecture"
-description: "Explore Geode documentation tagged with distributed. Learn about distributed features, best practices, and implementation details."
-keywords:
-  - distributed
-  - Geode
-  - graph database
-  - documentation
-draft: false
-params:
-  seo:
-    canonical: "https://geodedb.com/tags/distributed/"
-    noindex: false
+title: "Distributed Systems"
+description: "Distributed computing concepts, consistency models, and cluster management in Geode's architecture"
+keywords: ["distributed systems", "distributed computing", "CAP theorem", "consistency models", "distributed transactions", "consensus algorithms", "replication", "partitioning", "fault tolerance"]
+weight: 10
 ---
 
-# Distributed Systems Architecture in Geode
+# Distributed Systems
 
-Distributed systems enable horizontal scaling by spreading data and compute across multiple machines. While Geode's current version (v0.18.0) operates as a single-node system optimized for vertical scaling, the architecture is designed with distributed capabilities in mind for future releases. This page covers distributed systems concepts, Geode's scaling approach, and how to build distributed graph applications today.
+Distributed systems enable Geode to scale horizontally across multiple machines, providing high availability, fault tolerance, and improved performance. Understanding distributed systems concepts is essential for building reliable, scalable graph database deployments.
 
-## Introduction to Distributed Graph Databases
+## Fundamental Concepts
 
-Distributed graph databases face unique challenges compared to traditional distributed systems:
+### CAP Theorem
 
-**Graph-Specific Challenges**:
-- **Locality**: Graph traversals benefit from co-located data, but relationships often span partitions
-- **Partitioning**: Splitting graphs across nodes while minimizing edge cuts is NP-hard
-- **Query Routing**: Multi-hop traversals may need to touch multiple nodes
-- **Consistency**: Maintaining ACID guarantees across distributed transactions
+The CAP theorem states that distributed systems can guarantee only two of three properties:
 
-**Common Distributed Approaches**:
-1. **Partitioning (Sharding)**: Divide graph across nodes by node ID or properties
-2. **Replication**: Maintain copies of data on multiple nodes for availability
-3. **Caching**: Store hot data closer to compute
-4. **Federation**: Query across independent graph instances
+**Consistency** - All nodes see the same data at the same time
+**Availability** - Every request receives a response (success or failure)
+**Partition Tolerance** - System continues operating despite network partitions
 
-## Geode's Current Architecture
+Geode prioritizes **Consistency** and **Partition Tolerance** (CP), ensuring data integrity even during network splits.
 
-Geode v0.18.0 is optimized as a **high-performance single-node system**:
+### Consistency Models
 
-**Design Principles**:
-- **Vertical Scaling First**: Modern servers with 64-256 cores and terabytes of RAM
-- **QUIC Protocol**: Efficient multiplexing for thousands of concurrent client connections
-- **MVCC**: Lock-free reads enabling high concurrency
-- **Zero-Copy I/O**: Memory-mapped files for efficient data access
+Geode supports multiple consistency levels:
 
-**Performance Characteristics**:
-- Handles graphs with **billions of nodes** on appropriate hardware
-- **10,000+ queries per second** on mid-range servers
-- **Millisecond latency** for most graph traversals
-- **Terabyte-scale** databases with NVMe storage
+**Strong Consistency** - All reads return the most recent write
+**Sequential Consistency** - Operations appear in some sequential order
+**Causal Consistency** - Related operations maintain their order
+**Eventual Consistency** - All replicas converge eventually
 
-**When Single-Node is Sufficient**:
-```
-Dataset Size     | Recommended Hardware       | Expected Performance
-----------------|----------------------------|---------------------
-< 100M nodes    | 32GB RAM, 8 cores          | 1,000+ QPS
-100M-1B nodes   | 128GB RAM, 16-32 cores     | 5,000+ QPS
-1B-10B nodes    | 512GB-2TB RAM, 64+ cores   | 10,000+ QPS
+```gql
+-- Specify consistency level for a query
+SET CONSISTENCY LEVEL STRONG;
+
+MATCH (u:User {id: 'user123'})
+RETURN u.balance;
 ```
 
-Most production workloads fit comfortably on single powerful nodes, especially with:
-- Proper indexing (reduces full scans)
-- Query optimization (EXPLAIN/PROFILE)
-- Connection pooling (reuses connections)
-- Caching strategies (application-level)
+### Partition Tolerance
 
-## Distributed Patterns with Current Geode
+Geode handles network partitions gracefully:
 
-While Geode runs on single nodes, you can build distributed graph applications using established patterns:
+- Detect partition through heartbeat failures
+- Elect leader in majority partition
+- Reject writes in minority partition
+- Reconcile state when partition heals
 
-### Pattern 1: Application-Level Sharding
+## Distributed Architecture
 
-Partition your graph at the application layer based on domain knowledge:
+### Cluster Topology
 
-```python
-from geode_client import GeodeClient
+Geode clusters consist of multiple node types:
 
-class DistributedGraphClient:
-    def __init__(self, shard_configs):
-        """
-        shard_configs = [
-            {"region": "us-east", "host": "geode1.example.com", "port": 3141},
-            {"region": "us-west", "host": "geode2.example.com", "port": 3141},
-            {"region": "eu", "host": "geode3.example.com", "port": 3141},
-        ]
-        """
-        self.shards = {
-            config["region"]: GeodeClient(config["host"], config["port"])
-            for config in shard_configs
-        }
+**Leader Nodes** - Coordinate writes and maintain consistency
+**Follower Nodes** - Replicate data and serve reads
+**Observer Nodes** - Non-voting replicas for read scaling
 
-    def get_shard(self, region):
-        """Route queries to appropriate shard"""
-        return self.shards[region]
-
-    async def create_user(self, user_id, region, name):
-        """Insert user into region-specific shard"""
-        async with self.get_shard(region) as client:
-            await client.execute("""
-                CREATE (u:User {
-                    id: $id,
-                    name: $name,
-                    region: $region
-                })
-            """, {"id": user_id, "name": name, "region": region})
-
-    async def query_local_friends(self, user_id, region):
-        """Query within single shard (fast)"""
-        async with self.get_shard(region) as client:
-            result = await client.execute("""
-                MATCH (u:User {id: $id})-[:FRIEND]->(friend:User)
-                RETURN friend.name
-            """, {"id": user_id})
-            return result.bindings
-
-    async def query_global_friends(self, user_id, home_region):
-        """Query across all shards (slower, more complex)"""
-        all_friends = []
-
-        for region, shard in self.shards.items():
-            async with shard as client:
-                result = await client.execute("""
-                    MATCH (u:User {id: $id})-[:FRIEND]->(friend:User)
-                    RETURN friend.name, friend.region
-                """, {"id": user_id})
-                all_friends.extend(result.bindings)
-
-        return all_friends
-
-# Usage
-distributed_client = DistributedGraphClient([
-    {"region": "us-east", "host": "geode1.example.com", "port": 3141},
-    {"region": "eu", "host": "geode2.example.com", "port": 3141},
-])
-
-# Most queries stay within single shard
-await distributed_client.query_local_friends(user_id=123, region="us-east")
-```
-
-**When to use**:
-- Clear domain boundaries (geographic regions, business units, tenants)
-- Most queries stay within single shard
-- Cross-shard queries are infrequent or can be eventual consistency
-
-**Trade-offs**:
-- Application complexity (routing logic)
-- Cross-shard transactions not supported
-- Data rebalancing requires application-level migration
-
-### Pattern 2: Read Replicas for High Availability
-
-Use replication for read scaling and failover:
-
-```python
-class ReplicatedGraphClient:
-    def __init__(self, primary_config, replica_configs):
-        self.primary = GeodeClient(primary_config["host"], primary_config["port"])
-        self.replicas = [
-            GeodeClient(r["host"], r["port"])
-            for r in replica_configs
-        ]
-        self.replica_idx = 0
-
-    async def write(self, query, params):
-        """All writes go to primary"""
-        async with self.primary as client:
-            return await client.execute(query, params)
-
-    async def read(self, query, params):
-        """Reads load-balanced across replicas"""
-        replica = self.replicas[self.replica_idx % len(self.replicas)]
-        self.replica_idx += 1
-
-        async with replica as client:
-            return await client.execute(query, params)
-
-# Usage
-client = ReplicatedGraphClient(
-    primary_config={"host": "primary.example.com", "port": 3141},
-    replica_configs=[
-        {"host": "replica1.example.com", "port": 3141},
-        {"host": "replica2.example.com", "port": 3141},
-    ]
-)
-
-# Writes to primary
-await client.write("""
-    CREATE (u:User {id: $id, name: $name})
-""", {"id": 123, "name": "Alice"})
-
-# Reads from replicas (load balanced)
-result = await client.read("""
-    MATCH (u:User {id: $id}) RETURN u
-""", {"id": 123})
-```
-
-**Implementation with streaming replication**:
 ```bash
-# Primary server configuration
-geode serve --listen 0.0.0.0:3141 \
-  --data-dir /data/primary \
-  --wal-streaming-enabled=true \
-  --wal-streaming-port=3142
-
-# Replica server (subscribes to primary's WAL stream)
-geode serve --listen 0.0.0.0:3141 \
-  --data-dir /data/replica \
-  --replication-source=primary.example.com:3142 \
-  --read-only=true
+# Configure cluster topology
+geode cluster init \
+  --leaders 3 \
+  --followers 6 \
+  --observers 3 \
+  --replication-factor 3
 ```
 
-**When to use**:
-- Read-heavy workloads (analytics, reporting)
-- Geographic distribution for low-latency reads
-- High availability requirements
+### Node Discovery
 
-**Trade-offs**:
-- Replication lag (eventual consistency for reads)
-- Increased infrastructure cost
-- Complexity in failover scenarios
+Nodes discover each other through multiple mechanisms:
 
-### Pattern 3: Federation with Cross-Instance Queries
+**Static Configuration** - Pre-configured seed nodes
+**DNS-Based Discovery** - SRV records for dynamic discovery
+**Cloud Provider Integration** - Auto-discovery in cloud environments
 
-Query multiple independent Geode instances and merge results:
-
-```python
-async def federated_search(query_text, instances):
-    """Search across multiple independent graph instances"""
-    tasks = []
-
-    for instance in instances:
-        tasks.append(search_instance(instance, query_text))
-
-    # Execute queries in parallel
-    results = await asyncio.gather(*tasks)
-
-    # Merge and deduplicate results
-    merged = []
-    seen_ids = set()
-
-    for result_set in results:
-        for row in result_set:
-            if row['id'] not in seen_ids:
-                merged.append(row)
-                seen_ids.add(row['id'])
-
-    return merged
-
-async def search_instance(instance, query_text):
-    async with GeodeClient(instance['host'], instance['port']) as client:
-        result = await client.execute("""
-            MATCH (doc:Document)
-            WHERE text_search(doc.content, $query)
-            RETURN doc.id, doc.title, doc.content
-            LIMIT 100
-        """, {"query": query_text})
-        return result.bindings
-
-# Usage
-instances = [
-    {"host": "docs-db.example.com", "port": 3141, "name": "Documentation"},
-    {"host": "wiki-db.example.com", "port": 3141, "name": "Wiki"},
-    {"host": "blog-db.example.com", "port": 3141, "name": "Blog"},
-]
-
-results = await federated_search("graph database", instances)
+```yaml
+cluster:
+  discovery:
+    mode: dns
+    service: _geode._tcp.cluster.local
+    refresh_interval: 30s
 ```
 
-**When to use**:
-- Independent domains with occasional cross-domain queries
-- Legacy systems integration
-- Multi-tenant architectures with data isolation
+### Communication Patterns
 
-### Pattern 4: Caching and Denormalization
+Geode uses efficient communication patterns:
 
-Use caching layers to reduce database load:
+**Request-Response** - Synchronous client-server communication
+**Publish-Subscribe** - Asynchronous event distribution
+**Gossip Protocol** - Eventual consistency for metadata
+**Broadcast** - Cluster-wide notifications
 
-```python
-import redis.asyncio as redis
-import json
+## Data Distribution
 
-class CachedGraphClient:
-    def __init__(self, geode_host, geode_port, redis_host):
-        self.geode = GeodeClient(geode_host, geode_port)
-        self.cache = redis.Redis(host=redis_host)
+### Sharding Strategies
 
-    async def get_user_with_cache(self, user_id):
-        # Check cache first
-        cache_key = f"user:{user_id}"
-        cached = await self.cache.get(cache_key)
+Geode distributes data across nodes using various strategies:
 
-        if cached:
-            return json.loads(cached)
+**Hash-Based Sharding** - Consistent hashing for even distribution
+**Range-Based Sharding** - Partition by key ranges
+**Graph-Aware Sharding** - Co-locate connected components
 
-        # Cache miss: query database
-        async with self.geode as client:
-            result = await client.execute("""
-                MATCH (u:User {id: $id})
-                RETURN u.id AS id, u.name AS name, u.email AS email
-            """, {"id": user_id})
-
-            if result.bindings:
-                user = result.bindings[0]
-                # Store in cache (expire after 5 minutes)
-                await self.cache.setex(
-                    cache_key,
-                    300,
-                    json.dumps(user)
-                )
-                return user
-
-        return None
-
-    async def invalidate_user_cache(self, user_id):
-        """Called after user updates"""
-        await self.cache.delete(f"user:{user_id}")
-
-# Usage
-client = CachedGraphClient("localhost", 3141, "cache.example.com")
-
-# First call: cache miss, queries database
-user = await client.get_user_with_cache(123)
-
-# Second call: cache hit, no database query
-user = await client.get_user_with_cache(123)
-
-# After update, invalidate cache
-await client.invalidate_user_cache(123)
-```
-
-## Future Distributed Features (Roadmap)
-
-Geode's architecture is designed to support distributed capabilities in future releases:
-
-### Planned Features
-
-**1. Native Sharding** (v1.0+):
-- Automatic graph partitioning using METIS or similar algorithms
-- Transparent query routing across shards
-- Distributed transaction coordination
-- Online resharding for elasticity
-
-**2. Raft-Based Replication** (v1.0+):
-- Strongly consistent replication using Raft consensus
-- Automatic failover with leader election
-- Configurable replication factor
-- Read-your-writes consistency
-
-**3. Distributed Query Execution** (v1.5+):
-- Query plan distribution across nodes
-- Parallel subquery execution
-- Smart data shipping vs. query shipping
-- Distributed aggregations and joins
-
-**4. Global Secondary Indexes** (v1.5+):
-- Indexes spanning multiple shards
-- Parallel index scans
-- Distributed HNSW for vector search
-
-### Design Considerations
-
-The distributed architecture will prioritize:
-- **Strong consistency**: ACID guarantees across distributed transactions
-- **GQL compatibility**: Distributed execution transparent to queries
-- **Low latency**: Minimize cross-node communication
-- **Operational simplicity**: Automatic cluster management
-
-## Best Practices for Distributed Graph Applications
-
-### Design for Locality
-
-Minimize cross-partition queries:
 ```gql
--- GOOD: Query within single tenant/region
-MATCH (u:User {tenant_id: $tenant})-[:FRIEND]->(friend)
-WHERE friend.tenant_id = $tenant
-RETURN friend.name;
+-- Configure sharding strategy
+CREATE GRAPH social SHARD BY HASH(User.id) SHARDS 16;
 
--- BAD: Cross-partition traversal
-MATCH (u:User)-[:FRIEND*1..5]->(friend)
-RETURN friend.name;
--- May require querying multiple shards
+-- Query executes across relevant shards
+MATCH (u:User {id: 'user123'})-[:FRIEND]->(f)
+RETURN u, f;
 ```
 
-### Use Eventual Consistency Where Appropriate
+### Consistent Hashing
 
-Not all data requires strong consistency:
-```python
-# Strong consistency for critical operations
-async with client.transaction(isolation_level="SERIALIZABLE"):
-    await client.execute("""
-        MATCH (account:Account {id: $id})
-        SET account.balance = account.balance - $amount
-    """, {"id": account_id, "amount": amount})
+Consistent hashing minimizes data movement during cluster changes:
 
-# Eventual consistency for metrics (acceptable)
-await client.execute("""
-    MATCH (post:Post {id: $id})
-    SET post.view_count = post.view_count + 1
-""", {"id": post_id})
+```
+Hash Ring:
+- Each node assigned multiple virtual nodes
+- Keys hashed to ring position
+- Key stored on first clockwise node
+- Virtual nodes balance load
 ```
 
-### Implement Idempotent Operations
+When nodes join or leave:
+- Only keys between affected nodes move
+- Minimal disruption to cluster
+- Automatic rebalancing
 
-Critical for retries in distributed systems:
+### Data Locality
+
+Optimize performance through data locality:
+
+**Co-location** - Store related data together
+**Rack Awareness** - Replicas span physical racks
+**Zone Awareness** - Replicas span availability zones
+
 ```gql
--- Idempotent: Can be retried safely
-MERGE (u:User {id: $id})
-ON CREATE SET u.name = $name, u.created_at = timestamp()
-ON MATCH SET u.last_seen = timestamp();
-
--- Not idempotent: Retry causes duplicate
-CREATE (u:User {id: random_uuid(), name: $name});
+-- Configure locality preferences
+CREATE GRAPH TYPE social (
+    User LABEL (id STRING),
+    Post LABEL (author_id STRING)
+) COLOCATE ON User.id = Post.author_id;
 ```
 
-### Monitor Cross-Shard Traffic
+## Replication
 
-```python
-# Track cross-shard query patterns
-query_router_metrics = {
-    "local_queries": 0,
-    "cross_shard_queries": 0,
-}
+### Replication Models
 
-async def execute_with_metrics(shard, query, params):
-    if is_cross_shard(query):
-        query_router_metrics["cross_shard_queries"] += 1
-    else:
-        query_router_metrics["local_queries"] += 1
+Geode supports multiple replication approaches:
 
-    async with shard as client:
-        return await client.execute(query, params)
+**Synchronous Replication** - Writes block until replicated
+**Asynchronous Replication** - Writes return immediately
+**Semi-Synchronous** - Wait for one replica, async for others
 
-# Aim for >95% local queries
-local_ratio = query_router_metrics["local_queries"] / sum(query_router_metrics.values())
-if local_ratio < 0.95:
-    print(f"Warning: Only {local_ratio:.1%} queries are local. Consider repartitioning.")
+```gql
+-- Configure replication for a graph
+ALTER GRAPH social SET REPLICATION (
+    mode: synchronous,
+    factor: 3,
+    min_acks: 2
+);
 ```
+
+### Leader Election
+
+Geode uses Raft consensus for leader election:
+
+1. Follower starts election after timeout
+2. Candidate requests votes from peers
+3. Node with majority votes becomes leader
+4. Leader sends heartbeats to maintain authority
+
+Election ensures single leader per partition.
+
+### Read Replicas
+
+Distribute read load across replicas:
+
+```gql
+-- Direct read to nearest replica
+SET READ PREFERENCE NEAREST;
+
+MATCH (u:User)
+WHERE u.created > NOW() - INTERVAL '1 day'
+RETURN COUNT(u);
+```
+
+Read preferences:
+- **Primary** - Always read from leader
+- **Nearest** - Read from geographically closest replica
+- **Any** - Read from any replica (eventual consistency)
+
+## Distributed Transactions
+
+### Two-Phase Commit (2PC)
+
+Geode uses 2PC for distributed transactions:
+
+**Phase 1 - Prepare**
+- Coordinator asks participants to prepare
+- Participants vote yes (prepared) or no (abort)
+- Participants write prepare record to log
+
+**Phase 2 - Commit**
+- If all voted yes, coordinator commits
+- If any voted no, coordinator aborts
+- Participants apply decision and acknowledge
+
+```gql
+-- Distributed transaction across shards
+BEGIN TRANSACTION;
+
+INSERT (u:User {id: 'user123', name: 'Alice'});
+INSERT (p:Post {id: 'post456', author_id: 'user123'});
+
+COMMIT;
+```
+
+### Transaction Coordinators
+
+Distributed transactions require coordination:
+
+- Client connects to coordinator node
+- Coordinator determines participating shards
+- Coordinator manages 2PC protocol
+- Coordinator handles failures and retries
+
+### Distributed Deadlock Detection
+
+Detect deadlocks across nodes:
+
+**Wait-For Graph** - Track transaction dependencies
+**Timeout-Based** - Abort transactions exceeding timeout
+**Victim Selection** - Choose transaction to abort
+
+Geode uses timeout-based detection with configurable limits.
+
+## Consensus Algorithms
+
+### Raft Consensus
+
+Geode implements Raft for distributed consensus:
+
+**Leader Election** - Elect single leader per term
+**Log Replication** - Replicate operations to followers
+**Safety** - Ensure consistency across replicas
+
+Raft guarantees:
+- Election safety: at most one leader per term
+- Leader append-only: leaders never overwrite logs
+- Log matching: identical logs up to same index
+- Leader completeness: committed entries present in future leaders
+- State machine safety: same log index → same command
+
+### Quorum Reads and Writes
+
+Ensure consistency through quorums:
+
+**Write Quorum** - W nodes must acknowledge write
+**Read Quorum** - R nodes must participate in read
+**Requirement** - W + R > N ensures overlap
+
+```gql
+-- Configure quorum settings
+ALTER GRAPH social SET QUORUM (
+    write: 2,
+    read: 2,
+    nodes: 3
+);
+```
+
+## Fault Tolerance
+
+### Failure Detection
+
+Detect node failures through multiple mechanisms:
+
+**Heartbeat Protocol** - Periodic health checks
+**Timeout Detection** - Missing heartbeats indicate failure
+**Suspicion System** - Gradual failure detection
+
+```yaml
+cluster:
+  failure_detection:
+    heartbeat_interval: 1s
+    timeout: 5s
+    suspicion_threshold: 3
+```
+
+### Failure Recovery
+
+Recover from various failure scenarios:
+
+**Node Failure** - Promote replica to leader, rebalance
+**Network Partition** - Operate in majority partition
+**Data Corruption** - Restore from replicas or backups
+
+### Split-Brain Prevention
+
+Prevent split-brain scenarios:
+
+- Require quorum for writes
+- Fence minority partitions
+- Use generation numbers for leadership
+- Implement witness nodes for even-sized clusters
+
+## Performance Optimization
+
+### Latency Reduction
+
+Minimize latency in distributed operations:
+
+**Local Reads** - Route reads to local replicas
+**Speculative Execution** - Issue redundant requests
+**Batching** - Combine multiple operations
+**Pipelining** - Send requests before receiving responses
+
+### Throughput Maximization
+
+Increase system throughput:
+
+**Parallel Processing** - Execute operations concurrently
+**Read Replicas** - Distribute read load
+**Write Batching** - Amortize coordination overhead
+**Caching** - Reduce database queries
+
+### Network Optimization
+
+Optimize network usage:
+
+**Compression** - Reduce data transfer size
+**Connection Pooling** - Reuse connections
+**Multiplexing** - Share connections (QUIC)
+**Locality** - Minimize cross-datacenter traffic
+
+## Monitoring and Observability
+
+### Cluster Metrics
+
+Monitor cluster health and performance:
+
+```gql
+-- Query cluster status
+SELECT node_id, status, lag, last_heartbeat
+FROM SYSTEM.cluster_nodes
+WHERE status != 'healthy';
+```
+
+Key metrics:
+- Replication lag
+- Node health status
+- Network latency between nodes
+- Disk usage per node
+- Query distribution across shards
+
+### Distributed Tracing
+
+Trace requests across cluster:
+
+**Trace ID** - Unique identifier per request
+**Span Context** - Propagated across nodes
+**Causal Relationships** - Parent-child spans
+
+Distributed tracing reveals:
+- Request path through cluster
+- Per-node latency breakdown
+- Cross-shard coordination overhead
+
+## Best Practices
+
+### Cluster Sizing
+
+Design clusters appropriately:
+
+- Odd number of nodes for quorum (3, 5, 7)
+- Minimum 3 nodes for production
+- Consider failure domains (racks, zones)
+- Plan for growth and traffic spikes
+
+### Data Placement
+
+Optimize data distribution:
+
+- Co-locate frequently accessed data
+- Balance load across nodes
+- Consider access patterns in sharding
+- Use graph-aware partitioning
+
+### Consistency vs. Availability
+
+Choose appropriate tradeoffs:
+
+**Strong Consistency When:**
+- Financial transactions
+- Inventory management
+- User authentication
+
+**Eventual Consistency When:**
+- Social feeds
+- View counts
+- Analytics data
+
+### Testing Distributed Systems
+
+Test for distributed scenarios:
+
+**Chaos Engineering** - Inject failures deliberately
+**Network Simulation** - Test partition handling
+**Load Testing** - Verify scalability claims
+**Consistency Validation** - Verify guarantees
+
+## Common Challenges
+
+### Clock Synchronization
+
+Distributed systems face clock skew:
+
+- Use NTP for time synchronization
+- Employ logical clocks (Lamport, vector clocks)
+- Design for clock drift tolerance
+- Use hybrid logical clocks
+
+### Consensus Overhead
+
+Consensus protocols add latency:
+
+- Batch operations when possible
+- Use async replication for non-critical data
+- Cache frequently accessed data
+- Consider multi-Raft for partitioning
+
+### Network Partitions
+
+Handle partitions gracefully:
+
+- Design for partition tolerance
+- Implement partition healing
+- Monitor partition frequency
+- Test partition scenarios
 
 ## Related Topics
 
-- **[Scaling](/tags/scaling/)**: Vertical and horizontal scaling strategies
-- **[Performance](/tags/performance/)**: Performance optimization techniques
-- **[Architecture](/tags/architecture/)**: Geode's system architecture
-- **[Deployment](/tags/deployment/)**: Deployment patterns and strategies
-- **[Networking](/tags/networking/)**: Network configuration for distributed setups
-- **[Operations](/tags/operations/)**: Operational best practices
+- [Architecture](/tags/architecture) - System architecture patterns
+- [Replication](/tags/replication) - Data replication strategies
+- [Scalability](/tags/scalability) - Horizontal scaling approaches
+- [High Availability](/tags/high-availability) - Availability patterns
 
-## Further Reading
+## Learn More
 
-- **Geode Architecture Overview**: `/docs/architecture/overview/`
-- **Scaling Guide**: `/docs/operations/scaling/`
-- **Replication Setup**: `/docs/operations/replication/` (coming soon)
-- **Sharding Strategies**: `/docs/architecture/sharding/` (coming soon)
-- **CAP Theorem and Geode**: `/docs/architecture/consistency-models/`
+- [Designing Data-Intensive Applications](https://dataintensive.net/)
+- [Distributed Systems for Practitioners](https://distributed-systems.github.io/)
+- [The Raft Consensus Algorithm](https://raft.github.io/)
+- [Consistency Models](https://jepsen.io/consistency)
