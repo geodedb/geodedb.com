@@ -431,3 +431,393 @@ if err == sql.ErrNoRows {
 - **Guides**: Architectural patterns and design principles
 - **Getting Started**: Quick examples for beginners
 - **Developer Guide**: Complete API reference and documentation
+
+## Production Code Examples
+
+### Full-Stack Application Integration
+
+Complete application with Geode backend:
+
+```python
+# FastAPI application with Geode
+from fastapi import FastAPI, HTTPException, Depends, Header
+from geode_client import GeodeClient
+from pydantic import BaseModel, EmailStr
+import asyncio
+
+app = FastAPI()
+
+# Connection pool (reused across requests)
+geode_pool = GeodeClient(
+    "localhost:3141",
+    pool_size=20,
+    pool_timeout=30.0
+)
+
+class UserRegistration(BaseModel):
+    name: str
+    email: EmailStr
+    password: str
+
+@app.on_event("startup")
+async def startup():
+    """Initialize database connection"""
+    await geode_pool.connect()
+
+@app.on_event("shutdown")
+async def shutdown():
+    """Close database connection"""
+    await geode_pool.close()
+
+async def get_current_user(authorization: str = Header(...)):
+    """Dependency: Extract user from JWT token"""
+    token = authorization.replace("Bearer ", "")
+    user_id = decode_jwt(token)
+    
+    result = await geode_pool.execute("""
+        MATCH (u:User {id: $id})
+        RETURN u
+    """, {"id": user_id})
+    
+    if not result:
+        raise HTTPException(401, "Invalid token")
+    
+    return result[0]['u']
+
+@app.post("/api/register")
+async def register(user: UserRegistration):
+    """Register new user"""
+    # Hash password
+    password_hash = hash_password(user.password)
+    
+    try:
+        result = await geode_pool.execute("""
+            CREATE (u:User {
+                id: randomUUID(),
+                name: $name,
+                email: $email,
+                password_hash: $password_hash,
+                created_at: datetime(),
+                verified: false
+            })
+            RETURN u.id as user_id, u.email as email
+        """, {
+            "name": user.name,
+            "email": user.email,
+            "password_hash": password_hash
+        })
+        
+        user_id = result[0]['user_id']
+        
+        # Send verification email
+        await send_verification_email(user.email, user_id)
+        
+        return {"user_id": user_id, "message": "Registration successful"}
+        
+    except UniqueConstraintViolation:
+        raise HTTPException(400, "Email already registered")
+
+@app.get("/api/users/{user_id}/profile")
+async def get_profile(user_id: str, current_user=Depends(get_current_user)):
+    """Get user profile"""
+    result = await geode_pool.execute("""
+        MATCH (u:User {id: $id})
+        OPTIONAL MATCH (u)-[:FRIENDS_WITH]-(friend:User)
+        OPTIONAL MATCH (u)-[:POSTED]->(post:Post)
+        RETURN
+            u.id as id,
+            u.name as name,
+            u.email as email,
+            u.created_at as created_at,
+            COUNT(DISTINCT friend) as friend_count,
+            COUNT(DISTINCT post) as post_count
+    """, {"id": user_id})
+    
+    if not result:
+        raise HTTPException(404, "User not found")
+    
+    return result[0]
+
+@app.post("/api/posts")
+async def create_post(
+    content: str,
+    current_user=Depends(get_current_user)
+):
+    """Create new post"""
+    result = await geode_pool.execute("""
+        MATCH (u:User {id: $user_id})
+        CREATE (p:Post {
+            id: randomUUID(),
+            content: $content,
+            created_at: datetime(),
+            likes: 0,
+            comments: 0
+        })
+        CREATE (u)-[:POSTED]->(p)
+        RETURN p.id as post_id
+    """, {
+        "user_id": current_user['id'],
+        "content": content
+    })
+    
+    return {"post_id": result[0]['post_id']}
+
+@app.get("/api/feed")
+async def get_feed(
+    limit: int = 20,
+    offset: int = 0,
+    current_user=Depends(get_current_user)
+):
+    """Get personalized feed"""
+    result = await geode_pool.execute("""
+        MATCH (me:User {id: $user_id})-[:FRIENDS_WITH]-(friend:User)-[:POSTED]->(post:Post)
+        WITH post, friend
+        ORDER BY post.created_at DESC
+        SKIP $offset
+        LIMIT $limit
+        RETURN
+            post.id as id,
+            post.content as content,
+            post.created_at as created_at,
+            post.likes as likes,
+            friend.id as author_id,
+            friend.name as author_name
+    """, {
+        "user_id": current_user['id'],
+        "offset": offset,
+        "limit": limit
+    })
+    
+    return {"posts": [dict(r) for r in result]}
+```
+
+### Recommendation Engine
+
+Collaborative filtering implementation:
+
+```python
+class RecommendationEngine:
+    def __init__(self, client):
+        self.client = client
+    
+    async def get_product_recommendations(self, user_id, limit=10):
+        """Generate product recommendations using collaborative filtering"""
+        # Find similar users based on purchase history
+        similar_users = await self.client.execute("""
+            MATCH (me:User {id: $user_id})-[:PURCHASED]->(p:Product)
+                <-[:PURCHASED]-(other:User)
+            WHERE other.id <> $user_id
+            WITH other, COUNT(p) as common_purchases, me
+            ORDER BY common_purchases DESC
+            LIMIT 50
+            MATCH (other)-[:PURCHASED]->(rec:Product)
+            WHERE NOT EXISTS {
+                MATCH (me)-[:PURCHASED]->(rec)
+            }
+            WITH rec, COUNT(other) as score, SUM(common_purchases) as weight
+            RETURN
+                rec.id as product_id,
+                rec.name as name,
+                rec.price as price,
+                score * weight as recommendation_score
+            ORDER BY recommendation_score DESC
+            LIMIT $limit
+        """, {"user_id": user_id, "limit": limit})
+        
+        return similar_users
+    
+    async def get_content_based_recommendations(self, user_id, limit=10):
+        """Content-based recommendations using product attributes"""
+        recommendations = await self.client.execute("""
+            MATCH (u:User {id: $user_id})-[:PURCHASED]->(liked:Product)
+            WITH u, COLLECT(liked.category) as liked_categories,
+                 AVG(liked.price) as avg_price
+            MATCH (rec:Product)
+            WHERE rec.category IN liked_categories
+              AND NOT EXISTS { MATCH (u)-[:PURCHASED]->(rec) }
+              AND rec.price BETWEEN avg_price * 0.7 AND avg_price * 1.3
+            WITH rec, SIZE([cat IN rec.tags WHERE cat IN liked_categories]) as tag_match
+            RETURN
+                rec.id as product_id,
+                rec.name as name,
+                rec.price as price,
+                tag_match as relevance_score
+            ORDER BY relevance_score DESC
+            LIMIT $limit
+        """, {"user_id": user_id, "limit": limit})
+        
+        return recommendations
+```
+
+### Social Network Analytics
+
+Graph analytics for social features:
+
+```python
+class SocialAnalytics:
+    def __init__(self, client):
+        self.client = client
+    
+    async def calculate_user_influence(self, user_id):
+        """Calculate user influence score"""
+        metrics = await self.client.execute("""
+            MATCH (u:User {id: $user_id})
+            OPTIONAL MATCH (u)<-[:FOLLOWS]-(follower:User)
+            WITH u, COUNT(DISTINCT follower) as followers
+            OPTIONAL MATCH (u)-[:POSTED]->(post:Post)<-[:LIKED]-(liker:User)
+            WITH u, followers, COUNT(DISTINCT liker) as total_likes
+            OPTIONAL MATCH (u)-[:POSTED]->(post:Post)
+            WITH u, followers, total_likes, COUNT(DISTINCT post) as posts
+            RETURN
+                followers,
+                total_likes,
+                posts,
+                (followers * 2.0 + total_likes * 0.5 + posts * 1.0) as influence_score
+        """, {"user_id": user_id})
+        
+        return metrics[0] if metrics else None
+    
+    async def detect_communities(self):
+        """Detect communities using label propagation"""
+        # Initialize communities
+        await self.client.execute("""
+            MATCH (u:User)
+            SET u.community = u.id
+        """)
+        
+        # Iterate label propagation
+        for iteration in range(10):
+            changes = await self.client.execute("""
+                MATCH (u:User)-[:FRIENDS_WITH]-(neighbor:User)
+                WITH u, neighbor.community as label, COUNT(*) as freq
+                ORDER BY u, freq DESC
+                WITH u, COLLECT(label)[0] as most_common
+                WHERE u.community <> most_common
+                SET u.community = most_common
+                RETURN COUNT(u) as changes
+            """)
+            
+            if changes[0]['changes'] == 0:
+                break
+        
+        # Return communities
+        communities = await self.client.execute("""
+            MATCH (u:User)
+            RETURN u.community as community_id, COUNT(u) as size
+            ORDER BY size DESC
+        """)
+        
+        return communities
+    
+    async def find_influencers(self, limit=20):
+        """Find top influencers"""
+        influencers = await self.client.execute("""
+            MATCH (u:User)
+            OPTIONAL MATCH (u)<-[:FOLLOWS]-(follower:User)
+            WITH u, COUNT(DISTINCT follower) as followers
+            OPTIONAL MATCH (u)-[:POSTED]->(p:Post)
+            WITH u, followers, AVG(p.likes) as avg_likes
+            WHERE followers > 100
+            RETURN
+                u.id as user_id,
+                u.name as name,
+                followers,
+                avg_likes,
+                (followers + avg_likes * 10) as influence_score
+            ORDER BY influence_score DESC
+            LIMIT $limit
+        """, {"limit": limit})
+        
+        return influencers
+```
+
+### E-Commerce Transaction Processing
+
+Complete order processing example:
+
+```python
+class OrderProcessor:
+    def __init__(self, client):
+        self.client = client
+    
+    async def process_order(self, customer_id, items):
+        """Process order with inventory check"""
+        async with self.client.transaction(isolation='SERIALIZABLE') as tx:
+            # Create order
+            order_result = await tx.execute("""
+                MATCH (c:Customer {id: $customer_id})
+                CREATE (o:Order {
+                    id: randomUUID(),
+                    status: 'pending',
+                    created_at: datetime(),
+                    subtotal: 0.0,
+                    tax: 0.0,
+                    total: 0.0
+                })
+                CREATE (c)-[:PLACED]->(o)
+                RETURN o.id as order_id
+            """, {"customer_id": customer_id})
+            
+            order_id = order_result[0]['order_id']
+            subtotal = 0.0
+            
+            # Process each item
+            for item in items:
+                # Check and reserve inventory
+                inventory = await tx.execute("""
+                    MATCH (p:Product {id: $product_id})
+                    WHERE p.stock >= $quantity
+                    SET p.stock = p.stock - $quantity
+                    RETURN p.id, p.name, p.price
+                """, {
+                    "product_id": item['product_id'],
+                    "quantity": item['quantity']
+                })
+                
+                if not inventory:
+                    raise InsufficientInventoryError(f"Product {item['product_id']} out of stock")
+                
+                product = inventory[0]
+                line_total = product['price'] * item['quantity']
+                subtotal += line_total
+                
+                # Create order line item
+                await tx.execute("""
+                    MATCH (o:Order {id: $order_id}), (p:Product {id: $product_id})
+                    CREATE (li:LineItem {
+                        quantity: $quantity,
+                        unit_price: $unit_price,
+                        total: $total
+                    })
+                    CREATE (o)-[:CONTAINS]->(li)
+                    CREATE (li)-[:FOR_PRODUCT]->(p)
+                """, {
+                    "order_id": order_id,
+                    "product_id": item['product_id'],
+                    "quantity": item['quantity'],
+                    "unit_price": product['price'],
+                    "total": line_total
+                })
+            
+            # Calculate totals
+            tax = subtotal * 0.08  # 8% tax
+            total = subtotal + tax
+            
+            # Update order totals
+            await tx.execute("""
+                MATCH (o:Order {id: $order_id})
+                SET o.subtotal = $subtotal,
+                    o.tax = $tax,
+                    o.total = $total,
+                    o.status = 'confirmed'
+            """, {
+                "order_id": order_id,
+                "subtotal": subtotal,
+                "tax": tax,
+                "total": total
+            })
+            
+            return {"order_id": order_id, "total": total}
+```
+
+Browse the tagged content below to discover comprehensive code examples and integration patterns for Geode applications.

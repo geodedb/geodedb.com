@@ -354,3 +354,425 @@ regions:
 - [Cluster Configuration](/docs/configuration/cluster/)
 - [Failover Procedures](/docs/operations/failover/)
 - [Disaster Recovery](/docs/operations/disaster-recovery/)
+
+## Advanced High Availability Patterns
+
+### Multi-Region Deployments
+
+Deploy across geographic regions for global availability:
+
+```yaml
+global_deployment:
+  regions:
+    us-east-1:
+      nodes: 3
+      role: primary
+      write_priority: 1
+    eu-west-1:
+      nodes: 3
+      role: secondary
+      write_priority: 2
+      replication_lag_max: 100ms
+    ap-southeast-1:
+      nodes: 2
+      role: read_replica
+      replication_mode: async
+  
+  routing:
+    strategy: geographic_proximity
+    failover_policy: automatic
+    health_check_interval: 5s
+```
+
+### Active-Active Clusters
+
+Multi-master configuration for write scalability:
+
+```bash
+# Configure active-active cluster
+geode cluster configure --topology active-active \
+  --nodes node1:3141,node2:3141,node3:3141 \
+  --conflict-resolution last-write-wins \
+  --quorum-size 2
+
+# Enable cross-region writes
+geode cluster set-region us-east-1 --writable true
+geode cluster set-region eu-west-1 --writable true
+
+# Monitor cross-region replication lag
+geode cluster monitor --metric replication_lag
+```
+
+### Read Replica Scaling
+
+Scale reads horizontally with read replicas:
+
+```python
+from geode_client import GeodeClient, ReplicaSelector
+
+# Configure connection pool with replicas
+client = GeodeClient(
+    primary="primary.geode.local:3141",
+    replicas=[
+        "replica1.geode.local:3141",
+        "replica2.geode.local:3141",
+        "replica3.geode.local:3141"
+    ],
+    replica_selector=ReplicaSelector.ROUND_ROBIN,
+    max_replication_lag=100  # ms
+)
+
+# Writes always go to primary
+await client.execute("""
+    CREATE (u:User {id: $id, name: $name})
+""", {"id": 123, "name": "Alice"})
+
+# Reads load-balanced across replicas
+result = await client.execute("""
+    MATCH (u:User) RETURN COUNT(u)
+""", read_preference="replica")
+```
+
+## Fault Tolerance Strategies
+
+### Graceful Degradation
+
+Continue operating with reduced functionality during failures:
+
+```python
+async def fetch_user_with_degradation(user_id):
+    try:
+        # Try primary data source
+        return await client.execute("""
+            MATCH (u:User {id: $id})
+            RETURN u
+        """, {"id": user_id})
+    except PrimaryUnavailable:
+        try:
+            # Fall back to cache
+            return await cache.get(f"user:{user_id}")
+        except CacheMiss:
+            # Minimal degraded response
+            return {"id": user_id, "name": "User", "degraded": True}
+```
+
+### Circuit Breaker Pattern
+
+Protect system from cascading failures:
+
+```python
+from circuitbreaker import CircuitBreaker, CircuitBreakerError
+
+@CircuitBreaker(
+    failure_threshold=5,
+    recovery_timeout=30,
+    expected_exception=DatabaseError
+)
+async def query_with_circuit_breaker(query, params):
+    """Execute query with circuit breaker protection"""
+    return await client.execute(query, params)
+
+# Usage
+try:
+    result = await query_with_circuit_breaker(
+        "MATCH (u:User) RETURN u", {}
+    )
+except CircuitBreakerError:
+    # Circuit open - use cached data or degraded mode
+    result = await fallback_data_source()
+```
+
+### Bulkhead Isolation
+
+Isolate components to prevent total failure:
+
+```python
+import asyncio
+from asyncio import Semaphore
+
+class BulkheadPool:
+    def __init__(self, max_concurrent=100):
+        self.read_semaphore = Semaphore(max_concurrent // 2)
+        self.write_semaphore = Semaphore(max_concurrent // 2)
+    
+    async def execute_read(self, query):
+        async with self.read_semaphore:
+            return await client.execute(query)
+    
+    async def execute_write(self, query):
+        async with self.write_semaphore:
+            return await client.execute(query)
+
+# Reads and writes isolated - write failures don't block reads
+pool = BulkheadPool()
+read_result = await pool.execute_read("MATCH (n) RETURN n LIMIT 10")
+```
+
+## Monitoring and Alerting
+
+### Health Check Implementation
+
+Comprehensive health monitoring:
+
+```python
+from dataclasses import dataclass
+from enum import Enum
+
+class HealthStatus(Enum):
+    HEALTHY = "healthy"
+    DEGRADED = "degraded"
+    UNHEALTHY = "unhealthy"
+
+@dataclass
+class HealthCheck:
+    status: HealthStatus
+    checks: dict
+    timestamp: datetime
+
+async def comprehensive_health_check(client):
+    """Perform comprehensive health check"""
+    checks = {}
+    
+    # Database connectivity
+    try:
+        await client.execute("MATCH (n) RETURN n LIMIT 1")
+        checks['database'] = {'status': 'pass', 'latency_ms': 5}
+    except Exception as e:
+        checks['database'] = {'status': 'fail', 'error': str(e)}
+    
+    # Replication lag
+    try:
+        lag = await client.execute("""
+            SELECT MAX(replication_lag_ms) as max_lag
+            FROM system.replication_status
+        """)
+        lag_ms = lag[0]['max_lag']
+        checks['replication'] = {
+            'status': 'pass' if lag_ms < 100 else 'warn',
+            'lag_ms': lag_ms
+        }
+    except Exception as e:
+        checks['replication'] = {'status': 'fail', 'error': str(e)}
+    
+    # Disk space
+    disk_usage = await get_disk_usage()
+    checks['disk'] = {
+        'status': 'pass' if disk_usage < 80 else 'warn',
+        'usage_percent': disk_usage
+    }
+    
+    # Overall status
+    if any(c['status'] == 'fail' for c in checks.values()):
+        status = HealthStatus.UNHEALTHY
+    elif any(c['status'] == 'warn' for c in checks.values()):
+        status = HealthStatus.DEGRADED
+    else:
+        status = HealthStatus.HEALTHY
+    
+    return HealthCheck(status, checks, datetime.now())
+```
+
+### Prometheus Metrics
+
+Export HA metrics for monitoring:
+
+```python
+from prometheus_client import Gauge, Counter, Histogram
+
+# Replication metrics
+replication_lag = Gauge('geode_replication_lag_seconds', 'Replication lag', ['node'])
+failover_count = Counter('geode_failover_total', 'Total failovers')
+node_health = Gauge('geode_node_health', 'Node health status', ['node'])
+
+# Update metrics
+async def update_ha_metrics(client):
+    # Replication lag
+    replicas = await client.execute("""
+        SELECT node_id, replication_lag_ms
+        FROM system.replication_status
+    """)
+    for replica in replicas:
+        replication_lag.labels(node=replica['node_id']).set(
+            replica['replication_lag_ms'] / 1000.0
+        )
+    
+    # Node health
+    nodes = await client.execute("SELECT * FROM system.cluster_nodes")
+    for node in nodes:
+        node_health.labels(node=node['node_id']).set(
+            1 if node['status'] == 'healthy' else 0
+        )
+```
+
+## Disaster Recovery Procedures
+
+### Automated Failover Testing
+
+Chaos engineering for HA validation:
+
+```bash
+#!/bin/bash
+# failover-test.sh - Automated failover testing
+
+echo "=== Starting Failover Test ==="
+
+# 1. Baseline health check
+echo "Checking baseline health..."
+geode cluster health
+
+# 2. Simulate primary failure
+echo "Simulating primary node failure..."
+PRIMARY_NODE=$(geode cluster primary)
+geode cluster kill-node $PRIMARY_NODE
+
+# 3. Wait for failover
+echo "Waiting for automatic failover..."
+timeout=30
+while [ $timeout -gt 0 ]; do
+    NEW_PRIMARY=$(geode cluster primary)
+    if [ "$NEW_PRIMARY" != "$PRIMARY_NODE" ]; then
+        echo "Failover completed to $NEW_PRIMARY"
+        break
+    fi
+    sleep 1
+    ((timeout--))
+done
+
+# 4. Verify cluster health
+echo "Verifying post-failover health..."
+geode cluster health
+
+# 5. Check data consistency
+echo "Checking data consistency..."
+geode cluster verify-data
+
+# 6. Restore original primary
+echo "Restoring original primary..."
+geode cluster start-node $PRIMARY_NODE
+geode cluster wait-sync $PRIMARY_NODE
+
+echo "=== Failover Test Complete ==="
+```
+
+### Backup Verification
+
+Ensure backups are restorable:
+
+```python
+async def verify_backup(backup_path):
+    """Verify backup integrity and restorability"""
+    
+    # 1. Check backup files exist
+    backup_files = list_backup_files(backup_path)
+    assert len(backup_files) > 0, "No backup files found"
+    
+    # 2. Verify checksums
+    for file in backup_files:
+        expected_checksum = read_checksum_file(f"{file}.sha256")
+        actual_checksum = compute_sha256(file)
+        assert expected_checksum == actual_checksum, f"Checksum mismatch: {file}"
+    
+    # 3. Test restore to temporary location
+    temp_db = create_temp_database()
+    await restore_backup(backup_path, temp_db)
+    
+    # 4. Verify data integrity
+    async with GeodeClient(temp_db) as client:
+        # Check node count
+        result = await client.execute("MATCH (n) RETURN COUNT(n) as count")
+        assert result[0]['count'] > 0, "No nodes in restored database"
+        
+        # Check sample data
+        user = await client.execute("MATCH (u:User) RETURN u LIMIT 1")
+        assert len(user) > 0, "No users in restored database"
+    
+    # 5. Cleanup
+    cleanup_temp_database(temp_db)
+    
+    print(f"Backup verification successful: {backup_path}")
+```
+
+## Performance Under High Availability
+
+### Load Balancing Algorithms
+
+Intelligent client-side load balancing:
+
+```python
+class SmartLoadBalancer:
+    def __init__(self, replicas):
+        self.replicas = replicas
+        self.stats = {r: {'latency': 0, 'errors': 0} for r in replicas}
+    
+    def select_replica(self):
+        """Select replica based on latency and error rate"""
+        scores = {}
+        for replica, stats in self.stats.items():
+            # Lower latency and fewer errors = higher score
+            latency_score = 1.0 / (stats['latency'] + 1)
+            error_penalty = 0.5 ** stats['errors']
+            scores[replica] = latency_score * error_penalty
+        
+        return max(scores, key=scores.get)
+    
+    async def execute_on_best_replica(self, query):
+        replica = self.select_replica()
+        
+        start = time.time()
+        try:
+            result = await self.execute_on(replica, query)
+            latency = time.time() - start
+            
+            # Update stats with exponential moving average
+            self.stats[replica]['latency'] = (
+                0.7 * self.stats[replica]['latency'] + 0.3 * latency
+            )
+            self.stats[replica]['errors'] = max(0, self.stats[replica]['errors'] - 1)
+            
+            return result
+        except Exception as e:
+            self.stats[replica]['errors'] += 1
+            raise
+```
+
+### Connection Pooling for HA
+
+Maintain healthy connection pools:
+
+```python
+from geode_client import ConnectionPool
+
+pool = ConnectionPool(
+    nodes=[
+        "node1:3141",
+        "node2:3141",
+        "node3:3141"
+    ],
+    min_connections=5,
+    max_connections=50,
+    connection_timeout=5.0,
+    idle_timeout=300.0,
+    health_check_interval=30.0,
+    max_retries=3,
+    retry_backoff=lambda attempt: 2 ** attempt
+)
+
+# Automatic connection management
+async with pool.acquire() as conn:
+    result = await conn.execute("MATCH (u:User) RETURN u")
+```
+
+## Best Practices Summary
+
+1. **Deploy Minimum 3 Nodes**: Enables quorum-based decisions
+2. **Use Odd Node Counts**: Prevents split-brain scenarios (3, 5, 7)
+3. **Geographic Distribution**: Spread across availability zones
+4. **Monitor Replication Lag**: Alert on lag > 100ms for sync replicas
+5. **Test Failover Regularly**: Monthly chaos engineering exercises
+6. **Validate Backups**: Weekly restore tests
+7. **Capacity Planning**: Maintain 30% headroom for failover
+8. **Document Procedures**: Runbooks for all failure scenarios
+9. **Automate Everything**: No manual steps in critical path
+10. **Measure and Improve**: Track MTTR and MTBF metrics
+
+Browse the tagged content below to discover comprehensive high availability documentation, deployment patterns, and production best practices for Geode.

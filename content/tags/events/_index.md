@@ -360,3 +360,238 @@ class OrderSaga:
 - [Event-Driven Architecture (Martin Fowler)](https://martinfowler.com/articles/201701-event-driven.html)
 - [Event Sourcing](https://martinfowler.com/eaaDev/EventSourcing.html)
 - [CQRS Pattern](https://martinfowler.com/bliki/CQRS.html)
+
+## Production Event Patterns
+
+### Change Data Capture Integration
+
+Stream database changes to external systems:
+
+```python
+from geode_client import GeodeClient
+import asyncio
+
+class CDCProcessor:
+    def __init__(self, geode_url, output_handler):
+        self.client = GeodeClient(geode_url)
+        self.output = output_handler
+    
+    async def stream_changes(self, labels=None):
+        """Stream CDC events"""
+        async with self.client.cdc_stream(labels=labels) as stream:
+            async for change in stream:
+                await self.process_change(change)
+    
+    async def process_change(self, change):
+        """Process individual change event"""
+        event = {
+            'timestamp': change.timestamp.isoformat(),
+            'operation': change.operation,  # INSERT, UPDATE, DELETE
+            'label': change.label,
+            'before': change.before_state,
+            'after': change.after_state,
+            'transaction_id': change.transaction_id
+        }
+        
+        # Send to external system
+        await self.output.publish(event)
+
+# Usage
+async def main():
+    processor = CDCProcessor(
+        "localhost:3141",
+        KafkaOutput("kafka:9092", "geode-cdc")
+    )
+    await processor.stream_changes(labels=['User', 'Order', 'Product'])
+```
+
+### Event Sourcing with Geode
+
+Store events as source of truth:
+
+```python
+class EventStore:
+    def __init__(self, client):
+        self.client = client
+    
+    async def append_event(self, aggregate_id, event_type, event_data, expected_version=None):
+        """Append event with optimistic concurrency"""
+        async with self.client.transaction() as tx:
+            # Check version if specified
+            if expected_version is not None:
+                current = await tx.execute("""
+                    MATCH (a:Aggregate {id: $id})
+                    RETURN a.version as version
+                """, {"id": aggregate_id})
+                
+                if current and current[0]['version'] != expected_version:
+                    raise ConcurrencyError("Version mismatch")
+            
+            # Append event
+            await tx.execute("""
+                MERGE (a:Aggregate {id: $aggregate_id})
+                ON CREATE SET a.version = 0
+                CREATE (e:Event {
+                    id: randomUUID(),
+                    aggregate_id: $aggregate_id,
+                    event_type: $event_type,
+                    event_data: $event_data,
+                    version: a.version + 1,
+                    timestamp: datetime()
+                })
+                CREATE (a)-[:HAS_EVENT]->(e)
+                SET a.version = a.version + 1
+            """, {
+                "aggregate_id": aggregate_id,
+                "event_type": event_type,
+                "event_data": event_data
+            })
+    
+    async def get_events(self, aggregate_id, from_version=0):
+        """Get events for aggregate"""
+        result = await self.client.execute("""
+            MATCH (a:Aggregate {id: $id})-[:HAS_EVENT]->(e:Event)
+            WHERE e.version > $from_version
+            RETURN e.event_type, e.event_data, e.version, e.timestamp
+            ORDER BY e.version
+        """, {"id": aggregate_id, "from_version": from_version})
+        return result
+```
+
+### Saga Orchestration
+
+Coordinate distributed transactions:
+
+```python
+class SagaOrchestrator:
+    def __init__(self, client):
+        self.client = client
+        self.compensations = []
+    
+    async def execute_saga(self, saga_id, steps):
+        """Execute saga with compensation on failure"""
+        async with self.client.transaction() as tx:
+            # Create saga record
+            await tx.execute("""
+                CREATE (s:Saga {
+                    id: $id,
+                    status: 'running',
+                    started_at: datetime()
+                })
+            """, {"id": saga_id})
+            
+            try:
+                # Execute each step
+                for i, step in enumerate(steps):
+                    await self.execute_step(tx, saga_id, i, step)
+                
+                # Mark success
+                await tx.execute("""
+                    MATCH (s:Saga {id: $id})
+                    SET s.status = 'completed', s.completed_at = datetime()
+                """, {"id": saga_id})
+                
+            except Exception as e:
+                # Rollback with compensations
+                await self.compensate(tx, saga_id)
+                
+                await tx.execute("""
+                    MATCH (s:Saga {id: $id})
+                    SET s.status = 'failed', s.error = $error
+                """, {"id": saga_id, "error": str(e)})
+                raise
+    
+    async def execute_step(self, tx, saga_id, step_num, step):
+        """Execute single saga step"""
+        # Record step
+        await tx.execute("""
+            MATCH (s:Saga {id: $saga_id})
+            CREATE (step:SagaStep {
+                saga_id: $saga_id,
+                step_num: $step_num,
+                action: $action,
+                status: 'running'
+            })
+            CREATE (s)-[:HAS_STEP]->(step)
+        """, {
+            "saga_id": saga_id,
+            "step_num": step_num,
+            "action": step['action']
+        })
+        
+        # Execute step action
+        await step['execute'](tx)
+        
+        # Store compensation
+        self.compensations.append(step.get('compensate'))
+        
+        # Mark step complete
+        await tx.execute("""
+            MATCH (step:SagaStep {saga_id: $saga_id, step_num: $step_num})
+            SET step.status = 'completed'
+        """, {"saga_id": saga_id, "step_num": step_num})
+    
+    async def compensate(self, tx, saga_id):
+        """Execute compensating transactions"""
+        for compensate in reversed(self.compensations):
+            if compensate:
+                await compensate(tx)
+```
+
+### Real-Time Event Processing
+
+Process events with low latency:
+
+```python
+class RealTimeEventProcessor:
+    def __init__(self, client):
+        self.client = client
+        self.handlers = {}
+    
+    def register_handler(self, event_type, handler):
+        """Register event handler"""
+        if event_type not in self.handlers:
+            self.handlers[event_type] = []
+        self.handlers[event_type].append(handler)
+    
+    async def process_stream(self):
+        """Process event stream in real-time"""
+        async for event in self.client.subscribe_events():
+            # Dispatch to handlers
+            await self.dispatch(event)
+    
+    async def dispatch(self, event):
+        """Dispatch event to registered handlers"""
+        event_type = event['type']
+        
+        if event_type in self.handlers:
+            # Execute handlers in parallel
+            tasks = [
+                handler(event)
+                for handler in self.handlers[event_type]
+            ]
+            await asyncio.gather(*tasks)
+
+# Usage
+processor = RealTimeEventProcessor(client)
+
+# Register handlers
+@processor.register_handler('UserCreated')
+async def send_welcome_email(event):
+    user_email = event['data']['email']
+    await email_service.send(user_email, "Welcome!")
+
+@processor.register_handler('OrderPlaced')
+async def update_inventory(event):
+    product_id = event['data']['product_id']
+    quantity = event['data']['quantity']
+    await client.execute("""
+        MATCH (p:Product {id: $id})
+        SET p.stock = p.stock - $qty
+    """, {"id": product_id, "qty": quantity})
+
+# Start processing
+await processor.process_stream()
+```
+
+Browse the tagged content below to discover event-driven architecture patterns and real-time processing guides for Geode.

@@ -373,3 +373,483 @@ Evolve schemas without breaking existing clients:
 - [Architecture Decision Records](https://adr.github.io/)
 - [Clean Architecture](https://blog.cleancoder.com/uncle-bob/2012/08/13/the-clean-architecture.html)
 - [Microservices Patterns](https://microservices.io/patterns/)
+
+## Advanced Architectural Patterns
+
+### Microservices Integration
+
+Integrate Geode into microservices architecture:
+
+```yaml
+# Docker Compose for microservices + Geode
+version: '3.8'
+
+services:
+  geode:
+    image: geodedb/geode:latest
+    ports:
+      - "3141:3141"
+    environment:
+      - GEODE_CLUSTER_MODE=standalone
+      - GEODE_MEMORY_LIMIT=4G
+    volumes:
+      - geode-data:/data
+    networks:
+      - backend
+
+  api-gateway:
+    image: myapp/api-gateway
+    ports:
+      - "8080:8080"
+    environment:
+      - GEODE_URL=geode:3141
+    depends_on:
+      - geode
+    networks:
+      - backend
+      - frontend
+
+  user-service:
+    image: myapp/user-service
+    environment:
+      - GEODE_URL=geode:3141
+    depends_on:
+      - geode
+    networks:
+      - backend
+
+  product-service:
+    image: myapp/product-service
+    environment:
+      - GEODE_URL=geode:3141
+    depends_on:
+      - geode
+    networks:
+      - backend
+
+networks:
+  frontend:
+  backend:
+
+volumes:
+  geode-data:
+```
+
+### Event-Driven Microservices
+
+Use Geode with event streaming:
+
+```python
+from geode_client import GeodeClient
+from kafka import KafkaProducer, KafkaConsumer
+
+class EventDrivenService:
+    def __init__(self, geode_url, kafka_brokers):
+        self.geode = GeodeClient(geode_url)
+        self.producer = KafkaProducer(bootstrap_servers=kafka_brokers)
+        self.consumer = KafkaConsumer('geode-events', bootstrap_servers=kafka_brokers)
+    
+    async def process_events(self):
+        """Process events from Kafka and update Geode"""
+        async for message in self.consumer:
+            event = json.loads(message.value)
+            
+            # Update graph based on event
+            if event['type'] == 'UserCreated':
+                await self.geode.execute("""
+                    CREATE (u:User {
+                        id: $id,
+                        name: $name,
+                        created_at: datetime()
+                    })
+                """, event['data'])
+            
+            elif event['type'] == 'FriendshipCreated':
+                await self.geode.execute("""
+                    MATCH (a:User {id: $user1}), (b:User {id: $user2})
+                    CREATE (a)-[:FRIENDS_WITH {since: datetime()}]->(b)
+                """, event['data'])
+    
+    async def publish_graph_changes(self):
+        """Publish Geode changes to Kafka"""
+        async for change in self.geode.cdc_stream():
+            self.producer.send('graph-changes', json.dumps({
+                'type': change.operation,
+                'entity': change.label,
+                'data': change.data,
+                'timestamp': change.timestamp.isoformat()
+            }).encode())
+```
+
+### API Gateway Pattern
+
+Centralized API layer for Geode:
+
+```python
+from fastapi import FastAPI, HTTPException, Depends
+from geode_client import GeodeClient
+from pydantic import BaseModel
+
+app = FastAPI()
+
+class UserCreate(BaseModel):
+    name: str
+    email: str
+
+class FriendshipCreate(BaseModel):
+    user1_id: str
+    user2_id: str
+
+async def get_geode_client():
+    async with GeodeClient("geode:3141") as client:
+        yield client
+
+@app.post("/users")
+async def create_user(user: UserCreate, client=Depends(get_geode_client)):
+    """Create new user"""
+    result = await client.execute("""
+        CREATE (u:User {
+            id: randomUUID(),
+            name: $name,
+            email: $email,
+            created_at: datetime()
+        })
+        RETURN u.id as user_id
+    """, {"name": user.name, "email": user.email})
+    
+    return {"user_id": result[0]['user_id']}
+
+@app.get("/users/{user_id}/friends")
+async def get_friends(user_id: str, client=Depends(get_geode_client)):
+    """Get user's friends"""
+    result = await client.execute("""
+        MATCH (u:User {id: $id})-[:FRIENDS_WITH]-(friend:User)
+        RETURN friend.id, friend.name, friend.email
+    """, {"id": user_id})
+    
+    return {"friends": [dict(r) for r in result]}
+
+@app.post("/friendships")
+async def create_friendship(
+    friendship: FriendshipCreate,
+    client=Depends(get_geode_client)
+):
+    """Create friendship between users"""
+    await client.execute("""
+        MATCH (a:User {id: $user1}), (b:User {id: $user2})
+        CREATE (a)-[:FRIENDS_WITH {since: datetime()}]->(b)
+    """, {"user1": friendship.user1_id, "user2": friendship.user2_id})
+    
+    return {"status": "created"}
+```
+
+## Performance Architecture
+
+### Caching Layers
+
+Multi-tier caching strategy:
+
+```python
+from redis import Redis
+from functools import wraps
+
+class GeodeCacheLayer:
+    def __init__(self, geode_client, redis_client):
+        self.geode = geode_client
+        self.redis = redis_client
+    
+    def cached_query(self, ttl=300):
+        """Decorator for query result caching"""
+        def decorator(func):
+            @wraps(func)
+            async def wrapper(*args, **kwargs):
+                # Generate cache key
+                cache_key = f"{func.__name__}:{hash((args, tuple(kwargs.items())))}"
+                
+                # Check cache
+                cached = self.redis.get(cache_key)
+                if cached:
+                    return json.loads(cached)
+                
+                # Execute query
+                result = await func(*args, **kwargs)
+                
+                # Store in cache
+                self.redis.setex(cache_key, ttl, json.dumps(result))
+                
+                return result
+            return wrapper
+        return decorator
+    
+    @cached_query(ttl=60)
+    async def get_user_friends_count(self, user_id):
+        """Get friend count with caching"""
+        result = await self.geode.execute("""
+            MATCH (u:User {id: $id})-[:FRIENDS_WITH]-(friend)
+            RETURN COUNT(friend) as count
+        """, {"id": user_id})
+        return result[0]['count']
+```
+
+### Query Result Streaming
+
+Memory-efficient large result handling:
+
+```python
+async def stream_large_dataset(client, batch_size=1000):
+    """Stream large result sets without loading into memory"""
+    offset = 0
+    
+    while True:
+        batch = await client.execute("""
+            MATCH (n:Node)
+            RETURN n
+            ORDER BY n.id
+            SKIP $offset
+            LIMIT $limit
+        """, {"offset": offset, "limit": batch_size})
+        
+        if not batch:
+            break
+        
+        # Process batch
+        for row in batch:
+            yield row
+        
+        offset += batch_size
+
+# Usage
+async for node in stream_large_dataset(client):
+    process_node(node)
+```
+
+### Partitioning Strategy
+
+Horizontal scaling through sharding:
+
+```python
+class ShardedGeodeClient:
+    def __init__(self, shard_configs):
+        self.shards = [
+            GeodeClient(config['url'])
+            for config in shard_configs
+        ]
+    
+    def get_shard(self, key):
+        """Determine shard for key using consistent hashing"""
+        shard_index = hash(key) % len(self.shards)
+        return self.shards[shard_index]
+    
+    async def get_user(self, user_id):
+        """Get user from appropriate shard"""
+        shard = self.get_shard(user_id)
+        result = await shard.execute("""
+            MATCH (u:User {id: $id})
+            RETURN u
+        """, {"id": user_id})
+        return result[0]['u'] if result else None
+    
+    async def create_user(self, user_id, name, email):
+        """Create user in appropriate shard"""
+        shard = self.get_shard(user_id)
+        await shard.execute("""
+            CREATE (u:User {
+                id: $id,
+                name: $name,
+                email: $email
+            })
+        """, {"id": user_id, "name": name, "email": email})
+```
+
+## Deployment Architectures
+
+### Kubernetes Deployment
+
+Production-grade Kubernetes configuration:
+
+```yaml
+# geode-statefulset.yaml
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: geode
+spec:
+  serviceName: geode
+  replicas: 3
+  selector:
+    matchLabels:
+      app: geode
+  template:
+    metadata:
+      labels:
+        app: geode
+    spec:
+      containers:
+      - name: geode
+        image: geodedb/geode:0.18.0
+        ports:
+        - containerPort: 3141
+          name: client
+        - containerPort: 7687
+          name: cluster
+        env:
+        - name: GEODE_CLUSTER_MODE
+          value: "cluster"
+        - name: GEODE_NODE_ID
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: GEODE_CLUSTER_PEERS
+          value: "geode-0.geode:7687,geode-1.geode:7687,geode-2.geode:7687"
+        volumeMounts:
+        - name: data
+          mountPath: /data
+        resources:
+          requests:
+            memory: "4Gi"
+            cpu: "2"
+          limits:
+            memory: "8Gi"
+            cpu: "4"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 3141
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 3141
+          initialDelaySeconds: 10
+          periodSeconds: 5
+  volumeClaimTemplates:
+  - metadata:
+      name: data
+    spec:
+      accessModes: ["ReadWriteOnce"]
+      resources:
+        requests:
+          storage: 100Gi
+      storageClassName: fast-ssd
+```
+
+### Serverless Architecture
+
+Run Geode queries from serverless functions:
+
+```python
+# AWS Lambda handler
+import json
+from geode_client import GeodeClient
+
+# Reuse connection across invocations
+geode_client = None
+
+def lambda_handler(event, context):
+    global geode_client
+    
+    # Initialize connection (reused across warm starts)
+    if geode_client is None:
+        geode_client = GeodeClient(
+            os.environ['GEODE_URL'],
+            connection_pool_size=1
+        )
+    
+    # Extract query from event
+    query = event['query']
+    params = event.get('params', {})
+    
+    # Execute query
+    result = geode_client.execute(query, params)
+    
+    return {
+        'statusCode': 200,
+        'body': json.dumps({
+            'results': [dict(r) for r in result]
+        })
+    }
+```
+
+## Security Architecture Patterns
+
+### Zero-Trust Security
+
+Implement defense in depth:
+
+```python
+class SecureGeodeClient:
+    def __init__(self, url, cert_file, key_file):
+        self.client = GeodeClient(
+            url,
+            tls=True,
+            cert_file=cert_file,
+            key_file=key_file,
+            verify_cert=True
+        )
+    
+    async def execute_with_rls(self, query, params, user_context):
+        """Execute query with row-level security"""
+        async with self.client.transaction() as tx:
+            # Set user context for RLS
+            await tx.execute("""
+                SET app.user_id = $user_id;
+                SET app.tenant_id = $tenant_id;
+                SET app.roles = $roles;
+            """, {
+                "user_id": user_context['user_id'],
+                "tenant_id": user_context['tenant_id'],
+                "roles": json.dumps(user_context['roles'])
+            })
+            
+            # Execute query (RLS policies auto-applied)
+            result = await tx.execute(query, params)
+            
+            return result
+```
+
+### Audit Logging Architecture
+
+Comprehensive audit trail:
+
+```python
+class AuditedGeodeClient:
+    def __init__(self, client, audit_logger):
+        self.client = client
+        self.audit = audit_logger
+    
+    async def execute(self, query, params=None, user_id=None):
+        """Execute query with audit logging"""
+        start_time = time.time()
+        
+        try:
+            result = await self.client.execute(query, params)
+            
+            # Log successful execution
+            await self.audit.log({
+                'timestamp': datetime.now().isoformat(),
+                'user_id': user_id,
+                'query': query,
+                'params': params,
+                'status': 'success',
+                'duration_ms': (time.time() - start_time) * 1000,
+                'rows_returned': len(result)
+            })
+            
+            return result
+            
+        except Exception as e:
+            # Log failed execution
+            await self.audit.log({
+                'timestamp': datetime.now().isoformat(),
+                'user_id': user_id,
+                'query': query,
+                'params': params,
+                'status': 'error',
+                'error': str(e),
+                'duration_ms': (time.time() - start_time) * 1000
+            })
+            raise
+```
+
+Browse the tagged content below to discover comprehensive architecture documentation, design patterns, and deployment guides for Geode.

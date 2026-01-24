@@ -486,3 +486,362 @@ async with tracer.start_as_current_span("user_query"):
 - [Error Codes](/docs/reference/errors/) - Error code reference
 - [Logging Guide](/docs/operations/logging/) - Comprehensive logging setup
 - [Performance Tuning](/docs/performance/) - Optimization techniques
+
+## Advanced Debugging Techniques
+
+### Query Performance Debugging
+
+Systematic performance analysis:
+
+```python
+class QueryDebugger:
+    def __init__(self, client):
+        self.client = client
+    
+    async def analyze_query(self, query, params=None):
+        """Comprehensive query analysis"""
+        report = {}
+        
+        # 1. Get explain plan
+        explain = await self.client.execute(f"EXPLAIN {query}", params)
+        report['explain'] = self.parse_explain(explain)
+        
+        # 2. Profile execution
+        profile = await self.client.execute(f"PROFILE {query}", params)
+        report['profile'] = self.parse_profile(profile)
+        
+        # 3. Check index usage
+        indexes = await self.client.execute("SHOW INDEXES")
+        report['indexes_used'] = self.find_used_indexes(explain, indexes)
+        report['indexes_missing'] = self.suggest_indexes(explain, indexes)
+        
+        # 4. Analyze cardinality
+        report['cardinality'] = await self.analyze_cardinality(query, params)
+        
+        # 5. Check for anti-patterns
+        report['anti_patterns'] = self.detect_anti_patterns(query)
+        
+        return report
+    
+    def detect_anti_patterns(self, query):
+        """Detect common query anti-patterns"""
+        issues = []
+        
+        # Cartesian product
+        if 'MATCH' in query and query.count('MATCH') > 1 and 'WHERE' not in query:
+            issues.append({
+                'type': 'cartesian_product',
+                'severity': 'high',
+                'message': 'Multiple MATCH clauses without WHERE may cause cartesian product'
+            })
+        
+        # Unbounded variable-length path
+        if re.search(r'\[\*\]', query):
+            issues.append({
+                'type': 'unbounded_path',
+                'severity': 'critical',
+                'message': 'Unbounded variable-length path can cause performance issues'
+            })
+        
+        # Missing LIMIT
+        if 'RETURN' in query and 'LIMIT' not in query:
+            issues.append({
+                'type': 'missing_limit',
+                'severity': 'medium',
+                'message': 'Query without LIMIT may return unbounded results'
+            })
+        
+        return issues
+    
+    async def analyze_cardinality(self, query, params):
+        """Analyze result set cardinality"""
+        # Extract pattern from query
+        pattern = self.extract_pattern(query)
+        
+        # Estimate cardinality
+        estimate = await self.client.execute(f"""
+            EXPLAIN {query}
+        """, params)
+        
+        return {
+            'estimated_rows': estimate.get('estimated_rows'),
+            'pattern_selectivity': estimate.get('selectivity')
+        }
+```
+
+### Connection Debugging
+
+Diagnose connection issues:
+
+```python
+import asyncio
+import logging
+
+async def debug_connection(url, timeout=10):
+    """Debug connection issues"""
+    results = {}
+    
+    # 1. Test basic connectivity
+    try:
+        client = await asyncio.wait_for(
+            GeodeClient(url).connect(),
+            timeout=timeout
+        )
+        results['connectivity'] = 'success'
+        await client.close()
+    except asyncio.TimeoutError:
+        results['connectivity'] = 'timeout'
+        results['error'] = f'Connection timeout after {timeout}s'
+        return results
+    except Exception as e:
+        results['connectivity'] = 'failed'
+        results['error'] = str(e)
+        return results
+    
+    # 2. Test query execution
+    try:
+        client = await GeodeClient(url).connect()
+        await client.execute("MATCH (n) RETURN n LIMIT 1")
+        results['query_execution'] = 'success'
+    except Exception as e:
+        results['query_execution'] = 'failed'
+        results['query_error'] = str(e)
+    finally:
+        await client.close()
+    
+    # 3. Test TLS
+    try:
+        client = await GeodeClient(url, tls=True, verify_cert=True).connect()
+        results['tls'] = 'success'
+        await client.close()
+    except Exception as e:
+        results['tls'] = 'failed'
+        results['tls_error'] = str(e)
+    
+    # 4. Measure latency
+    client = await GeodeClient(url).connect()
+    latencies = []
+    for _ in range(10):
+        start = time.time()
+        await client.execute("MATCH (n) RETURN n LIMIT 1")
+        latencies.append((time.time() - start) * 1000)
+    await client.close()
+    
+    results['latency'] = {
+        'min': min(latencies),
+        'max': max(latencies),
+        'avg': sum(latencies) / len(latencies),
+        'p95': sorted(latencies)[int(len(latencies) * 0.95)]
+    }
+    
+    return results
+```
+
+### Transaction Debugging
+
+Debug transaction issues:
+
+```python
+class TransactionDebugger:
+    def __init__(self, client):
+        self.client = client
+        self.logger = logging.getLogger(__name__)
+    
+    async def debug_transaction(self, operation):
+        """Debug transaction execution with detailed logging"""
+        tx_id = None
+        
+        try:
+            async with self.client.transaction() as tx:
+                tx_id = tx.transaction_id
+                self.logger.info(f"Started transaction {tx_id}")
+                
+                # Monitor locks
+                locks_before = await self.get_locks(tx_id)
+                self.logger.debug(f"Locks acquired: {locks_before}")
+                
+                # Execute operation
+                result = await operation(tx)
+                
+                # Monitor locks after
+                locks_after = await self.get_locks(tx_id)
+                new_locks = set(locks_after) - set(locks_before)
+                self.logger.debug(f"New locks: {new_locks}")
+                
+                await tx.commit()
+                self.logger.info(f"Committed transaction {tx_id}")
+                
+                return result
+                
+        except SerializationFailure as e:
+            self.logger.warning(f"Transaction {tx_id} aborted: serialization failure")
+            
+            # Get conflicting transactions
+            conflicts = await self.get_conflicts(tx_id)
+            self.logger.warning(f"Conflicting with: {conflicts}")
+            
+            raise
+            
+        except Exception as e:
+            self.logger.error(f"Transaction {tx_id} failed: {e}")
+            raise
+    
+    async def get_locks(self, tx_id):
+        """Get locks held by transaction"""
+        result = await self.client.execute("""
+            SELECT * FROM system.locks
+            WHERE transaction_id = $tx_id
+        """, {"tx_id": tx_id})
+        return result
+    
+    async def get_conflicts(self, tx_id):
+        """Get conflicting transactions"""
+        result = await self.client.execute("""
+            SELECT conflicting_transaction_id
+            FROM system.transaction_conflicts
+            WHERE transaction_id = $tx_id
+        """, {"tx_id": tx_id})
+        return [r['conflicting_transaction_id'] for r in result]
+```
+
+### Memory Profiling
+
+Track memory usage:
+
+```python
+import tracemalloc
+import psutil
+
+class MemoryProfiler:
+    def __init__(self):
+        self.snapshots = []
+    
+    async def profile_query(self, client, query, params=None):
+        """Profile memory usage during query execution"""
+        # Start tracing
+        tracemalloc.start()
+        process = psutil.Process()
+        
+        # Initial snapshot
+        mem_before = process.memory_info().rss / 1024 / 1024  # MB
+        snapshot_before = tracemalloc.take_snapshot()
+        
+        # Execute query
+        result = await client.execute(query, params)
+        
+        # Final snapshot
+        mem_after = process.memory_info().rss / 1024 / 1024  # MB
+        snapshot_after = tracemalloc.take_snapshot()
+        
+        # Calculate differences
+        top_stats = snapshot_after.compare_to(snapshot_before, 'lineno')
+        
+        # Stop tracing
+        tracemalloc.stop()
+        
+        return {
+            'memory_used_mb': mem_after - mem_before,
+            'top_allocations': [
+                {
+                    'file': stat.traceback.format()[0],
+                    'size_mb': stat.size_diff / 1024 / 1024
+                }
+                for stat in top_stats[:10]
+            ],
+            'result_size': len(result)
+        }
+```
+
+### Distributed Tracing
+
+End-to-end request tracing:
+
+```python
+from opentelemetry import trace
+from opentelemetry.instrumentation.geode import GeodeInstrumentor
+
+# Initialize tracing
+tracer = trace.get_tracer(__name__)
+GeodeInstrumentor().instrument()
+
+async def traced_operation(client):
+    """Operation with distributed tracing"""
+    with tracer.start_as_current_span("user_registration") as span:
+        span.set_attribute("user.email", "alice@example.com")
+        
+        # Database operation is automatically traced
+        result = await client.execute("""
+            CREATE (u:User {
+                name: $name,
+                email: $email
+            })
+            RETURN u.id
+        """, {"name": "Alice", "email": "alice@example.com"})
+        
+        span.set_attribute("user.id", result[0]['u.id'])
+        
+        # Additional span for email sending
+        with tracer.start_as_current_span("send_welcome_email"):
+            await send_email(result[0]['u.id'])
+        
+        return result
+```
+
+### Error Analysis
+
+Systematic error diagnosis:
+
+```python
+class ErrorAnalyzer:
+    def __init__(self):
+        self.error_patterns = {
+            'UniqueConstraintViolation': self.handle_unique_violation,
+            'SerializationFailure': self.handle_serialization_failure,
+            'SyntaxError': self.handle_syntax_error,
+            'ConnectionError': self.handle_connection_error
+        }
+    
+    async def analyze_error(self, error, context):
+        """Analyze and provide remediation for errors"""
+        error_type = type(error).__name__
+        
+        if error_type in self.error_patterns:
+            return await self.error_patterns[error_type](error, context)
+        
+        return {
+            'type': 'unknown',
+            'message': str(error),
+            'suggestion': 'Check server logs for details'
+        }
+    
+    async def handle_unique_violation(self, error, context):
+        """Handle unique constraint violations"""
+        # Extract violated constraint
+        constraint = error.constraint_name
+        value = error.violated_value
+        
+        return {
+            'type': 'UniqueConstraintViolation',
+            'constraint': constraint,
+            'value': value,
+            'suggestion': f'Value "{value}" already exists. Use MERGE instead of CREATE, or change the value.',
+            'query_fix': f'MERGE (n:Node {{key: $value}}) ON CREATE SET n.created_at = datetime()'
+        }
+    
+    async def handle_serialization_failure(self, error, context):
+        """Handle serialization failures"""
+        return {
+            'type': 'SerializationFailure',
+            'message': 'Transaction aborted due to concurrent modification',
+            'suggestion': 'Implement retry logic with exponential backoff',
+            'code_example': '''
+@retry(stop=stop_after_attempt(5), wait=wait_exponential(multiplier=1))
+async def operation():
+    async with client.transaction() as tx:
+        # Your operation here
+        pass
+            '''
+        }
+```
+
+Browse the tagged content below to discover comprehensive debugging guides, troubleshooting techniques, and diagnostic tools for Geode applications.
