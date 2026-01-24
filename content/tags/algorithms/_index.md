@@ -1,6 +1,6 @@
 ---
 title: "Graph Algorithms"
-description: "Explore graph algorithms in Geode: pathfinding, centrality, community detection, and more. Solve complex network problems with GQL-native implementations."
+description: "Comprehensive guide to graph algorithms in Geode including pathfinding, centrality analysis, community detection, similarity metrics, and machine learning integration. Production-optimized implementations with performance benchmarks."
 keywords:
   - graph algorithms
   - pathfinding
@@ -8,11 +8,29 @@ keywords:
   - centrality
   - community detection
   - PageRank
-  - betweenness
-  - clustering
+  - betweenness centrality
+  - closeness centrality
+  - degree centrality
+  - clustering coefficient
+  - triangle counting
+  - label propagation
+  - Louvain algorithm
+  - connected components
+  - strongly connected components
+  - Jaccard similarity
+  - cosine similarity
+  - collaborative filtering
+  - network analysis
+  - social network analysis
+  - recommendation algorithms
+  - influence propagation
+  - link prediction
+  - graph neural networks
   - Geode
   - graph database
   - documentation
+  - algorithm optimization
+  - distributed algorithms
 draft: false
 params:
   seo:
@@ -482,4 +500,616 @@ LIMIT 5
 - [GQL Reference](/tags/gql-reference/) - Complete language documentation
 - [Client Libraries](/tags/client-libraries/) - Implement algorithms in Python, Go, Rust, Zig
 
-Graph algorithms unlock the analytical power of connected data. Start with simple pathfinding and centrality computations, then progress to advanced community detection and machine learning integration as your graph expertise grows.
+## Advanced Pathfinding Algorithms
+
+### K-Shortest Paths
+
+Find multiple alternative paths:
+
+```python
+async def k_shortest_paths(client, start_id, end_id, k=5):
+    """Find k shortest paths between nodes using Yen's algorithm"""
+    paths = []
+
+    # Find first shortest path
+    result = await client.execute("""
+        MATCH path = shortestPath((start {id: $start})-[*]-(end {id: $end}))
+        RETURN path
+    """, {"start": start_id, "end": end_id})
+
+    if not result:
+        return paths
+
+    paths.append(result[0]['path'])
+
+    # Find k-1 additional paths
+    for _ in range(k - 1):
+        candidates = []
+
+        # For each spur node in previous path
+        for i in range(len(paths[-1].nodes) - 1):
+            # Remove edges from previous paths
+            # Find detour through remaining graph
+            # Add to candidates
+
+            pass  # Implementation details
+
+        if not candidates:
+            break
+
+        # Add best candidate to paths
+        paths.append(min(candidates, key=lambda p: path_cost(p)))
+
+    return paths
+```
+
+### Bidirectional Search
+
+Faster pathfinding for long paths:
+
+```gql
+-- Search from both ends simultaneously
+MATCH forward = (start {id: $start})-[*1..10]->(mid)
+MATCH backward = (end {id: $end})-[*1..10]->(mid)
+WHERE start.id <> end.id
+RETURN forward + backward AS complete_path,
+       length(forward) + length(backward) AS total_length
+ORDER BY total_length
+LIMIT 1
+```
+
+### Constrained Pathfinding
+
+Paths that satisfy conditions:
+
+```gql
+-- Path through specific node types
+MATCH path = (start:Airport {code: 'SFO'})-[:FLIGHT*]-(end:Airport {code: 'JFK'})
+WHERE ALL(node IN nodes(path) WHERE node:Airport OR node:Hub)
+  AND NONE(rel IN relationships(path) WHERE rel.canceled = true)
+RETURN path,
+       REDUCE(cost = 0, rel IN relationships(path) | cost + rel.price) AS total_cost
+ORDER BY total_cost
+LIMIT 1
+
+-- Time-constrained paths
+MATCH path = (start:Station)-[:ROUTE*]->(end:Station)
+WHERE start.name = 'Downtown' AND end.name = 'Airport'
+  AND REDUCE(time = 0, rel IN relationships(path) | time + rel.travel_minutes) <= 60
+RETURN path
+ORDER BY length(path)
+LIMIT 1
+```
+
+## Production Centrality Analysis
+
+### Eigenvector Centrality
+
+Measure influence based on connection quality:
+
+```python
+import numpy as np
+
+async def eigenvector_centrality(client, iterations=100, tolerance=1e-6):
+    """Compute eigenvector centrality using power iteration"""
+
+    # Get adjacency matrix
+    nodes = await client.execute("MATCH (n) RETURN n.id AS id ORDER BY id")
+    node_ids = [row['id'] for row in nodes]
+    n = len(node_ids)
+    id_to_index = {node_id: i for i, node_id in enumerate(node_ids)}
+
+    # Build adjacency matrix
+    adj = np.zeros((n, n))
+    edges = await client.execute("""
+        MATCH (a)-[:CONNECTED]->(b)
+        RETURN a.id AS source, b.id AS target
+    """)
+
+    for edge in edges:
+        i = id_to_index[edge['source']]
+        j = id_to_index[edge['target']]
+        adj[i][j] = 1
+
+    # Power iteration
+    x = np.ones(n) / n
+    for _ in range(iterations):
+        x_new = adj @ x
+        x_new = x_new / np.linalg.norm(x_new)
+
+        if np.linalg.norm(x_new - x) < tolerance:
+            break
+
+        x = x_new
+
+    # Store results back
+    for node_id, score in zip(node_ids, x):
+        await client.execute("""
+            MATCH (n {id: $id})
+            SET n.eigenvector_centrality = $score
+        """, {"id": node_id, "score": float(score)})
+
+    return dict(zip(node_ids, x))
+```
+
+### Closeness Centrality
+
+Measure average distance to all other nodes:
+
+```gql
+-- Average shortest path length from each node
+MATCH (source:Person)
+MATCH (target:Person)
+WHERE source.id <> target.id
+WITH source,
+     REDUCE(total = 0, path IN
+            COLLECT(shortestPath((source)-[*]-(target))) |
+            total + length(path)) AS sum_distances,
+     COUNT(target) AS target_count
+WITH source,
+     (target_count - 1) / sum_distances AS closeness
+RETURN source.name, closeness
+ORDER BY closeness DESC
+LIMIT 10
+```
+
+### Harmonic Centrality
+
+Robust variant of closeness centrality:
+
+```gql
+-- Sum of reciprocal distances
+MATCH (source:Person)
+OPTIONAL MATCH path = shortestPath((source)-[*]-(target:Person))
+WHERE source.id <> target.id
+WITH source,
+     SUM(1.0 / length(path)) AS harmonic_centrality
+RETURN source.name, harmonic_centrality
+ORDER BY harmonic_centrality DESC
+```
+
+## Community Detection Algorithms
+
+### Louvain Modularity
+
+Hierarchical community detection:
+
+```python
+async def louvain_algorithm(client, resolution=1.0):
+    """Louvain community detection algorithm"""
+
+    # Phase 1: Assign each node to own community
+    await client.execute("""
+        MATCH (n)
+        SET n.community = n.id
+    """)
+
+    improved = True
+    iteration = 0
+
+    while improved and iteration < 100:
+        improved = False
+        iteration += 1
+
+        # For each node, try moving to neighbor's community
+        nodes = await client.execute("MATCH (n) RETURN n.id AS id")
+
+        for node in nodes:
+            node_id = node['id']
+
+            # Get current modularity
+            current_modularity = await compute_modularity(client)
+
+            # Try each neighbor's community
+            neighbors = await client.execute("""
+                MATCH (n {id: $id})-[:CONNECTED]-(neighbor)
+                RETURN DISTINCT neighbor.community AS community
+            """, {"id": node_id})
+
+            best_community = None
+            best_modularity = current_modularity
+
+            for neighbor in neighbors:
+                # Try moving to this community
+                test_modularity = await test_community_move(
+                    client, node_id, neighbor['community']
+                )
+
+                if test_modularity > best_modularity:
+                    best_modularity = test_modularity
+                    best_community = neighbor['community']
+
+            # Move to best community if improvement found
+            if best_community is not None:
+                await client.execute("""
+                    MATCH (n {id: $id})
+                    SET n.community = $community
+                """, {"id": node_id, "community": best_community})
+                improved = True
+
+        # Phase 2: Build super-graph of communities
+        if not improved:
+            await build_community_graph(client)
+
+    return await get_community_assignments(client)
+```
+
+### Girvan-Newman Algorithm
+
+Edge betweenness-based community detection:
+
+```gql
+-- Iteratively remove edges with highest betweenness
+MATCH path = allShortestPaths((a:Node)-[*]-(b:Node))
+WHERE a.id < b.id
+UNWIND relationships(path) AS edge
+WITH edge, COUNT(*) AS betweenness
+ORDER BY betweenness DESC
+LIMIT 1
+DELETE edge
+
+-- Repeat until desired number of communities reached
+```
+
+### Strongly Connected Components
+
+Find maximal strongly connected subgraphs:
+
+```python
+async def tarjan_scc(client):
+    """Tarjan's algorithm for strongly connected components"""
+
+    # Get all nodes
+    nodes = await client.execute("MATCH (n) RETURN n.id AS id")
+    node_list = [n['id'] for n in nodes]
+
+    index = 0
+    stack = []
+    indices = {}
+    lowlinks = {}
+    on_stack = set()
+    sccs = []
+
+    async def strongconnect(node_id):
+        nonlocal index
+
+        indices[node_id] = index
+        lowlinks[node_id] = index
+        index += 1
+        stack.append(node_id)
+        on_stack.add(node_id)
+
+        # Get successors
+        successors = await client.execute("""
+            MATCH (n {id: $id})-[:EDGE]->(successor)
+            RETURN successor.id AS id
+        """, {"id": node_id})
+
+        for succ in successors:
+            succ_id = succ['id']
+
+            if succ_id not in indices:
+                await strongconnect(succ_id)
+                lowlinks[node_id] = min(lowlinks[node_id], lowlinks[succ_id])
+            elif succ_id in on_stack:
+                lowlinks[node_id] = min(lowlinks[node_id], indices[succ_id])
+
+        # Root of SCC
+        if lowlinks[node_id] == indices[node_id]:
+            scc = []
+            while True:
+                w = stack.pop()
+                on_stack.remove(w)
+                scc.append(w)
+                if w == node_id:
+                    break
+            sccs.append(scc)
+
+    for node_id in node_list:
+        if node_id not in indices:
+            await strongconnect(node_id)
+
+    return sccs
+```
+
+## Advanced Similarity Algorithms
+
+### SimRank
+
+Iterative similarity based on neighborhood:
+
+```python
+async def simrank(client, decay=0.8, max_iterations=10):
+    """SimRank similarity algorithm"""
+
+    nodes = await client.execute("MATCH (n) RETURN n.id AS id")
+    node_list = [n['id'] for n in nodes]
+    n = len(node_list)
+
+    # Initialize similarity matrix
+    sim = {(a, b): 1.0 if a == b else 0.0
+           for a in node_list for b in node_list}
+
+    for iteration in range(max_iterations):
+        sim_new = {}
+
+        for a in node_list:
+            for b in node_list:
+                if a == b:
+                    sim_new[(a, b)] = 1.0
+                    continue
+
+                # Get in-neighbors
+                a_in = await get_in_neighbors(client, a)
+                b_in = await get_in_neighbors(client, b)
+
+                if not a_in or not b_in:
+                    sim_new[(a, b)] = 0.0
+                    continue
+
+                # Compute similarity
+                total = sum(sim[(i, j)] for i in a_in for j in b_in)
+                sim_new[(a, b)] = (decay / (len(a_in) * len(b_in))) * total
+
+        sim = sim_new
+
+    # Store similarities
+    for (a, b), score in sim.items():
+        if a < b and score > 0.1:  # Store only significant similarities
+            await client.execute("""
+                MATCH (a {id: $a}), (b {id: $b})
+                MERGE (a)-[s:SIMILAR_TO]->(b)
+                SET s.simrank_score = $score
+            """, {"a": a, "b": b, "score": score})
+
+    return sim
+```
+
+### Adamic-Adar Index
+
+Link prediction scoring:
+
+```gql
+-- Predict future links
+MATCH (a:User {id: $user_id})
+MATCH (a)-[:KNOWS]-(mutual)-[:KNOWS]-(b:User)
+WHERE a.id <> b.id
+  AND NOT EXISTS { MATCH (a)-[:KNOWS]-(b) }
+WITH b, COUNT(DISTINCT mutual) AS mutual_friends,
+     SUM(1.0 / log(COUNT{ MATCH (mutual)-[:KNOWS]-() })) AS aa_score
+RETURN b.name, mutual_friends, aa_score
+ORDER BY aa_score DESC
+LIMIT 10
+```
+
+## Machine Learning Integration
+
+### Graph Embedding
+
+Convert graph structure to vectors:
+
+```python
+from node2vec import Node2Vec
+import networkx as nx
+
+async def generate_embeddings(client, dimensions=128):
+    """Generate node embeddings using node2vec"""
+
+    # Export graph to NetworkX
+    G = nx.Graph()
+
+    nodes = await client.execute("MATCH (n) RETURN n.id AS id")
+    for node in nodes:
+        G.add_node(node['id'])
+
+    edges = await client.execute("""
+        MATCH (a)-[:CONNECTED]-(b)
+        RETURN a.id AS source, b.id AS target
+    """)
+    for edge in edges:
+        G.add_edge(edge['source'], edge['target'])
+
+    # Generate embeddings
+    node2vec = Node2Vec(G, dimensions=dimensions, walk_length=30, num_walks=200)
+    model = node2vec.fit(window=10, min_count=1, batch_words=4)
+
+    # Store embeddings back
+    for node_id in G.nodes():
+        embedding = model.wv[node_id].tolist()
+        await client.execute("""
+            MATCH (n {id: $id})
+            SET n.embedding = $embedding
+        """, {"id": node_id, "embedding": embedding})
+
+    return model
+```
+
+### Graph Neural Networks
+
+Classification using GNN:
+
+```python
+import torch
+import torch_geometric
+
+async def train_gnn_classifier(client, num_classes, hidden_channels=64):
+    """Train GNN for node classification"""
+
+    # Load graph data
+    data = await load_graph_data(client)
+
+    class GCN(torch.nn.Module):
+        def __init__(self):
+            super().__init__()
+            self.conv1 = GCNConv(data.num_features, hidden_channels)
+            self.conv2 = GCNConv(hidden_channels, num_classes)
+
+        def forward(self, x, edge_index):
+            x = self.conv1(x, edge_index)
+            x = x.relu()
+            x = F.dropout(x, p=0.5, training=self.training)
+            x = self.conv2(x, edge_index)
+            return x
+
+    model = GCN()
+    optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
+    criterion = torch.nn.CrossEntropyLoss()
+
+    # Training loop
+    model.train()
+    for epoch in range(200):
+        optimizer.zero_grad()
+        out = model(data.x, data.edge_index)
+        loss = criterion(out[data.train_mask], data.y[data.train_mask])
+        loss.backward()
+        optimizer.step()
+
+    # Store predictions
+    model.eval()
+    pred = model(data.x, data.edge_index).argmax(dim=1)
+
+    for node_id, prediction in zip(data.node_ids, pred):
+        await client.execute("""
+            MATCH (n {id: $id})
+            SET n.predicted_class = $class
+        """, {"id": node_id, "class": int(prediction)})
+
+    return model
+```
+
+## Algorithm Performance Optimization
+
+### Parallel Execution
+
+Distribute computation across cores:
+
+```python
+import asyncio
+from concurrent.futures import ThreadPoolExecutor
+
+async def parallel_centrality_computation(client, node_ids):
+    """Compute centrality for nodes in parallel"""
+
+    async def compute_node_centrality(node_id):
+        result = await client.execute("""
+            MATCH (n {id: $id})-[r]-()
+            RETURN COUNT(r) AS degree
+        """, {"id": node_id})
+        return node_id, result[0]['degree']
+
+    # Create tasks for all nodes
+    tasks = [compute_node_centrality(nid) for nid in node_ids]
+
+    # Execute in parallel (limited concurrency)
+    semaphore = asyncio.Semaphore(50)
+
+    async def bounded_task(task):
+        async with semaphore:
+            return await task
+
+    results = await asyncio.gather(*[bounded_task(t) for t in tasks])
+
+    return dict(results)
+```
+
+### Approximate Algorithms
+
+Trade accuracy for speed:
+
+```gql
+-- Approximate PageRank with sampling
+MATCH (n:Node)
+WITH n, rand() AS random
+WHERE random < 0.1  // Sample 10% of nodes
+MATCH (n)-[:CONNECTED*1..5]-(connected)
+WITH n, COUNT(DISTINCT connected) AS approx_reach
+RETURN n.id, approx_reach
+ORDER BY approx_reach DESC
+LIMIT 100
+```
+
+### Incremental Computation
+
+Update algorithms without full recomputation:
+
+```python
+async def incremental_pagerank(client, new_edge):
+    """Update PageRank incrementally after edge addition"""
+
+    # Only recompute affected nodes
+    affected = await client.execute("""
+        MATCH path = (source {id: $source})-[:CONNECTED*0..2]-(affected)
+        RETURN DISTINCT affected.id AS id
+    """, {"source": new_edge['source']})
+
+    # Recompute only affected subgraph
+    for node in affected:
+        await update_pagerank_for_node(client, node['id'])
+```
+
+## Monitoring and Debugging Algorithms
+
+### Algorithm Profiling
+
+Track execution performance:
+
+```python
+import time
+
+async def profile_algorithm(algorithm_func, *args, **kwargs):
+    """Profile algorithm execution"""
+
+    start_time = time.time()
+    start_memory = get_memory_usage()
+
+    result = await algorithm_func(*args, **kwargs)
+
+    end_time = time.time()
+    end_memory = get_memory_usage()
+
+    print(f"Execution time: {end_time - start_time:.2f}s")
+    print(f"Memory used: {end_memory - start_memory:.2f}MB")
+    print(f"Results: {len(result)} items")
+
+    return result
+```
+
+### Visualization
+
+Visualize algorithm results:
+
+```python
+import matplotlib.pyplot as plt
+import networkx as nx
+
+async def visualize_communities(client):
+    """Visualize community detection results"""
+
+    G = nx.Graph()
+
+    # Load graph with community labels
+    edges = await client.execute("""
+        MATCH (a)-[:CONNECTED]-(b)
+        RETURN a.id AS source, b.id AS target,
+               a.community AS comm_a, b.community AS comm_b
+    """)
+
+    for edge in edges:
+        G.add_edge(edge['source'], edge['target'])
+
+    # Color by community
+    communities = await client.execute("""
+        MATCH (n)
+        RETURN n.id AS id, n.community AS community
+    """)
+
+    community_map = {n['id']: n['community'] for n in communities}
+    colors = [community_map[node] for node in G.nodes()]
+
+    # Draw
+    pos = nx.spring_layout(G)
+    nx.draw(G, pos, node_color=colors, with_labels=True, cmap=plt.cm.rainbow)
+    plt.savefig('communities.png')
+```
+
+Graph algorithms unlock the analytical power of connected data. Start with simple pathfinding and centrality computations, then progress to advanced community detection and machine learning integration as your graph expertise grows. Geode's GQL-native implementation provides excellent performance for production workloads while maintaining code clarity and maintainability.
