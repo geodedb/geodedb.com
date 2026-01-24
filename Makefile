@@ -83,15 +83,17 @@ npm:
 
 build: npm
 	@echo "Building production site..."
+	@rm -f .hugo_build.lock
 	hugo --minify --gc -b https://geodedb.com
 
 serve: npm
 	@echo "Starting development server at http://localhost:1313"
+	@rm -f .hugo_build.lock
 	hugo server -D --bind 0.0.0.0
 
 clean:
 	@echo "Cleaning build artifacts..."
-	rm -rf public/ resources/_gen/ hugo_stats.json
+	rm -rf public/ resources/_gen/ hugo_stats.json .hugo_build.lock
 
 update:
 	@echo "Updating theme submodule..."
