@@ -1,0 +1,39 @@
+/* Force taxonomy cards to always be visible */
+/* This overrides any theme CSS that might be hiding content */
+
+.summary-card,
+.related-topic-card,
+.card,
+.col-md-6,
+.col-lg-4,
+.col-xl-3,
+[data-sortable] > div,
+.row.g-4 > div {
+  opacity: 1 !important;
+  visibility: visible !important;
+  display: block !important;
+  transform: none !important;
+  animation: none !important;
+}
+
+/* Ensure card bodies are visible */
+.card-body,
+.card-title,
+.card-text,
+.card-text-wrapper {
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+/* Override any animations that might be hiding content */
+* {
+  animation-play-state: running !important;
+}
+
+/* Specifically for taxonomy pages */
+.page-taxonomy-development .summary-card,
+.page-taxonomy-gql .summary-card,
+[class*="page-taxonomy"] .card {
+  opacity: 1 !important;
+  visibility: visible !important;
+}
