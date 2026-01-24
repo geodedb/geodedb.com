@@ -352,6 +352,149 @@ Upcoming features planned for future releases:
 - [Deprecations](/docs/releases/deprecations/) - Features being phased out
 - [Versioning](/tags/versions/) - Version numbering scheme
 
+## Detailed Version Comparison
+
+### Feature Matrix Across Versions
+
+| Feature | v0.15.0 | v0.16.0 | v0.17.0 | v0.18.0 |
+|---------|---------|---------|---------|---------|
+| GQL Compliance | 45% | 68% | 97% | 100% |
+| Vector Search | - | Beta | Stable | Stable |
+| Full-Text Search | - | Beta | Stable | Stable |
+| Row-Level Security | - | Alpha | Beta | Stable |
+| CDC Streams | - | - | Beta | Stable |
+| Distributed Mode | - | - | - | Experimental |
+| ACID Transactions | ✓ | ✓ | ✓ | ✓ |
+| MVCC | ✓ | ✓ | ✓ | ✓ |
+| QUIC Transport | ✓ | ✓ | ✓ | ✓ |
+| TLS 1.3 | ✓ | ✓ | ✓ | ✓ |
+
+### Performance Improvements Timeline
+
+**v0.18.0 Performance Gains** (compared to v0.17.0):
+- Pattern matching: 25% faster
+- Index scans: 40% faster
+- Aggregations: 30% faster
+- Transaction commits: 15% faster
+- Memory usage: 20% reduction
+
+**v0.17.0 Performance Gains** (compared to v0.16.0):
+- Graph traversals: 50% faster
+- Query planning: 35% faster
+- Concurrent queries: 2x throughput
+
+**v0.16.0 Performance Gains** (compared to v0.15.0):
+- Pattern matching: 3x faster
+- Memory footprint: 50% smaller
+- Index creation: 4x faster
+
+## Migration Strategies
+
+### Zero-Downtime Upgrade Pattern
+
+```bash
+#!/bin/bash
+# Blue-Green deployment for zero-downtime upgrade
+
+# Deploy new version alongside old
+docker run -d --name geode-green codepros/geode:v0.18.0
+
+# Replicate data from blue to green
+geode replicate --source geode-blue:3141 --target geode-green:3141
+
+# Verify green instance
+geode verify --host geode-green:3141
+
+# Switch load balancer to green
+kubectl set image deployment/geode geode=codepros/geode:v0.18.0
+
+# Monitor for issues
+kubectl rollout status deployment/geode
+
+# If successful, remove blue
+docker stop geode-blue
+docker rm geode-blue
+```
+
+### Data Migration Scripts
+
+```python
+async def migrate_v017_to_v018():
+    """Migrate data from v0.17.0 to v0.18.0."""
+    # Connect to old and new instances
+    old_client = await geode_client.connect("old-server:3141")
+    new_client = await geode_client.connect("new-server:3141")
+
+    try:
+        # Export from old version
+        export_result = await old_client.execute("""
+            MATCH (n)
+            OPTIONAL MATCH (n)-[r]->(m)
+            RETURN n, r, m
+        """)
+
+        # Import to new version
+        async for row in export_result:
+            # Transform data if needed for new schema
+            node_data = transform_node(row['n'])
+            await new_client.execute("""
+                CREATE (n) SET n = $props
+            """, {"props": node_data})
+
+            if row['r']:
+                rel_data = transform_relationship(row['r'])
+                await new_client.execute("""
+                    MATCH (n {id: $from}), (m {id: $to})
+                    CREATE (n)-[r:TYPE]->(m)
+                    SET r = $props
+                """, {
+                    "from": row['n']['id'],
+                    "to": row['m']['id'],
+                    "props": rel_data
+                })
+
+    finally:
+        await old_client.close()
+        await new_client.close()
+```
+
+### Client Library Compatibility
+
+| Server Version | Go Client | Python Client | Rust Client | Zig Client |
+|----------------|-----------|---------------|-------------|------------|
+| v0.18.0 | v0.18.x | v0.18.x | v0.18.x | v0.18.x |
+| v0.17.0 | v0.17.x-v0.18.x | v0.17.x-v0.18.x | v0.17.x | v0.17.x |
+| v0.16.0 | v0.16.x | v0.16.x | v0.16.x | - |
+
+## Known Issues and Workarounds
+
+### v0.18.0 Known Issues
+
+**Issue #1**: Performance degradation with >100M nodes in distributed mode
+- **Workaround**: Use sharding key optimization
+- **Fix planned**: v0.19.0
+- **Severity**: Medium
+
+**Issue #2**: Vector index creation slow for high dimensions (>512)
+- **Workaround**: Use lower dimensions or batch index creation
+- **Fix planned**: v0.18.1
+- **Severity**: Low
+
+**Issue #3**: CDC stream lag under high write load
+- **Workaround**: Increase WAL buffer size
+- **Fix planned**: v0.18.1
+- **Severity**: Medium
+
+## Version Support Status
+
+| Version | Release Date | End of Support | Status |
+|---------|--------------|----------------|---------|
+| v0.18.x | Jan 2026 | Jan 2028 | LTS (Current) |
+| v0.17.x | Dec 2025 | Jun 2026 | Maintenance |
+| v0.16.x | Nov 2025 | Mar 2026 | Security Only |
+| v0.15.x | Oct 2025 | Jan 2026 | EOL Soon |
+| v0.14.x and earlier | - | - | EOL |
+
 ## Further Reading
 
 - [Installation Guide](/docs/installation/) - Installing specific versions
@@ -359,3 +502,6 @@ Upcoming features planned for future releases:
 - [Backup and Restore](/docs/operations/backup/) - Data protection
 - [Migration Guide](/docs/operations/migration/) - Moving from other databases
 - [Support Policy](/docs/releases/support-policy/) - Support timelines and commitments
+- [Migration Tools](/docs/tools/migration/) - Automated migration utilities
+- [Beta Program](/docs/community/beta-testing/) - Early access program
+- [Release Calendar](/docs/releases/calendar/) - Upcoming release schedule

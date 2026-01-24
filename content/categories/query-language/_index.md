@@ -476,9 +476,508 @@ LIMIT 10
 - [MATCH Clause](/tags/match/) - Pattern matching details
 - [Operators](/tags/operators/) - Comparison and logical operators
 
+## Advanced GQL Features
+
+### Window Functions
+
+Window functions perform calculations across sets of rows related to the current row:
+
+```gql
+-- Rank products within categories
+MATCH (p:Product)
+RETURN p.category,
+       p.name,
+       p.price,
+       RANK() OVER (PARTITION BY p.category ORDER BY p.price DESC) AS price_rank,
+       AVG(p.price) OVER (PARTITION BY p.category) AS category_avg_price
+ORDER BY p.category, price_rank
+```
+
+**Supported Window Functions**:
+- `ROW_NUMBER()`: Sequential number for each row
+- `RANK()`: Rank with gaps for ties
+- `DENSE_RANK()`: Rank without gaps
+- `PERCENT_RANK()`: Relative rank (0 to 1)
+- `NTILE(n)`: Divide rows into n buckets
+- `LAG(expr, offset)`: Access previous row
+- `LEAD(expr, offset)`: Access next row
+- `FIRST_VALUE(expr)`: First value in window
+- `LAST_VALUE(expr)`: Last value in window
+
+### Common Table Expressions (CTEs)
+
+CTEs create named temporary result sets for complex queries:
+
+```gql
+-- Find users and their influence score
+WITH user_metrics AS (
+    MATCH (u:User)
+    RETURN u,
+           COUNT{(u)<-[:FOLLOWS]-()} AS follower_count,
+           COUNT{(u)-[:POSTED]->()} AS post_count
+),
+engagement AS (
+    MATCH (u:User)-[:POSTED]->(p:Post)
+    RETURN u,
+           AVG(p.likes + p.comments) AS avg_engagement
+)
+MATCH (u:User)
+WITH u,
+     user_metrics.follower_count AS followers,
+     user_metrics.post_count AS posts,
+     engagement.avg_engagement AS engagement
+WHERE user_metrics.u = u AND engagement.u = u
+RETURN u.username,
+       followers,
+       posts,
+       engagement,
+       (followers * 0.4 + posts * 0.2 + engagement * 0.4) AS influence_score
+ORDER BY influence_score DESC
+LIMIT 100
+```
+
+### Recursive Queries
+
+Find all nodes reachable through recursive traversal:
+
+```gql
+-- Find all descendants in organizational hierarchy
+MATCH (root:Employee {name: 'CEO'})
+WITH root
+MATCH path = (root)-[:MANAGES*0..]->(subordinate:Employee)
+RETURN subordinate.name,
+       subordinate.title,
+       LENGTH(path) AS reporting_levels
+ORDER BY reporting_levels, subordinate.name
+```
+
+**Depth Control**:
+```gql
+-- Limit recursion depth
+MATCH (start:Node {id: 1})-[*1..5]->(reachable)
+RETURN DISTINCT reachable
+
+-- Find all reachable (use cautiously)
+MATCH (start:Node {id: 1})-[*]->(reachable)
+RETURN DISTINCT reachable
+```
+
+### Graph Pattern Expressions
+
+Combine multiple patterns with Boolean logic:
+
+```gql
+-- Find users matching complex criteria
+MATCH (u:User)
+WHERE (
+    // Pattern 1: Active premium users
+    (u.subscription = 'premium' AND u.last_login > current_date() - INTERVAL '7' DAY)
+    OR
+    // Pattern 2: High engagement free users
+    (u.subscription = 'free' AND COUNT{(u)-[:POSTED]->()) > 50}
+)
+AND NOT EXISTS {
+    // Exclude suspended users
+    MATCH (u)-[:SUSPENDED]->(s:Suspension)
+    WHERE s.active = true
+}
+RETURN u.username, u.subscription, u.last_login
+```
+
+### List Comprehensions
+
+Process lists with filtering and transformation:
+
+```gql
+-- Extract and process relationship properties
+MATCH (u:User {id: $user_id})-[follows:FOLLOWS]->(friend:User)
+RETURN u.name,
+       [f IN COLLECT(friend) WHERE f.active = true | f.name] AS active_friends,
+       [f IN COLLECT(follows) | f.since] AS friendship_dates,
+       REDUCE(total = 0, f IN COLLECT(friend) | total + f.follower_count) AS total_network_reach
+```
+
+**List Functions**:
+- `COLLECT(expr)`: Aggregate to list
+- `HEAD(list)`: First element
+- `TAIL(list)`: All but first
+- `LAST(list)`: Last element
+- `SIZE(list)`: List length
+- `REVERSE(list)`: Reverse order
+- `REDUCE(...)`: Fold/reduce operation
+
+### Map Projections
+
+Create maps from node properties:
+
+```gql
+-- Return structured data
+MATCH (u:User {id: $user_id})
+RETURN {
+    user: {
+        id: u.id,
+        name: u.name,
+        email: u.email
+    },
+    stats: {
+        follower_count: COUNT{(u)<-[:FOLLOWS]-()},
+        following_count: COUNT{(u)-[:FOLLOWS]->()},
+        post_count: COUNT{(u)-[:POSTED]->()}
+    },
+    recent_activity: [
+        (u)-[:POSTED]->(p:Post)
+        WHERE p.created > current_date() - INTERVAL '7' DAY |
+        {title: p.title, created: p.created, likes: p.likes}
+    ]
+} AS user_profile
+```
+
+## Query Optimization Techniques
+
+### Index Hints
+
+Guide the query planner to use specific indexes:
+
+```gql
+-- Force index usage
+MATCH (u:User)
+USING INDEX u:User(email)
+WHERE u.email = $email
+RETURN u
+
+-- Scan hint for small result sets
+MATCH (u:User)
+USING SCAN u:User
+WHERE u.role = 'admin'
+RETURN u
+```
+
+### Join Hints
+
+Control join strategy:
+
+```gql
+-- Force hash join
+MATCH (a:User)-[:FRIEND]-(b:User)
+OPTION (join=hash)
+WHERE a.city = 'NYC' AND b.city = 'SF'
+RETURN a.name, b.name
+
+-- Force nested loop
+MATCH (a:User)-[:FRIEND]-(b:User)
+OPTION (join=nested_loop)
+WHERE a.id = $user_id
+RETURN b.name
+```
+
+### Query Rewriting
+
+**Before optimization**:
+```gql
+-- Inefficient: Cartesian product
+MATCH (u:User), (p:Product)
+WHERE u.city = p.warehouse_city
+RETURN u.name, p.name
+```
+
+**After optimization**:
+```gql
+-- Efficient: Explicit relationship or property join
+MATCH (u:User)
+MATCH (p:Product {warehouse_city: u.city})
+RETURN u.name, p.name
+```
+
+### Projection Pushdown
+
+Select only needed columns early:
+
+```gql
+-- Inefficient: Materializes all properties
+MATCH (u:User)-[:POSTED]->(p:Post)
+WITH u, p
+WHERE p.likes > 100
+RETURN u.name, p.title
+
+-- Efficient: Project early
+MATCH (u:User)-[:POSTED]->(p:Post)
+WHERE p.likes > 100
+RETURN u.name, p.title
+```
+
+## Functions and Operators
+
+### String Functions
+
+```gql
+-- String manipulation
+MATCH (u:User)
+WHERE toLower(u.name) CONTAINS 'alice'
+RETURN u.name,
+       toUpper(u.email) AS email_upper,
+       substring(u.email, 0, indexOf(u.email, '@')) AS email_prefix,
+       replace(u.phone, '-', '') AS phone_clean,
+       trim(u.address) AS address_trimmed,
+       left(u.postal_code, 5) AS zip5,
+       right(u.postal_code, 4) AS zip4_extension
+```
+
+### Mathematical Functions
+
+```gql
+-- Math operations
+MATCH (product:Product)
+RETURN product.name,
+       product.price,
+       round(product.price * 1.08, 2) AS price_with_tax,
+       floor(product.price) AS price_floor,
+       ceil(product.price) AS price_ceil,
+       abs(product.profit_margin) AS abs_margin,
+       sqrt(product.variance) AS std_deviation,
+       power(product.growth_rate, 12) AS annual_growth
+```
+
+### Temporal Functions
+
+```gql
+-- Date and time operations
+MATCH (event:Event)
+WHERE event.date >= date('2026-01-01')
+  AND event.date < date('2026-02-01')
+RETURN event.name,
+       event.date,
+       duration_between(event.start_time, event.end_time) AS event_duration,
+       date_add(event.date, duration('P7D')) AS week_later,
+       extract(month FROM event.date) AS event_month,
+       extract(year FROM event.date) AS event_year,
+       format_temporal(event.date, 'YYYY-MM-DD') AS formatted_date
+```
+
+### Aggregation Functions
+
+```gql
+-- Statistical aggregations
+MATCH (product:Product)-[:IN_CATEGORY]->(category:Category)
+RETURN category.name,
+       COUNT(product) AS product_count,
+       MIN(product.price) AS min_price,
+       MAX(product.price) AS max_price,
+       AVG(product.price) AS avg_price,
+       SUM(product.inventory) AS total_inventory,
+       STDDEV(product.price) AS price_stddev,
+       VARIANCE(product.price) AS price_variance,
+       PERCENTILE_CONT(product.price, 0.5) AS median_price,
+       PERCENTILE_CONT(product.price, 0.95) AS p95_price
+```
+
+### Graph Functions
+
+```gql
+-- Graph-specific functions
+MATCH path = (a:Person {name: 'Alice'})-[:KNOWS*1..5]-(b:Person {name: 'Bob'})
+RETURN path,
+       LENGTH(path) AS path_length,
+       nodes(path) AS all_nodes,
+       relationships(path) AS all_relationships,
+       [n IN nodes(path) | n.name] AS node_names,
+       [r IN relationships(path) | type(r)] AS relationship_types,
+       SIZE(nodes(path)) AS node_count
+```
+
+## Error Handling in Queries
+
+### COALESCE for Null Handling
+
+```gql
+-- Provide defaults for null values
+MATCH (u:User)
+RETURN u.name,
+       COALESCE(u.middle_name, '') AS middle_name,
+       COALESCE(u.phone, 'No phone') AS contact,
+       COALESCE(u.age, 0) AS age
+```
+
+### CASE Expressions
+
+```gql
+-- Conditional logic
+MATCH (product:Product)
+RETURN product.name,
+       product.inventory,
+       CASE
+           WHEN product.inventory = 0 THEN 'Out of Stock'
+           WHEN product.inventory < 10 THEN 'Low Stock'
+           WHEN product.inventory < 50 THEN 'In Stock'
+           ELSE 'Well Stocked'
+       END AS stock_status,
+       CASE product.category
+           WHEN 'Electronics' THEN product.price * 0.9
+           WHEN 'Clothing' THEN product.price * 0.8
+           ELSE product.price * 0.95
+       END AS sale_price
+```
+
+### TRY-CATCH Pattern
+
+```python
+# Application-level error handling
+async def safe_query_execution(client, query, params):
+    """Execute query with comprehensive error handling."""
+    try:
+        result = await client.execute(query, params)
+        return result
+    except geode_client.ConstraintViolationError as e:
+        logger.error(f"Constraint violation: {e}")
+        # Handle uniqueness or other constraint issues
+        return None
+    except geode_client.QueryTimeoutError as e:
+        logger.warning(f"Query timeout: {e}")
+        # Potentially retry with increased timeout
+        return None
+    except geode_client.SyntaxError as e:
+        logger.error(f"Invalid query syntax: {e}")
+        # Fix query and retry
+        return None
+    except Exception as e:
+        logger.exception(f"Unexpected error: {e}")
+        raise
+```
+
+## Query Performance Patterns
+
+### Batch Operations
+
+```gql
+-- Batch inserts for efficiency
+UNWIND $users AS user_data
+CREATE (u:User)
+SET u = user_data
+
+-- Batch updates
+UNWIND $updates AS update
+MATCH (u:User {id: update.id})
+SET u.last_login = update.timestamp
+```
+
+### Pagination Strategies
+
+**Offset-based pagination** (simple but slower for large offsets):
+```gql
+MATCH (p:Product)
+RETURN p
+ORDER BY p.created DESC
+SKIP $offset
+LIMIT $page_size
+```
+
+**Cursor-based pagination** (efficient for large datasets):
+```gql
+-- First page
+MATCH (p:Product)
+WHERE p.id > 0
+RETURN p
+ORDER BY p.id
+LIMIT $page_size
+
+-- Subsequent pages
+MATCH (p:Product)
+WHERE p.id > $last_seen_id
+RETURN p
+ORDER BY p.id
+LIMIT $page_size
+```
+
+### Materialized Aggregates
+
+```gql
+-- Pre-compute expensive aggregates
+MATCH (user:User)
+WITH user,
+     COUNT{(user)-[:POSTED]->()} AS post_count,
+     COUNT{(user)<-[:FOLLOWS]-()} AS follower_count
+SET user.cached_post_count = post_count,
+    user.cached_follower_count = follower_count,
+    user.cache_updated = current_timestamp()
+
+-- Use cached values in queries
+MATCH (u:User)
+WHERE u.cached_follower_count > 1000
+RETURN u.name, u.cached_follower_count
+```
+
+## Security Best Practices
+
+### Parameterized Queries
+
+**Never concatenate user input**:
+```python
+# WRONG - SQL injection vulnerable
+user_input = request.args.get('email')
+query = f"MATCH (u:User {{email: '{user_input}'}}) RETURN u"
+
+# CORRECT - Parameterized
+query = "MATCH (u:User {email: $email}) RETURN u"
+result = await client.execute(query, {"email": user_input})
+```
+
+### Input Validation
+
+```python
+def validate_query_params(params: dict) -> dict:
+    """Validate and sanitize query parameters."""
+    validated = {}
+
+    if 'email' in params:
+        email = params['email']
+        if not re.match(r'^[\w\.-]+@[\w\.-]+\.\w+$', email):
+            raise ValueError("Invalid email format")
+        validated['email'] = email
+
+    if 'age' in params:
+        age = int(params['age'])
+        if age < 0 or age > 150:
+            raise ValueError("Invalid age")
+        validated['age'] = age
+
+    return validated
+```
+
+## Query Debugging Tools
+
+### EXPLAIN Plans
+
+```gql
+-- View query execution plan
+EXPLAIN
+MATCH (u:User)-[:FRIEND]-(f:User)
+WHERE u.city = 'NYC'
+RETURN f.name
+
+-- Example output:
+-- NodeIndexSeek :User(city) (estimated rows: 1000)
+--   Expand (u)-[:FRIEND]-(f)
+--   Project f.name
+```
+
+### PROFILE for Actual Execution
+
+```gql
+-- Profile actual execution with real data
+PROFILE
+MATCH (u:User)-[:FRIEND]-(f:User)
+WHERE u.city = 'NYC'
+RETURN f.name
+
+-- Shows actual row counts, execution time, memory usage
+```
+
 ## Further Reading
 
 - [GQL Tutorial](/docs/tutorials/gql-basics/) - Step-by-step learning path
 - [API Reference](/docs/api-reference/) - Complete function reference
 - [Examples](/categories/examples/) - Real-world query examples
 - [GQL Specification](/docs/gql-reference/specification/) - ISO standard details
+- [Query Optimization Guide](/docs/performance/query-optimization/) - Performance tuning
+- [Advanced Patterns](/docs/gql-reference/advanced-patterns/) - Complex query techniques
+- [Function Reference](/docs/gql-reference/functions/) - Complete function catalog
+- [Best Practices](/docs/best-practices/query-writing/) - Query writing guidelines

@@ -204,6 +204,353 @@ ORDER BY degree DESC
 - [Anomaly Detection](/tags/anomaly-detection/) - Identifying unusual patterns
 - [Performance Optimization](/categories/query-optimization/) - Optimizing analytical queries
 
+## Advanced Algorithm Implementation
+
+### Implementing Custom Algorithms
+
+While Geode provides built-in implementations of common algorithms, many use cases require custom analytics tailored to specific domains. GQL's pattern matching and aggregation capabilities enable implementing sophisticated algorithms directly in queries.
+
+**Iterative Computation with WITH Clauses**
+
+```gql
+-- Simplified PageRank iteration
+WITH 0.85 AS damping_factor
+MATCH (n:Node)
+SET n.rank = 1.0
+
+// Iterate multiple times
+WITH damping_factor
+MATCH (n:Node)<-[r]-(m:Node)
+WITH n, damping_factor, SUM(m.rank / degree(m)) AS incoming_rank
+SET n.rank = (1 - damping_factor) + damping_factor * incoming_rank
+```
+
+**Breadth-First Search Implementation**
+
+```python
+async def bfs_traversal(client, start_id, max_depth=5):
+    """Implement BFS using iterative queries."""
+    visited = set([start_id])
+    current_level = [start_id]
+
+    for depth in range(max_depth):
+        if not current_level:
+            break
+
+        result = await client.execute("""
+            MATCH (n)-[:CONNECTED]-(neighbor)
+            WHERE n.id IN $current_ids
+              AND NOT neighbor.id IN $visited
+            RETURN DISTINCT neighbor.id AS id
+        """, {"current_ids": current_level, "visited": list(visited)})
+
+        next_level = []
+        async for row in result:
+            next_level.append(row['id'])
+            visited.add(row['id'])
+
+        current_level = next_level
+
+    return visited
+```
+
+### Graph Sampling and Statistics
+
+For very large graphs, computing exact metrics may be prohibitive. Sampling techniques provide approximate results with bounded error.
+
+```gql
+-- Random node sampling for statistics
+MATCH (n:User)
+WHERE random() < 0.01  // 1% sample
+WITH COUNT(n) AS sample_size,
+     AVG(degree(n)) AS avg_degree,
+     STDDEV(degree(n)) AS stddev_degree
+RETURN sample_size * 100 AS estimated_total,
+       avg_degree,
+       stddev_degree
+```
+
+**Random Walk Sampling**
+
+```gql
+-- Random walk for graph exploration
+MATCH path = (start:Node {id: $start_id})-[:EDGE*10]->(end)
+WHERE ALL (r IN relationships(path) WHERE random() > 0.5)
+RETURN nodes(path), length(path)
+```
+
+## Temporal Graph Analytics
+
+Temporal graphs capture how relationships evolve over time, enabling analysis of dynamic networks.
+
+### Time-Windowed Analysis
+
+```gql
+-- Analyze community evolution over time windows
+WITH DATE '2025-01-01' AS window_start,
+     DATE '2025-02-01' AS window_end
+MATCH (u1:User)-[r:INTERACTION]->(u2:User)
+WHERE r.timestamp >= window_start
+  AND r.timestamp < window_end
+WITH u1.community AS community,
+     COUNT(DISTINCT r) AS interactions
+RETURN community,
+       interactions,
+       interactions / 31.0 AS daily_avg
+ORDER BY interactions DESC
+```
+
+### Change Detection
+
+```gql
+-- Detect nodes with changing centrality
+MATCH (n:Node)
+WITH n,
+     n.centrality_last_week AS old_centrality,
+     calculate_centrality(n) AS new_centrality
+WHERE ABS(new_centrality - old_centrality) / old_centrality > 0.5
+RETURN n.id,
+       old_centrality,
+       new_centrality,
+       (new_centrality - old_centrality) / old_centrality AS pct_change
+ORDER BY ABS(pct_change) DESC
+```
+
+## Machine Learning Integration Patterns
+
+### Feature Engineering from Graphs
+
+Graph structure provides rich features for machine learning models.
+
+```python
+async def extract_node_features(client, node_id):
+    """Extract graph-based features for ML."""
+    features = await client.execute("""
+        MATCH (n {id: $node_id})
+        OPTIONAL MATCH (n)-[r]-()
+        WITH n,
+             COUNT(DISTINCT r) AS degree,
+             COUNT{(n)-[:FRIEND]-()} AS friend_count,
+             COUNT{(n)-[:POSTED]->()} AS post_count
+        OPTIONAL MATCH (n)-[:FRIEND*2]-(foaf)
+        WITH n, degree, friend_count, post_count,
+             COUNT(DISTINCT foaf) AS network_size
+        RETURN degree,
+               friend_count,
+               post_count,
+               network_size,
+               friend_count::FLOAT / NULLIF(degree, 0) AS friend_ratio
+    """, {"node_id": node_id})
+
+    return await features.fetch_one()
+```
+
+### Graph Embedding Training
+
+```python
+import numpy as np
+from geode_client import GeodeClient
+
+async def train_node2vec_embeddings(client, dimensions=128):
+    """Generate Node2Vec embeddings."""
+    # Generate random walks
+    walks = []
+    result = await client.execute("""
+        MATCH (start:Node)
+        MATCH path = (start)-[:EDGE*10..20]-(end)
+        RETURN [n IN nodes(path) | n.id] AS walk
+        LIMIT 10000
+    """)
+
+    async for row in result:
+        walks.append(row['walk'])
+
+    # Train Word2Vec on walks (node sequences)
+    from gensim.models import Word2Vec
+    model = Word2Vec(walks, vector_size=dimensions, window=5, min_count=1)
+
+    # Store embeddings back in graph
+    for node_id in model.wv.index_to_key:
+        embedding = model.wv[node_id].tolist()
+        await client.execute("""
+            MATCH (n:Node {id: $node_id})
+            SET n.embedding = $embedding
+        """, {"node_id": int(node_id), "embedding": embedding})
+```
+
+## Performance Optimization Strategies
+
+### Query Optimization for Algorithms
+
+**Materialized Views for Repeated Computations**
+
+```gql
+-- Pre-compute and store degree centrality
+MATCH (n:Node)-[r]-()
+WITH n, COUNT(r) AS degree
+SET n.degree = degree
+
+-- Later queries use pre-computed values
+MATCH (n:Node)
+WHERE n.degree > 10
+RETURN n.id, n.degree
+```
+
+**Incremental Updates**
+
+Instead of recomputing metrics from scratch, update them incrementally:
+
+```python
+async def update_centrality_incremental(client, new_edge_source, new_edge_target):
+    """Update centrality scores incrementally when edge is added."""
+    await client.execute("""
+        MATCH (source {id: $source}), (target {id: $target})
+        SET source.degree = COALESCE(source.degree, 0) + 1,
+            target.degree = COALESCE(target.degree, 0) + 1
+    """, {"source": new_edge_source, "target": new_edge_target})
+```
+
+### Parallel Algorithm Execution
+
+```python
+import asyncio
+
+async def parallel_community_detection(client, communities):
+    """Run PageRank on multiple communities in parallel."""
+    tasks = []
+    for community_id in communities:
+        task = compute_pagerank_for_community(client, community_id)
+        tasks.append(task)
+
+    results = await asyncio.gather(*tasks)
+    return dict(zip(communities, results))
+
+async def compute_pagerank_for_community(client, community_id):
+    """Compute PageRank within a single community."""
+    result = await client.execute("""
+        MATCH (n:Node {community: $community_id})-[r]->()
+        WITH n, COUNT(r) AS out_degree
+        RETURN n.id, out_degree
+    """, {"community_id": community_id})
+
+    # PageRank computation logic here
+    return await process_pagerank(result)
+```
+
+## Graph Algorithm Benchmarking
+
+### Performance Testing
+
+```python
+import time
+import statistics
+
+async def benchmark_algorithm(client, algorithm_query, params, iterations=10):
+    """Benchmark graph algorithm performance."""
+    timings = []
+
+    for i in range(iterations):
+        start = time.perf_counter()
+        await client.execute(algorithm_query, params)
+        end = time.perf_counter()
+        timings.append(end - start)
+
+    return {
+        'mean': statistics.mean(timings),
+        'median': statistics.median(timings),
+        'stddev': statistics.stdev(timings),
+        'min': min(timings),
+        'max': max(timings)
+    }
+```
+
+### Scalability Analysis
+
+```gql
+-- Profile algorithm performance at different scales
+PROFILE
+MATCH (n:Node)-[r:EDGE*1..5]-(m:Node)
+WHERE n.id = $start_id
+RETURN COUNT(DISTINCT m) AS reachable_nodes,
+       COUNT(r) AS total_paths
+```
+
+## Industry-Specific Applications
+
+### Bioinformatics: Protein Interaction Networks
+
+```gql
+-- Find proteins in same pathway
+MATCH (p1:Protein {name: $protein_name})-[:INTERACTS_WITH*1..3]-(p2:Protein)
+      -[:PART_OF]->(pathway:Pathway)
+RETURN pathway.name,
+       COUNT(DISTINCT p2) AS proteins_in_pathway
+ORDER BY proteins_in_pathway DESC
+```
+
+### Transportation: Route Optimization
+
+```gql
+-- Find optimal route with capacity constraints
+MATCH path = SHORTEST (start:Location {name: $origin})
+                      -[:ROUTE*]->
+                      (end:Location {name: $destination})
+WHERE ALL (r IN relationships(path) WHERE r.capacity >= $required_capacity)
+RETURN path,
+       REDUCE(cost = 0, r IN relationships(path) | cost + r.distance) AS total_distance
+```
+
+### Cybersecurity: Attack Graph Analysis
+
+```gql
+-- Identify critical vulnerabilities in attack paths
+MATCH path = (attacker:ExternalNode)-[:EXPLOITS*]->(target:CriticalAsset)
+WITH path,
+     [n IN nodes(path) WHERE n:Vulnerability] AS vulnerabilities
+RETURN path,
+       vulnerabilities,
+       length(path) AS attack_steps
+ORDER BY length(path)
+LIMIT 10
+```
+
+## Visualization and Exploration
+
+While Geode focuses on data storage and querying, visualization tools help explore algorithm results.
+
+```python
+async def export_for_visualization(client, community_id):
+    """Export subgraph for visualization tools."""
+    result = await client.execute("""
+        MATCH (n:Node {community: $community_id})-[r]-(m:Node {community: $community_id})
+        RETURN COLLECT(DISTINCT n) AS nodes,
+               COLLECT(DISTINCT r) AS relationships
+    """, {"community_id": community_id})
+
+    data = await result.fetch_one()
+    # Export to formats like GraphML, GEXF, or D3.js JSON
+    return convert_to_graphml(data['nodes'], data['relationships'])
+```
+
+## Error Handling and Validation
+
+```python
+async def robust_algorithm_execution(client, query, params):
+    """Execute algorithm with proper error handling."""
+    try:
+        result = await client.execute(query, params)
+        return result
+    except geode_client.QueryError as e:
+        if "timeout" in str(e).lower():
+            # Retry with increased timeout
+            return await client.execute(query, params, timeout=60000)
+        elif "memory" in str(e).lower():
+            # Suggest reducing dataset
+            raise ValueError("Graph too large, consider sampling")
+        else:
+            raise
+```
+
 ## Further Reading
 
 - [GQL Pattern Matching](/docs/gql-reference/pattern-matching/) - Foundation for graph algorithms
@@ -211,3 +558,7 @@ ORDER BY degree DESC
 - [Vector Search](/tags/vector-search/) - Similarity search and embeddings
 - [Query Profiling](/tags/profiling/) - Understanding algorithm performance
 - [Best Practices](/categories/best-practices/) - Optimization techniques
+- [Machine Learning Integration](/docs/advanced/ml-integration/) - Detailed ML workflows
+- [Performance Tuning](/docs/performance/query-optimization/) - Query optimization guide
+- [Temporal Graphs](/tags/temporal/) - Time-aware graph analytics
+- [Graph Visualization](/docs/tools/visualization/) - Visualization tools and techniques

@@ -371,6 +371,457 @@ async def process_cdc_events():
                 await refresh_recommendations(event.entity_id)
 ```
 
+## Advanced Transaction Patterns
+
+### Optimistic Concurrency Control
+
+```python
+async def update_with_optimistic_locking(client, node_id, version):
+    """Update with version checking to prevent lost updates."""
+    try:
+        result = await client.execute("""
+            MATCH (n:Node {id: $id, version: $expected_version})
+            SET n.data = $new_data,
+                n.version = $expected_version + 1
+            RETURN n.version AS new_version
+        """, {
+            "id": node_id,
+            "expected_version": version,
+            "new_data": "updated"
+        })
+
+        return await result.fetch_one()
+    except geode_client.NoResultsError:
+        raise ConflictError("Version mismatch - data was modified")
+```
+
+### Saga Pattern for Distributed Transactions
+
+```python
+async def execute_saga(client, steps):
+    """Execute multi-step saga with compensation."""
+    completed_steps = []
+
+    try:
+        async with client.transaction() as tx:
+            for step in steps:
+                await step['forward'](tx)
+                completed_steps.append(step)
+            await tx.commit()
+    except Exception as e:
+        # Compensate completed steps in reverse order
+        for step in reversed(completed_steps):
+            try:
+                await step['compensate'](client)
+            except Exception as comp_error:
+                logger.error(f"Compensation failed: {comp_error}")
+        raise
+
+# Example saga
+async def transfer_money_saga(from_account, to_account, amount):
+    steps = [
+        {
+            'forward': lambda tx: debit_account(tx, from_account, amount),
+            'compensate': lambda c: credit_account(c, from_account, amount)
+        },
+        {
+            'forward': lambda tx: credit_account(tx, to_account, amount),
+            'compensate': lambda c: debit_account(c, to_account, amount)
+        }
+    ]
+    await execute_saga(client, steps)
+```
+
+## Advanced Indexing Strategies
+
+### Composite Index Optimization
+
+```gql
+-- Create composite index for multi-column queries
+CREATE INDEX user_location_age ON :User(city, age)
+
+-- Queries benefit from composite index
+MATCH (u:User)
+WHERE u.city = 'San Francisco'
+  AND u.age >= 25
+  AND u.age <= 35
+RETURN u.name
+
+-- Index covers both predicates efficiently
+```
+
+### Partial Indexes for Specific Conditions
+
+```gql
+-- Create index only for active users (reduces index size)
+CREATE INDEX active_users ON :User(email)
+WHERE active = true
+
+-- Queries on active users use partial index
+MATCH (u:User)
+WHERE u.active = true
+  AND u.email = $email
+RETURN u
+```
+
+### Covering Indexes
+
+```gql
+-- Create index that includes returned columns
+CREATE INDEX user_profile ON :User(email, name, city)
+
+-- Query is answered entirely from index
+MATCH (u:User)
+WHERE u.email = $email
+RETURN u.name, u.city
+-- No need to access node storage
+```
+
+## Advanced Security Features
+
+### Multi-Factor Authentication Integration
+
+```python
+from geode_client import GeodeClient
+import pyotp
+
+async def authenticate_with_mfa(username, password, totp_code):
+    """Authenticate with username, password, and TOTP."""
+    # First verify password
+    async with GeodeClient("localhost:3141") as client:
+        user = await client.execute("""
+            MATCH (u:User {username: $username})
+            WHERE crypto.verify_password($password, u.password_hash)
+            RETURN u.totp_secret AS secret, u.id AS id
+        """, {"username": username, "password": password})
+
+        user_data = await user.fetch_one()
+        if not user_data:
+            raise AuthenticationError("Invalid credentials")
+
+        # Verify TOTP
+        totp = pyotp.TOTP(user_data['secret'])
+        if not totp.verify(totp_code):
+            raise AuthenticationError("Invalid TOTP code")
+
+        # Create session
+        session_token = generate_secure_token()
+        await client.execute("""
+            MATCH (u:User {id: $user_id})
+            CREATE (s:Session {
+                token: $token,
+                created: current_timestamp(),
+                expires: current_timestamp() + INTERVAL '24' HOUR
+            })
+            CREATE (u)-[:HAS_SESSION]->(s)
+        """, {"user_id": user_data['id'], "token": session_token})
+
+        return session_token
+```
+
+### Attribute-Based Access Control (ABAC)
+
+```gql
+-- Define ABAC policy
+CREATE POLICY document_access ON :Document
+USING (
+    // Allow access if user has clearance level >= document classification
+    EXISTS {
+        MATCH (current_user:User {id: current_user_id()})
+        WHERE current_user.clearance_level >= node.classification_level
+    }
+    OR
+    // Or if user is document owner
+    EXISTS {
+        MATCH (current_user:User {id: current_user_id()})
+              -[:OWNS]->(node)
+    }
+    OR
+    // Or if user is in authorized group
+    EXISTS {
+        MATCH (current_user:User {id: current_user_id()})
+              -[:MEMBER_OF]->(:Group)
+              <-[:AUTHORIZED]-(node)
+    }
+)
+```
+
+### Audit Trail Implementation
+
+```python
+async def create_audit_log(client, user_id, action, entity_type, entity_id, details):
+    """Create comprehensive audit log entry."""
+    await client.execute("""
+        CREATE (log:AuditLog {
+            timestamp: current_timestamp(),
+            user_id: $user_id,
+            action: $action,
+            entity_type: $entity_type,
+            entity_id: $entity_id,
+            details: $details,
+            ip_address: $ip,
+            user_agent: $user_agent
+        })
+    """, {
+        "user_id": user_id,
+        "action": action,
+        "entity_type": entity_type,
+        "entity_id": entity_id,
+        "details": details,
+        "ip": request.remote_addr,
+        "user_agent": request.headers.get('User-Agent')
+    })
+
+# Query audit logs
+async def get_audit_trail(entity_id):
+    """Retrieve complete audit trail for entity."""
+    result = await client.execute("""
+        MATCH (log:AuditLog {entity_id: $entity_id})
+        RETURN log.timestamp AS when,
+               log.user_id AS who,
+               log.action AS what,
+               log.details AS details
+        ORDER BY log.timestamp DESC
+    """, {"entity_id": entity_id})
+
+    return [row async for row in result]
+```
+
+## Stream Processing Integration
+
+### Apache Kafka Integration
+
+```python
+from kafka import KafkaProducer, KafkaConsumer
+import json
+
+async def stream_changes_to_kafka(client, topic):
+    """Stream Geode CDC events to Kafka."""
+    producer = KafkaProducer(
+        bootstrap_servers=['localhost:9092'],
+        value_serializer=lambda v: json.dumps(v).encode('utf-8')
+    )
+
+    async with client.subscribe_cdc() as stream:
+        async for event in stream:
+            kafka_message = {
+                'operation': event.operation,
+                'entity_type': event.entity_type,
+                'entity_id': event.entity_id,
+                'timestamp': event.timestamp.isoformat(),
+                'data': event.new_data
+            }
+            producer.send(topic, value=kafka_message)
+
+async def consume_from_kafka_to_geode(topic):
+    """Consume Kafka messages and write to Geode."""
+    consumer = KafkaConsumer(
+        topic,
+        bootstrap_servers=['localhost:9092'],
+        value_deserializer=lambda m: json.loads(m.decode('utf-8'))
+    )
+
+    async with GeodeClient("localhost:3141") as client:
+        for message in consumer:
+            event = message.value
+            await client.execute("""
+                CREATE (n:Event {
+                    type: $type,
+                    timestamp: $timestamp,
+                    data: $data
+                })
+            """, event)
+```
+
+## Advanced Query Optimization
+
+### Query Hints and Directives
+
+```gql
+-- Force specific index usage
+MATCH (u:User)
+USING INDEX u:User(email)
+WHERE u.email = $email
+RETURN u
+
+-- Disable certain optimizations
+MATCH (a:Node)-[r]-(b:Node)
+OPTION (hash_join=off)
+RETURN a, b
+```
+
+### Materialized Path Patterns
+
+```gql
+-- Store pre-computed paths for fast traversal
+CREATE (root:Category {
+    name: 'Electronics',
+    path: '/Electronics',
+    level: 0
+})
+
+CREATE (laptop:Category {
+    name: 'Laptops',
+    path: '/Electronics/Laptops',
+    level: 1
+})
+
+-- Query entire subtree efficiently
+MATCH (cat:Category)
+WHERE cat.path STARTS WITH '/Electronics'
+RETURN cat
+ORDER BY cat.level, cat.name
+```
+
+### Denormalization for Read Performance
+
+```gql
+-- Denormalize frequently accessed aggregates
+MATCH (product:Product)<-[:PURCHASED]-(order:Order)
+WITH product, COUNT(order) AS purchase_count
+SET product.cached_purchase_count = purchase_count,
+    product.cache_updated = current_timestamp()
+
+-- Fast reads from denormalized data
+MATCH (p:Product)
+WHERE p.cached_purchase_count > 100
+RETURN p.name, p.cached_purchase_count
+```
+
+## Graph Machine Learning Workflows
+
+### Link Prediction
+
+```python
+import numpy as np
+from sklearn.ensemble import RandomForestClassifier
+
+async def train_link_predictor(client):
+    """Train ML model to predict future links."""
+    # Extract features for existing links
+    result = await client.execute("""
+        MATCH (u1:User)-[r:KNOWS]->(u2:User)
+        WITH u1, u2,
+             COUNT{(u1)-[:KNOWS]->()<-[:KNOWS]-(u2)} AS common_friends,
+             u1.join_date AS u1_join,
+             u2.join_date AS u2_join
+        RETURN common_friends,
+               duration_between(u1_join, u2_join) AS join_diff,
+               1 AS label
+        LIMIT 10000
+    """)
+
+    features = []
+    labels = []
+    async for row in result:
+        features.append([row['common_friends'], row['join_diff']])
+        labels.append(row['label'])
+
+    # Train model
+    model = RandomForestClassifier()
+    model.fit(np.array(features), np.array(labels))
+
+    return model
+
+async def predict_new_links(client, model):
+    """Predict which user pairs will connect."""
+    # Get candidate pairs (users who aren't connected)
+    result = await client.execute("""
+        MATCH (u1:User), (u2:User)
+        WHERE u1.id < u2.id
+          AND NOT EXISTS {MATCH (u1)-[:KNOWS]-(u2)}
+        WITH u1, u2,
+             COUNT{(u1)-[:KNOWS]->()<-[:KNOWS]-(u2)} AS common_friends
+        WHERE common_friends > 0
+        RETURN u1.id AS user1,
+               u2.id AS user2,
+               common_friends,
+               duration_between(u1.join_date, u2.join_date) AS join_diff
+        LIMIT 1000
+    """)
+
+    predictions = []
+    async for row in result:
+        features = [[row['common_friends'], row['join_diff']]]
+        probability = model.predict_proba(features)[0][1]
+        predictions.append({
+            'user1': row['user1'],
+            'user2': row['user2'],
+            'probability': probability
+        })
+
+    return sorted(predictions, key=lambda x: x['probability'], reverse=True)
+```
+
+### Graph Classification
+
+```python
+async def classify_graph_nodes(client, trained_gnn_model):
+    """Classify nodes using Graph Neural Network."""
+    # Extract node embeddings
+    result = await client.execute("""
+        MATCH (n:Node)
+        RETURN n.id AS id,
+               n.embedding AS embedding,
+               [(n)-[:CONNECTED]-(neighbor) | neighbor.id] AS neighbor_ids
+    """)
+
+    node_features = {}
+    edges = []
+    async for row in result:
+        node_features[row['id']] = row['embedding']
+        for neighbor in row['neighbor_ids']:
+            edges.append((row['id'], neighbor))
+
+    # Run GNN inference
+    predictions = trained_gnn_model.predict(node_features, edges)
+
+    # Update graph with classifications
+    for node_id, predicted_class in predictions.items():
+        await client.execute("""
+            MATCH (n:Node {id: $id})
+            SET n.predicted_class = $class,
+                n.classification_timestamp = current_timestamp()
+        """, {"id": node_id, "class": predicted_class})
+```
+
+## Multi-Tenancy Patterns
+
+### Schema-Based Isolation
+
+```gql
+-- Each tenant has labeled nodes
+CREATE (d:Document:Tenant1 {content: 'data'})
+CREATE (d:Document:Tenant2 {content: 'data'})
+
+-- RLS policy enforces isolation
+CREATE POLICY tenant_isolation ON :Document
+USING (current_tenant() IN labels(node))
+```
+
+### Connection Pooling Per Tenant
+
+```python
+class MultiTenantConnectionManager:
+    def __init__(self):
+        self.pools = {}
+
+    async def get_connection(self, tenant_id):
+        """Get tenant-specific connection with RLS context."""
+        if tenant_id not in self.pools:
+            self.pools[tenant_id] = await GeodeClient.create_pool(
+                "localhost:3141",
+                context={"tenant_id": tenant_id}
+            )
+        return await self.pools[tenant_id].acquire()
+
+# Usage
+manager = MultiTenantConnectionManager()
+async with manager.get_connection("tenant1") as conn:
+    # Queries automatically filtered to tenant1
+    result = await conn.execute("MATCH (d:Document) RETURN d")
+```
+
 ## Further Reading
 
 - [Vector Search Guide](/tags/vector-search/) - HNSW implementation details
@@ -381,3 +832,7 @@ async def process_cdc_events():
 - [MVCC and Transactions](/tags/mvcc/) - Time-travel queries
 - [Performance Optimization](/categories/performance/) - Tuning advanced features
 - [Security and Compliance](/categories/security/) - TDE, FLE, and encryption
+- [Graph Machine Learning](/docs/advanced/graph-ml/) - ML integration patterns
+- [Stream Processing](/docs/advanced/streaming/) - Real-time data pipelines
+- [Multi-Tenancy Guide](/docs/architecture/multi-tenancy/) - Tenant isolation strategies
+- [Advanced Indexing](/docs/performance/indexing-strategies/) - Index optimization

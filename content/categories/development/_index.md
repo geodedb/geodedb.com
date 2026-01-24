@@ -379,6 +379,515 @@ async def test_friend_recommendation(db):
 - [Debugging](/tags/debugging/) - Debugging techniques
 - [Testing](/tags/testing/) - Testing strategies
 
+## Advanced Development Patterns
+
+### Connection Pool Management
+
+```python
+import geode_client
+from contextlib import asynccontextmanager
+
+class DatabasePool:
+    """Production-ready connection pool."""
+
+    def __init__(self, url, min_size=5, max_size=20):
+        self.url = url
+        self.min_size = min_size
+        self.max_size = max_size
+        self._pool = None
+
+    async def initialize(self):
+        """Initialize connection pool."""
+        self._pool = await geode_client.create_pool(
+            self.url,
+            min_size=self.min_size,
+            max_size=self.max_size,
+            timeout=30,
+            idle_timeout=300
+        )
+
+    @asynccontextmanager
+    async def acquire(self):
+        """Acquire connection from pool."""
+        async with self._pool.acquire() as conn:
+            try:
+                yield conn
+            except Exception as e:
+                # Log error with context
+                logger.error(f"Database error: {e}", exc_info=True)
+                raise
+
+    async def close(self):
+        """Close all pool connections."""
+        await self._pool.close()
+
+# Usage
+pool = DatabasePool("geode://localhost:3141")
+await pool.initialize()
+
+async with pool.acquire() as conn:
+    result = await conn.execute("MATCH (n) RETURN count(n)")
+```
+
+### Query Builder Pattern
+
+```python
+class GQLQueryBuilder:
+    """Fluent API for building GQL queries."""
+
+    def __init__(self):
+        self.match_clauses = []
+        self.where_conditions = []
+        self.return_expressions = []
+        self.order_by = []
+        self.limit_value = None
+        self.params = {}
+
+    def match(self, pattern, **kwargs):
+        """Add MATCH clause."""
+        self.match_clauses.append(pattern)
+        self.params.update(kwargs)
+        return self
+
+    def where(self, condition):
+        """Add WHERE condition."""
+        self.where_conditions.append(condition)
+        return self
+
+    def return_(self, *expressions):
+        """Add RETURN expressions."""
+        self.return_expressions.extend(expressions)
+        return self
+
+    def order_by_desc(self, field):
+        """Add ORDER BY DESC."""
+        self.order_by.append(f"{field} DESC")
+        return self
+
+    def limit(self, count):
+        """Add LIMIT."""
+        self.limit_value = count
+        return self
+
+    def build(self):
+        """Build final query string."""
+        parts = []
+
+        # MATCH
+        for clause in self.match_clauses:
+            parts.append(f"MATCH {clause}")
+
+        # WHERE
+        if self.where_conditions:
+            parts.append("WHERE " + " AND ".join(self.where_conditions))
+
+        # RETURN
+        if self.return_expressions:
+            parts.append("RETURN " + ", ".join(self.return_expressions))
+
+        # ORDER BY
+        if self.order_by:
+            parts.append("ORDER BY " + ", ".join(self.order_by))
+
+        # LIMIT
+        if self.limit_value:
+            parts.append(f"LIMIT {self.limit_value}")
+
+        return "\n".join(parts)
+
+# Usage
+query = (GQLQueryBuilder()
+    .match("(u:User)-[:POSTED]->(p:Post)", user_id=123)
+    .where("u.id = $user_id")
+    .where("p.created > $min_date")
+    .return_("p.title", "p.created")
+    .order_by_desc("p.created")
+    .limit(10)
+    .build())
+
+print(query)
+# Output:
+# MATCH (u:User)-[:POSTED]->(p:Post)
+# WHERE u.id = $user_id AND p.created > $min_date
+# RETURN p.title, p.created
+# ORDER BY p.created DESC
+# LIMIT 10
+```
+
+### Repository Pattern
+
+```python
+from abc import ABC, abstractmethod
+from typing import Optional, List
+
+class Repository(ABC):
+    """Base repository interface."""
+
+    @abstractmethod
+    async def find_by_id(self, id: int):
+        pass
+
+    @abstractmethod
+    async def find_all(self) -> List:
+        pass
+
+    @abstractmethod
+    async def save(self, entity):
+        pass
+
+    @abstractmethod
+    async def delete(self, id: int):
+        pass
+
+class UserRepository(Repository):
+    """User-specific repository implementation."""
+
+    def __init__(self, pool):
+        self.pool = pool
+
+    async def find_by_id(self, user_id: int) -> Optional[dict]:
+        """Find user by ID."""
+        async with self.pool.acquire() as conn:
+            result = await conn.execute("""
+                MATCH (u:User {id: $id})
+                RETURN u.id AS id,
+                       u.name AS name,
+                       u.email AS email,
+                       u.created AS created
+            """, {"id": user_id})
+
+            return await result.fetch_one()
+
+    async def find_by_email(self, email: str) -> Optional[dict]:
+        """Find user by email."""
+        async with self.pool.acquire() as conn:
+            result = await conn.execute("""
+                MATCH (u:User {email: $email})
+                RETURN u.id AS id, u.name AS name, u.email AS email
+            """, {"email": email})
+
+            return await result.fetch_one()
+
+    async def find_all(self) -> List[dict]:
+        """Get all users."""
+        async with self.pool.acquire() as conn:
+            result = await conn.execute("""
+                MATCH (u:User)
+                RETURN u.id AS id, u.name AS name, u.email AS email
+                ORDER BY u.created DESC
+            """)
+
+            return [row async for row in result]
+
+    async def save(self, user: dict):
+        """Create or update user."""
+        async with self.pool.acquire() as conn:
+            await conn.execute("""
+                MERGE (u:User {email: $email})
+                SET u.name = $name,
+                    u.updated = current_timestamp()
+                ON CREATE SET u.created = current_timestamp()
+            """, user)
+
+    async def delete(self, user_id: int):
+        """Delete user."""
+        async with self.pool.acquire() as conn:
+            await conn.execute("""
+                MATCH (u:User {id: $id})
+                DETACH DELETE u
+            """, {"id": user_id})
+
+# Usage
+user_repo = UserRepository(pool)
+user = await user_repo.find_by_email("alice@example.com")
+```
+
+### Error Handling Strategies
+
+```python
+from enum import Enum
+from typing import Optional
+import logging
+
+class GeodeErrorCode(Enum):
+    """GQL error codes."""
+    CONSTRAINT_VIOLATION = "22000"
+    QUERY_TIMEOUT = "57014"
+    SERIALIZATION_FAILURE = "40001"
+    DEADLOCK = "40P01"
+
+class RetryableError(Exception):
+    """Error that should trigger retry."""
+    pass
+
+class PermanentError(Exception):
+    """Error that should not be retried."""
+    pass
+
+async def execute_with_retry(func, max_retries=3, backoff_factor=2):
+    """Execute function with exponential backoff retry."""
+    for attempt in range(max_retries):
+        try:
+            return await func()
+        except geode_client.QueryError as e:
+            error_code = e.code
+
+            # Check if error is retryable
+            if error_code in [GeodeErrorCode.SERIALIZATION_FAILURE.value,
+                             GeodeErrorCode.DEADLOCK.value]:
+                if attempt < max_retries - 1:
+                    wait_time = backoff_factor ** attempt
+                    logging.warning(f"Retrying after {wait_time}s due to: {e}")
+                    await asyncio.sleep(wait_time)
+                    continue
+                else:
+                    raise RetryableError(f"Max retries exceeded: {e}")
+            else:
+                # Permanent error, don't retry
+                raise PermanentError(f"Permanent error: {e}")
+
+# Usage
+async def transfer_money(from_id, to_id, amount):
+    async with pool.acquire() as conn:
+        async with conn.transaction() as tx:
+            await tx.execute("""
+                MATCH (from:Account {id: $from_id})
+                SET from.balance = from.balance - $amount
+            """, {"from_id": from_id, "amount": amount})
+
+            await tx.execute("""
+                MATCH (to:Account {id: $to_id})
+                SET to.balance = to.balance + $amount
+            """, {"to_id": to_id, "amount": amount})
+
+            await tx.commit()
+
+# Execute with retry
+await execute_with_retry(lambda: transfer_money(1, 2, 100.0))
+```
+
+## Performance Monitoring
+
+### Query Performance Tracking
+
+```python
+import time
+from functools import wraps
+import prometheus_client
+
+# Prometheus metrics
+query_duration = prometheus_client.Histogram(
+    'geode_query_duration_seconds',
+    'Query execution time',
+    ['query_type']
+)
+
+query_counter = prometheus_client.Counter(
+    'geode_queries_total',
+    'Total queries executed',
+    ['query_type', 'status']
+)
+
+def track_query_performance(query_type: str):
+    """Decorator to track query performance."""
+    def decorator(func):
+        @wraps(func)
+        async def wrapper(*args, **kwargs):
+            start_time = time.perf_counter()
+            status = 'success'
+
+            try:
+                result = await func(*args, **kwargs)
+                return result
+            except Exception as e:
+                status = 'error'
+                raise
+            finally:
+                duration = time.perf_counter() - start_time
+                query_duration.labels(query_type=query_type).observe(duration)
+                query_counter.labels(query_type=query_type, status=status).inc()
+
+        return wrapper
+    return decorator
+
+# Usage
+@track_query_performance('user_lookup')
+async def find_user(email: str):
+    async with pool.acquire() as conn:
+        return await conn.execute("""
+            MATCH (u:User {email: $email})
+            RETURN u
+        """, {"email": email})
+```
+
+### Slow Query Logging
+
+```python
+class SlowQueryLogger:
+    """Log queries exceeding threshold."""
+
+    def __init__(self, threshold_ms=1000):
+        self.threshold_ms = threshold_ms
+
+    async def execute(self, conn, query, params=None):
+        """Execute query with timing."""
+        start = time.perf_counter()
+        try:
+            result = await conn.execute(query, params)
+            return result
+        finally:
+            duration_ms = (time.perf_counter() - start) * 1000
+
+            if duration_ms > self.threshold_ms:
+                logging.warning(
+                    f"Slow query ({duration_ms:.2f}ms): {query[:100]}...",
+                    extra={
+                        'duration_ms': duration_ms,
+                        'query': query,
+                        'params': params
+                    }
+                )
+
+# Usage
+logger = SlowQueryLogger(threshold_ms=500)
+async with pool.acquire() as conn:
+    result = await logger.execute(conn, "MATCH (n) RETURN count(n)")
+```
+
+## Code Generation and Scaffolding
+
+### Schema-to-Code Generator
+
+```python
+def generate_model_class(label: str, properties: dict):
+    """Generate Python dataclass from graph schema."""
+    lines = [
+        "from dataclasses import dataclass",
+        "from datetime import datetime",
+        "from typing import Optional",
+        "",
+        "@dataclass",
+        f"class {label}:"
+    ]
+
+    for prop_name, prop_type in properties.items():
+        python_type = {
+            'string': 'str',
+            'integer': 'int',
+            'float': 'float',
+            'boolean': 'bool',
+            'datetime': 'datetime'
+        }.get(prop_type, 'str')
+
+        lines.append(f"    {prop_name}: Optional[{python_type}] = None")
+
+    return "\n".join(lines)
+
+# Generate from schema
+schema = {
+    'User': {
+        'id': 'integer',
+        'name': 'string',
+        'email': 'string',
+        'created': 'datetime'
+    }
+}
+
+for label, properties in schema.items():
+    code = generate_model_class(label, properties)
+    print(code)
+```
+
+## Continuous Integration Examples
+
+### GitHub Actions Workflow
+
+```yaml
+name: Geode Integration Tests
+
+on: [push, pull_request]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    services:
+      geode:
+        image: codepros/geode:latest
+        ports:
+          - 3141:3141
+        options: >-
+          --health-cmd "geode ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install pytest pytest-asyncio
+
+      - name: Wait for Geode
+        run: |
+          timeout 30 sh -c 'until geode ping; do sleep 1; done'
+
+      - name: Run tests
+        env:
+          GEODE_URL: geode://localhost:3141
+        run: pytest tests/
+
+      - name: Upload coverage
+        uses: codecov/codecov-action@v3
+```
+
+### Docker Compose for Development
+
+```yaml
+version: '3.8'
+
+services:
+  geode:
+    image: codepros/geode:v0.18.0
+    ports:
+      - "3141:3141"
+    volumes:
+      - geode-data:/var/lib/geode
+    environment:
+      - GEODE_LOG_LEVEL=debug
+    healthcheck:
+      test: ["CMD", "geode", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    depends_on:
+      - prometheus
+
+volumes:
+  geode-data:
+```
+
 ## Further Reading
 
 - [Getting Started Guide](/docs/getting-started/) - Initial setup and first queries
@@ -387,3 +896,7 @@ async def test_friend_recommendation(db):
 - [LSP Setup Guide](/docs/lsp-setup/) - IDE integration
 - [API Reference](/docs/api-reference/) - Complete API documentation
 - [Development Best Practices](/docs/development-best-practices/) - Coding guidelines
+- [Testing Strategies](/docs/testing/integration-tests/) - Test patterns
+- [CI/CD Integration](/docs/operations/ci-cd/) - Automation workflows
+- [Error Handling Guide](/docs/development/error-handling/) - Error strategies
+- [Performance Monitoring](/docs/operations/monitoring/) - Observability setup

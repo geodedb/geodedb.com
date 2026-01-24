@@ -435,6 +435,431 @@ GROUP BY customer.segment
 - [Real-Time Analytics](/tags/real-time-analytics/) - Streaming graph analytics
 - [Machine Learning](/tags/machine-learning/) - ML integration patterns
 
+## Healthcare and Life Sciences
+
+### Patient Care Networks
+
+Model complex relationships between patients, providers, medications, and conditions:
+
+```gql
+-- Find similar patient cases for treatment recommendations
+MATCH (patient:Patient {id: $patient_id})-[:HAS_CONDITION]->(condition:Condition)
+      <-[:HAS_CONDITION]-(similar:Patient)
+      -[:PRESCRIBED]->(treatment:Treatment)
+WHERE NOT EXISTS {
+    MATCH (patient)-[:PRESCRIBED]->(treatment)
+}
+WITH treatment,
+     COUNT(DISTINCT similar) AS similar_patient_count,
+     AVG(similar.outcome_score) AS avg_outcome
+WHERE similar_patient_count >= 5
+  AND avg_outcome > 7.0
+RETURN treatment.name,
+       treatment.dosage,
+       similar_patient_count,
+       avg_outcome
+ORDER BY similar_patient_count DESC, avg_outcome DESC
+LIMIT 10
+```
+
+### Drug Interaction Detection
+
+```gql
+-- Identify dangerous drug interactions
+MATCH (patient:Patient {id: $patient_id})-[:PRESCRIBED]->(drug1:Drug)
+MATCH (patient)-[:PRESCRIBED]->(drug2:Drug)
+MATCH (drug1)-[:INTERACTS_WITH {severity: 'high'}]-(drug2)
+WHERE drug1.id < drug2.id
+RETURN drug1.name AS medication1,
+       drug2.name AS medication2,
+       drug1.interaction_effect AS effect,
+       drug1.interaction_severity AS severity
+```
+
+### Clinical Trial Matching
+
+```gql
+-- Find eligible patients for clinical trials
+MATCH (trial:ClinicalTrial)
+WHERE trial.status = 'recruiting'
+MATCH (patient:Patient)
+WHERE patient.age >= trial.min_age
+  AND patient.age <= trial.max_age
+  AND NOT EXISTS {
+      MATCH (patient)-[:HAS_CONDITION]->(exclusion:Condition)
+      WHERE exclusion.name IN trial.exclusion_criteria
+  }
+WITH trial, patient,
+     SIZE([(patient)-[:HAS_CONDITION]->(c:Condition)
+           WHERE c.name IN trial.inclusion_criteria | c]) AS matching_criteria
+WHERE matching_criteria >= SIZE(trial.inclusion_criteria)
+RETURN trial.name,
+       trial.sponsor,
+       patient.id,
+       patient.name,
+       matching_criteria
+ORDER BY trial.priority DESC, matching_criteria DESC
+```
+
+## Financial Services
+
+### Anti-Money Laundering (AML)
+
+```gql
+-- Detect layering patterns (multiple intermediate accounts)
+MATCH path = (source:Account)-[:TRANSFER*3..7]->(destination:Account)
+WHERE source.country <> destination.country
+  AND ALL (r IN relationships(path) WHERE r.timestamp > current_timestamp() - INTERVAL '48' HOUR)
+  AND LENGTH(path) >= 3
+WITH path,
+     [r IN relationships(path) | r.amount] AS amounts,
+     REDUCE(total = 0, r IN relationships(path) | total + r.amount) AS total_amount
+WHERE total_amount > 50000
+RETURN path,
+       amounts,
+       total_amount,
+       [n IN nodes(path) | n.country] AS countries
+ORDER BY total_amount DESC
+```
+
+### Credit Risk Assessment
+
+```gql
+-- Assess credit risk using network effects
+MATCH (applicant:Person {id: $applicant_id})
+OPTIONAL MATCH (applicant)-[:KNOWS]->(connection:Person)
+WITH applicant,
+     AVG(connection.credit_score) AS network_avg_credit,
+     COUNT{(applicant)-[:EMPLOYED_BY]->(:Company)} AS employment_count,
+     COUNT{(applicant)-[:DEFAULT]->()} AS default_count
+RETURN applicant.id,
+       applicant.credit_score AS individual_score,
+       network_avg_credit,
+       CASE
+           WHEN network_avg_credit > 700 THEN 1.1
+           WHEN network_avg_credit > 600 THEN 1.0
+           ELSE 0.9
+       END AS network_multiplier,
+       employment_count,
+       default_count,
+       CASE
+           WHEN default_count > 0 THEN 'high_risk'
+           WHEN network_avg_credit < 600 THEN 'medium_risk'
+           ELSE 'low_risk'
+       END AS risk_category
+```
+
+## E-Commerce and Retail
+
+### Product Recommendations
+
+```gql
+-- Multi-faceted product recommendations
+MATCH (user:User {id: $user_id})
+
+// Collaborative filtering
+OPTIONAL MATCH (user)-[:PURCHASED]->(p1:Product)<-[:PURCHASED]-(similar:User)
+                     -[:PURCHASED]->(collab_rec:Product)
+WHERE NOT EXISTS {MATCH (user)-[:PURCHASED]->(collab_rec)}
+WITH user, collab_rec, COUNT(similar) AS collab_score
+
+// Content-based filtering
+OPTIONAL MATCH (user)-[:PURCHASED]->(p2:Product)-[:IN_CATEGORY]->(cat:Category)
+                     <-[:IN_CATEGORY]-(content_rec:Product)
+WHERE NOT EXISTS {MATCH (user)-[:PURCHASED]->(content_rec)}
+WITH user, collab_rec, collab_score, content_rec, COUNT(cat) AS content_score
+
+// Trending products
+OPTIONAL MATCH (trending:Product)<-[:PURCHASED]-(buyer:User)
+WHERE buyer.purchase_timestamp > current_timestamp() - INTERVAL '7' DAY
+WITH collab_rec, collab_score, content_rec, content_score,
+     trending, COUNT(buyer) AS trend_score
+
+// Combine scores
+WITH COALESCE(collab_rec, content_rec, trending) AS recommendation,
+     COALESCE(collab_score * 3, 0) +
+     COALESCE(content_score * 2, 0) +
+     COALESCE(trend_score, 0) AS combined_score
+WHERE recommendation IS NOT NULL
+RETURN DISTINCT recommendation.name,
+                recommendation.price,
+                combined_score
+ORDER BY combined_score DESC
+LIMIT 20
+```
+
+### Inventory Optimization
+
+```gql
+-- Identify supply chain bottlenecks
+MATCH (product:Product)-[:REQUIRES]->(component:Component)
+      -[:SUPPLIED_BY]->(supplier:Supplier)
+WITH component,
+     COUNT(DISTINCT product) AS dependent_products,
+     COUNT(DISTINCT supplier) AS supplier_count,
+     AVG(supplier.lead_time_days) AS avg_lead_time
+WHERE supplier_count = 1  -- Single point of failure
+   OR avg_lead_time > 30  -- Long lead time
+RETURN component.name,
+       component.stock_level,
+       dependent_products,
+       supplier_count,
+       avg_lead_time,
+       CASE
+           WHEN component.stock_level < dependent_products * 10
+                AND supplier_count = 1 THEN 'critical'
+           WHEN avg_lead_time > 30 THEN 'warning'
+           ELSE 'ok'
+       END AS risk_status
+ORDER BY dependent_products DESC, supplier_count ASC
+```
+
+## Telecommunications
+
+### Network Capacity Planning
+
+```gql
+-- Identify network segments requiring capacity upgrade
+MATCH (node1:NetworkNode)-[link:FIBER_LINK]-(node2:NetworkNode)
+WITH link,
+     link.current_utilization / link.capacity AS utilization_pct,
+     link.peak_hour_traffic / link.capacity AS peak_utilization
+WHERE utilization_pct > 0.7 OR peak_utilization > 0.85
+OPTIONAL MATCH path = (node1)-[:BACKUP_ROUTE*1..3]-(node2)
+WITH link, utilization_pct, peak_utilization,
+     CASE WHEN path IS NULL THEN 'no_backup' ELSE 'has_backup' END AS backup_status
+RETURN link.id,
+       link.from_location,
+       link.to_location,
+       utilization_pct,
+       peak_utilization,
+       backup_status,
+       CASE
+           WHEN backup_status = 'no_backup' AND utilization_pct > 0.8 THEN 'urgent'
+           WHEN peak_utilization > 0.85 THEN 'high_priority'
+           ELSE 'monitor'
+       END AS priority
+ORDER BY utilization_pct DESC
+```
+
+### Service Outage Impact Analysis
+
+```gql
+-- Calculate customer impact of network node failure
+MATCH (failed_node:NetworkNode {id: $node_id})
+MATCH (customer:Customer)-[:SERVICED_BY]->(access_node:NetworkNode)
+WHERE NOT EXISTS {
+    MATCH path = (access_node)-[:ROUTE*]-(alternate:NetworkNode)
+    WHERE alternate <> failed_node
+      AND (alternate)-[:ROUTE]-(backbone:BackboneNode)
+}
+WITH COUNT(DISTINCT customer) AS affected_customers,
+     SUM(customer.monthly_revenue) AS revenue_at_risk
+RETURN failed_node.id,
+       failed_node.location,
+       affected_customers,
+       revenue_at_risk,
+       revenue_at_risk / affected_customers AS avg_customer_value
+```
+
+## Transportation and Logistics
+
+### Route Optimization with Constraints
+
+```gql
+-- Find optimal delivery route with time windows
+MATCH (depot:Location {type: 'depot'})
+MATCH (delivery:Delivery {status: 'pending', date: $delivery_date})
+      -[:DELIVER_TO]->(destination:Location)
+MATCH path = SHORTEST (depot)-[:ROUTE*]-(destination)
+WHERE ALL (segment IN relationships(path)
+          WHERE segment.traffic_level < 'high'
+            AND segment.road_condition = 'good')
+WITH delivery, destination, path,
+     REDUCE(time = 0, r IN relationships(path) | time + r.travel_time_minutes) AS total_time,
+     REDUCE(distance = 0, r IN relationships(path) | distance + r.distance_km) AS total_distance
+WHERE total_time <= delivery.time_window_end - delivery.time_window_start
+RETURN delivery.id,
+       destination.address,
+       total_distance,
+       total_time,
+       delivery.time_window_start,
+       delivery.time_window_end
+ORDER BY delivery.priority DESC, total_time ASC
+```
+
+## Manufacturing and Industry 4.0
+
+### Predictive Maintenance
+
+```gql
+-- Identify equipment needing maintenance based on sensor data and dependencies
+MATCH (equipment:Equipment)-[:DEPENDS_ON*1..2]->(dependency:Equipment)
+WHERE equipment.sensor_vibration > equipment.vibration_threshold
+   OR equipment.sensor_temperature > equipment.temperature_threshold
+   OR dependency.status = 'degraded'
+WITH equipment,
+     COUNT(dependency) AS dependent_count,
+     SUM(CASE WHEN dependency.status = 'degraded' THEN 1 ELSE 0 END) AS degraded_dependencies
+OPTIONAL MATCH (equipment)<-[:PRODUCES]-(production_line:ProductionLine)
+RETURN equipment.id,
+       equipment.location,
+       equipment.last_maintenance,
+       dependent_count,
+       degraded_dependencies,
+       production_line.daily_output_value AS production_impact,
+       CASE
+           WHEN degraded_dependencies > 0 THEN 'critical'
+           WHEN equipment.sensor_vibration > equipment.vibration_threshold * 1.5 THEN 'urgent'
+           WHEN production_line.daily_output_value > 1000000 THEN 'high_priority'
+           ELSE 'scheduled'
+       END AS maintenance_priority
+ORDER BY production_impact DESC
+```
+
+## Gaming and Entertainment
+
+### Player Matchmaking
+
+```gql
+-- Match players for balanced teams
+MATCH (player:Player {id: $player_id, looking_for_match: true})
+MATCH (candidate:Player {looking_for_match: true})
+WHERE candidate.id <> player.id
+  AND ABS(candidate.skill_rating - player.skill_rating) <= 200
+  AND candidate.preferred_game_mode = player.preferred_game_mode
+WITH player, candidate,
+     ABS(candidate.skill_rating - player.skill_rating) AS skill_diff,
+     CASE WHEN candidate.region = player.region THEN 0 ELSE 50 END AS region_penalty
+OPTIONAL MATCH (player)-[:PLAYED_WITH]->(candidate)
+WITH player, candidate, skill_diff, region_penalty,
+     COUNT(*) AS previous_matches
+RETURN candidate.id,
+       candidate.username,
+       candidate.skill_rating,
+       skill_diff + region_penalty - (previous_matches * 5) AS match_score
+ORDER BY match_score ASC
+LIMIT 10
+```
+
+## Education and Research
+
+### Academic Collaboration Network
+
+```gql
+-- Find potential research collaborators
+MATCH (researcher:Researcher {id: $researcher_id})-[:PUBLISHED]->(paper:Paper)
+      -[:TAGGED_WITH]->(topic:Topic)
+MATCH (topic)<-[:TAGGED_WITH]-(other_paper:Paper)<-[:PUBLISHED]-(collaborator:Researcher)
+WHERE collaborator.id <> researcher.id
+  AND NOT EXISTS {
+      MATCH (researcher)-[:CO_AUTHORED]-(collaborator)
+  }
+WITH collaborator,
+     COUNT(DISTINCT topic) AS shared_topics,
+     COUNT(DISTINCT other_paper) AS their_papers
+OPTIONAL MATCH (collaborator)-[:AFFILIATED_WITH]->(institution:Institution)
+                            <-[:AFFILIATED_WITH]-(researcher)
+WITH collaborator,
+     shared_topics,
+     their_papers,
+     CASE WHEN institution IS NOT NULL THEN 10 ELSE 0 END AS institution_bonus
+RETURN collaborator.name,
+       collaborator.field,
+       shared_topics,
+       their_papers,
+       shared_topics * their_papers + institution_bonus AS collaboration_score
+ORDER BY collaboration_score DESC
+LIMIT 20
+```
+
+## Real Estate and Property Management
+
+### Property Valuation Network
+
+```gql
+-- Estimate property value based on comparable sales
+MATCH (property:Property {id: $property_id})
+MATCH (comparable:Property)
+WHERE comparable.id <> property.id
+  AND comparable.sold_date > current_date() - INTERVAL '12' MONTH
+  AND ABS(comparable.square_feet - property.square_feet) < 500
+  AND comparable.bedrooms = property.bedrooms
+  AND comparable.bathrooms = property.bathrooms
+WITH property, comparable,
+     point_distance(property.location, comparable.location) AS distance_meters
+WHERE distance_meters < 1000
+WITH property,
+     AVG(comparable.sale_price) AS avg_price,
+     STDDEV(comparable.sale_price) AS price_stddev,
+     COUNT(comparable) AS comparable_count
+RETURN property.address,
+       avg_price AS estimated_value,
+       price_stddev AS value_uncertainty,
+       comparable_count,
+       avg_price - (2 * price_stddev) AS low_estimate,
+       avg_price + (2 * price_stddev) AS high_estimate
+```
+
+## Performance Optimization for Use Cases
+
+### Indexing Strategy
+
+```gql
+-- Create indexes for common access patterns
+
+-- Social networks: user lookup
+CREATE INDEX user_email ON :User(email);
+CREATE INDEX user_username ON :User(username);
+
+-- E-commerce: product search
+CREATE INDEX product_category ON :Product(category);
+CREATE FULL TEXT INDEX product_search ON :Product(name, description);
+
+-- Finance: transaction lookup
+CREATE INDEX transaction_timestamp ON :Transaction(timestamp);
+CREATE INDEX account_transactions ON :Account(id);
+
+-- Healthcare: patient records
+CREATE INDEX patient_id ON :Patient(id);
+CREATE INDEX patient_mrn ON :Patient(medical_record_number);
+```
+
+### Query Caching Strategy
+
+```python
+from functools import lru_cache
+import hashlib
+import json
+
+class QueryCache:
+    """Cache frequently executed queries."""
+
+    def __init__(self, ttl_seconds=300):
+        self.cache = {}
+        self.ttl = ttl_seconds
+
+    def cache_key(self, query, params):
+        """Generate cache key from query and parameters."""
+        param_str = json.dumps(params, sort_keys=True)
+        return hashlib.sha256(f"{query}:{param_str}".encode()).hexdigest()
+
+    async def execute(self, client, query, params=None):
+        """Execute with caching."""
+        key = self.cache_key(query, params or {})
+
+        # Check cache
+        if key in self.cache:
+            cached_result, timestamp = self.cache[key]
+            if time.time() - timestamp < self.ttl:
+                return cached_result
+
+        # Execute and cache
+        result = await client.execute(query, params)
+        self.cache[key] = (result, time.time())
+        return result
+```
+
 ## Further Reading
 
 - [Data Modeling](/tags/modeling/) - Graph schema design
@@ -442,3 +867,6 @@ GROUP BY customer.segment
 - [Examples](/categories/examples/) - Code examples
 - [Architecture](/docs/architecture/) - System design patterns
 - [Performance](/categories/performance-and-scaling/) - Optimization techniques
+- [Industry Solutions](/docs/solutions/) - Vertical-specific guides
+- [Case Studies](/docs/case-studies/) - Real-world implementations
+- [Graph Algorithms](/categories/graph-algorithms-and-analytics/) - Analytics for use cases

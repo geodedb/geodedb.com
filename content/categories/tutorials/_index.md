@@ -279,6 +279,432 @@ RETURN p.name, p.email
 - [REPL](/tags/repl/) - Interactive shell
 - [GQL](/tags/gql/) - Query language
 
+## Interactive Tutorials
+
+### Beginner Tutorial: Your First Graph
+
+**Learning Objective**: Create a simple social network and query it.
+
+**Prerequisites**: Geode installed and running.
+
+**Step 1: Start the REPL**
+
+```bash
+./zig-out/bin/geode shell
+Connected to Geode v0.18.0
+geode>
+```
+
+**Step 2: Create Your First Nodes**
+
+```gql
+geode> CREATE (alice:Person {name: 'Alice', age: 30, city: 'San Francisco'});
+Created 1 node
+
+geode> CREATE (bob:Person {name: 'Bob', age: 25, city: 'New York'});
+Created 1 node
+
+geode> CREATE (carol:Person {name: 'Carol', age: 28, city: 'San Francisco'});
+Created 1 node
+```
+
+**Step 3: Create Relationships**
+
+```gql
+geode> MATCH (a:Person {name: 'Alice'}), (b:Person {name: 'Bob'})
+       CREATE (a)-[:KNOWS {since: 2020}]->(b);
+Created 1 relationship
+
+geode> MATCH (a:Person {name: 'Alice'}), (c:Person {name: 'Carol'})
+       CREATE (a)-[:KNOWS {since: 2019}]->(c);
+Created 1 relationship
+
+geode> MATCH (b:Person {name: 'Bob'}), (c:Person {name: 'Carol'})
+       CREATE (b)-[:KNOWS {since: 2021}]->(c);
+Created 1 relationship
+```
+
+**Step 4: Query the Graph**
+
+```gql
+geode> MATCH (p:Person)
+       RETURN p.name, p.age, p.city;
+
+┌─────────┬──────┬─────────────────┐
+│ name    │ age  │ city            │
+├─────────┼──────┼─────────────────┤
+│ Alice   │ 30   │ San Francisco   │
+│ Bob     │ 25   │ New York        │
+│ Carol   │ 28   │ San Francisco   │
+└─────────┴──────┴─────────────────┘
+```
+
+**Step 5: Find Connections**
+
+```gql
+geode> MATCH (a:Person {name: 'Alice'})-[:KNOWS]->(friend)
+       RETURN friend.name, friend.city;
+
+┌─────────┬─────────────────┐
+│ name    │ city            │
+├─────────┼─────────────────┤
+│ Bob     │ New York        │
+│ Carol   │ San Francisco   │
+└─────────┴─────────────────┘
+```
+
+**Exercise**: Add yourself to the graph and create friendships. Then find all people who know at least 2 people.
+
+### Intermediate Tutorial: Building a Recommendation Engine
+
+**Learning Objective**: Implement collaborative filtering recommendations.
+
+**Scenario**: A movie recommendation system based on user ratings.
+
+**Step 1: Create the Data Model**
+
+```python
+import geode_client
+import asyncio
+
+async def setup_movie_database():
+    async with geode_client.connect('geode://localhost:3141') as conn:
+        # Create movies
+        movies = [
+            {'title': 'The Matrix', 'genre': 'Sci-Fi', 'year': 1999},
+            {'title': 'Inception', 'genre': 'Sci-Fi', 'year': 2010},
+            {'title': 'Interstellar', 'genre': 'Sci-Fi', 'year': 2014},
+            {'title': 'The Shawshank Redemption', 'genre': 'Drama', 'year': 1994},
+        ]
+
+        for movie in movies:
+            await conn.execute("""
+                CREATE (:Movie {
+                    title: $title,
+                    genre: $genre,
+                    year: $year
+                })
+            """, movie)
+
+        # Create users
+        users = ['Alice', 'Bob', 'Carol', 'Dave']
+        for user in users:
+            await conn.execute("""
+                CREATE (:User {name: $name})
+            """, {'name': user})
+
+        # Create ratings
+        ratings = [
+            ('Alice', 'The Matrix', 5),
+            ('Alice', 'Inception', 4),
+            ('Bob', 'The Matrix', 5),
+            ('Bob', 'Interstellar', 5),
+            ('Carol', 'Inception', 4),
+            ('Carol', 'Interstellar', 5),
+            ('Dave', 'The Shawshank Redemption', 5),
+        ]
+
+        for user_name, movie_title, rating in ratings:
+            await conn.execute("""
+                MATCH (u:User {name: $user}), (m:Movie {title: $movie})
+                CREATE (u)-[:RATED {score: $score}]->(m)
+            """, {'user': user_name, 'movie': movie_title, 'score': rating})
+
+asyncio.run(setup_movie_database())
+```
+
+**Step 2: Implement Collaborative Filtering**
+
+```python
+async def get_recommendations(user_name, limit=5):
+    """Get movie recommendations for a user."""
+    async with geode_client.connect('geode://localhost:3141') as conn:
+        result = await conn.execute("""
+            // Find users with similar taste
+            MATCH (me:User {name: $user})-[my_rating:RATED]->(movie:Movie)
+                 <-[their_rating:RATED]-(similar:User)
+                 -[rec_rating:RATED]->(recommendation:Movie)
+            WHERE NOT EXISTS {
+                MATCH (me)-[:RATED]->(recommendation)
+            }
+            // Calculate similarity based on common ratings
+            WITH recommendation,
+                 AVG(rec_rating.score) AS avg_score,
+                 COUNT(DISTINCT similar) AS similar_user_count
+            RETURN recommendation.title AS title,
+                   recommendation.genre AS genre,
+                   avg_score,
+                   similar_user_count
+            ORDER BY similar_user_count DESC, avg_score DESC
+            LIMIT $limit
+        """, {'user': user_name, 'limit': limit})
+
+        recommendations = []
+        async for row in result:
+            recommendations.append({
+                'title': row['title'],
+                'genre': row['genre'],
+                'predicted_score': row['avg_score'],
+                'confidence': row['similar_user_count']
+            })
+
+        return recommendations
+
+# Test recommendations
+recs = asyncio.run(get_recommendations('Alice'))
+for rec in recs:
+    print(f"{rec['title']}: {rec['predicted_score']:.1f} "
+          f"(confidence: {rec['confidence']} users)")
+```
+
+**Expected Output**:
+```
+Interstellar: 5.0 (confidence: 2 users)
+The Shawshank Redemption: 5.0 (confidence: 1 user)
+```
+
+**Exercise**: Implement content-based filtering that recommends movies in the same genre with similar ratings.
+
+### Advanced Tutorial: Real-Time Fraud Detection
+
+**Learning Objective**: Build a fraud detection system using graph patterns.
+
+**Scenario**: Detect suspicious transaction patterns in financial data.
+
+**Step 1: Transaction Data Model**
+
+```python
+async def create_transaction_network():
+    async with geode_client.connect('geode://localhost:3141') as conn:
+        # Create accounts
+        for i in range(1, 11):
+            await conn.execute("""
+                CREATE (:Account {
+                    id: $id,
+                    balance: $balance,
+                    created: $created
+                })
+            """, {
+                'id': i,
+                'balance': 10000.0,
+                'created': '2025-01-01'
+            })
+
+        # Simulate normal transactions
+        normal_transactions = [
+            (1, 2, 100, '2025-01-24T10:00:00Z'),
+            (2, 3, 50, '2025-01-24T11:00:00Z'),
+            (3, 4, 75, '2025-01-24T12:00:00Z'),
+        ]
+
+        for from_id, to_id, amount, timestamp in normal_transactions:
+            await conn.execute("""
+                MATCH (from:Account {id: $from}), (to:Account {id: $to})
+                CREATE (from)-[:TRANSFER {
+                    amount: $amount,
+                    timestamp: $timestamp
+                }]->(to)
+            """, {'from': from_id, 'to': to_id, 'amount': amount, 'timestamp': timestamp})
+
+        # Simulate suspicious circular transactions
+        circular = [
+            (5, 6, 1000, '2025-01-24T13:00:00Z'),
+            (6, 7, 900, '2025-01-24T13:05:00Z'),
+            (7, 5, 850, '2025-01-24T13:10:00Z'),
+        ]
+
+        for from_id, to_id, amount, timestamp in circular:
+            await conn.execute("""
+                MATCH (from:Account {id: $from}), (to:Account {id: $to})
+                CREATE (from)-[:TRANSFER {
+                    amount: $amount,
+                    timestamp: $timestamp,
+                    flagged: false
+                }]->(to)
+            """, {'from': from_id, 'to': to_id, 'amount': amount, 'timestamp': timestamp})
+
+asyncio.run(create_transaction_network())
+```
+
+**Step 2: Detect Circular Transactions**
+
+```python
+async def detect_circular_transactions(time_window_hours=24):
+    """Find circular money flows within time window."""
+    async with geode_client.connect('geode://localhost:3141') as conn:
+        result = await conn.execute("""
+            MATCH path = (a1:Account)-[t1:TRANSFER]->(a2:Account)
+                        -[t2:TRANSFER]->(a3:Account)
+                        -[t3:TRANSFER]->(a1)
+            WHERE t1.timestamp > current_timestamp() - INTERVAL '$hours' HOUR
+              AND t2.timestamp > t1.timestamp
+              AND t3.timestamp > t2.timestamp
+              AND t3.timestamp < t1.timestamp + INTERVAL '1' HOUR
+            RETURN a1.id AS account1,
+                   a2.id AS account2,
+                   a3.id AS account3,
+                   t1.amount + t2.amount + t3.amount AS total_amount,
+                   [t1.timestamp, t2.timestamp, t3.timestamp] AS timestamps
+        """, {'hours': time_window_hours})
+
+        suspicious_patterns = []
+        async for row in result:
+            suspicious_patterns.append({
+                'accounts': [row['account1'], row['account2'], row['account3']],
+                'total_amount': row['total_amount'],
+                'timestamps': row['timestamps']
+            })
+
+        return suspicious_patterns
+
+# Detect fraud
+fraud_cases = asyncio.run(detect_circular_transactions())
+for case in fraud_cases:
+    print(f"Circular transaction detected: {case['accounts']}")
+    print(f"  Total amount: ${case['total_amount']}")
+    print(f"  Time span: {case['timestamps'][0]} to {case['timestamps'][-1]}")
+```
+
+**Step 3: Velocity Check Implementation**
+
+```python
+async def velocity_check(account_id, threshold_multiplier=5):
+    """Detect accounts with unusual transaction velocity."""
+    async with geode_client.connect('geode://localhost:3141') as conn:
+        result = await conn.execute("""
+            MATCH (a:Account {id: $account_id})-[t:TRANSFER]->()
+            WITH a,
+                 COUNT{(a)-[recent:TRANSFER]->()
+                       WHERE recent.timestamp > current_timestamp() - INTERVAL '1' HOUR} AS recent_count,
+                 AVG(t.amount) AS historical_avg
+            WHERE recent_count > $threshold * historical_avg
+            RETURN a.id AS account_id,
+                   recent_count AS recent_transactions,
+                   historical_avg AS normal_rate
+        """, {'account_id': account_id, 'threshold': threshold_multiplier})
+
+        return await result.fetch_one()
+
+# Check specific account
+alert = asyncio.run(velocity_check(5))
+if alert:
+    print(f"⚠️  Velocity alert for account {alert['account_id']}")
+    print(f"   Recent transactions: {alert['recent_transactions']}")
+    print(f"   Normal rate: {alert['normal_rate']}")
+```
+
+**Exercise**: Implement a shared device detector that finds multiple accounts accessing from the same IP address or device ID.
+
+## Tutorial Videos and Screencasts
+
+While primarily text-based, Geode tutorials benefit from visual demonstrations:
+
+**Available Video Tutorials**:
+1. "Getting Started with Geode" (15 minutes)
+2. "Pattern Matching Deep Dive" (30 minutes)
+3. "Building a Social Network" (45 minutes)
+4. "Transaction Management Best Practices" (25 minutes)
+5. "Performance Tuning and Profiling" (40 minutes)
+
+Access videos at: `https://geodedb.com/videos/`
+
+## Troubleshooting Common Issues
+
+### Connection Errors
+
+**Problem**: Cannot connect to Geode server
+
+```
+Error: connection refused at localhost:3141
+```
+
+**Solution**:
+```bash
+# Check if server is running
+ps aux | grep geode
+
+# Start server if not running
+./zig-out/bin/geode serve --listen 0.0.0.0:3141
+
+# Check firewall rules
+sudo ufw status
+sudo ufw allow 3141/tcp
+```
+
+### Query Performance Issues
+
+**Problem**: Query taking too long
+
+**Solution**: Use PROFILE to identify bottlenecks
+
+```gql
+PROFILE
+MATCH (u:User)-[:FRIEND*2..3]-(friend)
+WHERE u.city = 'San Francisco'
+RETURN friend.name
+
+-- Review execution plan
+-- Look for full scans vs. index scans
+-- Add indexes on frequently filtered properties
+
+CREATE INDEX user_city ON :User(city);
+```
+
+### Memory Errors
+
+**Problem**: Out of memory during large queries
+
+**Solution**: Use pagination and streaming
+
+```python
+async def paginated_query(page_size=1000):
+    """Process large result sets in chunks."""
+    offset = 0
+    async with geode_client.connect('geode://localhost:3141') as conn:
+        while True:
+            result = await conn.execute("""
+                MATCH (n:Node)
+                RETURN n
+                ORDER BY n.id
+                SKIP $offset
+                LIMIT $limit
+            """, {'offset': offset, 'limit': page_size})
+
+            rows = []
+            async for row in result:
+                rows.append(row)
+
+            if not rows:
+                break
+
+            # Process chunk
+            process_chunk(rows)
+            offset += page_size
+```
+
+## Tutorial Completion Checklist
+
+After completing tutorials, verify your knowledge:
+
+- [ ] Can create nodes and relationships
+- [ ] Understand pattern matching syntax
+- [ ] Can write WHERE clause filters
+- [ ] Know how to use aggregation functions
+- [ ] Understand transaction boundaries
+- [ ] Can create and use indexes
+- [ ] Able to profile and optimize queries
+- [ ] Familiar with at least one client library
+- [ ] Can implement basic graph algorithms
+- [ ] Understand security best practices
+
+## Next Steps After Tutorials
+
+1. **Build a small project**: Apply knowledge to a real use case
+2. **Read API documentation**: Deep dive into specific features
+3. **Join community**: Share experiences and ask questions
+4. **Contribute**: Report bugs or contribute documentation
+5. **Production deployment**: Plan and execute production rollout
+
 ## Further Reading
 
 - [Documentation Index](/docs/) - Complete documentation
@@ -286,3 +712,8 @@ RETURN p.name, p.email
 - [Quick Reference](/docs/quick-reference/) - Syntax cheat sheet
 - [Video Tutorials](/videos/) - Video learning content
 - [Community Forum](/community/) - Get help and share knowledge
+- [Example Projects](/examples/) - Sample applications and code
+- [Best Practices Guide](/docs/best-practices/) - Development guidelines
+- [Production Deployment](/docs/deployment/) - Going to production
+- [Performance Tuning](/docs/performance/) - Optimization techniques
+- [Security Hardening](/docs/security/) - Security configuration

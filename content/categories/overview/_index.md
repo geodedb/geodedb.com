@@ -238,6 +238,464 @@ Geode is developed by CodePros with an active community of contributors:
 - [Performance](/categories/performance-and-scaling/) - Optimization and tuning
 - [Use Cases](/categories/use-cases/) - Real-world applications
 
+## Technical Deep Dive
+
+### Storage Architecture
+
+Geode's storage layer implements a custom graph-optimized format designed for efficient traversal and updates.
+
+**Property Graph Storage Model**
+
+Unlike relational databases that decompose graphs into multiple tables with expensive joins, Geode stores nodes and relationships in adjacency structures that mirror the graph's natural topology. Each node maintains direct pointers to its relationships, enabling constant-time traversal to neighbors.
+
+```
+Node Structure:
+- Node ID (8 bytes)
+- Labels bitmap (variable)
+- Property map offset (8 bytes)
+- Incoming edges list offset (8 bytes)
+- Outgoing edges list offset (8 bytes)
+
+Relationship Structure:
+- Relationship ID (8 bytes)
+- Type ID (4 bytes)
+- Source node ID (8 bytes)
+- Target node ID (8 bytes)
+- Property map offset (8 bytes)
+```
+
+This layout enables efficient pattern matching: traversing from a node to its neighbors requires following a single pointer, not joining tables.
+
+**Write-Ahead Log (WAL)**
+
+Every transaction is recorded to a Write-Ahead Log before modifying the database. The WAL guarantees durability: even if the server crashes mid-transaction, committed changes can be replayed from the log on restart.
+
+```
+WAL Entry Structure:
+[Transaction ID | Timestamp | Operation Type | Data | Checksum]
+```
+
+WAL entries are written sequentially, maximizing disk throughput. Background processes periodically checkpoint the database, allowing old WAL segments to be archived or deleted.
+
+**MVCC Implementation**
+
+Multi-Version Concurrency Control maintains multiple versions of data, allowing transactions to see consistent snapshots without blocking each other. When a transaction modifies a node, Geode creates a new version rather than overwriting:
+
+```
+Version Chain:
+v3 (current) -> v2 (committed) -> v1 (committed) -> v0 (initial)
+```
+
+Each transaction sees versions committed before it started. Obsolete versions are garbage collected after all referencing transactions complete.
+
+### Query Execution Engine
+
+Geode's query engine transforms GQL into optimized execution plans.
+
+**Query Pipeline**
+
+1. **Lexing**: Break query text into tokens
+2. **Parsing**: Build Abstract Syntax Tree (AST)
+3. **Semantic Analysis**: Validate labels, properties, types
+4. **Logical Planning**: Convert AST to logical operators
+5. **Optimization**: Apply rewrite rules and cost-based optimization
+6. **Physical Planning**: Select algorithms and access methods
+7. **Execution**: Run plan and stream results
+
+**Cost-Based Optimization**
+
+The optimizer estimates costs for different execution strategies using statistics about data distribution:
+
+```gql
+-- Optimizer chooses index scan over full scan
+MATCH (u:User {email: $email})
+RETURN u
+
+-- Index Scan on User.email: Cost 1.5
+-- Full Scan on User: Cost 150,000
+-- Decision: Use index
+```
+
+Statistics include node counts per label, property cardinality, and relationship counts per type. The optimizer refreshes statistics periodically or on-demand.
+
+**Parallel Execution**
+
+Geode parallelizes query execution across CPU cores:
+
+- **Partition parallelism**: Scan different graph regions concurrently
+- **Pipeline parallelism**: Execute different query stages simultaneously
+- **Operator parallelism**: Parallelize operations like hash joins and aggregations
+
+### Network Protocol Details
+
+**QUIC Advantages Over TCP**
+
+Traditional databases use TCP, which suffers from head-of-line blocking: a lost packet stalls all multiplexed streams. QUIC solves this with independent stream recovery. Each query runs on its own stream; packet loss on one stream doesn't delay others.
+
+**Connection Establishment**
+
+```
+Client                          Server
+  |                               |
+  |--- Initial (HELLO) ---------->|
+  |<-- Handshake (cert) ----------|
+  |--- Handshake (finished) ----->|
+  |<-- 1-RTT Ready ---------------|
+  |                               |
+  |--- RUN_GQL ------------------>|
+  |<-- BINDINGS ------------------|
+```
+
+First connection: 1-RTT handshake
+Returning connection: 0-RTT resumption (no handshake delay)
+
+**JSON Line Protocol**
+
+Each message is a single-line JSON object:
+
+```json
+{"type": "RUN_GQL", "query": "MATCH (n) RETURN n", "params": {}}
+{"type": "SCHEMA", "fields": [{"name": "n", "type": "node"}]}
+{"type": "BINDINGS", "row": [{"id": 1, "labels": ["Person"], "props": {...}}]}
+{"type": "DONE"}
+```
+
+Line-delimited format enables streaming: clients process rows as they arrive rather than buffering entire result sets.
+
+## Deployment Scenarios
+
+### Development Deployment
+
+**Docker for Local Development**
+
+```bash
+# Pull official image
+docker pull codepros/geode:v0.18.0
+
+# Run with persistent storage
+docker run -d \
+  --name geode-dev \
+  -p 3141:3141 \
+  -v geode-data:/var/lib/geode \
+  -e GEODE_LOG_LEVEL=debug \
+  codepros/geode:v0.18.0
+
+# Connect and develop
+docker exec -it geode-dev geode shell
+```
+
+**Configuration for Development**
+
+```yaml
+# geode.yaml
+server:
+  listen: "0.0.0.0:3141"
+  tls:
+    enabled: true
+    cert: "/etc/geode/cert.pem"
+    key: "/etc/geode/key.pem"
+
+storage:
+  data_dir: "/var/lib/geode/data"
+  wal_dir: "/var/lib/geode/wal"
+
+logging:
+  level: "debug"
+  output: "stdout"
+
+performance:
+  query_timeout_ms: 30000
+  max_concurrent_queries: 100
+```
+
+### Production Deployment
+
+**Kubernetes StatefulSet**
+
+```yaml
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: geode
+spec:
+  serviceName: geode
+  replicas: 3
+  selector:
+    matchLabels:
+      app: geode
+  template:
+    metadata:
+      labels:
+        app: geode
+    spec:
+      containers:
+      - name: geode
+        image: codepros/geode:v0.18.0
+        ports:
+        - containerPort: 3141
+          name: quic
+        volumeMounts:
+        - name: data
+          mountPath: /var/lib/geode
+        resources:
+          requests:
+            memory: "8Gi"
+            cpu: "2000m"
+          limits:
+            memory: "16Gi"
+            cpu: "4000m"
+  volumeClaimTemplates:
+  - metadata:
+      name: data
+    spec:
+      accessModes: ["ReadWriteOnce"]
+      resources:
+        requests:
+          storage: 100Gi
+```
+
+**High Availability Configuration**
+
+```yaml
+# geode-ha.yaml
+cluster:
+  mode: "distributed"
+  node_id: "node-1"
+  peers:
+    - "node-2.geode.svc.cluster.local:3141"
+    - "node-3.geode.svc.cluster.local:3141"
+
+replication:
+  factor: 3
+  sync: true
+
+failover:
+  enabled: true
+  health_check_interval_ms: 5000
+  leader_election_timeout_ms: 10000
+```
+
+## Data Modeling Principles
+
+### Graph Schema Design
+
+Unlike relational schemas with rigid table structures, graph schemas are flexible. However, good design principles still apply:
+
+**Entity as Node, Relationship as Edge**
+
+Model domain entities (people, products, locations) as nodes. Model connections (knows, purchased, located_in) as relationships.
+
+```gql
+-- Good: Clear entity/relationship distinction
+(alice:Person)-[:PURCHASED]->(laptop:Product)
+
+-- Avoid: Relationships as nodes create extra traversals
+(alice:Person)-[:HAS_ORDER]->(order:Order)-[:CONTAINS]->(laptop:Product)
+-- (Use this pattern only if Order has important properties)
+```
+
+**Property Placement**
+
+Properties belong on the entity they describe:
+
+```gql
+-- Good: Properties on correct entity
+(person:Person {name: 'Alice', age: 30})-[:WORKS_AT {since: 2020}]->(company:Company {name: 'Acme'})
+
+-- Avoid: Mixing concerns
+(person:Person {name: 'Alice', company_name: 'Acme'})
+-- (Breaks normalization; updates to company require finding all employees)
+```
+
+**Label Strategy**
+
+Use labels for categorization and polymorphism:
+
+```gql
+-- Multiple labels for role-based modeling
+CREATE (doc:Document:Confidential:Audited {title: 'Q4 Results'})
+
+-- Query specific subtypes
+MATCH (d:Document:Confidential)
+RETURN d.title
+```
+
+### Anti-Patterns to Avoid
+
+**Anti-Pattern: Dense Nodes**
+
+Nodes with millions of relationships (super nodes) create performance bottlenecks:
+
+```gql
+-- Avoid: One "Users" node with millions of edges
+(users:Users)-[:CONTAINS]->(alice:Person)
+(users:Users)-[:CONTAINS]->(bob:Person)
+-- Traversing from :Users is slow
+
+-- Better: Direct node access
+MATCH (p:Person {email: $email})
+-- Uses index, constant time
+```
+
+**Anti-Pattern: Relationship Properties as Nodes**
+
+```gql
+-- Avoid: Unnecessary intermediate nodes
+(person)-[:HAS_RATING]->(rating:Rating {value: 5})-[:FOR_PRODUCT]->(product)
+
+-- Better: Property on relationship
+(person)-[:RATED {score: 5, timestamp: ...}]->(product)
+```
+
+## Ecosystem and Integrations
+
+### Data Integration
+
+**ETL from Relational Databases**
+
+```python
+import psycopg2
+import geode_client
+
+async def migrate_relational_to_graph():
+    """Migrate PostgreSQL data to Geode."""
+    # Extract from PostgreSQL
+    pg_conn = psycopg2.connect("dbname=mydb")
+    pg_cursor = pg_conn.cursor()
+    pg_cursor.execute("SELECT id, name, email FROM users")
+
+    # Load into Geode
+    async with geode_client.connect("localhost:3141") as geode:
+        for user_id, name, email in pg_cursor:
+            await geode.execute("""
+                CREATE (:User {
+                    id: $id,
+                    name: $name,
+                    email: $email
+                })
+            """, {"id": user_id, "name": name, "email": email})
+
+    pg_cursor.close()
+    pg_conn.close()
+```
+
+### Monitoring and Observability
+
+**Prometheus Metrics**
+
+```bash
+# Scrape Geode metrics endpoint
+curl http://localhost:9090/metrics
+
+# Sample output:
+# geode_queries_total{status="success"} 15432
+# geode_query_duration_seconds_sum 23.45
+# geode_active_connections 12
+# geode_wal_size_bytes 1048576
+```
+
+**Grafana Dashboards**
+
+Pre-built dashboards visualize:
+- Query throughput and latency
+- Transaction commit/abort rates
+- Index usage statistics
+- Memory and disk utilization
+- Connection pool health
+
+### Application Frameworks
+
+**GraphQL Integration**
+
+```javascript
+// Express + Apollo GraphQL + Geode
+const { ApolloServer, gql } = require('apollo-server-express');
+const GeodeClient = require('geode-client');
+
+const typeDefs = gql`
+  type Person {
+    name: String!
+    friends: [Person]
+  }
+
+  type Query {
+    person(name: String!): Person
+  }
+`;
+
+const resolvers = {
+  Query: {
+    person: async (_, { name }) => {
+      const result = await geodeClient.execute(
+        'MATCH (p:Person {name: $name}) RETURN p',
+        { name }
+      );
+      return result.rows[0].p;
+    },
+  },
+  Person: {
+    friends: async (person) => {
+      const result = await geodeClient.execute(
+        'MATCH (p:Person {id: $id})-[:KNOWS]->(f) RETURN f',
+        { id: person.id }
+      );
+      return result.rows.map(r => r.f);
+    },
+  },
+};
+```
+
+## Comparing Geode to Alternatives
+
+### vs. Relational Databases
+
+**Strengths of Geode**:
+- Native graph traversals (no joins)
+- Flexible schema evolution
+- Natural modeling of connected data
+
+**When to use relational**:
+- Tabular data with few relationships
+- Complex aggregations over flat data
+- Regulatory requirements for SQL
+
+### vs. Proprietary Graph Databases
+
+**Geode Advantages**:
+- ISO standard query language (no vendor lock-in)
+- Apache 2.0 license (fully open source)
+- Modern architecture (QUIC, Zig)
+- Smaller resource footprint
+
+**Competitor Advantages**:
+- Larger ecosystems and community
+- More mature visualization tools
+- Enterprise support contracts
+
+## Roadmap and Future Development
+
+**Upcoming in v0.19.0**:
+- Distributed mode with automatic sharding
+- Improved query optimizer with machine learning
+- Additional graph algorithm library
+- Enhanced monitoring dashboards
+
+**Planned for v1.0.0**:
+- API stability guarantees
+- Extended long-term support
+- Enterprise certifications
+- Additional client language support (Java, C#, JavaScript)
+
+## Contributing to Geode
+
+Geode welcomes contributions following evidence-based development:
+
+1. **Issues**: Report bugs or request features on GitLab
+2. **Testing**: All code must include tests
+3. **Documentation**: Update docs for new features
+4. **Code Review**: All changes reviewed before merge
+5. **CANARY Markers**: Implementation requires governance markers
+
 ## Further Reading
 
 - [ISO GQL Standard](/tags/iso-gql/) - Graph Query Language specification
@@ -245,3 +703,8 @@ Geode is developed by CodePros with an active community of contributors:
 - [MVCC](/tags/mvcc/) - Concurrency control architecture
 - [QUIC Protocol](/tags/quic/) - Modern network transport
 - [Zig Programming](/categories/zig/) - Implementation language details
+- [Storage Engine](/docs/internals/storage/) - Storage architecture details
+- [Query Planner](/docs/internals/query-planner/) - Optimization internals
+- [Data Modeling Guide](/docs/guides/data-modeling/) - Schema design patterns
+- [Migration Guide](/docs/operations/migration/) - Moving from other databases
+- [Production Checklist](/docs/operations/production-checklist/) - Deployment guide
