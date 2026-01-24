@@ -1,7 +1,7 @@
 # FULL_DOCS_PLAN.md
 
 **Last Updated**: 2026-01-23
-**Status**: ✅ ALL PHASES COMPLETE (20/20 work items - 100%)
+**Status**: Priorities 1-3 COMPLETE (20/20 - 100%) | Priority 4 IN PROGRESS (0/8 - 0%)
 **Hugo Site**: https://geodedb.com
 **GitLab Project**: gitlab.com/devnw/codepros/geode/geodedb.com
 
@@ -426,9 +426,22 @@ Based on source documentation analysis:
 | WI-019 | `./content/docs/reference/error-codes.md` | "error codes reference" | CLIENT_ERRORS.md, error handling | **Complete** | - | 1820fb2 | 517 lines - GQLSTATUS & internal codes | 2026-01-23 |
 | WI-020 | `./content/docs/tutorials/` - Add 3-5 tutorials | "geode tutorials" | match_tutorial.md + create new | **Complete** | - | 1820fb2 | 1,700 lines - 3 comprehensive tutorials | 2026-01-23 |
 
+### Priority 4: Content Enhancement & Community (Optional)
+
+| ID | Doc Page | Primary Keyword | Source Refs | Status | Issue IID | PR/Commit | Notes | Updated |
+|----|----------|-----------------|-------------|--------|-----------|-----------|-------|---------|
+| WI-021 | `./content/docs/use-cases/knowledge-graphs.md` | "knowledge graph" | Industry examples | Not Started | - | - | RDF, ontologies, semantic search | 2026-01-23 |
+| WI-022 | `./content/docs/use-cases/social-networks.md` | "social network analysis" | Graph algorithms | Not Started | - | - | Community detection, influence analysis | 2026-01-23 |
+| WI-023 | `./content/docs/use-cases/supply-chain.md` | "supply chain optimization" | Routing, logistics | Not Started | - | - | Path optimization, network analysis | 2026-01-23 |
+| WI-024 | `./content/docs/tutorials/vector-search-tutorial.md` | "vector similarity search" | HNSW, ML embeddings | Not Started | - | - | Embeddings, HNSW index, similarity queries | 2026-01-23 |
+| WI-025 | `./content/docs/tutorials/transaction-patterns-tutorial.md` | "transaction tutorial" | TRANSACTION_MANAGEMENT.md | Not Started | - | - | ACID, savepoints, isolation levels | 2026-01-23 |
+| WI-026 | `./content/docs/contribute/_index.md` | "contributing guide" | Open source contribution | Not Started | - | - | Code, docs, testing, community guidelines | 2026-01-23 |
+| WI-027 | `./content/docs/features/_index.md` | "features overview" | All feature docs | Not Started | - | - | Feature matrix, capabilities comparison | 2026-01-23 |
+| WI-028 | `./content/docs/guides/performance-benchmarking.md` | "benchmark guide" | Performance docs | Not Started | - | - | Benchmark setup, tools, interpretation | 2026-01-23 |
+
 ---
 
-## ✅ Completion Summary
+## ✅ Completion Summary (Priorities 1-3)
 
 **All Documentation Phases Complete - January 23, 2026**
 
