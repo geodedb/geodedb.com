@@ -1,0 +1,1027 @@
+{{/* Enhanced taxonomy term template with rich content support (baseof-powered) */}}
+{{ define "main" }}
+  {{ $container := partial "helpers/container.html" . }}
+
+  {{/* Skip-link for accessibility */}}
+  <a class="visually-hidden-focusable" href="#main"
+    >{{ i18n "SkipToContent" | default "Skip to content" }}</a
+  >
+
+  {{/* Check if there's a content file for this taxonomy term */}}
+  {{ $taxonomyContent := "" }}
+  {{ $taxonomyPage := "" }}
+  {{ $hasDetailContent := false }}
+
+  {{/* Try to find a content file for this specific taxonomy term */}}
+  {{ $taxonomyPath := printf "%s/%s/" .Data.Plural (.Title | urlize) }}
+  {{ range .Site.Pages }}
+    {{ if and .File (eq .File.Dir $taxonomyPath) }}
+      {{ $taxonomyContent = .Content }}
+      {{ $taxonomyPage = . }}
+      {{ $hasDetailContent = true }}
+      {{ break }}
+    {{ end }}
+  {{ end }}
+
+  {{/* Cover image support */}}
+  {{ $coverImage := "" }}
+  {{ if $taxonomyPage }}
+    {{ $coverImage = $taxonomyPage.Params.cover }}
+  {{ else if .Params.cover }}
+    {{ $coverImage = .Params.cover }}
+  {{ end }}
+
+
+  <article id="main" itemscope itemtype="https://schema.org/CollectionPage">
+    {{/* ═══════════════ Hero Section with Cover Image ═══════════════ */}}
+    <header class="taxonomy-hero position-relative" role="banner">
+      {{/* Background cover image if available */}}
+      {{ if $coverImage }}
+        <div class="hero-background position-absolute w-100 h-100">
+          <img
+            src="{{ $coverImage | relURL }}"
+            alt="{{ .Title }}"
+            class="w-100 h-100 object-fit-cover"
+            style="filter: brightness(0.4);"
+          />
+        </div>
+        <div
+          class="hero-overlay position-absolute w-100 h-100 bg-dark opacity-50"
+        ></div>
+      {{ else }}
+        <div
+          class="hero-background bg-gradient-primary position-absolute w-100 h-100"
+        ></div>
+      {{ end }}
+
+
+      <div
+        class="hero-content position-relative py-5"
+        style="min-height: 60vh;"
+      >
+        <div
+          class="{{ $container }} d-flex align-items-center justify-content-center h-100"
+        >
+          <div class="row w-100">
+            <div class="col-lg-8 mx-auto text-center text-white">
+              {{/* Taxonomy type indicator */}}
+              <div class="mb-3">
+                <span class="badge bg-primary bg-opacity-75 me-2 px-3 py-2">
+                  {{ if eq .Data.Plural "categories" }}
+                    <wa-icon
+                      name="folder-open"
+                      class="me-2"
+                      aria-hidden="true"
+                    ></wa-icon>
+                    {{ i18n "category" | default "Category" }}
+                  {{ else if eq .Data.Plural "tags" }}
+                    <wa-icon
+                      name="tag"
+                      class="me-2"
+                      aria-hidden="true"
+                    ></wa-icon>
+                    {{ i18n "tag" | default "Tag" }}
+                  {{ else if eq .Data.Plural "series" }}
+                    <wa-icon
+                      name="list-ol"
+                      class="me-2"
+                      aria-hidden="true"
+                    ></wa-icon>
+                    {{ i18n "series" | default "Series" }}
+                  {{ else }}
+                    <wa-icon
+                      name="bookmark"
+                      class="me-2"
+                      aria-hidden="true"
+                    ></wa-icon>
+                    {{ .Data.Plural | humanize | singularize }}
+                  {{ end }}
+                </span>
+              </div>
+
+              {{/* Title - use content file title if available, otherwise taxonomy name */}}
+              <h1 class="display-3 fw-bold mb-4" itemprop="name">
+                {{ if $taxonomyPage }}
+                  {{ $taxonomyPage.Title }}
+                {{ else }}
+                  {{ .Title }}
+                {{ end }}
+              </h1>
+
+              {{/* Subtitle/Description */}}
+              {{ $description := "" }}
+              {{ if $taxonomyPage }}
+                {{ if $taxonomyPage.Params.description }}
+                  {{ $description = $taxonomyPage.Params.description }}
+                {{ else if $taxonomyPage.Summary }}
+                  {{ $description = $taxonomyPage.Summary }}
+                {{ end }}
+              {{ else if .Params.description }}
+                {{ $description = .Params.description }}
+              {{ else if .Summary }}
+                {{ $description = .Summary }}
+              {{ else }}
+                {{ $description = printf "Explore content related to %s - comprehensive insights and resources on %s." .Title (.Title | lower) }}
+              {{ end }}
+
+              {{ if $description }}
+                <p class="lead mb-4 text-white-75" itemprop="description">
+                  {{ $description | markdownify }}
+                </p>
+              {{ end }}
+
+              {{/* Statistics */}}
+              <div class="taxonomy-stats mb-4">
+                <div class="row justify-content-center g-3">
+                  <div class="col-auto">
+                    <div
+                      class="stats-item bg-white bg-opacity-10 rounded-pill px-4 py-2"
+                    >
+                      <span class="h5 mb-0 text-white">{{ .Pages.Len }}</span>
+                      <small class="text-white-75 ms-2">
+                        {{ if eq .Pages.Len 1 }}
+                          {{ i18n "article" | default "Article" }}
+                        {{ else }}
+                          {{ i18n "articles" | default "Articles" }}
+                        {{ end }}
+                      </small>
+                    </div>
+                  </div>
+                  {{ if $taxonomyPage }}
+                    {{ with $taxonomyPage.Params.author }}
+                      <div class="col-auto">
+                        <div
+                          class="stats-item bg-white bg-opacity-10 rounded-pill px-4 py-2"
+                        >
+                          <wa-icon
+                            name="user"
+                            class="me-2"
+                            aria-hidden="true"
+                          ></wa-icon>
+                          <span class="text-white">{{ . }}</span>
+                        </div>
+                      </div>
+                    {{ end }}
+                    {{ with $taxonomyPage.Date }}
+                      <div class="col-auto">
+                        <div
+                          class="stats-item bg-white bg-opacity-10 rounded-pill px-4 py-2"
+                        >
+                          <wa-icon
+                            name="calendar"
+                            class="me-2"
+                            aria-hidden="true"
+                          ></wa-icon>
+                          <span class="text-white"
+                            >{{ .Format "January 2006" }}</span
+                          >
+                        </div>
+                      </div>
+                    {{ end }}
+                  {{ end }}
+                </div>
+              </div>
+
+              {{/* Call-to-action */}}
+              {{ if $hasDetailContent }}
+                <div class="hero-cta">
+                  <a href="#detailed-content" class="btn btn-light btn-lg me-3">
+                    <wa-icon
+                      name="book-open"
+                      class="me-2"
+                      aria-hidden="true"
+                    ></wa-icon>
+                    {{ i18n "learn_more" | default "Learn More" }}
+                  </a>
+                  <a href="#content-list" class="btn btn-outline-light btn-lg">
+                    <wa-icon
+                      name="list"
+                      class="me-2"
+                      aria-hidden="true"
+                    ></wa-icon>
+                    {{ i18n "browse_content" | default "Browse Content" }}
+                  </a>
+                </div>
+              {{ else }}
+                <div class="hero-cta">
+                  <a href="#content-list" class="btn btn-light btn-lg">
+                    <wa-icon
+                      name="list"
+                      class="me-2"
+                      aria-hidden="true"
+                    ></wa-icon>
+                    {{ i18n "browse_content" | default "Browse Content" }}
+                  </a>
+                </div>
+              {{ end }}
+            </div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    {{/* Breadcrumb below cover/hero */}}
+    {{ if .Site.Params.components.breadcrumb.visible }}
+      <div class="container-fluid my-3">
+        {{ partial "breadcrumb.html" . }}
+      </div>
+    {{ end }}
+
+    {{/* ═══════════════ Detailed Content Section ═══════════════ */}}
+    {{ if $hasDetailContent }}
+      <section id="detailed-content" class="taxonomy-detailed-content py-5">
+        <div class="{{ $container }}">
+          <div class="row">
+            {{/* Main content area */}}
+            <div class="col-lg-8">
+              {{/* Rich content */}}
+              <div class="content-wrapper">
+                {{ if $taxonomyContent }}
+                  <div class="rich-content" itemprop="text">
+                    {{ $taxonomyContent }}
+                  </div>
+                {{ end }}
+
+                {{/* Author information */}}
+                {{ with $taxonomyPage.Params.author }}
+                  <div class="author-section mt-5 p-4 bg-light rounded">
+                    <h3 class="h5 mb-3">
+                      <wa-icon
+                        name="user"
+                        class="me-2 text-primary"
+                        aria-hidden="true"
+                      ></wa-icon>
+                      {{ i18n "about_author" | default "About the Author" }}
+                    </h3>
+                    <div class="d-flex align-items-center">
+                      {{ with $taxonomyPage.Params.author_image }}
+                        <img
+                          src="{{ . | relURL }}"
+                          alt="{{ $taxonomyPage.Params.author }}"
+                          class="rounded-circle me-3"
+                          width="60"
+                          height="60"
+                        />
+                      {{ end }}
+                      <div>
+                        <h4 class="h6 mb-1">{{ . }}</h4>
+                        {{ with $taxonomyPage.Params.author_bio }}
+                          <p class="text-muted mb-0 small">{{ . }}</p>
+                        {{ end }}
+                      </div>
+                    </div>
+                  </div>
+                {{ end }}
+
+                {{/* Multimedia content */}}
+                {{ with $taxonomyPage.Params.videos }}
+                  <div class="multimedia-section mt-5">
+                    <h3 class="h4 mb-4">
+                      <wa-icon
+                        name="play-circle"
+                        class="me-2 text-primary"
+                        aria-hidden="true"
+                      ></wa-icon>
+                      {{ i18n "videos" | default "Videos" }}
+                    </h3>
+                    <div class="row g-4">
+                      {{ range . }}
+                        <div class="col-md-6">
+                          <div class="video-card border rounded p-3">
+                            {{ if .youtube_id }}
+                              <div class="ratio ratio-16x9 mb-3">
+                                <iframe
+                                  src="https://www.youtube.com/embed/{{ .youtube_id }}"
+                                  title="{{ .title }}"
+                                  allowfullscreen
+                                >
+                                </iframe>
+                              </div>
+                            {{ end }}
+                            <h5 class="h6">{{ .title }}</h5>
+                            {{ with .description }}
+                              <p class="text-muted small">{{ . }}</p>
+                            {{ end }}
+                          </div>
+                        </div>
+                      {{ end }}
+                    </div>
+                  </div>
+                {{ end }}
+
+                {{ with $taxonomyPage.Params.podcasts }}
+                  <div class="multimedia-section mt-5">
+                    <h3 class="h4 mb-4">
+                      <wa-icon
+                        name="microphone"
+                        class="me-2 text-primary"
+                        aria-hidden="true"
+                      ></wa-icon>
+                      {{ i18n "podcasts" | default "Podcasts" }}
+                    </h3>
+                    <div class="row g-4">
+                      {{ range . }}
+                        <div class="col-md-6">
+                          <div class="podcast-card border rounded p-3">
+                            <h5 class="h6">{{ .title }}</h5>
+                            {{ with .description }}
+                              <p class="text-muted small mb-3">{{ . }}</p>
+                            {{ end }}
+                            {{ with .audio_url }}
+                              <audio controls class="w-100">
+                                <source src="{{ . }}" type="audio/mpeg" />
+                                Your browser does not support the audio element.
+                              </audio>
+                            {{ end }}
+                            {{ with .external_url }}
+                              <a
+                                href="{{ . }}"
+                                class="btn btn-sm btn-outline-primary mt-2"
+                                target="_blank"
+                              >
+                                {{ i18n "listen_external" | default "Listen" }}
+                                <wa-icon
+                                  name="external-link"
+                                  class="ms-1"
+                                  aria-hidden="true"
+                                ></wa-icon>
+                              </a>
+                            {{ end }}
+                          </div>
+                        </div>
+                      {{ end }}
+                    </div>
+                  </div>
+                {{ end }}
+              </div>
+            </div>
+
+            {{/* Sidebar */}}
+            <div class="col-lg-4">
+              <div class="sticky-top" style="top: 2rem;">
+                {{/* Table of contents if available */}}
+                {{ if $taxonomyPage }}
+                  {{ partial "post/toc.html" $taxonomyPage }}
+                {{ end }}
+
+                {{/* Keywords/Tags */}}
+                {{ with $taxonomyPage.Params.keywords }}
+                  <div class="sidebar-section mb-4">
+                    <h4 class="h6 text-uppercase text-muted mb-3">
+                      {{ i18n "keywords" | default "Keywords" }}
+                    </h4>
+                    <div class="d-flex flex-wrap gap-2">
+                      {{ range . }}
+                        <span class="badge bg-secondary">{{ . }}</span>
+                      {{ end }}
+                    </div>
+                  </div>
+                {{ end }}
+
+                {{/* Quick stats */}}
+                <div class="sidebar-section mb-4">
+                  <h4 class="h6 text-uppercase text-muted mb-3">
+                    {{ i18n "quick_stats" | default "Quick Stats" }}
+                  </h4>
+                  <div class="stats-list">
+                    <div
+                      class="d-flex justify-content-between py-2 border-bottom"
+                    >
+                      <span
+                        >{{ i18n "total_articles" | default "Total Articles" }}</span
+                      >
+                      <strong>{{ .Pages.Len }}</strong>
+                    </div>
+                    {{ if $taxonomyPage }}
+                      {{ with $taxonomyPage.ReadingTime }}
+                        <div
+                          class="d-flex justify-content-between py-2 border-bottom"
+                        >
+                          <span
+                            >{{ i18n "reading_time" | default "Reading Time" }}</span
+                          >
+                          <strong
+                            >{{ . }} {{ i18n "min" | default "min" }}</strong
+                          >
+                        </div>
+                      {{ end }}
+                      {{ with $taxonomyPage.WordCount }}
+                        <div class="d-flex justify-content-between py-2">
+                          <span
+                            >{{ i18n "word_count" | default "Word Count" }}</span
+                          >
+                          <strong>{{ . }}</strong>
+                        </div>
+                      {{ end }}
+                    {{ end }}
+                  </div>
+                </div>
+
+                {{/* Related taxonomies */}}
+                {{ partial "sidebar/taxonomies.html" . }}
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    {{ end }}
+
+    {{/* ═══════════════ Content List Section ═══════════════ */}}
+    <section
+      id="content-list"
+      class="taxonomy-items py-5 {{ if not $hasDetailContent }}pt-0{{ end }}"
+    >
+      <div class="container-fluid">
+        {{/* Section header */}}
+        <div class="row mb-4">
+          <div class="col-12">
+            <div class="section-header text-center mb-5">
+              <h2 class="h3 mb-3">
+                {{ if $hasDetailContent }}
+                  {{ i18n "related_content" | default "Related Content" }}
+                {{ else }}
+                  {{ i18n "content_in" | default "Content in" }}
+                  {{ .Title }}
+                {{ end }}
+              </h2>
+              <p class="text-muted">
+                {{ i18n "discover_articles" | default "Discover articles, tutorials, and insights" }}
+              </p>
+              <p>
+                <a
+                  class="btn btn-sm btn-outline-secondary"
+                  href="{{ .Permalink }}index.xml"
+                  rel="alternate"
+                  type="application/rss+xml"
+                >
+                  <wa-icon name="rss" class="me-1" aria-hidden="true"></wa-icon>
+                  {{ i18n "rss_feed" | default "RSS Feed" }}
+                </a>
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {{/* Filtering and sorting */}}
+        <div class="row mb-4">
+          <div class="col-md-6">
+            <div class="input-group">
+              <span class="input-group-text">
+                <wa-icon name="magnifying-glass" aria-hidden="true"></wa-icon>
+              </span>
+              <input
+                type="text"
+                class="form-control"
+                id="taxonomySearch"
+                placeholder="{{ i18n "search_content" | default "Search content..." }}"
+                aria-label="{{ i18n "search_taxonomy" | default "Search taxonomy" }}"
+              />
+            </div>
+          </div>
+          <div class="col-md-6 text-md-end">
+            <div
+              class="btn-group"
+              role="group"
+              aria-label="{{ i18n "sort_options" | default "Sort options" }}"
+            >
+              <input
+                type="radio"
+                class="btn-check"
+                name="sortOptions"
+                id="sortDate"
+                autocomplete="off"
+                checked
+              />
+              <label class="btn btn-outline-primary btn-sm" for="sortDate">
+                <wa-icon
+                  name="calendar"
+                  class="me-1"
+                  aria-hidden="true"
+                ></wa-icon>
+                {{ i18n "date" | default "Date" }}
+              </label>
+              <input
+                type="radio"
+                class="btn-check"
+                name="sortOptions"
+                id="sortTitle"
+                autocomplete="off"
+              />
+              <label class="btn btn-outline-primary btn-sm" for="sortTitle">
+                <wa-icon name="font" class="me-1" aria-hidden="true"></wa-icon>
+                {{ i18n "title" | default "Title" }}
+              </label>
+            </div>
+          </div>
+        </div>
+
+        {{/* Content grid */}}
+        {{ $perPage := default 12 .Site.Params.taxonomyPaginate }}
+        {{ $paginator := .Paginate .Pages.ByDate.Reverse $perPage }}
+
+
+        <div class="row g-4" data-sortable="true">
+          {{ range $paginator.Pages }}
+            <div
+              class="col-md-6 col-lg-4 col-xl-3"
+              data-date="{{ .Date.Unix }}"
+              data-title="{{ .Title | lower }}"
+            >
+              {{ partial "summary/card.html" . }}
+            </div>
+          {{ end }}
+        </div>
+
+        {{/* No content message */}}
+        {{ if eq .Pages.Len 0 }}
+          <div class="text-center py-5">
+            <wa-icon
+              name="folder-open"
+              class="text-muted mb-3"
+              style="font-size: 3rem;"
+              aria-hidden="true"
+            ></wa-icon>
+            <h3 class="text-muted">
+              {{ i18n "no_content_found" | default "No content found" }}
+            </h3>
+            <p class="text-muted">
+              {{ i18n "no_content_in_taxonomy" | default "There is no content tagged with" }}
+              "{{ .Title }}" {{ i18n "yet" | default "yet" }}.
+            </p>
+            <a href="{{ .Site.BaseURL }}" class="btn btn-primary">
+              <wa-icon name="home" class="me-1" aria-hidden="true"></wa-icon>
+              {{ i18n "back_to_home" | default "Back to Home" }}
+            </a>
+          </div>
+        {{ end }}
+
+        {{/* Pagination */}}
+        {{ if gt $paginator.TotalPages 1 }}
+          <div class="row mt-5" id="taxonomyPagination">
+            <div class="col-12">
+              {{ partial "pagination.html" (dict
+                "paginator" $paginator
+                "aria"      (i18n "OlderNewer" | default "Older / Newer"))
+              }}
+            </div>
+          </div>
+        {{ end }}
+      </div>
+    </section>
+
+    {{/* ═══════════════ Related Taxonomies ═══════════════ */}}
+    {{ $currentTaxonomy := .Data.Plural }}
+    {{ $relatedTerms := slice }}
+
+    {{/* Get related terms from other taxonomies */}}
+    {{ range .Site.Taxonomies }}
+      {{ range . }}
+        {{ if ne $.Data.Plural $currentTaxonomy }}
+          {{ $commonPages := intersect $.Pages .Pages }}
+          {{ if gt (len $commonPages) 0 }}
+            {{ $relatedTerms = $relatedTerms | append . }}
+          {{ end }}
+        {{ end }}
+      {{ end }}
+    {{ end }}
+
+    {{ if $relatedTerms }}
+      <section class="related-taxonomies bg-gradient-light py-5">
+        <div class="container-fluid">
+          <div class="text-center mb-5">
+            <h3 class="h3 mb-3 text-dark">
+              <wa-icon
+                name="link"
+                class="me-2 text-primary"
+                aria-hidden="true"
+              ></wa-icon>
+              {{ i18n "related_topics" | default "Related Topics" }}
+            </h3>
+            <p class="text-muted lead mb-0">
+              {{ i18n "discover_related" | default "Discover related content and expand your knowledge" }}
+            </p>
+          </div>
+
+          <div class="row g-4">
+            {{ range first 6 $relatedTerms }}
+              {{ $taxonomyType := "" }}
+              {{ $iconName := "bookmark" }}
+              {{ $gradientClass := "bg-gradient-primary" }}
+
+              {{/* Determine taxonomy type and styling */}}
+              {{ if in .Permalink "/categories/" }}
+                {{ $taxonomyType = "category" }}
+                {{ $iconName = "folder-open" }}
+                {{ $gradientClass = "bg-gradient-warning" }}
+              {{ else if in .Permalink "/tags/" }}
+                {{ $taxonomyType = "tag" }}
+                {{ $iconName = "tag" }}
+                {{ $gradientClass = "bg-gradient-info" }}
+              {{ else if in .Permalink "/series/" }}
+                {{ $taxonomyType = "series" }}
+                {{ $iconName = "list-ol" }}
+                {{ $gradientClass = "bg-gradient-success" }}
+              {{ end }}
+
+
+              <div class="col-md-6 col-lg-4">
+                <div class="related-topic-card h-100">
+                  <a
+                    href="{{ .Permalink }}"
+                    class="card h-100 text-decoration-none border-0 shadow-hover"
+                  >
+                    <div
+                      class="card-header {{ $gradientClass }} text-white border-0 p-3"
+                    >
+                      <div
+                        class="d-flex align-items-center justify-content-between"
+                      >
+                        <div class="d-flex align-items-center">
+                          <div class="icon-wrapper me-3">
+                            <wa-icon
+                              name="{{ $iconName }}"
+                              class="fs-4"
+                              aria-hidden="true"
+                            ></wa-icon>
+                          </div>
+                          <div>
+                            <span
+                              class="badge bg-white bg-opacity-25 text-white text-uppercase small mb-1"
+                            >
+                              {{ $taxonomyType | default "topic" }}
+                            </span>
+                          </div>
+                        </div>
+                        <wa-icon
+                          name="arrow-right"
+                          class="fs-5 arrow-icon"
+                          aria-hidden="true"
+                        ></wa-icon>
+                      </div>
+                    </div>
+
+                    <div class="card-body p-3">
+                      <h6 class="card-title mb-2 text-dark">
+                        {{ .Title | title }}
+                      </h6>
+
+                      {{/* Content statistics */}}
+                      <div class="content-stats mb-3">
+                        <div class="row g-2 text-center">
+                          <div class="col-6">
+                            <div class="stat-item">
+                              <div class="stat-number text-primary fw-bold">
+                                {{ .Pages.Len }}
+                              </div>
+                              <div class="stat-label text-muted small">
+                                {{ if eq .Pages.Len 1 }}
+                                  {{ i18n "article" | default "Article" }}
+                                {{ else }}
+                                  {{ i18n "articles" | default "Articles" }}
+                                {{ end }}
+                              </div>
+                            </div>
+                          </div>
+                          <div class="col-6">
+                            {{ $totalWords := 0 }}
+                            {{ range .Pages }}
+                              {{ $totalWords = add $totalWords .WordCount }}
+                            {{ end }}
+                            {{ $avgReadTime := div $totalWords 200 }}
+                            <div class="stat-item">
+                              <div class="stat-number text-success fw-bold">
+                                {{ $avgReadTime }}
+                              </div>
+                              <div class="stat-label text-muted small">
+                                {{ i18n "avg_read" | default "Avg Read" }}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {{/* Recent content preview */}}
+                      {{ with (first 1 (.Pages.ByDate.Reverse)) }}
+                        <div class="recent-content">
+                          <small class="text-muted d-block mb-1"
+                            >{{ i18n "latest" | default "Latest" }}:</small
+                          >
+                          <small class="text-dark"
+                            >{{ .Title | truncate 40 }}</small
+                          >
+                        </div>
+                      {{ end }}
+                    </div>
+                  </a>
+                </div>
+              </div>
+            {{ end }}
+          </div>
+
+          {{/* Call to action for more related content */}}
+          {{ if gt (len $relatedTerms) 6 }}
+            <div class="text-center mt-5">
+              <p class="text-muted mb-3">
+                {{ i18n "more_topics_available" | default "More related topics available" }}
+              </p>
+              <a
+                href="{{ .Site.BaseURL }}{{ .Data.Plural }}/"
+                class="btn btn-outline-primary"
+              >
+                <wa-icon
+                  name="compass"
+                  class="me-2"
+                  aria-hidden="true"
+                ></wa-icon>
+                {{ i18n "explore_all" | default "Explore All" }}
+                {{ .Data.Plural | humanize }}
+              </a>
+            </div>
+          {{ end }}
+        </div>
+      </section>
+    {{ end }}
+  </article>
+
+  {{/* ═══════════════ JavaScript for Interactivity ═══════════════ */}}
+  {{/* Lightweight dataset of ALL items in this taxonomy for cross‑page search */}}
+  {{- $items := slice -}}
+  {{- range .Pages -}}
+    {{- $img := (.Params.cover | default .Params.image | default .Params.og_image) -}}
+    {{- $section := .Section | default "" -}}
+    {{- /* If local path does not exist, drop image */ -}}
+    {{- if $img -}}
+      {{- $isRemote := or (hasPrefix $img "http://") (hasPrefix $img "https://") -}}
+      {{- if not $isRemote -}}
+        {{- $trim := strings.TrimPrefix "/" $img -}}
+        {{- $exists := or (fileExists (printf "static/%s" $trim)) (fileExists (printf "assets/%s" $trim)) -}}
+        {{- if not $exists -}}
+          {{- $img = "" -}}
+        {{- end -}}
+      {{- end -}}
+    {{- end -}}
+    {{- if not $img -}}
+      {{- with (index .Site.Params.cover.defaults $section) -}}
+        {{- $img = . -}}
+      {{- end -}}
+      {{- if $img -}}
+        {{- $isRemote := or (hasPrefix $img "http://") (hasPrefix $img "https://") -}}
+        {{- if not $isRemote -}}
+          {{- $trim := strings.TrimPrefix "/" $img -}}
+          {{- $exists := or (fileExists (printf "static/%s" $trim)) (fileExists (printf "assets/%s" $trim)) -}}
+          {{- if not $exists -}}
+            {{- $img = "" -}}
+          {{- end -}}
+        {{- end -}}
+      {{- end -}}
+    {{- end -}}
+    {{- $desc := "" -}}
+    {{- if .Params.description -}}
+      {{- $desc = (.Params.description | plainify) -}}
+    {{- else if .Summary -}}
+      {{- $desc = (.Summary | plainify) -}}
+    {{- end -}}
+    {{- $entry := dict
+      "title" .Title
+      "url" .Permalink
+      "date" .Date.Unix
+      "section" .Section
+      "readingTime" .ReadingTime
+      "wordCount" .WordCount
+      "cover" $img
+      "summary" ($desc | truncate 160)
+    -}}
+    {{- $items = $items | append $entry -}}
+  {{- end -}}
+  <script id="taxonomyData" type="application/json">{{ $items | jsonify }}</script>
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      // Elements
+      const searchInput = document.getElementById("taxonomySearch");
+      const sortableContainer = document.querySelector(
+        '[data-sortable="true"]',
+      );
+      const paginationEl = document.getElementById("taxonomyPagination");
+      let contentCards = document.querySelectorAll(
+        '[data-sortable="true"] > div',
+      );
+      const originalHTML = sortableContainer ? sortableContainer.innerHTML : "";
+
+      // Dataset for cross‑page search
+      let taxonomyData = [];
+      try {
+        const dataEl = document.getElementById("taxonomyData");
+        if (dataEl) taxonomyData = JSON.parse(dataEl.textContent) || [];
+      } catch (e) {
+        taxonomyData = [];
+      }
+
+      const currentSort = () =>
+        document.getElementById("sortTitle")?.checked ? "title" : "date";
+
+      function renderCards(items) {
+        // Small HTML renderer matching the visual style of summary cards
+        return items
+          .map((it) => {
+            const dateUnix = it.date || 0;
+            const titleAttr = (it.title || "").toLowerCase();
+            const coverImg = it.cover
+              ? `<div class="card-img-top-wrapper position-relative" style="height:220px;overflow:hidden;">
+                    <img src="${it.cover}" alt="${it.title || ""}" class="card-img-top" loading="lazy" decoding="async" style="height:100%;object-fit:cover;"/>
+                    <div class="card-overlay position-absolute top-0 start-0 w-100 h-100 bg-dark bg-opacity-10"></div>
+                 </div>`
+              : `<div class="card-img-top bg-gradient-light d-flex align-items-center justify-content-center position-relative" style="height:220px;"><wa-icon name="file-lines" class="icon-main" style="font-size:3.5rem;"></wa-icon></div>`;
+            const summary = it.summary ? it.summary : "";
+            const section = it.section
+              ? it.section.charAt(0).toUpperCase() + it.section.slice(1)
+              : "";
+            return `
+              <div class="col-md-6 col-lg-4 col-xl-3" data-date="${dateUnix}" data-title="${titleAttr}">
+                <article class="card h-100 shadow-sm border-0 summary-card position-relative overflow-hidden">
+                  ${coverImg}
+                  <div class="card-body d-flex flex-column p-4">
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                      <span class="badge bg-light text-dark">${section}</span>
+                    </div>
+                    <h3 class="card-title h5 mb-3 lh-base"><a href="${it.url}" class="text-decoration-none stretched-link text-dark">${it.title || ""}</a></h3>
+                    <div class="card-text-wrapper mb-3 flex-grow-1"><div class="card-text text-muted lh-sm">${summary}</div><div class="text-fade"></div></div>
+                  </div>
+                </article>
+              </div>`;
+          })
+          .join("");
+      }
+
+      function performSearch() {
+        if (!sortableContainer) return;
+        const q = (searchInput?.value || "").trim().toLowerCase();
+        const sort = currentSort();
+
+        if (!q) {
+          // Restore original paginated DOM
+          sortableContainer.innerHTML = originalHTML;
+          paginationEl && (paginationEl.style.display = "");
+          contentCards = document.querySelectorAll(
+            '[data-sortable="true"] > div',
+          );
+          applyObserver();
+          return;
+        }
+
+        // Filter across all items
+        let results = taxonomyData.filter((it) => {
+          const hay = `${(it.title || "").toLowerCase()} ${(it.summary || "").toLowerCase()}`;
+          return hay.includes(q);
+        });
+
+        // Sort results
+        results.sort((a, b) => {
+          if (sort === "title") {
+            return (a.title || "").localeCompare(b.title || "");
+          }
+          return (b.date || 0) - (a.date || 0);
+        });
+
+        // Render and hide pagination while searching
+        sortableContainer.innerHTML = renderCards(results);
+        paginationEl && (paginationEl.style.display = "none");
+        contentCards = document.querySelectorAll(
+          '[data-sortable="true"] > div',
+        );
+        applyObserver();
+      }
+
+      if (searchInput) searchInput.addEventListener("input", performSearch);
+
+      // Sort functionality
+      const sortOptions = document.querySelectorAll(
+        'input[name="sortOptions"]',
+      );
+
+      sortOptions.forEach((option) => {
+        option.addEventListener("change", function () {
+          if (this.checked && sortableContainer) {
+            // If searching, re-render results according to new sort
+            if ((searchInput?.value || "").trim().length > 0) {
+              performSearch();
+              return;
+            }
+            const cards = Array.from(sortableContainer.children);
+
+            cards.sort((a, b) => {
+              if (this.id === "sortDate") {
+                return parseInt(b.dataset.date) - parseInt(a.dataset.date);
+              } else if (this.id === "sortTitle") {
+                return a.dataset.title.localeCompare(b.dataset.title);
+              }
+            });
+
+            // Add staggered animation to sorted cards
+            cards.forEach((card, index) => {
+              card.style.animation = `slideIn 0.4s ease-out ${index * 0.05}s both`;
+              sortableContainer.appendChild(card);
+            });
+          }
+        });
+      });
+
+      // Smooth scrolling for anchor links
+      document.querySelectorAll('a[href^="#"]').forEach((anchor) => {
+        anchor.addEventListener("click", function (e) {
+          e.preventDefault();
+          const target = document.querySelector(this.getAttribute("href"));
+          if (target) {
+            target.scrollIntoView({
+              behavior: "smooth",
+              block: "start",
+            });
+          }
+        });
+      });
+
+      // Intersection Observer for card animations
+      const observerOptions = {
+        threshold: 0.1,
+        rootMargin: "0px 0px -50px 0px",
+      };
+
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.style.animation = "fadeInUp 0.6s ease-out forwards";
+            observer.unobserve(entry.target);
+          }
+        });
+      }, observerOptions);
+
+      function applyObserver() {
+        document
+          .querySelectorAll(".summary-card, .related-topic-card")
+          .forEach((card) => {
+            card.style.opacity = "0";
+            card.style.transform = "translateY(30px)";
+            observer.observe(card);
+          });
+      }
+
+      // Initial observe
+      applyObserver();
+    });
+  </script>
+
+  <style>
+    /* Animation keyframes for enhanced interactivity */
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+      }
+      to {
+        opacity: 1;
+      }
+    }
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateX(-20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    .content-loading {
+      opacity: 0.6;
+      pointer-events: none;
+    }
+    .related-taxonomies {
+      background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+      position: relative;
+      overflow: hidden;
+    }
+    .related-taxonomies::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 100%;
+      background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23000000' fill-opacity='0.03'%3E%3Ccircle cx='30' cy='30' r='2'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")
+        repeat;
+      pointer-events: none;
+    }
+    .related-taxonomies .container-fluid {
+      position: relative;
+      z-index: 1;
+    }
+  </style>
+{{ end }}
