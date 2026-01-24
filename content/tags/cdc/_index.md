@@ -1,346 +1,544 @@
 ---
-title: "Tag: Change Data Capture (CDC)"
-description: "Explore Geode's Change Data Capture capabilities for real-time data synchronization, event streaming, and building reactive applications with graph database changes."
-keywords:
-  - CDC
-  - change data capture
-  - event streaming
-  - real-time sync
-  - data replication
-  - audit log
-draft: false
-params:
-  seo:
-    canonical: "https://geodedb.com/tags/cdc/"
-    noindex: false
+title: "Change Data Capture (CDC)"
+description: "Real-time change detection and streaming of database modifications in Geode graph database"
+keywords: ["CDC", "change data capture", "change tracking", "event streaming", "database replication", "data synchronization", "real-time updates", "changelog"]
+weight: 10
 ---
 
-Geode documentation tagged with **Change Data Capture (CDC)**. CDC enables real-time tracking of all data modifications in your graph database, providing a foundation for event-driven architectures, data synchronization, and audit compliance.
+# Change Data Capture (CDC)
 
-## Introduction to Change Data Capture
+Change Data Capture (CDC) is a design pattern that identifies and captures changes made to data in a database and delivers those changes to downstream systems in real-time. Geode's CDC implementation enables applications to react to data modifications as they occur, powering use cases like real-time analytics, data synchronization, and event-driven architectures.
 
-Change Data Capture (CDC) is a design pattern that identifies and captures changes made to data in a database, making those changes available for downstream consumption. In the context of graph databases like Geode, CDC tracks insertions, updates, and deletions of nodes, relationships, and properties, emitting a stream of change events that applications can subscribe to and process.
+## Understanding CDC
 
-CDC transforms your database from a passive data store into an active participant in event-driven architectures. Rather than polling for changes or building custom triggers, CDC provides a standardized, performant mechanism for reacting to data modifications in real-time. This is particularly valuable in graph databases where relationships and network effects mean that a single change can have cascading implications across the graph.
+### What is CDC?
 
-Geode's CDC implementation leverages the Write-Ahead Log (WAL) to capture changes with minimal performance overhead. By reading from the WAL rather than intercepting write operations, CDC in Geode achieves high throughput while maintaining ACID guarantees. The CDC stream is strongly consistent—events appear in the exact order that transactions committed, ensuring downstream systems can maintain correct derived state.
+CDC monitors database changes and publishes events for:
 
-## Key Concepts
+**Insert Events** - New nodes or edges created
+**Update Events** - Property modifications
+**Delete Events** - Nodes or edges removed
+**Schema Events** - Structural changes to graphs
 
-### Change Events
+### Why Use CDC?
 
-Every modification in Geode generates a change event containing:
+CDC enables powerful scenarios:
 
-- **Event Type**: INSERT, UPDATE, DELETE, or RELATIONSHIP_CREATE/DELETE
-- **Entity Identifier**: Node ID or relationship ID
-- **Before State**: Previous property values (for UPDATE and DELETE)
-- **After State**: New property values (for INSERT and UPDATE)
-- **Transaction ID**: Unique identifier linking related changes
-- **Timestamp**: Commit time with microsecond precision
-- **Labels/Types**: Node labels or relationship types affected
+- **Real-Time Analytics** - Update dashboards instantly
+- **Cache Invalidation** - Maintain cache consistency
+- **Data Synchronization** - Replicate to other systems
+- **Audit Trails** - Track all data modifications
+- **Event-Driven Architecture** - Trigger business workflows
 
-### Event Ordering Guarantees
+## Geode CDC Architecture
 
-Geode's CDC provides several ordering guarantees:
+### Change Event Structure
 
-- **Per-entity ordering**: Changes to the same node or relationship appear in commit order
-- **Transaction boundaries**: All changes within a transaction are grouped together
-- **Causality preservation**: If transaction B reads data written by transaction A, B's events appear after A's
-- **Snapshot consistency**: Events reflect a consistent snapshot at commit time
-
-### Filtering and Subscriptions
-
-CDC subscriptions can be filtered by:
-
-- **Labels**: Only track changes to specific node labels
-- **Relationship types**: Monitor specific edge types
-- **Properties**: Filter events based on property names or value predicates
-- **Event types**: Subscribe only to INSERT, UPDATE, or DELETE operations
-
-### Consumer Patterns
-
-Common CDC consumption patterns include:
-
-- **Stream Processing**: Process events in real-time using streaming frameworks
-- **Materialized Views**: Build denormalized views for fast queries
-- **Cache Invalidation**: Keep application caches synchronized
-- **Search Indexing**: Update full-text search indexes in real-time
-- **Audit Logging**: Maintain compliance records of all changes
-- **Data Replication**: Synchronize to other databases or data warehouses
-
-## How CDC Works in Geode
-
-### WAL-Based Architecture
-
-Geode's CDC implementation reads from the Write-Ahead Log, the same durable log that ensures ACID compliance. When a transaction commits:
-
-1. Changes are written to the WAL for durability
-2. The WAL entry is assigned a monotonically increasing Log Sequence Number (LSN)
-3. CDC consumers read WAL entries starting from their last processed LSN
-4. Events are deserialized into structured change records
-5. Filters are applied to match subscription criteria
-6. Matching events are delivered to consumers
-
-This architecture provides several advantages:
-
-- **Zero-Copy**: CDC reads from the same WAL used for recovery
-- **Low Overhead**: No additional write path instrumentation
-- **Durability**: CDC events are guaranteed durable before delivery
-- **Replay Capability**: Consumers can rewind to any historical LSN
-
-### Event Stream Format
-
-CDC events use a structured JSON format:
+Each change produces a detailed event:
 
 ```json
 {
-  "lsn": "0000000001A2F3B4",
-  "txn_id": "550e8400-e29b-41d4-a716-446655440000",
-  "timestamp": "2026-01-24T15:30:45.123456Z",
-  "event_type": "NODE_UPDATE",
-  "entity_id": "node:12345",
-  "labels": ["Person"],
-  "before": {
-    "name": "Alice Smith",
-    "age": 30,
-    "city": "Seattle"
-  },
+  "event_id": "evt_abc123",
+  "timestamp": "2026-01-24T10:30:00Z",
+  "graph": "social",
+  "operation": "INSERT",
+  "entity_type": "node",
+  "entity_id": "person:123",
+  "before": null,
   "after": {
-    "name": "Alice Johnson",
-    "age": 31,
-    "city": "Seattle"
+    "labels": ["Person"],
+    "properties": {
+      "name": "Alice",
+      "age": 25,
+      "created": "2026-01-24T10:30:00Z"
+    }
   },
-  "changed_properties": ["name", "age"]
+  "transaction_id": "tx_xyz789",
+  "user": "alice@example.com"
 }
 ```
 
-### Checkpoint Management
+### Enabling CDC
 
-CDC consumers maintain checkpoints to track processing progress:
+Enable CDC for specific graphs or globally:
 
-- **LSN Tracking**: Each consumer records the last successfully processed LSN
-- **Crash Recovery**: On restart, consumers resume from their last checkpoint
-- **Exactly-Once Semantics**: Combined with transactional consumers, achieves exactly-once processing
-- **Consumer Groups**: Multiple consumers can share work using consumer group coordination
+```gql
+-- Enable CDC for entire graph
+ALTER GRAPH social SET CDC ENABLED;
 
-## Use Cases
+-- Enable CDC for specific labels
+ALTER GRAPH social 
+SET CDC ENABLED FOR LABELS (Person, Post);
 
-### Real-Time Recommendation Updates
-
-```python
-import geode_client
-
-async def update_recommendations(event):
-    """Update recommendation cache when user behavior changes."""
-    if event['event_type'] == 'RELATIONSHIP_CREATE':
-        if event['relationship_type'] == 'PURCHASED':
-            user_id = event['source_id']
-            product_id = event['target_id']
-
-            # Recalculate recommendations for this user
-            recommendations = await compute_recommendations(user_id)
-            await cache.set(f"recs:{user_id}", recommendations)
-
-async def consume_cdc_stream():
-    async with geode_client.CDCConsumer(
-        labels=['User', 'Product'],
-        relationship_types=['PURCHASED', 'VIEWED']
-    ) as consumer:
-        async for event in consumer:
-            await update_recommendations(event)
+-- Enable CDC for specific operations
+ALTER GRAPH social
+SET CDC ENABLED FOR OPERATIONS (INSERT, UPDATE);
 ```
 
-### Audit Trail for Compliance
+### CDC Streams
 
-```python
-async def audit_logger(event):
-    """Maintain immutable audit log for regulatory compliance."""
-    audit_entry = {
-        'timestamp': event['timestamp'],
-        'transaction_id': event['txn_id'],
-        'user': event.get('metadata', {}).get('user_id'),
-        'operation': event['event_type'],
-        'entity': event['entity_id'],
-        'before': event.get('before'),
-        'after': event.get('after')
-    }
+Changes flow through named streams:
 
-    # Write to append-only audit storage
-    await audit_store.append(audit_entry)
-
-async def run_audit_logger():
-    async with geode_client.CDCConsumer(
-        labels=['SensitiveData'],
-        consumer_group='audit-logger'
-    ) as consumer:
-        async for event in consumer:
-            await audit_logger(event)
-            await consumer.commit()  # Checkpoint progress
+```gql
+-- Create CDC stream
+CREATE CDC STREAM user_changes
+ON GRAPH social
+FOR LABELS (Person)
+WHERE operation IN ('INSERT', 'UPDATE')
+OPTIONS (
+    format: 'json',
+    include_before: true,
+    include_after: true,
+    buffer_size: 10000
+);
 ```
 
-### Search Index Synchronization
+## Consuming Change Events
+
+### Polling Consumer
+
+Pull events on demand:
+
+```gql
+-- Read events from stream
+SELECT * FROM CDC_STREAM('user_changes')
+WHERE timestamp > NOW() - INTERVAL '1 hour'
+ORDER BY timestamp ASC
+LIMIT 1000;
+```
+
+### Push Consumer
+
+Subscribe for real-time delivery:
 
 ```python
-from elasticsearch import AsyncElasticsearch
+from geode_client import GeodeClient
 
-async def sync_to_elasticsearch(event):
-    """Keep Elasticsearch index synchronized with Geode."""
-    es = AsyncElasticsearch(['http://localhost:9200'])
+async def handle_change(event):
+    print(f"Change detected: {event['operation']} on {event['entity_id']}")
+    
+    if event['operation'] == 'INSERT':
+        # Handle new entity
+        await process_new_entity(event['after'])
+    elif event['operation'] == 'UPDATE':
+        # Handle modification
+        await process_update(event['before'], event['after'])
+    elif event['operation'] == 'DELETE':
+        # Handle deletion
+        await process_deletion(event['before'])
 
-    if event['event_type'] == 'NODE_INSERT':
-        await es.index(
-            index='geode_nodes',
-            id=event['entity_id'],
-            document=event['after']
+async def main():
+    client = GeodeClient("localhost", 3141)
+    
+    # Subscribe to CDC stream
+    async with client.subscribe_cdc("user_changes") as stream:
+        async for event in stream:
+            await handle_change(event)
+```
+
+### Event Filtering
+
+Filter events before delivery:
+
+```gql
+-- Only high-value users
+CREATE CDC STREAM vip_users
+ON GRAPH social
+FOR LABELS (Person)
+WHERE after.properties.lifetime_value > 10000;
+
+-- Only specific property changes
+CREATE CDC STREAM email_changes
+ON GRAPH social
+FOR LABELS (Person)
+WHERE before.properties.email != after.properties.email;
+```
+
+## CDC Patterns
+
+### Database Replication
+
+Replicate changes to other databases:
+
+```python
+async def replicate_to_postgres(event):
+    """Replicate Geode changes to PostgreSQL"""
+    if event['operation'] == 'INSERT':
+        await pg_conn.execute(
+            "INSERT INTO users (id, name, age) VALUES ($1, $2, $3)",
+            event['entity_id'],
+            event['after']['properties']['name'],
+            event['after']['properties']['age']
         )
-    elif event['event_type'] == 'NODE_UPDATE':
-        await es.update(
-            index='geode_nodes',
-            id=event['entity_id'],
-            doc=event['after']
+    elif event['operation'] == 'UPDATE':
+        await pg_conn.execute(
+            "UPDATE users SET name = $2, age = $3 WHERE id = $1",
+            event['entity_id'],
+            event['after']['properties']['name'],
+            event['after']['properties']['age']
         )
-    elif event['event_type'] == 'NODE_DELETE':
-        await es.delete(
-            index='geode_nodes',
-            id=event['entity_id']
+    elif event['operation'] == 'DELETE':
+        await pg_conn.execute(
+            "DELETE FROM users WHERE id = $1",
+            event['entity_id']
         )
 
-async def run_search_sync():
-    async with geode_client.CDCConsumer(
-        labels=['Document', 'Article'],
-        consumer_group='search-indexer'
-    ) as consumer:
-        async for event in consumer:
-            await sync_to_elasticsearch(event)
-            await consumer.commit()
+async def main():
+    async with client.subscribe_cdc("user_changes") as stream:
+        async for event in stream:
+            await replicate_to_postgres(event)
 ```
 
 ### Cache Invalidation
 
+Keep caches synchronized:
+
+```javascript
+const redis = require('redis');
+const client = redis.createClient();
+
+async function invalidateCache(event) {
+  const cacheKey = `user:${event.entity_id}`;
+  
+  if (event.operation === 'DELETE') {
+    // Remove from cache
+    await client.del(cacheKey);
+  } else {
+    // Update cache
+    await client.setex(
+      cacheKey,
+      3600,
+      JSON.stringify(event.after)
+    );
+  }
+}
+
+// Subscribe to changes
+geodeclient.subscribeCDC('user_changes', invalidateCache);
+```
+
+### Search Index Synchronization
+
+Update search indexes in real-time:
+
 ```python
-import redis.asyncio as redis
+from elasticsearch import Elasticsearch
 
-async def invalidate_cache(event):
-    """Invalidate cached queries when data changes."""
-    r = await redis.from_url('redis://localhost')
+es = Elasticsearch(['localhost:9200'])
 
-    # Invalidate all queries involving this entity
-    entity_id = event['entity_id']
-    cache_keys = await r.keys(f"query:*:{entity_id}:*")
+async def sync_to_elasticsearch(event):
+    """Sync changes to Elasticsearch"""
+    index = 'users'
+    doc_id = event['entity_id']
+    
+    if event['operation'] == 'DELETE':
+        es.delete(index=index, id=doc_id)
+    else:
+        doc = {
+            'name': event['after']['properties']['name'],
+            'age': event['after']['properties']['age'],
+            'updated_at': event['timestamp']
+        }
+        es.index(index=index, id=doc_id, document=doc)
 
-    if cache_keys:
-        await r.delete(*cache_keys)
-        print(f"Invalidated {len(cache_keys)} cache entries")
+async with client.subscribe_cdc("user_changes") as stream:
+    async for event in stream:
+        await sync_to_elasticsearch(event)
+```
 
-async def run_cache_invalidator():
-    async with geode_client.CDCConsumer() as consumer:
-        async for event in consumer:
-            await invalidate_cache(event)
+### Materialized View Updates
+
+Maintain derived data:
+
+```gql
+-- Trigger to update materialized view
+CREATE TRIGGER update_user_stats
+ON CDC_STREAM user_changes
+WHEN operation = 'INSERT'
+EXECUTE GQL
+  INSERT INTO stats (user_count, last_updated)
+  VALUES ((SELECT COUNT(*) FROM Person), NOW())
+  ON CONFLICT (id) DO UPDATE SET
+    user_count = EXCLUDED.user_count,
+    last_updated = EXCLUDED.last_updated;
+```
+
+## CDC Performance
+
+### Event Batching
+
+Process events in batches for efficiency:
+
+```python
+async def process_batch(events):
+    """Process events in batches"""
+    # Group by operation
+    inserts = [e for e in events if e['operation'] == 'INSERT']
+    updates = [e for e in events if e['operation'] == 'UPDATE']
+    deletes = [e for e in events if e['operation'] == 'DELETE']
+    
+    # Batch insert
+    if inserts:
+        await batch_insert(inserts)
+    
+    # Batch update
+    if updates:
+        await batch_update(updates)
+    
+    # Batch delete
+    if deletes:
+        await batch_delete(deletes)
+
+async with client.subscribe_cdc("user_changes", batch_size=100) as stream:
+    batch = []
+    async for event in stream:
+        batch.append(event)
+        
+        if len(batch) >= 100:
+            await process_batch(batch)
+            batch = []
+```
+
+### Event Compression
+
+Reduce bandwidth with compression:
+
+```gql
+-- Enable compression for CDC stream
+ALTER CDC STREAM user_changes
+SET OPTIONS (
+    compression: 'gzip',
+    compression_level: 6
+);
+```
+
+### Checkpoint Management
+
+Track processing progress:
+
+```python
+class CheckpointManager:
+    def __init__(self, stream_name):
+        self.stream_name = stream_name
+        self.checkpoint = self.load_checkpoint()
+    
+    def load_checkpoint(self):
+        # Load last processed event ID
+        return redis.get(f"cdc:checkpoint:{self.stream_name}")
+    
+    def save_checkpoint(self, event_id):
+        redis.set(f"cdc:checkpoint:{self.stream_name}", event_id)
+    
+    async def process_from_checkpoint(self):
+        async with client.subscribe_cdc(
+            self.stream_name,
+            from_event=self.checkpoint
+        ) as stream:
+            async for event in stream:
+                await process_event(event)
+                self.save_checkpoint(event['event_id'])
+```
+
+## CDC Reliability
+
+### At-Least-Once Delivery
+
+Events may be delivered multiple times:
+
+```python
+# Use idempotent operations
+async def process_event_idempotent(event):
+    # Check if already processed
+    if await is_processed(event['event_id']):
+        return
+    
+    # Process event
+    await handle_event(event)
+    
+    # Mark as processed
+    await mark_processed(event['event_id'])
+```
+
+### Exactly-Once Semantics
+
+Achieve exactly-once with deduplication:
+
+```python
+async def process_with_dedup(event):
+    async with db.transaction() as tx:
+        # Check for duplicate
+        if await tx.exists("SELECT 1 FROM processed WHERE event_id = $1", event['event_id']):
+            return
+        
+        # Process event
+        await handle_event(event, tx)
+        
+        # Record processing
+        await tx.execute(
+            "INSERT INTO processed (event_id, timestamp) VALUES ($1, $2)",
+            event['event_id'],
+            datetime.now()
+        )
+```
+
+### Error Handling
+
+Handle failures gracefully:
+
+```python
+async def robust_processor(event):
+    max_retries = 3
+    retry_count = 0
+    
+    while retry_count < max_retries:
+        try:
+            await process_event(event)
+            return
+        except TransientError as e:
+            retry_count += 1
+            await asyncio.sleep(2 ** retry_count)  # Exponential backoff
+        except FatalError as e:
+            # Send to dead letter queue
+            await send_to_dlq(event, str(e))
+            return
+    
+    # Max retries exceeded
+    await send_to_dlq(event, "Max retries exceeded")
+```
+
+## Monitoring CDC
+
+### Stream Metrics
+
+Monitor CDC stream health:
+
+```gql
+-- Query CDC stream metrics
+SELECT
+    stream_name,
+    events_published,
+    events_consumed,
+    lag_events,
+    lag_seconds,
+    last_event_timestamp
+FROM SYSTEM.cdc_streams;
+```
+
+### Consumer Lag
+
+Track consumer processing lag:
+
+```gql
+SELECT
+    consumer_id,
+    stream_name,
+    last_processed_event,
+    lag_events,
+    throughput_events_per_sec
+FROM SYSTEM.cdc_consumers
+WHERE lag_events > 1000;
+```
+
+### Alerting
+
+Set up alerts for CDC issues:
+
+```yaml
+alerts:
+  - name: CDC lag too high
+    condition: lag_events > 10000
+    action: notify_oncall
+    
+  - name: CDC consumer offline
+    condition: last_heartbeat < NOW() - INTERVAL '5 minutes'
+    action: page_oncall
 ```
 
 ## Best Practices
 
-### Consumer Design
+### Event Design
 
-1. **Idempotency**: Design consumers to handle duplicate events safely
-2. **Error Handling**: Implement retry logic with exponential backoff
-3. **Checkpointing**: Commit checkpoints frequently to limit reprocessing
-4. **Batch Processing**: Process events in batches for better throughput
+Design events carefully:
 
-### Performance Optimization
+- Include enough context to process independently
+- Keep events immutable
+- Use consistent event schemas
+- Version event formats
+- Include causality information
 
-1. **Filter Early**: Use subscription filters to reduce event volume
-2. **Parallel Processing**: Use consumer groups to distribute load
-3. **Async I/O**: Leverage async operations for downstream writes
-4. **Buffer Management**: Configure appropriate buffer sizes for your workload
+### Stream Management
 
-### Operational Considerations
+Manage streams effectively:
 
-1. **Monitor Lag**: Track consumer lag (current LSN - checkpoint LSN)
-2. **Alerting**: Set up alerts for consumer failures or increasing lag
-3. **Retention**: Configure WAL retention based on maximum expected consumer lag
-4. **Testing**: Test consumer restart and crash recovery scenarios
+- Use separate streams for different purposes
+- Configure appropriate retention periods
+- Monitor and scale stream capacity
+- Implement backpressure handling
 
-### Security
+### Consumer Patterns
 
-1. **Authentication**: CDC consumers require authenticated database connections
-2. **Authorization**: Row-Level Security policies apply to CDC events
-3. **Encryption**: CDC streams use TLS 1.3 encryption
-4. **Sensitive Data**: Consider filtering sensitive properties from CDC events
+Implement robust consumers:
 
-## Performance Considerations
+- Process events idempotently
+- Implement error handling and retries
+- Track and checkpoint progress
+- Monitor consumer lag
+- Scale consumers horizontally
 
-### Throughput
+## Advanced Features
 
-Geode's CDC implementation can deliver high throughput:
+### Change Event Enrichment
 
-- **Single Consumer**: 50,000-100,000 events/second per consumer
-- **Multiple Consumers**: Linear scaling with consumer count
-- **Batching**: Batch processing can achieve 200,000+ events/second
-- **Network Overhead**: Local consumers have ~10% overhead vs remote
+Add context to events:
 
-### Latency
+```gql
+-- Enrich events with related data
+CREATE CDC STREAM enriched_posts
+ON GRAPH social
+FOR LABELS (Post)
+WITH ENRICHMENT (
+    SELECT p.*, u.name AS author_name
+    FROM Post p
+    JOIN Person u ON p.author_id = u.id
+);
+```
 
-Event delivery latency is typically very low:
+### Event Transformation
 
-- **Local Network**: <1ms from commit to consumer delivery
-- **Remote Network**: <10ms over WAN with good connectivity
-- **Buffering**: Larger buffers trade latency for throughput
-- **Filtering**: Complex filters add minimal latency (<100μs)
+Transform events before delivery:
 
-### Resource Usage
+```gql
+CREATE CDC STREAM transformed_users
+ON GRAPH social
+FOR LABELS (Person)
+WITH TRANSFORMATION (
+    SELECT
+        entity_id,
+        after.properties.name AS user_name,
+        UPPER(after.properties.email) AS email_upper,
+        after.properties.age AS age
+);
+```
 
-CDC resource consumption is modest:
+### Multi-Graph CDC
 
-- **Memory**: ~50MB base + ~10KB per active consumer
-- **CPU**: <5% CPU overhead on producer
-- **Disk I/O**: Leverages existing WAL reads
-- **Network**: Bandwidth proportional to event rate and payload size
+Capture changes across multiple graphs:
 
-## Troubleshooting
-
-### Consumer Lag Increasing
-
-**Symptom**: Consumer checkpoint falls behind current LSN
-
-**Solutions**:
-- Scale out with consumer groups
-- Optimize event processing code
-- Increase batch sizes
-- Add more parallelism
-
-### Missing Events
-
-**Symptom**: Expected events not received
-
-**Solutions**:
-- Check subscription filters
-- Verify consumer checkpoint position
-- Confirm transaction committed successfully
-- Review Row-Level Security policies
-
-### Duplicate Events
-
-**Symptom**: Same event received multiple times
-
-**Solutions**:
-- Implement idempotent event handlers
-- Check checkpoint commit logic
-- Verify exactly-once delivery configuration
-- Review consumer restart behavior
+```gql
+CREATE CDC STREAM all_changes
+ON GRAPHS (social, commerce, analytics)
+FOR ALL LABELS;
+```
 
 ## Related Topics
 
-- [Write-Ahead Log (WAL)](/tags/wal/) - Underlying durability mechanism
-- [Audit Logging](/tags/audit-logging/) - Compliance and security logging
-- [Real-Time Analytics](/tags/real-time-analytics/) - Stream processing patterns
-- [Event Streaming](/tags/event-streaming/) - Event-driven architectures
-- [Transactions](/tags/transactions/) - Transaction boundaries in CDC
-- [Row-Level Security](/tags/row-level-security/) - Security filtering for CDC
+- [Event Streaming](/tags/streaming) - Event streaming architectures
+- [Pub/Sub](/tags/pubsub) - Publish-subscribe messaging
+- [Events](/tags/events) - Event-driven architecture
+- [Replication](/tags/replication) - Data replication strategies
 
-## Further Reading
+## Learn More
 
-- [CDC Configuration Guide](/docs/cdc-configuration/) - Setup and tuning
-- [Stream Processing Patterns](/docs/stream-processing/) - Common architectures
-- [Audit Compliance](/docs/audit-compliance/) - Meeting regulatory requirements
-- [Performance Tuning](/docs/performance-tuning/) - Optimizing CDC throughput
+- [Change Data Capture Patterns](https://www.confluent.io/learn/change-data-capture/)
+- [Debezium CDC Platform](https://debezium.io/)
+- [Event-Driven Architecture](https://martinfowler.com/articles/201701-event-driven.html)
