@@ -444,8 +444,8 @@ Based on source documentation analysis:
 | ID | Doc Page | Primary Keyword | Source Refs | Status | Issue IID | PR/Commit | Notes | Updated |
 |----|----------|-----------------|-------------|--------|-----------|-----------|-------|---------|
 | WI-029 | `./content/docs/ops/docker-deployment.md` | "docker deployment" | docker/DOCKER.md, DOCKER_INTEGRATION_TESTS.md | **Completed** | - | TBD | 1,058 lines - Containers, Compose, distributed | 2026-01-23 |
-| WI-030 | `./content/docs/security/field-level-encryption.md` | "field-level encryption" | FIELD_LEVEL_ENCRYPTION.md | Not Started | - | - | FLE implementation, selective encryption | 2026-01-23 |
-| WI-031 | `./content/docs/security/kms-integration.md` | "key management system" | KMS_PROVIDER_SYSTEM.md, DESIGN_TDE_KMS.md | Not Started | - | - | AWS KMS, Vault, file-based KMS | 2026-01-23 |
+| WI-030 | `./content/docs/security/field-level-encryption.md` | "field-level encryption" | FIELD_LEVEL_ENCRYPTION.md | **Completed** | - | TBD | 927 lines - FLE, AEAD, blind indexes, rotation | 2026-01-24 |
+| WI-031 | `./content/docs/security/kms-integration.md` | "key management system" | KMS_PROVIDER_SYSTEM.md, DESIGN_TDE_KMS.md | **Completed** | - | TBD | 834 lines - Vault, AWS, Azure, GCP KMS | 2026-01-24 |
 | WI-032 | `./content/docs/development/lsp-guide.md` | "language server protocol" | LSP_IMPLEMENTATION.md, LSP_TEST_SUITE.md | Not Started | - | - | GQL LSP, IDE integration, autocomplete | 2026-01-23 |
 | WI-033 | `./content/docs/reference/api-reference-complete.md` | "API reference" | API_REFERENCE_GENERATED.md | Not Started | - | - | Complete generated API reference | 2026-01-23 |
 | WI-034 | `./content/docs/gql/conformance-profile.md` | "GQL conformance" | gql/GQL_CONFORMANCE_PROFILE.md | Not Started | - | - | ISO compliance details, test results | 2026-01-23 |
