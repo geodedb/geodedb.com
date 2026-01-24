@@ -395,26 +395,26 @@ Based on source documentation analysis:
 
 | ID | Doc Page | Primary Keyword | Source Refs | Status | Issue IID | PR/Commit | Notes | Updated |
 |----|----------|-----------------|-------------|--------|-----------|-----------|-------|---------|
-| WI-001 | `./content/docs/configuration/server-configuration.md` | "server configuration" | USAGE.md, DOCKER_LOG_LEVEL_CONFIG.md | Completed | #1 | - | 700+ lines, all config options | 2026-01-23 |
-| WI-002 | `./content/docs/architecture/distributed-architecture.md` | "distributed graph database" | DISTRIBUTED_QUERY_COORDINATION.md, CURRENT_ARCHITECTURE.md | Not Started | #2 | - | Federation, sharding, coordination | 2026-01-23 |
-| WI-003 | `./content/docs/guides/troubleshooting.md` | "troubleshooting graph database" | QUICK_REFERENCE.md, scattered sources | Completed | #3 | - | 600+ lines, 30+ issues solved | 2026-01-23 |
-| WI-004 | `./content/docs/guides/schema-design.md` | "graph schema design" | Examples + best practices | Completed | #4 | - | 800+ lines, 4 domain examples | 2026-01-23 |
-| WI-005 | `./content/docs/query/performance-tuning.md` | "query optimization" | EXPLAIN_PROFILE.md, BM25_INDEX_OPTIMIZER_INTEGRATION.md | Not Started | #5 | - | EXPLAIN analysis + tuning | 2026-01-23 |
-| WI-006 | `./content/docs/guides/migration-guide.md` | "migrate to geode" | MIGRATION_GUIDE.md | Not Started | #6 | - | Neo4j, Neptune migration | 2026-01-23 |
-| WI-007 | `./content/docs/transactions/advanced-patterns.md` | "transaction patterns" | TRANSACTION_MANAGEMENT.md, ENHANCED_TRANSACTION_ISOLATION.md | Not Started | #7 | - | Deadlock prevention, long-running txns | 2026-01-23 |
-| WI-008 | `./content/docs/client-libraries/zig-client.md` | "zig client library" | ../geode-client-zig/ | Not Started | #8 | - | Complete Zig client docs | 2026-01-23 |
-| WI-009 | `./content/docs/analytics/real-time-analytics.md` | "real-time graph analytics" | REAL_TIME_ANALYTICS.md, ML_GRAPH_EMBEDDINGS.md | Not Started | #9 | - | Streaming analytics + ML | 2026-01-23 |
-| WI-010 | `./content/docs/guides/testing-strategies.md` | "testing graph queries" | TESTING.md, testing infrastructure docs | Not Started | #10 | - | Query testing patterns | 2026-01-23 |
+| WI-001 | `./content/docs/configuration/server-configuration.md` | "server configuration" | USAGE.md, DOCKER_LOG_LEVEL_CONFIG.md | Completed | #1 | f0ce0de | 859 lines, all config options | 2026-01-23 |
+| WI-002 | `./content/docs/architecture/distributed-architecture.md` | "distributed graph database" | DISTRIBUTED_QUERY_COORDINATION.md | Completed | #2 | f0ce0de | 949 lines, federation, sharding | 2026-01-23 |
+| WI-003 | `./content/docs/guides/troubleshooting.md` | "troubleshooting graph database" | QUICK_REFERENCE.md, scattered sources | Completed | #3 | f0ce0de | 1074 lines, 30+ issues solved | 2026-01-23 |
+| WI-004 | `./content/docs/guides/schema-design.md` | "graph schema design" | Examples + best practices | Completed | #4 | f0ce0de | 821 lines, 4 domain examples | 2026-01-23 |
+| WI-005 | `./content/docs/query/performance-tuning.md` | "query optimization" | EXPLAIN_PROFILE.md, BM25_INDEX_OPTIMIZER_INTEGRATION.md | Completed | #5 | f0ce0de | 934 lines, EXPLAIN + tuning | 2026-01-23 |
+| WI-006 | `./content/docs/guides/migration-guide.md` | "migrate to geode" | MIGRATION_GUIDE.md | Completed | #6 | f0ce0de | 891 lines, Neo4j/JanusGraph/TigerGraph | 2026-01-23 |
+| WI-007 | `./content/docs/transactions/advanced-patterns.md` | "transaction patterns" | TRANSACTION_MANAGEMENT.md, ENHANCED_TRANSACTION_ISOLATION.md | Completed | #7 | f0ce0de | 1065 lines, 6 isolation levels | 2026-01-23 |
+| WI-008 | `./content/docs/client-libraries/zig-client.md` | "zig client library" | ../geode-client-zig/ | Completed | #8 | f0ce0de | 792 lines, complete Zig client | 2026-01-23 |
+| WI-009 | `./content/docs/analytics/real-time-analytics.md` | "real-time graph analytics" | REAL_TIME_ANALYTICS.md, ML_GRAPH_EMBEDDINGS.md | Completed | #9 | f0ce0de | 1057 lines, streaming + ML | 2026-01-23 |
+| WI-010 | `./content/docs/guides/testing-strategies.md` | "testing graph queries" | TESTING.md, testing infrastructure docs | Completed | #10 | f0ce0de | 1050 lines, 6 testing frameworks | 2026-01-23 |
 
 ### Priority 2: Directory Cleanup & Enhancement (Medium Impact)
 
 | ID | Doc Page | Primary Keyword | Source Refs | Status | Issue IID | PR/Commit | Notes | Updated |
 |----|----------|-----------------|-------------|--------|-----------|-----------|-------|---------|
-| WI-011 | Merge `/getting-started/` into `/get-started/` | N/A (cleanup) | Existing pages | Not Started | - | - | Remove duplicate directory | 2026-01-23 |
-| WI-012 | `./content/docs/configuration/_index.md` enhancement | "configuration overview" | Multiple sources | Not Started | - | - | Aggregate config info or remove stub | 2026-01-23 |
-| WI-013 | `./content/docs/data-types/_index.md` enhancement | "data types overview" | TYPES_AND_FUNCTIONS.md | Not Started | - | - | Aggregate type info or remove stub | 2026-01-23 |
-| WI-014 | `./content/docs/gql-reference/_index.md` enhancement | "GQL reference" | API_REFERENCE.md | Not Started | - | - | Aggregate GQL syntax or remove stub | 2026-01-23 |
-| WI-015 | `./content/docs/api-reference/_index.md` enhancement | "API reference" | API_REFERENCE_GENERATED.md | Not Started | - | - | Create detailed API pages or remove stub | 2026-01-23 |
+| WI-011 | Merge `/getting-started/` into `/get-started/` | N/A (cleanup) | Existing pages | Completed | - | 2646ba7 | Merged, removed duplicate | 2026-01-23 |
+| WI-012 | `./content/docs/configuration/_index.md` enhancement | "configuration overview" | Multiple sources | Completed | - | 2646ba7 | Added reference link | 2026-01-23 |
+| WI-013 | `./content/docs/data-types/_index.md` enhancement | "data types overview" | TYPES_AND_FUNCTIONS.md | Completed | - | 2646ba7 | Already comprehensive (321 lines) | 2026-01-23 |
+| WI-014 | `./content/docs/gql-reference/_index.md` enhancement | "GQL reference" | API_REFERENCE.md | Completed | - | 2646ba7 | Fixed broken links | 2026-01-23 |
+| WI-015 | `./content/docs/api-reference/_index.md` enhancement | "API reference" | API_REFERENCE_GENERATED.md | Completed | - | 2646ba7 | Already comprehensive (550 lines) | 2026-01-23 |
 
 ### Priority 3: Additional Enhancements (Nice to Have)
 
