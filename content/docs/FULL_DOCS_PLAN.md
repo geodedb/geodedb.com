@@ -1,7 +1,7 @@
 # FULL_DOCS_PLAN.md
 
 **Last Updated**: 2026-01-24
-**Status**: Priorities 1-4 COMPLETE (28/28 - 100%) | Priority 5 COMPLETE (7/10 - 70%)
+**Status**: Priorities 1-5 COMPLETE (38/38 - 100%) | Priority 6 IN PROGRESS (0/10 - 0%)
 **Hugo Site**: https://geodedb.com
 **GitLab Project**: gitlab.com/devnw/codepros/geode/geodedb.com
 
@@ -439,7 +439,7 @@ Based on source documentation analysis:
 | WI-027 | `./content/docs/features/_index.md` | "features overview" | All feature docs | **Completed** | - | 270dd13 | Comparison matrix, 512 lines comprehensive | 2026-01-23 |
 | WI-028 | `./content/docs/guides/performance-benchmarking.md` | "benchmark guide" | Performance docs | **Completed** | - | 270dd13 | Locust, EXPLAIN/PROFILE, Prometheus | 2026-01-23 |
 
-### Priority 5: Advanced Topics & Deep Dives (In Progress - 0/10)
+### Priority 5: Advanced Topics & Deep Dives (Complete - 10/10)
 
 | ID | Doc Page | Primary Keyword | Source Refs | Status | Issue IID | PR/Commit | Notes | Updated |
 |----|----------|-----------------|-------------|--------|-----------|-----------|-------|---------|
@@ -454,16 +454,31 @@ Based on source documentation analysis:
 | WI-037 | `./content/docs/ops/nix-deployment.md` | "nix deployment" | NIX_DEPLOYMENT.md | **Completed** | - | TBD | 855 lines - NixOS deployment, declarative config | 2026-01-24 |
 | WI-038 | `./content/docs/development/repl-advanced.md` | "REPL features" | development/REPL_ADVANCED_FEATURES.md | **Completed** | - | TBD | 750 lines - Advanced shell usage, scripting | 2026-01-24 |
 
+### Priority 6: Specialized Topics & Technical Deep Dives (In Progress - 0/10)
+
+| ID | Doc Page | Primary Keyword | Source Refs | Status | Issue IID | PR/Commit | Notes | Updated |
+|----|----------|-----------------|-------------|--------|-----------|-----------|-------|---------|
+| WI-039 | `./content/docs/security/password-hashing.md` | "password hashing" | ARGON2ID_IMPLEMENTATION.md | Not Started | - | - | Argon2id, secure hashing, credential storage | 2026-01-24 |
+| WI-040 | `./content/docs/ops/audit-logging.md` | "audit logging" | AUDIT_LOGGING.md | Not Started | - | - | Comprehensive audit trails, compliance | 2026-01-24 |
+| WI-041 | `./content/docs/query/full-text-search.md` | "full-text search" | BM25_INDEX_OPTIMIZER_INTEGRATION.md | Not Started | - | - | BM25 ranking, text indexing, search | 2026-01-24 |
+| WI-042 | `./content/docs/query/materialized-views.md` | "materialized views" | MATERIALIZED_VIEWS.md | Not Started | - | - | View creation, refresh strategies | 2026-01-24 |
+| WI-043 | `./content/docs/reference/type-conversion.md` | "type conversion" | TYPE_CONVERSION_FUNCTIONS.md | Not Started | - | - | Type casting, conversion functions | 2026-01-24 |
+| WI-044 | `./content/docs/reference/unicode-support.md` | "unicode support" | UNICODE.md | Not Started | - | - | Character encoding, normalization | 2026-01-24 |
+| WI-045 | `./content/docs/gql/advanced-patterns.md` | "advanced GQL patterns" | VALUES_MATCH_CHAINING_SPEC.md | Not Started | - | - | VALUES clause, MATCH chaining | 2026-01-24 |
+| WI-046 | `./content/docs/development/governance.md` | "governance system" | GOVERNANCE.md | Not Started | - | - | CANARY markers, requirements tracking | 2026-01-24 |
+| WI-047 | `./content/docs/architecture/wire-protocol.md` | "wire protocol" | BINARY_PROTOCOL.md | Not Started | - | - | Binary protocol, message format | 2026-01-24 |
+| WI-048 | `./content/docs/tutorials/repl-basics.md` | "REPL tutorial" | REPL_USAGE.md | Not Started | - | - | Getting started with interactive shell | 2026-01-24 |
+
 ---
 
-## ✅ Completion Summary (Priorities 1-4)
+## ✅ Completion Summary (Priorities 1-5)
 
-**All Core Documentation Phases Complete - January 23, 2026**
+**All Core Documentation Phases Complete - January 24, 2026**
 
 ### Total Deliverables
-- **28/28 work items complete** (100%)
-- **18,983+ lines of documentation** created
-- **6 major commits** to GitLab repository
+- **38/38 work items complete** (100%)
+- **27,689+ lines of documentation** created
+- **10 major commits** to GitLab repository
 - **Comprehensive coverage** across all major topics
 
 ### Phase Breakdown
@@ -487,6 +502,11 @@ Based on source documentation analysis:
 - Total: 4,007 lines
 - Commits: b1d8513 (knowledge graphs, social networks), 270dd13 (supply chain, vector search, transactions, contributing, features, benchmarking)
 - Pages: 3 use cases (knowledge graphs, social networks, supply chain), 2 tutorials (vector search, transaction patterns), contributing guide, features overview, performance benchmarking
+
+**Priority 5: Advanced Topics & Deep Dives** (10/10 complete)
+- Total: 8,706 lines
+- Commits: 0b33e27 (Docker deployment), 998abab (FLE, KMS integration), d7b094a (LSP, API reference, GQL conformance, session management, telemetry, Nix, REPL)
+- Pages: Docker deployment, field-level encryption, KMS integration, LSP guide, complete API reference, GQL conformance profile, session management, advanced telemetry, Nix deployment, advanced REPL features
 
 ### Documentation Coverage by Category
 
@@ -595,15 +615,19 @@ Based on source documentation analysis:
 5. **9379cf6** - Priority 3 complete (multi-datacenter, 1,046 lines)
 6. **b1d8513** - Priority 4 partial (knowledge graphs, social networks, 2,034 lines)
 7. **270dd13** - Priority 4 complete (supply chain, vector search, transactions, contributing, features, benchmarking, 4,007 lines total)
+8. **30c249c** - FULL_DOCS_PLAN.md update (Priority 5 definition)
+9. **0b33e27** - Priority 5: Docker deployment (1,058 lines)
+10. **998abab** - Priority 5: FLE + KMS integration (1,761 lines)
+11. **d7b094a** - Priority 5: Remaining 7 items (5,887 lines)
 
 ### Documentation Site Status
 
 **Hugo Site**: https://geodedb.com
-**Total Pages**: 29 (existing) + 28 (new) = 57 documentation pages
+**Total Pages**: 29 (existing) + 38 (new) = 67 documentation pages
 **Navigation**: 13 primary sections + 7 reference sections
 **Search**: Full-text search enabled
 **Theme**: Ultra (responsive, modern design)
-**Latest Update**: Priority 5 in progress (10 advanced topics)
+**Latest Update**: Priority 6 in progress (10 specialized topics)
 
 ### Next Maintenance Tasks
 
