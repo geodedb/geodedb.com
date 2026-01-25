@@ -39,17 +39,17 @@ components:
     visible: true
 
 social_links:
+  - key: 'gitlab'
+    url: 'https://gitlab.com/%s'
+    title: 'GitLab'
+    username: 'devnw/codepros'
+    icon: 'fab fa-gitlab'
+    weight: 1
   - key: 'github'
     url: 'https://github.com/%s'
     title: 'GitHub'
     username: 'codeprosorg'
     icon: 'fab fa-github'
-    weight: 1
-  - key: 'gitlab'
-    url: 'https://gitlab.com/%s'
-    title: 'GitLab'
-    username: 'devnw/codepros/geode'
-    icon: 'fab fa-gitlab'
     weight: 2
   - key: 'rss'
     url: '/index.xml'

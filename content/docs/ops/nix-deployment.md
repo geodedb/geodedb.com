@@ -43,7 +43,7 @@ Geode provides first-class Nix support for reproducible builds, declarative conf
 
 ```bash
 # Clone repository
-git clone https://github.com/codeprosorg/geode.git
+git clone https://gitlab.com/devnw/codepros/geode/geode.git
 cd geode
 
 # Build default package (production-ready)
@@ -199,7 +199,7 @@ Add to your `configuration.nix`:
   # Import Geode module
   imports = [
     (fetchGit {
-      url = "https://github.com/codeprosorg/geode";
+      url = "https://gitlab.com/devnw/codepros/geode/geode";
       ref = "main";
     } + "/nix/modules/geode-daemon.nix")
   ];

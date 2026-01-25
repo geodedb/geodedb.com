@@ -194,7 +194,7 @@ Get started with Geode in minutes:
 # Install (choose one method)
 make build                  # From source
 docker pull geodedb/geode   # Docker
-nix run github:codeprosorg/geode  # Nix
+nix run gitlab:devnw/codepros/geode/geode  # Nix
 
 # Start server
 geode serve --listen 0.0.0.0:3141

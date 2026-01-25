@@ -872,7 +872,7 @@ async def create_person(person: PersonCreate):
 
 \`\`\`go
 import (
-    "github.com/codeprosorg/geode-client-go/errors"
+    "gitlab.com/devnw/codepros/geode-client-go/errors"
 )
 
 // Error type checking

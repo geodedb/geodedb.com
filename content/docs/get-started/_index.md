@@ -115,7 +115,7 @@ See [Docker Deployment](/docs/ops/deployment#docker) for the full production sta
 **Run directly** (no installation):
 
 ```bash
-nix run github:codeprosorg/geode
+nix run gitlab:devnw/codepros/geode/geode
 ```
 
 **Install as NixOS module**:

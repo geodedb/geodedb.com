@@ -124,7 +124,7 @@ import (
     "database/sql"
     "log"
 
-    _ "github.com/codeprosorg/geode-client-go/driver"
+    _ "gitlab.com/devnw/codepros/geode-client-go/driver"
 )
 
 func main() {
@@ -283,7 +283,7 @@ package main
 
 import (
     "github.com/gin-gonic/gin"
-    gql "github.com/codeprosorg/geode-client-go"
+    gql "gitlab.com/devnw/codepros/geode-client-go"
 )
 
 func main() {
@@ -341,7 +341,7 @@ package main
 
 import (
     "context"
-    gql "github.com/codeprosorg/geode-client-go"
+    gql "gitlab.com/devnw/codepros/geode-client-go"
     "google.golang.org/grpc"
 )
 
@@ -474,7 +474,7 @@ db = open_database(
 
 **Go Client** - Rich error types:
 ```go
-import "github.com/codeprosorg/geode-client-go/errors"
+import "gitlab.com/devnw/codepros/geode-client-go/errors"
 
 err := conn.Query(ctx, query, params)
 if err != nil {
@@ -650,7 +650,7 @@ while (try result.next()) |row| {
 
 ### Go Client - Testing Support
 ```go
-import "github.com/codeprosorg/geode-client-go/mock"
+import "gitlab.com/devnw/codepros/geode-client-go/mock"
 
 func TestMyFunction(t *testing.T) {
     mockDB := mock.NewDB()
@@ -781,7 +781,7 @@ for person_id in ids:
 ```go
 import (
     "database/sql"
-    _ "github.com/codeprosorg/geode-client-go/driver"
+    _ "gitlab.com/devnw/codepros/geode-client-go/driver"
 )
 
 db, _ := sql.Open("geode", "quic://localhost:3141")

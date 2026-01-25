@@ -48,7 +48,7 @@ Add to your `build.zig.zon`:
     .version = "0.1.0",
     .dependencies = .{
         .geode_client = .{
-            .url = "https://github.com/geodedb/geode-client-zig/archive/v0.18.0.tar.gz",
+            .url = "https://gitlab.com/devnw/codepros/geode/geode-client-zig/archive/v0.18.0.tar.gz",
             .hash = "1220abcd...", // Replace with actual hash
         },
     },

@@ -20,19 +20,19 @@ This guide will help you get started with Geode in under 5 minutes.
 ### Using Nix (Recommended)
 
 ```bash
-nix run github:codeprosorg/geode
+nix run gitlab:devnw/codepros/geode/geode
 ```
 
 ### Download Binary
 
 ```bash
 # Linux AMD64
-wget https://github.com/codeprosorg/geode/releases/latest/download/geode-linux-amd64
+wget https://gitlab.com/devnw/codepros/geode/geode/releases/latest/download/geode-linux-amd64
 chmod +x geode-linux-amd64
 ./geode-linux-amd64 --version
 
 # macOS ARM64
-wget https://github.com/codeprosorg/geode/releases/latest/download/geode-darwin-arm64
+wget https://gitlab.com/devnw/codepros/geode/geode/releases/latest/download/geode-darwin-arm64
 chmod +x geode-darwin-arm64
 ./geode-darwin-arm64 --version
 ```

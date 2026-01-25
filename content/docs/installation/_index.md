@@ -166,7 +166,7 @@ make build
 
 ```bash
 # Run directly (no installation)
-nix run github:codeprosorg/geode
+nix run gitlab:devnw/codepros/geode/geode
 
 # Or install to profile
 nix profile install github:codeprosorg/geode

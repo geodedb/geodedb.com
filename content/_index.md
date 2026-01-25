@@ -40,10 +40,10 @@ All clients communicate via QUIC+TLS using the JSON line protocol.
 
 ```bash
 # Install via Nix
-nix run github:codeprosorg/geode
+nix run gitlab:devnw/codepros/geode/geode
 
 # Or download binary
-wget https://github.com/codeprosorg/geode/releases/latest/download/geode-linux-amd64
+wget https://gitlab.com/devnw/codepros/geode/geode/releases/latest/download/geode-linux-amd64
 chmod +x geode-linux-amd64
 ./geode-linux-amd64 serve
 ```
