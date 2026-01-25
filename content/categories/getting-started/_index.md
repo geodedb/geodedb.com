@@ -42,7 +42,7 @@ docker exec -it <container_id> geode shell
 **Using Pre-built Binaries**:
 ```bash
 # Download for your platform
-wget https://github.com/codepros/geode/releases/latest/download/geode-linux-x64.tar.gz
+wget https://gitlab.com/devnw/codepros/geode/geode/releases/latest/download/geode-linux-x64.tar.gz
 
 # Extract
 tar xzf geode-linux-x64.tar.gz
@@ -54,7 +54,7 @@ tar xzf geode-linux-x64.tar.gz
 **Building from Source** (requires Zig 0.15.1+):
 ```bash
 # Clone repository
-git clone https://github.com/codepros/geode.git
+git clone https://gitlab.com/devnw/codepros/geode/geode.git
 cd geode
 
 # Build
@@ -520,7 +520,7 @@ async with client.transaction() as tx:
 
 ```bash
 # 1. Clone repository
-git clone https://github.com/codepros/geode.git
+git clone https://gitlab.com/devnw/codepros/geode/geode.git
 cd geode
 
 # 2. Build

@@ -1019,8 +1019,8 @@ CALL db.transactions();
 - [Security Overview](/docs/security/overview/)
 
 ### Community & Support
-- **GitHub Issues**: https://github.com/codepros/geode/issues
-- **Discussions**: https://github.com/codepros/geode/discussions
+- **GitLab Issues**: https://gitlab.com/devnw/codepros/geode/geode/issues
+- **Discussions**: https://gitlab.com/devnw/codepros/geode/geode/discussions
 - **GitLab**: https://gitlab.com/devnw/codepros/geode/
 
 ### Reporting Bugs

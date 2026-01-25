@@ -47,7 +47,7 @@ docker exec geode geode ping
 **Using Pre-built Binaries**:
 ```bash
 # Download for your platform
-wget https://github.com/codepros/geode/releases/latest/download/geode-linux-x64.tar.gz
+wget https://gitlab.com/devnw/codepros/geode/geode/releases/latest/download/geode-linux-x64.tar.gz
 
 # Extract
 tar xzf geode-linux-x64.tar.gz
@@ -67,7 +67,7 @@ curl -L https://ziglang.org/download/0.15.1/zig-linux-x86_64-0.15.1.tar.xz | tar
 export PATH=$PATH:$(pwd)/zig-linux-x86_64-0.15.1
 
 # Clone and build
-git clone https://github.com/codepros/geode.git
+git clone https://gitlab.com/devnw/codepros/geode/geode.git
 cd geode
 make build
 
