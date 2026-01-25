@@ -19,10 +19,6 @@ main:
     name: Blog
     url: /blog/
     weight: 5
-  - identifier: gitlab
-    name: GitLab
-    url: https://gitlab.com/devnw/codepros
-    weight: 6
 
 footer:
   - name: Documentation
