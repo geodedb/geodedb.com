@@ -6,9 +6,9 @@
   ────────────────────────────────────────────────────────────────
 */}}
 
-{{ $container := partial "helpers/container.html" (dict "Page" .) }}
+{{ define "main" }}
 
-{{ partial "header.html" . }}
+{{ $container := partial "helpers/container.html" (dict "Page" .) }}
 
 {{/* Documentation section header */}}
 <header class="docs-header bg-gradient py-4 border-bottom" role="banner">
@@ -16,7 +16,7 @@
     <div class="row">
       <div class="col-12">
         {{/* Breadcrumb navigation */}}
-        {{ partial "breadcrumb.html" . }}
+        {{ partial "docs/breadcrumbs" . }}
 
         {{/* Section title and description */}}
         <div class="mt-3">
@@ -82,7 +82,7 @@
       MAIN CONTENT: Section overview and page listings
       ───────────────────────────────────────────────────────────────
     */}}
-    <main class="col-12 col-lg-9 col-xl-10 order-1" id="main" role="main">
+    <div class="col-12 col-lg-9 col-xl-10 order-1">
 
       {{/* Section introduction (from _index.md content) */}}
       {{ with .Content }}
@@ -198,7 +198,7 @@
         </nav>
       {{ end }}
 
-    </main>
+    </div>
 
   </div>
 </div>
@@ -217,4 +217,4 @@
   }
 </style>
 
-{{ partial "footer-wrapper.html" . }}
+{{ end }}

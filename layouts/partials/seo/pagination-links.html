@@ -1,0 +1,17 @@
+{{/* SEO pagination link elements for rel=prev/next
+     These help search engines understand pagination relationships.
+     Note: Google deprecated using these for indexing (2019) but they
+     remain useful for other crawlers and accessibility tools.
+
+     Only applies to list/taxonomy pages that support pagination.
+*/}}
+{{- if or (eq .Kind "home") (eq .Kind "section") (eq .Kind "taxonomy") (eq .Kind "term") -}}
+  {{- with .Paginator -}}
+    {{- if .HasPrev }}
+      <link rel="prev" href="{{ .Prev.URL | absURL }}" />
+    {{- end }}
+    {{- if .HasNext }}
+      <link rel="next" href="{{ .Next.URL | absURL }}" />
+    {{- end }}
+  {{- end -}}
+{{- end -}}
