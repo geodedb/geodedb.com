@@ -1,0 +1,409 @@
+/* ============================================================================
+   Enhanced Code Blocks with GQL Support
+   - Improved syntax highlighting
+   - Copy button
+   - Line numbers
+   - Language labels
+   - GQL-specific styling
+   ============================================================================ */
+
+/* Base code styling */
+:root {
+  --code-bg: #2d2d2d;
+  --code-text: #f8f8f2;
+  --code-comment: #75715e;
+  --code-keyword: #66d9ef;
+  --code-string: #e6db74;
+  --code-number: #ae81ff;
+  --code-function: #a6e22e;
+  --code-operator: #f92672;
+  --code-tag: #f92672;
+  --code-attr: #a6e22e;
+  --code-punctuation: #f8f8f2;
+  --code-border: #444;
+}
+
+/* Inline code */
+code:not(pre code) {
+  padding: 0.2em 0.4em;
+  margin: 0;
+  font-size: 0.875em;
+  background-color: rgba(27, 31, 35, 0.05);
+  border-radius: 0.25rem;
+  font-family: 'SFMono-Regular', 'Consolas', 'Liberation Mono', 'Menlo', 'Monaco', 'Courier New', monospace;
+  color: #d73a49;
+  border: 1px solid rgba(27, 31, 35, 0.1);
+}
+
+/* Code block container */
+.highlight,
+div.highlight {
+  position: relative;
+  margin-bottom: 1.5rem;
+  border-radius: 0.5rem;
+  overflow: hidden;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+/* Code block wrapper with language label */
+.highlight::before {
+  content: attr(data-lang);
+  position: absolute;
+  top: 0;
+  right: 0;
+  padding: 0.25rem 0.75rem;
+  background: rgba(0, 0, 0, 0.5);
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  border-bottom-left-radius: 0.25rem;
+  z-index: 10;
+  font-family: 'SFMono-Regular', 'Consolas', 'Liberation Mono', 'Menlo', monospace;
+}
+
+/* Pre element styling */
+pre {
+  margin: 0;
+  padding: 1.25rem;
+  overflow-x: auto;
+  background-color: var(--code-bg);
+  font-size: 0.875rem;
+  line-height: 1.6;
+  border-radius: 0.5rem;
+
+  code {
+    padding: 0;
+    margin: 0;
+    font-size: inherit;
+    color: var(--code-text);
+    background-color: transparent;
+    border-radius: 0;
+    border: none;
+    font-family: 'SFMono-Regular', 'Consolas', 'Liberation Mono', 'Menlo', 'Monaco', 'Courier New', monospace;
+    white-space: pre;
+    word-spacing: normal;
+    word-break: normal;
+    word-wrap: normal;
+    tab-size: 4;
+  }
+}
+
+/* Line numbers (Hugo's lineNumbersInTable) */
+.highlight table {
+  border-spacing: 0;
+  border-collapse: collapse;
+  width: 100%;
+  overflow: auto;
+  margin: 0;
+
+  td {
+    padding: 0;
+    border: none;
+  }
+
+  .lnt,
+  .ln {
+    /* Line number column */
+    user-select: none;
+    padding-right: 1rem;
+    padding-left: 0.5rem;
+    color: #636363;
+    text-align: right;
+    border-right: 1px solid var(--code-border);
+  }
+
+  .lnt::before,
+  .ln::before {
+    content: attr(data-line-number);
+  }
+}
+
+/* Copy button for code blocks */
+.code-block-wrapper {
+  position: relative;
+  margin-bottom: 1.5rem;
+
+  .copy-button {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    padding: 0.375rem 0.75rem;
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 0.25rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    font-family: 'SFMono-Regular', 'Consolas', monospace;
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.2);
+      border-color: rgba(255, 255, 255, 0.3);
+    }
+
+    &.copied {
+      background: rgba(34, 197, 94, 0.2);
+      border-color: rgba(34, 197, 94, 0.4);
+      color: #86efac;
+    }
+
+    wa-icon {
+      font-size: 1rem;
+    }
+  }
+}
+
+/* ============================================================================
+   GQL Syntax Highlighting (Custom)
+   Since Hugo doesn't support GQL natively, we add custom styling
+   ============================================================================ */
+
+/* GQL-specific highlighting using Prism.js or similar */
+.language-gql,
+.language-graphql {
+  /* GQL Keywords */
+  .keyword {
+    color: #66d9ef;
+    font-weight: bold;
+  }
+
+  /* GQL Types and Identifiers */
+  .class-name,
+  .type {
+    color: #a6e22e;
+  }
+
+  /* GQL Strings */
+  .string {
+    color: #e6db74;
+  }
+
+  /* GQL Numbers */
+  .number {
+    color: #ae81ff;
+  }
+
+  /* GQL Operators */
+  .operator,
+  .punctuation {
+    color: #f8f8f2;
+  }
+
+  /* GQL Comments */
+  .comment {
+    color: #75715e;
+    font-style: italic;
+  }
+
+  /* GQL Functions/Fields */
+  .function,
+  .property {
+    color: #a6e22e;
+  }
+
+  /* GQL Variables */
+  .variable {
+    color: #fd971f;
+  }
+
+  /* GQL Boolean/Null */
+  .boolean,
+  .null {
+    color: #ae81ff;
+  }
+}
+
+/* Fallback styling for code blocks without Prism.js */
+code[class*="language-"],
+pre[class*="language-"] {
+  color: var(--code-text);
+  background: none;
+  text-shadow: 0 1px rgba(0, 0, 0, 0.3);
+  font-family: 'SFMono-Regular', 'Consolas', 'Liberation Mono', 'Menlo', 'Monaco', 'Courier New', monospace;
+  font-size: 0.875rem;
+  text-align: left;
+  white-space: pre;
+  word-spacing: normal;
+  word-break: normal;
+  word-wrap: normal;
+  line-height: 1.6;
+  tab-size: 4;
+  hyphens: none;
+}
+
+/* Generic syntax highlighting (Monokai-inspired) */
+.chroma {
+  background-color: var(--code-bg);
+
+  /* Comments */
+  .c,
+  .cm,
+  .c1,
+  .cs {
+    color: var(--code-comment);
+    font-style: italic;
+  }
+
+  /* Keywords */
+  .k,
+  .kc,
+  .kd,
+  .kn,
+  .kp,
+  .kr,
+  .kt {
+    color: var(--code-keyword);
+    font-weight: bold;
+  }
+
+  /* Strings */
+  .s,
+  .s1,
+  .s2,
+  .sb,
+  .sc,
+  .sd,
+  .se,
+  .sh,
+  .si,
+  .sx {
+    color: var(--code-string);
+  }
+
+  /* Numbers */
+  .m,
+  .mf,
+  .mh,
+  .mi,
+  .mo,
+  .il {
+    color: var(--code-number);
+  }
+
+  /* Names/Functions */
+  .n,
+  .na,
+  .nb,
+  .nc,
+  .nd,
+  .ne,
+  .nf,
+  .ni,
+  .nl,
+  .nn,
+  .nx,
+  .py {
+    color: var(--code-function);
+  }
+
+  /* Operators */
+  .o,
+  .ow {
+    color: var(--code-operator);
+  }
+
+  /* Tags */
+  .nt {
+    color: var(--code-tag);
+  }
+
+  /* Attributes */
+  .na {
+    color: var(--code-attr);
+  }
+
+  /* Variables */
+  .nv,
+  .vc,
+  .vg,
+  .vi {
+    color: #fd971f;
+  }
+
+  /* Booleans/Constants */
+  .bp {
+    color: var(--code-number);
+  }
+}
+
+/* ============================================================================
+   Responsive & Accessibility
+   ============================================================================ */
+
+/* Mobile optimizations */
+@media (max-width: 768px) {
+  pre {
+    font-size: 0.75rem;
+    padding: 1rem;
+  }
+
+  .highlight::before {
+    font-size: 0.65rem;
+    padding: 0.2rem 0.5rem;
+  }
+
+  .code-block-wrapper .copy-button {
+    top: 0.35rem;
+    right: 0.35rem;
+    padding: 0.25rem 0.5rem;
+    font-size: 0.65rem;
+  }
+}
+
+/* Dark mode support (for sites with light mode) */
+@media (prefers-color-scheme: light) {
+  :root {
+    --code-bg: #f6f8fa;
+    --code-text: #24292e;
+    --code-comment: #6a737d;
+    --code-keyword: #d73a49;
+    --code-string: #032f62;
+    --code-number: #005cc5;
+    --code-function: #6f42c1;
+    --code-operator: #d73a49;
+    --code-border: #e1e4e8;
+  }
+
+  code:not(pre code) {
+    background-color: rgba(27, 31, 35, 0.05);
+    color: #d73a49;
+  }
+}
+
+/* Print styles */
+@media print {
+  .highlight::before,
+  .copy-button {
+    display: none !important;
+  }
+
+  pre {
+    border: 1px solid #ccc;
+    page-break-inside: avoid;
+  }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .copy-button {
+    transition: none;
+  }
+}
+
+/* High contrast mode */
+@media (prefers-contrast: high) {
+  code:not(pre code) {
+    border: 2px solid currentColor;
+  }
+
+  pre {
+    border: 2px solid var(--code-border);
+  }
+}

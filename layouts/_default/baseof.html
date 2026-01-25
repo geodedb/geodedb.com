@@ -486,11 +486,10 @@
   >
     {{/* Consent-managed analytics: GTM noscript removed until consent */}}
 
+    {{/* UX Enhancements: skip links, back to top, reading progress */}}
+    {{ partial "ux-enhancements.html" . }}
 
     <div style="flex: 1; display: flex; flex-direction: column;">
-      <a class="visually-hidden-focusable" href="#main"
-        >{{ i18n "skip_to_content" | default "Skip to main content" }}</a
-      >
 
       <!-- ============================================================
          HEADER / NAVBAR - Using improved navigation
@@ -515,6 +514,13 @@
     {{ partial "scripts/language-dropdown.html" . }}
     {{ partial "scripts/offcanvas-fallback.html" . }}
     {{ partial "scripts/theme-toggle.html" . }}
+
+    {{/* Code block enhancements - copy buttons and GQL highlighting */}}
+    {{ $codeBlocksJS := resources.Get "js/code-blocks.js" }}
+    {{ if hugo.IsProduction }}
+      {{ $codeBlocksJS = $codeBlocksJS | minify | fingerprint }}
+    {{ end }}
+    <script src="{{ $codeBlocksJS.RelPermalink }}" defer></script>
 
     {{/* Defer Web Awesome loader scripts to end of body - using local wapro dist */}}
     {{- $waKitCode := .Site.Params.webawesome.kitCode | default "54b6985a3e" -}}
