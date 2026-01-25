@@ -1,0 +1,76 @@
+{{/* layouts/index.html - SEO optimized homepage */}}
+
+{{ define "main" }}
+  {{/* Optional hero / banner -------------------------------------------- */}}
+  {{ with site.Params.main.banner }}
+    {{ partial "banner.html" . }}
+  {{ end }}
+
+  {{/* Responsive container decided by your helper ----------------------- */}}
+  {{ $container := partial "helpers/container.html" . }}
+
+  {{/* --------------------------------------------------------------------
+    1. Collect re-usable sub-pages from a headless bundle /homepage
+    ---------------------------------------------------------------------
+  */}}
+  {{ $headless     := site.GetPage "homepage" }}
+  {{ if not $headless }}
+    {{ warnf "home template: headless bundle 'content/homepage/' not found" }}
+  {{ end }}
+
+  {{ $reusables := slice }}
+  {{ with $headless }}
+    {{ $pages := .Resources.ByType "page" }}
+    {{ $reusables = sort $pages "Params.weight" }}
+  {{ end }}
+
+  {{ if eq (len $reusables) 0 }}
+    {{ warnf "home template: no sub-pages found in /homepage" }}
+  {{ end }}
+
+  {{ $buildDrafts := site.BuildDrafts }}
+
+
+  <!-- =================================================================== -->
+  <!--  Main grid of reusable sections                                    -->
+  <!-- =================================================================== -->
+  <div class="{{ $container }}" itemprop="mainContentOfPage">
+    <div
+      class="row g-4"
+      role="list"
+      aria-label="{{ i18n "page_sections" | default "Page sections" }}"
+    >
+      {{ range $res := $reusables }}
+
+        {{/* 2│ skip drafts unless -D is used --------------------------- */}}
+        {{ $isDraft := $res.Params.draft | default false }}
+        {{ if and $isDraft (not $buildDrafts) }}
+          {{ warnf "home template: draft %q skipped (run hugo -D to include)" $res.File.Path }}
+          {{ continue }}
+        {{ end }}
+
+        {{/* 3│ style & slug fallbacks --------------------------------- */}}
+        {{ $style := $res.Params.style | default "bg-secondary text-secondary" }}
+        {{ $slug  := $res.Params.slug  | default ($res.Params.title | default $res.Title | urlize) }}
+
+        {{ with $res.Params.type }}
+          <section
+            id="{{ $slug }}"
+            class="col-12"
+            role="listitem"
+            itemscope
+            itemtype="https://schema.org/WebPageElement"
+          >
+            <div class="{{ $style }} p-3 rounded" itemprop="mainEntity">
+              {{ partial . $res }}
+            </div>
+          </section>
+        {{ else }}
+          {{ warnf "home template: resource %q has no '.Params.type' – skipped" $res.File.Path }}
+        {{ end }}
+
+      {{ end }}
+    </div>
+  </div>
+  <!-- /.container -->
+{{ end }}

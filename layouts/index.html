@@ -1,76 +1,350 @@
-{{/* layouts/index.html - SEO optimized homepage */}}
+{{/* ──────────────────────────────────────────────────────────────
+  Modern Homepage Layout - UI/UX Best Practices
+
+  Following design principles:
+  - Clear visual hierarchy
+  - Strong CTAs above the fold
+  - Social proof and trust signals
+  - Scannable F-pattern layout
+  - Responsive mobile-first design
+  ────────────────────────────────────────────────────────────────
+*/}}
 
 {{ define "main" }}
-  {{/* Optional hero / banner -------------------------------------------- */}}
-  {{ with site.Params.main.banner }}
-    {{ partial "banner.html" . }}
-  {{ end }}
-
-  {{/* Responsive container decided by your helper ----------------------- */}}
   {{ $container := partial "helpers/container.html" . }}
 
-  {{/* --------------------------------------------------------------------
-    1. Collect re-usable sub-pages from a headless bundle /homepage
-    ---------------------------------------------------------------------
+  {{/* ─────────────────────────────────────────────────────────────
+    HERO SECTION - Above the fold
+    ───────────────────────────────────────────────────────────────
   */}}
-  {{ $headless     := site.GetPage "homepage" }}
-  {{ if not $headless }}
-    {{ warnf "home template: headless bundle 'content/homepage/' not found" }}
-  {{ end }}
-
-  {{ $reusables := slice }}
-  {{ with $headless }}
-    {{ $pages := .Resources.ByType "page" }}
-    {{ $reusables = sort $pages "Params.weight" }}
-  {{ end }}
-
-  {{ if eq (len $reusables) 0 }}
-    {{ warnf "home template: no sub-pages found in /homepage" }}
-  {{ end }}
-
-  {{ $buildDrafts := site.BuildDrafts }}
-
-
-  <!-- =================================================================== -->
-  <!--  Main grid of reusable sections                                    -->
-  <!-- =================================================================== -->
-  <div class="{{ $container }}" itemprop="mainContentOfPage">
-    <div
-      class="row g-4"
-      role="list"
-      aria-label="{{ i18n "page_sections" | default "Page sections" }}"
-    >
-      {{ range $res := $reusables }}
-
-        {{/* 2│ skip drafts unless -D is used --------------------------- */}}
-        {{ $isDraft := $res.Params.draft | default false }}
-        {{ if and $isDraft (not $buildDrafts) }}
-          {{ warnf "home template: draft %q skipped (run hugo -D to include)" $res.File.Path }}
-          {{ continue }}
-        {{ end }}
-
-        {{/* 3│ style & slug fallbacks --------------------------------- */}}
-        {{ $style := $res.Params.style | default "bg-secondary text-secondary" }}
-        {{ $slug  := $res.Params.slug  | default ($res.Params.title | default $res.Title | urlize) }}
-
-        {{ with $res.Params.type }}
-          <section
-            id="{{ $slug }}"
-            class="col-12"
-            role="listitem"
-            itemscope
-            itemtype="https://schema.org/WebPageElement"
-          >
-            <div class="{{ $style }} p-3 rounded" itemprop="mainEntity">
-              {{ partial . $res }}
-            </div>
-          </section>
-        {{ else }}
-          {{ warnf "home template: resource %q has no '.Params.type' – skipped" $res.File.Path }}
-        {{ end }}
-
-      {{ end }}
+  <section class="hero-section section-hero bg-gradient position-relative overflow-hidden">
+    {{/* Background decoration */}}
+    <div class="hero-bg-decoration position-absolute w-100 h-100" style="top: 0; left: 0; z-index: 0; opacity: 0.03;">
+      <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+            <path d="M 40 0 L 0 0 0 40" fill="none" stroke="currentColor" stroke-width="1"/>
+          </pattern>
+        </defs>
+        <rect width="100%" height="100%" fill="url(#grid)"/>
+      </svg>
     </div>
-  </div>
-  <!-- /.container -->
+
+    <div class="{{ $container }} position-relative" style="z-index: 1;">
+      <div class="row align-items-center">
+        <div class="col-lg-6 mb-5 mb-lg-0 animate-fadeInUp">
+          {{/* Kicker/Label */}}
+          <div class="d-inline-flex align-items-center mb-4 px-3 py-2 bg-primary bg-opacity-10 rounded-pill">
+            <wa-icon name="check-circle" class="text-primary me-2" aria-hidden="true"></wa-icon>
+            <span class="small fw-semibold text-primary">100% ISO GQL Compliant • Production Ready</span>
+          </div>
+
+          {{/* Main headline */}}
+          <h1 class="display-3 fw-extrabold mb-4 text-balance">
+            Enterprise Graph Database for the
+            <span class="heading-gradient">QUIC Era</span>
+          </h1>
+
+          {{/* Value proposition */}}
+          <p class="lead text-muted mb-5 text-balance" style="max-width: 540px;">
+            Geode delivers production-ready graph database performance with 100% GQL standard compliance,
+            enterprise security, and modern QUIC transport.
+          </p>
+
+          {{/* Primary CTAs */}}
+          <div class="d-flex flex-wrap gap-3 mb-5">
+            <a href="/docs/getting-started/" class="btn btn-primary btn-primary-modern btn-lg-modern">
+              <wa-icon name="rocket" aria-hidden="true"></wa-icon>
+              Get Started
+            </a>
+            <a href="/docs/" class="btn btn-outline-primary btn-outline-modern btn-lg-modern">
+              <wa-icon name="book-open" aria-hidden="true"></wa-icon>
+              Documentation
+            </a>
+            <a href="https://github.com/codeprosorg/geode" target="_blank" rel="noopener" class="btn btn-outline-secondary btn-outline-modern btn-lg-modern">
+              <wa-icon name="github" aria-hidden="true"></wa-icon>
+              View on GitHub
+            </a>
+          </div>
+
+          {{/* Trust signals */}}
+          <div class="d-flex flex-wrap align-items-center gap-4 text-muted">
+            <div class="d-flex align-items-center gap-2">
+              <wa-icon name="check" class="text-success" aria-hidden="true"></wa-icon>
+              <span class="small">Open Source</span>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+              <wa-icon name="check" class="text-success" aria-hidden="true"></wa-icon>
+              <span class="small">Apache 2.0 License</span>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+              <wa-icon name="check" class="text-success" aria-hidden="true"></wa-icon>
+              <span class="small">97%+ Test Coverage</span>
+            </div>
+          </div>
+        </div>
+
+        {{/* Hero visual/code example */}}
+        <div class="col-lg-6 animate-fadeInUp" style="animation-delay: 200ms;">
+          <div class="hero-code-example card-modern p-0 overflow-hidden">
+            <div class="card-header bg-dark text-white px-4 py-3 d-flex align-items-center gap-3">
+              <div class="d-flex gap-2">
+                <div class="rounded-circle bg-danger" style="width: 12px; height: 12px;"></div>
+                <div class="rounded-circle bg-warning" style="width: 12px; height: 12px;"></div>
+                <div class="rounded-circle bg-success" style="width: 12px; height: 12px;"></div>
+              </div>
+              <span class="small">graph-query.gql</span>
+            </div>
+            <div class="card-body bg-dark text-white p-4">
+              <pre class="mb-0" style="color: #f8f8f2; background: transparent;"><code class="language-gql">{{`// Find connected nodes with aggregation
+MATCH (person:Person)-[:KNOWS]->(friend:Person)
+WHERE person.age > 25
+RETURN person.name,
+       COUNT(friend) AS friendCount,
+       AVG(friend.age) AS avgFriendAge
+ORDER BY friendCount DESC
+LIMIT 10`}}</code></pre>
+            </div>
+            <div class="card-footer bg-dark border-top border-secondary px-4 py-3 text-white-50 small d-flex justify-content-between">
+              <span><wa-icon name="bolt" class="text-warning"></wa-icon> 10,000+ queries/sec</span>
+              <span><wa-icon name="clock" class="text-info"></wa-icon> &lt;5ms p99 latency</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  {{/* ─────────────────────────────────────────────────────────────
+    KEY FEATURES - Visual grid
+    ───────────────────────────────────────────────────────────────
+  */}}
+  <section class="features-section section-modern bg-light">
+    <div class="{{ $container }}">
+      {{/* Section header */}}
+      <div class="row mb-5">
+        <div class="col-12 text-center">
+          <h2 class="display-5 fw-bold mb-3">Why Choose Geode?</h2>
+          <p class="lead text-muted" style="max-width: 720px; margin: 0 auto;">
+            Built for modern applications with enterprise requirements
+          </p>
+        </div>
+      </div>
+
+      {{/* Feature cards grid */}}
+      <div class="row g-4 animate-stagger">
+        {{/* Feature 1 - Standards Compliance */}}
+        <div class="col-md-6 col-lg-4">
+          <div class="card-feature h-100">
+            <div class="card-icon">
+              <wa-icon name="shield-check" aria-hidden="true"></wa-icon>
+            </div>
+            <h3>100% GQL Compliant</h3>
+            <p>
+              Full implementation of ISO/IEC 39075:2024 standard with all 70 conformance tests passing.
+              Write portable, standards-based queries.
+            </p>
+          </div>
+        </div>
+
+        {{/* Feature 2 - Performance */}}
+        <div class="col-md-6 col-lg-4">
+          <div class="card-feature h-100">
+            <div class="card-icon">
+              <wa-icon name="gauge-high" aria-hidden="true"></wa-icon>
+            </div>
+            <h3>Blazing Fast</h3>
+            <p>
+              10,000+ queries per second with &lt;5ms p99 latency. Optimized storage with 13.18x I/O improvement.
+              Vector search at &lt;50ns per calculation.
+            </p>
+          </div>
+        </div>
+
+        {{/* Feature 3 - Security */}}
+        <div class="col-md-6 col-lg-4">
+          <div class="card-feature h-100">
+            <div class="card-icon">
+              <wa-icon name="lock" aria-hidden="true"></wa-icon>
+            </div>
+            <h3>Enterprise Security</h3>
+            <p>
+              RBAC/ABAC with MFA, TDE and FLE encryption, comprehensive audit logging, and row-level security policies.
+            </p>
+          </div>
+        </div>
+
+        {{/* Feature 4 - QUIC Transport */}}
+        <div class="col-md-6 col-lg-4">
+          <div class="card-feature h-100">
+            <div class="card-icon">
+              <wa-icon name="bolt" aria-hidden="true"></wa-icon>
+            </div>
+            <h3>Modern QUIC Transport</h3>
+            <p>
+              Built on QUIC+TLS 1.3 for reduced latency, multiplexed streams, and improved connection reliability.
+              No TCP fallback needed.
+            </p>
+          </div>
+        </div>
+
+        {{/* Feature 5 - Client Libraries */}}
+        <div class="col-md-6 col-lg-4">
+          <div class="card-feature h-100">
+            <div class="card-icon">
+              <wa-icon name="code" aria-hidden="true"></wa-icon>
+            </div>
+            <h3>Multi-Language Support</h3>
+            <p>
+              Official clients for Go, Python, Rust, and Zig. All with connection pooling, prepared statements,
+              and async support.
+            </p>
+          </div>
+        </div>
+
+        {{/* Feature 6 - Scalability */}}
+        <div class="col-md-6 col-lg-4">
+          <div class="card-feature h-100">
+            <div class="card-icon">
+              <wa-icon name="chart-line" aria-hidden="true"></wa-icon>
+            </div>
+            <h3>Production Scale</h3>
+            <p>
+              Tested with 100M+ nodes and 1B+ edges. Horizontal scaling, read replicas, and automatic failover support.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  {{/* ─────────────────────────────────────────────────────────────
+    QUICK START - Code example
+    ───────────────────────────────────────────────────────────────
+  */}}
+  <section class="quickstart-section section-modern">
+    <div class="{{ $container }}">
+      <div class="row align-items-center">
+        <div class="col-lg-5 mb-5 mb-lg-0">
+          <h2 class="display-5 fw-bold mb-4">Get Running in Minutes</h2>
+          <p class="lead text-muted mb-4">
+            Install and start querying your graph data with just a few commands.
+          </p>
+
+          <ul class="list-unstyled">
+            <li class="d-flex align-items-start mb-3">
+              <wa-icon name="check-circle" class="text-success me-3 mt-1" aria-hidden="true"></wa-icon>
+              <div>
+                <strong>Simple Installation</strong><br>
+                <span class="text-muted">Via Nix, Docker, or direct binary download</span>
+              </div>
+            </li>
+            <li class="d-flex align-items-start mb-3">
+              <wa-icon name="check-circle" class="text-success me-3 mt-1" aria-hidden="true"></wa-icon>
+              <div>
+                <strong>Zero Configuration</strong><br>
+                <span class="text-muted">Sensible defaults get you started immediately</span>
+              </div>
+            </li>
+            <li class="d-flex align-items-start mb-3">
+              <wa-icon name="check-circle" class="text-success me-3 mt-1" aria-hidden="true"></wa-icon>
+              <div>
+                <strong>Rich Tooling</strong><br>
+                <span class="text-muted">Interactive shell, LSP support, and client libraries</span>
+              </div>
+            </li>
+          </ul>
+
+          <a href="/docs/getting-started/" class="btn btn-primary btn-primary-modern">
+            <wa-icon name="arrow-right" aria-hidden="true"></wa-icon>
+            View Full Guide
+          </a>
+        </div>
+
+        <div class="col-lg-7">
+          <div class="card-modern p-4">
+            <pre class="mb-0"><code class="language-bash">{{`# Install via Nix
+nix run github:codeprosorg/geode
+
+# Or download binary
+wget https://github.com/codeprosorg/geode/releases/latest/download/geode-linux-amd64
+chmod +x geode-linux-amd64
+
+# Start the server
+./geode-linux-amd64 serve --listen 0.0.0.0:3141
+
+# Connect and query
+./geode-linux-amd64 shell
+geode> CREATE (n:Person {name: 'Alice', age: 30})
+geode> MATCH (n:Person) RETURN n`}}</code></pre>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  {{/* ─────────────────────────────────────────────────────────────
+    STATS/SOCIAL PROOF
+    ───────────────────────────────────────────────────────────────
+  */}}
+  <section class="stats-section section-modern bg-primary text-white">
+    <div class="{{ $container }}">
+      <div class="row text-center g-4">
+        <div class="col-md-3 col-6">
+          <div class="stat-item">
+            <div class="display-4 fw-bold mb-2">100%</div>
+            <div class="text-white-50">GQL Compliance</div>
+          </div>
+        </div>
+        <div class="col-md-3 col-6">
+          <div class="stat-item">
+            <div class="display-4 fw-bold mb-2">10K+</div>
+            <div class="text-white-50">Queries/Second</div>
+          </div>
+        </div>
+        <div class="col-md-3 col-6">
+          <div class="stat-item">
+            <div class="display-4 fw-bold mb-2">97%+</div>
+            <div class="text-white-50">Test Coverage</div>
+          </div>
+        </div>
+        <div class="col-md-3 col-6">
+          <div class="stat-item">
+            <div class="display-4 fw-bold mb-2">4</div>
+            <div class="text-white-50">Client Libraries</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  {{/* ─────────────────────────────────────────────────────────────
+    CTA SECTION - Bottom of page
+    ───────────────────────────────────────────────────────────────
+  */}}
+  <section class="cta-section section-modern">
+    <div class="{{ $container }}">
+      <div class="row">
+        <div class="col-12">
+          <div class="card-modern text-center p-5 bg-gradient" style="background: linear-gradient(135deg, #f3f4f6, #e5e7eb);">
+            <h2 class="display-5 fw-bold mb-3">Ready to Get Started?</h2>
+            <p class="lead text-muted mb-5" style="max-width: 600px; margin-left: auto; margin-right: auto;">
+              Join developers building modern graph applications with Geode
+            </p>
+            <div class="d-flex flex-wrap justify-content-center gap-3">
+              <a href="/docs/getting-started/" class="btn btn-primary btn-primary-modern btn-lg-modern">
+                <wa-icon name="rocket" aria-hidden="true"></wa-icon>
+                Get Started Now
+              </a>
+              <a href="https://github.com/codeprosorg/geode" target="_blank" rel="noopener" class="btn btn-outline-secondary btn-outline-modern btn-lg-modern">
+                <wa-icon name="star" aria-hidden="true"></wa-icon>
+                Star on GitHub
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
 {{ end }}

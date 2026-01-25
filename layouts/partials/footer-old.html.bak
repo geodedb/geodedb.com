@@ -1,0 +1,103 @@
+{{/* Grab helpers */}}
+{{- $container := partial "helpers/container.html" . -}}
+{{- $style     := partial "comp" (dict "name" "footer" "context" .) -}}
+
+
+<footer
+  class="footer mt-auto {{ $style }}"
+  role="contentinfo"
+  itemscope
+  itemtype="https://schema.org/WPFooter"
+>
+  <div class="{{ $container }} py-4">
+    {{/* ───────────────────── 1. SEARCH BOX (optional) ───────────────────── */}}
+    {{- if .Site.Params.components.search.visible }}
+      <div class="row mb-3">
+        <div class="col-12 d-flex justify-content-center">
+          {{ partial "search-box" . }}
+        </div>
+      </div>
+    {{- end }}
+
+    {{/* ───────────────────── 2. SOCIAL ICON BAR ─────────────────────────── */}}
+    <div class="row mb-3">
+      <div class="col-12 d-flex justify-content-center">
+        {{ partial "social/horizontal-nav" . }}
+      </div>
+    </div>
+
+    {{/* ───────────────────── 3. MAIN FOOTER NAVIGATION ──────────────────── */}}
+    <nav
+      aria-label="{{ i18n "footer_navigation" | default "Footer navigation" }}"
+      class="row mb-3 justify-content-center"
+      role="navigation"
+    >
+      <ul class="nav flex-wrap justify-content-center" role="list">
+        {{/* 3.a items from the footer menu */}}
+        {{ range .Site.Menus.footer }}
+          <li class="nav-item" role="listitem">
+            {{ $footerURL := .URL }}
+            {{ if hasPrefix .URL "/" }}
+              {{ $footerURL = .URL | relLangURL }}
+            {{ else }}
+              {{ $footerURL = .URL | absURL }}
+            {{ end }}
+            <a
+              class="nav-link px-2"
+              href="{{ $footerURL }}"
+              aria-label="{{ .Name }}"
+            >
+              {{ with .Pre }}
+                <wa-icon name="{{ . }}" aria-hidden="true"></wa-icon>
+              {{ end }}{{ .Name }}{{ with .Post }}
+                <wa-icon name="{{ . }}" aria-hidden="true"></wa-icon>
+              {{ end }}
+            </a>
+          </li>
+        {{ end }}
+
+        {{/* 3.b auto-generated links to each taxonomy */}}
+        {{ range $name, $_ := .Site.Taxonomies }}
+          <li class="nav-item" role="listitem">
+            <a
+              class="nav-link px-2"
+              href="{{ (printf "/%s" $name) | relLangURL }}"
+              aria-label="{{ i18n "browse" | default "Browse" }} {{ i18n $name | default (humanize $name) }}"
+            >
+              {{ if eq $name "categories" }}
+                <wa-icon name="folder-open" aria-hidden="true"></wa-icon>
+              {{ else if eq $name "tags" }}
+                <wa-icon name="tags" aria-hidden="true"></wa-icon>
+              {{ else if eq $name "series" }}
+                <wa-icon name="list-ol" aria-hidden="true"></wa-icon>
+              {{ else }}
+                <wa-icon name="bookmark" aria-hidden="true"></wa-icon>
+              {{ end }}
+              {{ i18n $name | default (humanize $name) }}
+            </a>
+          </li>
+        {{ end }}
+      </ul>
+    </nav>
+
+    {{/* ───────────────────── 4. COPYRIGHT LINE ──────────────────────────── */}}
+    <div class="row">
+      <div class="col-12 text-center">
+        <small class="copyright" itemprop="copyrightNotice">
+          &copy;
+          {{ now.Year }}
+          <span
+            itemprop="copyrightHolder"
+            itemscope
+            itemtype="https://schema.org/Organization"
+          >
+            <span itemprop="name">{{ .Site.Params.copyright | safeHTML }}</span>
+          </span>
+        </small>
+      </div>
+    </div>
+  </div>
+</footer>
+
+{{/* JS assets (remote + local bundle) */}}
+{{ partial "scripts/scripts" site.Data.scripts.files }}

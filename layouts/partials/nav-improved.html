@@ -1,0 +1,392 @@
+{{/* ───────────────────────── Enhanced Navigation ───────────────────────── */}}
+{{- $baseURL   := site.BaseURL -}}
+{{- $navMenu  := i18n "nav-menu"   | default "Navigation menu" -}}
+{{- $navToggle:= i18n "nav-toggle" | default "Toggle navigation" -}}
+{{- $navClose := i18n "nav-close"  | default "Close navigation" -}}
+{{- $home     := i18n "home"       | default "Home" -}}
+{{- $offID := "offcanvasNavbar" -}}
+
+<nav
+  class="navbar navbar-expand-lg navbar-modern sticky-top bg-white shadow-sm"
+  role="navigation"
+  aria-label="{{ i18n "main_navigation" | default "Main navigation" }}"
+  id="mainNav"
+>
+  <div class="container-fluid px-4">
+    <!-- brand / logo --------------------------------------------------- -->
+    <a
+      class="navbar-brand d-flex align-items-center py-2"
+      href="{{ "/" | relLangURL }}"
+      aria-label="{{ $home }}"
+    >
+      <!-- Light theme logo (hidden in dark mode) -->
+      <img
+        src="{{ .Site.Params.branding.light.logo | default .Site.Params.logo }}"
+        alt="{{ .Site.Params.logo_alt | default .Site.Title }}"
+        class="logo-light"
+        width="150"
+        height="40"
+        loading="eager"
+        decoding="async"
+      />
+      <!-- Dark theme logo (hidden in light mode) -->
+      <img
+        src="{{ .Site.Params.branding.dark.logo | default .Site.Params.logo }}"
+        alt="{{ .Site.Params.logo_alt | default .Site.Title }}"
+        class="logo-dark"
+        width="150"
+        height="40"
+        loading="eager"
+        decoding="async"
+      />
+    </a>
+
+    <!-- Desktop navigation -->
+    <div class="collapse navbar-collapse" id="navbarNav">
+      <ul class="navbar-nav ms-auto align-items-lg-center">
+        {{ $current := . }}
+
+        {{/* Main menu items */}}
+        {{ range .Site.Menus.main }}
+          {{- $url := .URL -}}
+          {{- if hasPrefix .URL "/" -}}
+            {{- $url = .URL | relLangURL -}}
+          {{- else -}}
+            {{- $url = .URL | absURL -}}
+          {{- end -}}
+          {{- $isActive := or (eq $current.Permalink $url)
+            ($current.IsMenuCurrent "main" .)
+          -}}
+
+          {{ if .HasChildren }}
+            <li class="nav-item dropdown">
+              <a
+                class="nav-link dropdown-toggle px-3 {{ if $isActive }}active{{ end }}"
+                href="#"
+                id="dropdown{{ .Identifier }}"
+                role="button"
+                data-bs-toggle="dropdown"
+                aria-expanded="false"
+                aria-haspopup="true"
+              >
+                {{ with .Pre }}
+                  <wa-icon name="{{ . }}" class="me-1"></wa-icon>
+                {{ end }}{{ .Name }}
+              </a>
+
+              <ul
+                class="dropdown-menu dropdown-menu-modern shadow-lg border-0"
+                aria-labelledby="dropdown{{ .Identifier }}"
+                role="menu"
+              >
+                {{ range .Children }}
+                  {{ if .Params.divider }}
+                    <li role="separator"><hr class="dropdown-divider my-2" /></li>
+                  {{ else }}
+                    {{- $childURL := .URL -}}
+                    {{- if hasPrefix .URL "/" -}}
+                      {{- $childURL = .URL | relLangURL -}}
+                    {{- else -}}
+                      {{- $childURL = .URL | absURL -}}
+                    {{- end -}}
+                    {{- $childActive:= or (eq $current.Permalink $childURL)
+                      ($current.IsMenuCurrent "main" .)
+                    -}}
+                    {{- $isExternal := not (or (hasPrefix $childURL "/") (hasPrefix $childURL $baseURL)) -}}
+                    <li role="menuitem">
+                      <a
+                        class="dropdown-item px-3 py-2 {{ if $childActive }}active{{ end }}"
+                        href="{{ $childURL }}"
+                        {{ if $isExternal }}
+                          target="_blank" rel="noopener noreferrer"
+                        {{ end }}
+                      >
+                        {{ with .Pre }}
+                          <wa-icon name="{{ . }}" class="me-2"></wa-icon>
+                        {{ end }}
+                        <span>{{ .Name }}</span>
+                        {{ with .Post }}
+                          <wa-icon name="{{ . }}" class="ms-auto"></wa-icon>
+                        {{ end }}
+                        {{ if $isExternal }}
+                          <wa-icon name="arrow-up-right-from-square" class="ms-2 small text-muted"></wa-icon>
+                        {{ end }}
+                      </a>
+                    </li>
+                  {{ end }}
+                {{ end }}
+              </ul>
+            </li>
+          {{ else }}
+            {{- $isExternal := not (or (hasPrefix $url "/") (hasPrefix $url $baseURL)) -}}
+            <li class="nav-item">
+              <a
+                class="nav-link px-3 {{ if $isActive }}active{{ end }}"
+                href="{{ $url }}"
+                {{ if $isExternal }}
+                  target="_blank" rel="noopener noreferrer"
+                {{ end }}
+                {{ if $isActive }}aria-current="page"{{ end }}
+              >
+                {{ with .Pre }}
+                  <wa-icon name="{{ . }}" class="me-1"></wa-icon>
+                {{ end }}{{ .Name }}{{ with .Post }}
+                  <wa-icon name="{{ . }}" class="ms-1"></wa-icon>
+                {{ end }}
+              </a>
+            </li>
+          {{ end }}
+        {{ end }}
+
+        {{/* Quick action buttons */}}
+        <li class="nav-item ms-lg-2">
+          <a href="/docs/getting-started/" class="btn btn-primary btn-sm px-3 d-none d-lg-inline-flex align-items-center gap-2">
+            <wa-icon name="rocket" aria-hidden="true"></wa-icon>
+            <span>Get Started</span>
+          </a>
+        </li>
+
+        <li class="nav-item ms-2">
+          <a href="https://github.com/codeprosorg/geode" target="_blank" rel="noopener" class="btn btn-outline-secondary btn-sm px-3 d-none d-lg-inline-flex align-items-center gap-2">
+            <wa-icon name="github" aria-hidden="true"></wa-icon>
+            <span>GitHub</span>
+          </a>
+        </li>
+      </ul>
+    </div>
+
+    <!-- Mobile toggler -->
+    <button
+      class="navbar-toggler border-0 d-lg-none"
+      type="button"
+      data-bs-toggle="offcanvas"
+      data-bs-target="#{{ $offID }}"
+      aria-controls="{{ $offID }}"
+      aria-expanded="false"
+      aria-label="{{ $navToggle }}"
+    >
+      <wa-icon name="bars" class="navbar-toggler-icon"></wa-icon>
+    </button>
+
+    <!-- Mobile off-canvas -->
+    <div
+      class="offcanvas offcanvas-end"
+      tabindex="-1"
+      id="{{ $offID }}"
+      aria-labelledby="{{ $offID }}Label"
+    >
+      <div class="offcanvas-header border-bottom">
+        <h5 class="offcanvas-title fw-semibold" id="{{ $offID }}Label">{{ $navMenu }}</h5>
+        <button
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="offcanvas"
+          aria-label="{{ $navClose }}"
+        >
+        </button>
+      </div>
+
+      <div class="offcanvas-body p-0">
+        <ul class="navbar-nav">
+          {{ $current := . }}
+          {{ range .Site.Menus.main }}
+            {{- $url := .URL -}}
+            {{- if hasPrefix .URL "/" -}}
+              {{- $url = .URL | relLangURL -}}
+            {{- else -}}
+              {{- $url = .URL | absURL -}}
+            {{- end -}}
+            {{- $isActive := or (eq $current.Permalink $url)
+              ($current.IsMenuCurrent "main" .)
+            -}}
+
+            {{ if .HasChildren }}
+              <li class="nav-item">
+                <a
+                  class="nav-link px-4 py-3 d-flex align-items-center justify-content-between {{ if $isActive }}active bg-light{{ end }}"
+                  data-bs-toggle="collapse"
+                  href="#collapse{{ .Identifier }}"
+                  role="button"
+                  aria-expanded="{{ if $isActive }}true{{ else }}false{{ end }}"
+                >
+                  <span>
+                    {{ with .Pre }}<wa-icon name="{{ . }}" class="me-2"></wa-icon>{{ end }}
+                    {{ .Name }}
+                  </span>
+                  <wa-icon name="chevron-down" class="dropdown-chevron"></wa-icon>
+                </a>
+                <div class="collapse {{ if $isActive }}show{{ end }}" id="collapse{{ .Identifier }}">
+                  <ul class="list-unstyled bg-light">
+                    {{ range .Children }}
+                      {{ if not .Params.divider }}
+                        {{- $childURL := .URL -}}
+                        {{- if hasPrefix .URL "/" -}}
+                          {{- $childURL = .URL | relLangURL -}}
+                        {{- else -}}
+                          {{- $childURL = .URL | absURL -}}
+                        {{- end -}}
+                        {{- $childActive:= or (eq $current.Permalink $childURL)
+                          ($current.IsMenuCurrent "main" .)
+                        -}}
+                        <li>
+                          <a
+                            class="nav-link px-5 py-2 d-flex align-items-center {{ if $childActive }}active text-primary fw-semibold{{ end }}"
+                            href="{{ $childURL }}"
+                          >
+                            {{ with .Pre }}<wa-icon name="{{ . }}" class="me-2"></wa-icon>{{ end }}
+                            {{ .Name }}
+                          </a>
+                        </li>
+                      {{ end }}
+                    {{ end }}
+                  </ul>
+                </div>
+              </li>
+            {{ else }}
+              <li class="nav-item">
+                <a
+                  class="nav-link px-4 py-3 d-flex align-items-center {{ if $isActive }}active bg-light{{ end }}"
+                  href="{{ $url }}"
+                  {{ if $isActive }}aria-current="page"{{ end }}
+                >
+                  {{ with .Pre }}<wa-icon name="{{ . }}" class="me-2"></wa-icon>{{ end }}
+                  {{ .Name }}
+                </a>
+              </li>
+            {{ end }}
+          {{ end }}
+
+          {{/* Mobile CTAs */}}
+          <li class="nav-item border-top mt-3 pt-3 px-4">
+            <a href="/docs/getting-started/" class="btn btn-primary w-100 mb-2">
+              <wa-icon name="rocket" class="me-2"></wa-icon>
+              Get Started
+            </a>
+            <a href="https://github.com/codeprosorg/geode" target="_blank" rel="noopener" class="btn btn-outline-secondary w-100">
+              <wa-icon name="github" class="me-2"></wa-icon>
+              View on GitHub
+            </a>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<style>
+  /* Enhanced navigation styles */
+  .navbar-modern {
+    transition: all var(--duration-normal) var(--ease-out);
+    backdrop-filter: blur(10px);
+    background: rgba(255, 255, 255, 0.95) !important;
+  }
+
+  .navbar-modern.scrolled {
+    box-shadow: var(--shadow-md) !important;
+  }
+
+  .navbar-modern .nav-link {
+    font-weight: var(--font-medium);
+    transition: all var(--duration-fast) var(--ease-out);
+    border-radius: var(--radius-md);
+    position: relative;
+  }
+
+  .navbar-modern .nav-link:hover {
+    background: var(--color-neutral-100);
+    color: var(--color-primary-600);
+  }
+
+  .navbar-modern .nav-link.active {
+    color: var(--color-primary-600);
+    font-weight: var(--font-semibold);
+  }
+
+  .navbar-modern .nav-link.active::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 1rem;
+    right: 1rem;
+    height: 2px;
+    background: var(--color-primary-600);
+  }
+
+  .dropdown-menu-modern {
+    border-radius: var(--radius-lg);
+    padding: var(--space-2);
+    margin-top: var(--space-1);
+    min-width: 240px;
+  }
+
+  .dropdown-menu-modern .dropdown-item {
+    border-radius: var(--radius-md);
+    font-weight: var(--font-medium);
+    transition: all var(--duration-fast) var(--ease-out);
+    display: flex;
+    align-items: center;
+  }
+
+  .dropdown-menu-modern .dropdown-item:hover {
+    background: var(--color-primary-50);
+    color: var(--color-primary-700);
+  }
+
+  .dropdown-menu-modern .dropdown-item.active {
+    background: var(--color-primary-100);
+    color: var(--color-primary-700);
+  }
+
+  /* Mobile menu styles */
+  .offcanvas .dropdown-chevron {
+    transition: transform var(--duration-fast) var(--ease-out);
+  }
+
+  .offcanvas [aria-expanded="true"] .dropdown-chevron {
+    transform: rotate(180deg);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    .navbar-modern {
+      background: rgba(17, 24, 39, 0.95) !important;
+    }
+
+    .navbar-modern .nav-link:hover {
+      background: var(--color-neutral-800);
+    }
+  }
+</style>
+
+<script>
+  // Sticky navigation with smart hide/show
+  (function() {
+    const nav = document.getElementById('mainNav');
+    if (!nav) return;
+
+    let lastScrollY = window.scrollY;
+    let ticking = false;
+
+    function updateNav() {
+      const scrollY = window.scrollY;
+
+      // Add scrolled class after scrolling down
+      if (scrollY > 50) {
+        nav.classList.add('scrolled');
+      } else {
+        nav.classList.remove('scrolled');
+      }
+
+      lastScrollY = scrollY;
+      ticking = false;
+    }
+
+    function requestTick() {
+      if (!ticking) {
+        requestAnimationFrame(updateNav);
+        ticking = true;
+      }
+    }
+
+    window.addEventListener('scroll', requestTick, { passive: true });
+  })();
+</script>

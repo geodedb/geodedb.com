@@ -1,0 +1,185 @@
+{{/* ───────────────────────── helpers / data ───────────────────────── */}}
+{{- $baseURL   := site.BaseURL -}}
+
+{{- /* i18n labels */ -}}
+{{- $navMenu  := i18n "nav-menu"   | default "Navigation menu" -}}
+{{- $navToggle:= i18n "nav-toggle" | default "Toggle navigation" -}}
+{{- $navClose := i18n "nav-close"  | default "Close navigation" -}}
+{{- $home     := i18n "home"       | default "Home" -}}
+
+{{- $offID := "offcanvasNavbar" -}}
+
+
+<nav
+  class="navbar navbar-expand-lg"
+  role="navigation"
+  aria-label="{{ i18n "main_navigation" | default "Main navigation" }}"
+>
+  <div>
+    <!-- brand / logo --------------------------------------------------- -->
+    <a
+      class="navbar-brand"
+      href="{{ "/" | relLangURL }}"
+      aria-label="{{ $home }}"
+    >
+      <!-- Light theme logo (hidden in dark mode) -->
+      <img
+        src="{{ .Site.Params.branding.light.logo | default .Site.Params.logo }}"
+        alt="{{ .Site.Params.logo_alt | default .Site.Title }}"
+        class="logo-light"
+        width="150"
+        height="40"
+        loading="eager"
+        decoding="async"
+      />
+      <!-- Dark theme logo (hidden in light mode) -->
+      <img
+        src="{{ .Site.Params.branding.dark.logo | default .Site.Params.logo }}"
+        alt="{{ .Site.Params.logo_alt | default .Site.Title }}"
+        class="logo-dark"
+        width="150"
+        height="40"
+        loading="eager"
+        decoding="async"
+      />
+    </a>
+
+    <!-- mobile toggler ------------------------------------------------- -->
+    <button
+      class="navbar-toggler border-0"
+      type="button"
+      data-bs-toggle="offcanvas"
+      data-bs-target="#{{ $offID }}"
+      aria-controls="{{ $offID }}"
+      aria-expanded="false"
+      aria-label="{{ $navToggle }}"
+    >
+      <wa-icon name="bars" class="navbar-toggler-icon"></wa-icon>
+    </button>
+
+    <!-- off-canvas (shown on md- screens and down) --------------------- -->
+    <div
+      class="offcanvas offcanvas-end"
+      tabindex="-1"
+      id="{{ $offID }}"
+      aria-labelledby="{{ $offID }}Label"
+    >
+      <div class="offcanvas-header">
+        <h5 class="offcanvas-title" id="{{ $offID }}Label">{{ $navMenu }}</h5>
+        <button
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="offcanvas"
+          aria-label="{{ $navClose }}"
+        >
+          <wa-icon name="xmark"></wa-icon>
+        </button>
+      </div>
+
+      <div class="offcanvas-body p-0">
+        <ul class="navbar-nav ms-auto flex-grow-1 pe-3">
+          {{ $current := . }}
+
+          {{/* -------------------------------------------------------------
+            TOP-LEVEL MENU ITEMS
+            ----------------------------------------------------------------
+          */}}
+          {{ range .Site.Menus.main }}
+            {{/* determine active state - use localized URLs */}}
+            {{- $url := .URL -}}
+            {{- if hasPrefix .URL "/" -}}
+              {{- $url = .URL | relLangURL -}}
+            {{- else -}}
+              {{- $url = .URL | absURL -}}
+            {{- end -}}
+            {{- $isActive := or (eq $current.Permalink $url)
+              ($current.IsMenuCurrent "main" .)
+            -}}
+
+            {{ if .HasChildren }}
+              <li class="nav-item dropdown">
+                <a
+                  class="nav-link dropdown-toggle {{ if $isActive }}
+                    active
+                  {{ end }}"
+                  href="#"
+                  id="dropdown{{ .Identifier }}"
+                  role="button"
+                  data-bs-toggle="dropdown"
+                  aria-expanded="false"
+                  aria-haspopup="true"
+                >
+                  {{ with .Pre }}
+                    <wa-icon name="{{ . }}"></wa-icon>
+                  {{ end }}{{ .Name }}{{ with .Post }}
+                    <wa-icon name="{{ . }}"></wa-icon>
+                  {{ end }}
+                </a>
+
+                <ul
+                  class="dropdown-menu"
+                  aria-labelledby="dropdown{{ .Identifier }}"
+                  role="menu"
+                >
+                  {{ range .Children }}
+                    {{ if .Params.divider }}
+                      <li role="separator"><hr class="dropdown-divider" /></li>
+                    {{ else }}
+                      {{- $childURL := .URL -}}
+                      {{- if hasPrefix .URL "/" -}}
+                        {{- $childURL = .URL | relLangURL -}}
+                      {{- else -}}
+                        {{- $childURL = .URL | absURL -}}
+                      {{- end -}}
+                      {{- $childActive:= or (eq $current.Permalink $childURL)
+                        ($current.IsMenuCurrent "main" .)
+                      -}}
+                      {{- $isExternal := not (or (hasPrefix $childURL "/") (hasPrefix $childURL $baseURL)) -}}
+                      <li role="menuitem">
+                        <a
+                          class="dropdown-item {{ if $childActive }}
+                            active
+                          {{ end }}"
+                          href="{{ $childURL }}"
+                          {{ if $isExternal }}
+                            target="_blank" rel="noopener noreferrer"
+                          {{ end }}
+                        >
+                          {{ with .Pre }}
+                            <wa-icon name="{{ . }}"></wa-icon>
+                          {{ end }}{{ .Name }}{{ with .Post }}
+                            <wa-icon name="{{ . }}"></wa-icon>
+                          {{ end }}
+                        </a>
+                      </li>
+                    {{ end }}
+                  {{ end }}
+                </ul>
+              </li>
+            {{ else }}
+              {{- $isExternal := not (or (hasPrefix $url "/") (hasPrefix $url $baseURL)) -}}
+              <li class="nav-item">
+                <a
+                  class="nav-link {{ if $isActive }}active{{ end }}"
+                  href="{{ $url }}"
+                  {{ if $isExternal }}
+                    target="_blank" rel="noopener noreferrer"
+                  {{ end }}
+                  {{ if $isActive }}aria-current="page"{{ end }}
+                >
+                  {{ with .Pre }}
+                    <wa-icon name="{{ . }}"></wa-icon>
+                  {{ end }}{{ .Name }}{{ with .Post }}
+                    <wa-icon name="{{ . }}"></wa-icon>
+                  {{ end }}
+                </a>
+              </li>
+            {{ end }}
+          {{ end }}
+        </ul>
+      </div>
+    </div>
+    <!-- /.offcanvas -->
+  </div>
+  <!-- /.container-fluid -->
+</nav>

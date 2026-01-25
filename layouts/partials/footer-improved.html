@@ -1,0 +1,186 @@
+{{/* ───────────────────────── Enhanced Footer ───────────────────────── */}}
+
+<footer class="footer-modern bg-dark text-white" role="contentinfo">
+  <div class="container-fluid px-4">
+    {{/* Main footer content */}}
+    <div class="footer-content py-5">
+      <div class="row g-4">
+        {{/* Column 1: Brand & Description */}}
+        <div class="col-lg-4 mb-4 mb-lg-0">
+          <div class="footer-brand mb-4">
+            {{ if .Site.Params.branding.footer.logo }}
+              <img
+                src="{{ .Site.Params.branding.footer.logo }}"
+                alt="{{ .Site.Title }}"
+                height="40"
+                class="mb-3"
+              />
+            {{ else }}
+              <h3 class="h4 fw-bold">{{ .Site.Title }}</h3>
+            {{ end }}
+          </div>
+          <p class="text-white-50 mb-4">
+            Enterprise-grade graph database with 100% ISO GQL compliance.
+            Built for modern applications with QUIC transport and production-ready performance.
+          </p>
+
+          {{/* Social links */}}
+          <div class="social-links d-flex gap-3">
+            {{ with .Site.Params.social.github }}
+              <a href="{{ . }}" target="_blank" rel="noopener" class="social-link" aria-label="GitHub">
+                <wa-icon name="github" aria-hidden="true"></wa-icon>
+              </a>
+            {{ end }}
+            {{ with .Site.Params.social.twitter }}
+              <a href="{{ . }}" target="_blank" rel="noopener" class="social-link" aria-label="Twitter">
+                <wa-icon name="twitter" aria-hidden="true"></wa-icon>
+              </a>
+            {{ end }}
+            {{ with .Site.Params.social.linkedin }}
+              <a href="{{ . }}" target="_blank" rel="noopener" class="social-link" aria-label="LinkedIn">
+                <wa-icon name="linkedin" aria-hidden="true"></wa-icon>
+              </a>
+            {{ end }}
+            {{ with .Site.Params.social.discord }}
+              <a href="{{ . }}" target="_blank" rel="noopener" class="social-link" aria-label="Discord">
+                <wa-icon name="discord" aria-hidden="true"></wa-icon>
+              </a>
+            {{ end }}
+          </div>
+        </div>
+
+        {{/* Column 2: Documentation */}}
+        <div class="col-6 col-lg-2">
+          <h4 class="h6 fw-semibold mb-3 text-uppercase">Documentation</h4>
+          <ul class="list-unstyled footer-links">
+            <li><a href="/docs/getting-started/">Getting Started</a></li>
+            <li><a href="/docs/installation/">Installation</a></li>
+            <li><a href="/docs/gql/">GQL Reference</a></li>
+            <li><a href="/docs/api-reference/">API Reference</a></li>
+            <li><a href="/docs/architecture/">Architecture</a></li>
+          </ul>
+        </div>
+
+        {{/* Column 3: Resources */}}
+        <div class="col-6 col-lg-2">
+          <h4 class="h6 fw-semibold mb-3 text-uppercase">Resources</h4>
+          <ul class="list-unstyled footer-links">
+            <li><a href="/docs/guides/">Guides</a></li>
+            <li><a href="/blog/">Blog</a></li>
+            <li><a href="/docs/contribute/">Contributing</a></li>
+            <li><a href="https://github.com/codeprosorg/geode/releases" target="_blank" rel="noopener">
+              Releases
+              <wa-icon name="arrow-up-right-from-square" class="ms-1 small"></wa-icon>
+            </a></li>
+            <li><a href="https://github.com/codeprosorg/geode/discussions" target="_blank" rel="noopener">
+              Community
+              <wa-icon name="arrow-up-right-from-square" class="ms-1 small"></wa-icon>
+            </a></li>
+          </ul>
+        </div>
+
+        {{/* Column 4: Clients */}}
+        <div class="col-6 col-lg-2">
+          <h4 class="h6 fw-semibold mb-3 text-uppercase">Client Libraries</h4>
+          <ul class="list-unstyled footer-links">
+            <li><a href="/docs/client-libraries/go/">Go</a></li>
+            <li><a href="/docs/client-libraries/python/">Python</a></li>
+            <li><a href="/docs/client-libraries/rust/">Rust</a></li>
+            <li><a href="/docs/client-libraries/zig/">Zig</a></li>
+          </ul>
+        </div>
+
+        {{/* Column 5: Legal & Company */}}
+        <div class="col-6 col-lg-2">
+          <h4 class="h6 fw-semibold mb-3 text-uppercase">Company</h4>
+          <ul class="list-unstyled footer-links">
+            <li><a href="/about/">About</a></li>
+            <li><a href="/privacy/">Privacy Policy</a></li>
+            <li><a href="/terms/">Terms of Service</a></li>
+            <li><a href="/security/">Security</a></li>
+            <li><a href="/license/">License</a></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    {{/* Bottom bar */}}
+    <div class="footer-bottom border-top border-secondary py-4">
+      <div class="row align-items-center">
+        <div class="col-md-6 mb-3 mb-md-0">
+          <p class="small text-white-50 mb-0">
+            &copy; {{ now.Year }} <a href="https://codepros.org" target="_blank" rel="noopener" class="text-white-50 text-decoration-none">CodePros</a>.
+            Licensed under <a href="https://www.apache.org/licenses/LICENSE-2.0" target="_blank" rel="noopener" class="text-white-50">Apache 2.0</a>.
+          </p>
+        </div>
+        <div class="col-md-6 text-md-end">
+          <div class="d-flex justify-content-md-end align-items-center gap-3">
+            <span class="small text-white-50">Built with</span>
+            <a href="https://gohugo.io" target="_blank" rel="noopener" class="text-white-50 text-decoration-none small">
+              Hugo
+            </a>
+            <span class="text-white-50">•</span>
+            <a href="https://github.com/codeprosorg/geode" target="_blank" rel="noopener" class="text-white-50 text-decoration-none small d-flex align-items-center gap-1">
+              View Source
+              <wa-icon name="github" class="small" aria-hidden="true"></wa-icon>
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<style>
+  /* Enhanced footer styles */
+  .footer-modern {
+    background: linear-gradient(180deg, #1f2937 0%, #111827 100%);
+  }
+
+  .footer-links {
+    margin-bottom: 0;
+  }
+
+  .footer-links li {
+    margin-bottom: var(--space-2);
+  }
+
+  .footer-links a {
+    color: var(--color-neutral-300);
+    text-decoration: none;
+    transition: color var(--duration-fast) var(--ease-out);
+    display: inline-flex;
+    align-items: center;
+    font-size: var(--text-sm);
+  }
+
+  .footer-links a:hover {
+    color: white;
+    text-decoration: none;
+  }
+
+  .social-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: var(--radius-lg);
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+    text-decoration: none;
+    transition: all var(--duration-fast) var(--ease-out);
+    font-size: var(--text-lg);
+  }
+
+  .social-link:hover {
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+    transform: translateY(-2px);
+  }
+
+  .footer-bottom a:hover {
+    color: white !important;
+    text-decoration: underline;
+  }
+</style>
