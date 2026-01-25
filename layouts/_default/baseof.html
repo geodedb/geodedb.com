@@ -1,0 +1,544 @@
+{{/* ──────────────────────────────────────────────────────────────
+  Base layout (Hugo ≥0.120) – fully localised, accessible, SEO-friendly
+  ─────────────────────────────────────────────────────────────────*/
+-}}
+<!doctype html>
+<html
+  lang="{{ .Language.Lang | default .Site.Language.Lang | default "en" }}"
+  dir="{{ .Language.LanguageDirection | default "ltr" }}"
+  class="wa-theme-{{ .Site.Params.webawesome.theme | default "premium" }} wa-palette-{{ .Site.Params.webawesome.palette | default "anodized" }} wa-brand-{{ .Site.Params.webawesome.brand | default "cyan" }} wa-neutral-{{ .Site.Params.webawesome.neutral | default "gray" }} wa-success-{{ .Site.Params.webawesome.success | default "green" }} wa-warning-{{ .Site.Params.webawesome.warning | default "yellow" }} wa-danger-{{ .Site.Params.webawesome.danger | default "red" }} no-js"
+>
+  <head prefix="og: http://ogp.me/ns#">
+    {{/* Basic meta */}}
+    <meta charset="utf-8" />
+    <meta http-equiv="x-ua-compatible" content="ie=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    {{/* Title (translated) -------------------------------------------------- */}}
+    <title>{{ block "title" . }}{{ partial "head/title" . }}{{ end }}</title>
+
+    {{/* Canonical (supports custom canonical URLs from front matter) --------- */}}
+    {{ $canonicalURL := .Permalink }}
+    {{ with .Params.canonicalURL }}
+      {{ $canonicalURL = . | absURL }}
+    {{ else }}
+      {{ with .Params.canonical }}
+        {{ $canonicalURL = . | absURL }}
+      {{ end }}
+    {{ end }}
+    <link rel="canonical" href="{{ $canonicalURL }}" />
+
+    {{/* Hreflang tags for multilingual SEO ---------------------------------- */}}
+    {{ if .IsTranslated }}
+      {{ range .AllTranslations }}
+        <link
+          rel="alternate"
+          hreflang="{{ .Language.LanguageCode | default .Language.Lang }}"
+          href="{{ .Permalink }}"
+        />
+      {{ end }}
+    {{ end }}
+    {{ if hugo.IsMultilingual }}
+      {{/* x-default should point to the default language version of THIS page */}}
+      {{ $defaultLang := site.Language.Lang }}
+      {{ range .AllTranslations }}
+        {{ if eq .Language.Lang $defaultLang }}
+          <link rel="alternate" hreflang="x-default" href="{{ .Permalink }}" />
+        {{ end }}
+      {{ end }}
+    {{ end }}
+
+    {{/* Description / Open-Graph / Twitter Cards --------------------------- */}}
+    {{ partial "head"                  . }}
+    {{ partial "seo/social.html"       . }}
+    {{ partial "seo/ogtags.html"       . }}
+    {{ partial "seo/keywords.html"     . }}
+    {{ partial "seo/robots.html"       . }}
+
+    {{/* RSS/Atom feed discovery ------------------------------------------- */}}
+    {{ partial "seo/feeds.html"        . }}
+
+    {{/* Pagination rel=prev/next links -------------------------------------- */}}
+    {{ partial "seo/pagination-links.html" . }}
+
+    {{/* Structured-data (JSON-LD) – optional ------------------------------- */}}
+    {{ partial "seo/schema.html"       . }}
+
+    {{/* Generator tag (can be removed if you prefer) ----------------------- */}}
+    {{ hugo.Generator }}
+
+    {{/* Theme-color + favicons + web-manifest ------------------------------ */}}
+    <meta name="theme-color" content="#ffffff" />
+    {{ partial "seo/favicons.html"     . }}
+
+    {{/* Preload LCP hero image when a cover exists (improves LCP) -------- */}}
+    {{ partial "seo/preload-hero.html" . }}
+
+    {{/* Resource hints for performance ------------------------------------ */}}
+    {{/* Preload critical fonts */}}
+    <link
+      rel="preload"
+      href="/webfonts/open-sans-v16-latin-regular.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
+
+    {{/* CSS (Critical + bundle) -------------------------------------------- */}}
+    {{/* 1. Critical above-the-fold CSS – inlined for performance */}}
+    {{ partial "styles/critical" . }}
+    {{/* 2. Vendor CSS (Bootstrap etc.) from data/styles.yaml BEFORE WA */}}
+    {{ partial "styles/stylesheets" (dict "files" .Site.Data.styles.files "includeMain" false) }}
+
+    {{/* Define $styles variable for noscript fallback */}}
+    {{ $scssOpts := dict
+      "transpiler"    "dartsass"
+      "vars"          (partialCached "get-scss-vars.html" .)
+      "includePaths"  (slice "assets/scss")
+    -}}
+    {{ $mainScss := resources.Get "scss/styles.scss" }}
+    {{ $styles := "" }}
+    {{ if hugo.IsProduction }}
+      {{ $styles = $mainScss | css.Sass $scssOpts | postCSS | minify | fingerprint }}
+    {{ else }}
+      {{ $styles = $mainScss | css.Sass $scssOpts }}
+    {{ end }}
+
+    {{/* Web Awesome CSS (load non-blocking) - using local wapro dist */}}
+    {{- $waTheme := .Site.Params.webawesome.theme | default "premium" -}}
+    {{- $waPalette := .Site.Params.webawesome.palette | default "anodized" -}}
+    <link
+      rel="preload"
+      as="style"
+      href="/wapro/dist/styles/webawesome.css"
+      onload="this.onload=null;this.rel='stylesheet'"
+    />
+    <link
+      rel="preload"
+      as="style"
+      href="/wapro/dist/styles/themes/{{ $waTheme }}.css"
+      onload="this.onload=null;this.rel='stylesheet'"
+    />
+    <link
+      rel="preload"
+      as="style"
+      href="/wapro/dist/styles/color/palettes/{{ $waPalette }}.css"
+      onload="this.onload=null;this.rel='stylesheet'"
+    />
+    <noscript>
+      <link rel="stylesheet" href="/wapro/dist/styles/webawesome.css" />
+      <link
+        rel="stylesheet"
+        href="/wapro/dist/styles/themes/{{ $waTheme }}.css"
+      />
+      <link
+        rel="stylesheet"
+        href="/wapro/dist/styles/color/palettes/{{ $waPalette }}.css"
+      />
+    </noscript>
+
+    <style>
+      :root {
+        --wa-border-radius-scale: {{ .Site.Params.webawesome.borderRadiusScale | default 0.5 }};
+        --wa-border-width-scale: {{ .Site.Params.webawesome.borderWidthScale | default 1.5 }};
+        --wa-space-scale: {{ .Site.Params.webawesome.spaceScale | default 1 }};
+      }
+
+      /* Critical CSS for layout stability and initial render */
+      .cover-image-section {
+        contain: layout style;
+      }
+
+      /* Minimal critical rules for the cover overlay to avoid FOUC */
+      .cover-image-section .cover-image-container {
+        position: relative;
+        min-height: clamp(260px, 48vh, 640px);
+        overflow: hidden;
+      }
+
+      .cover-image-section .cover-image {
+        position: absolute;
+        inset: 0;
+        display: block;
+        width: 100%;
+        height: 100%;
+      }
+
+      .cover-image-section > .cover-image-container > img.cover-image-img {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        object-position: center;
+      }
+
+      .cover-image-section .cover-overlay {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        align-items: flex-end;
+        justify-content: flex-start;
+        background: linear-gradient(
+          to top,
+          rgba(0, 0, 0, 0.55),
+          rgba(0, 0, 0, 0.15) 35%,
+          rgba(0, 0, 0, 0)
+        );
+      }
+
+      .cover-image-section .cover-overlay .cover-overlay-inner,
+      .cover-image-section .cover-overlay .kicker,
+      .cover-image-section .cover-overlay h1,
+      .cover-image-section .cover-overlay p.lead,
+      .cover-image-section .cover-overlay .meta {
+        color: #fff !important;
+      }
+
+      .cover-image-section .cover-overlay .cover-overlay-inner {
+        width: 100%;
+        max-width: 1140px;
+        margin: 0 auto 2rem;
+        padding: 1rem;
+        text-align: left;
+        background: rgba(0, 0, 0, 0.42);
+        border-radius: 0.5rem;
+      }
+
+  @media (max-width: 768px) {
+        /* Let the container grow with its contents on mobile */
+        .cover-image-section > .cover-image-container {
+          position: static;
+          min-height: auto;
+          /* Ensure inner content isn't clipped when overlay becomes static */
+          overflow: visible;
+        }
+
+        /* Make the picture element participate in normal flow */
+        .cover-image-section .cover-image {
+          position: static;
+          inset: auto;
+          width: 100%;
+          height: auto;
+          display: block;
+        }
+
+        /* Make the image participate in layout flow (no absolute cover) */
+        .cover-image-section > .cover-image-container > img.cover-image-img,
+        .cover-image-section picture.cover-image img.cover-image-img {
+          position: static;
+          inset: auto;
+          width: 100%;
+          height: auto;
+          display: block;
+          object-fit: cover;
+          object-position: center;
+        }
+        .cover-image-section .cover-image-container {
+          min-height: clamp(280px, 56vh, 720px);
+        }
+      }
+
+      .cover-image-img {
+        aspect-ratio: 8/3;
+        object-fit: cover;
+        width: 100%;
+        height: 100%;
+      }
+
+      @media (max-width: 768px) {
+        .cover-image-img {
+          aspect-ratio: 16/9;
+        }
+      }
+
+  /* Mobile fixes: prevent long kicker/description text from overflowing off-canvas */
+  @media (max-width: 768px) {
+        /* Mobile hero fallback: hide image, make overlay static so content defines height */
+        .cover-image-section {
+          background: linear-gradient(
+            to bottom,
+            rgba(0, 0, 0, 0.55),
+            rgba(0, 0, 0, 0.15) 35%,
+            rgba(0, 0, 0, 0)
+          );
+          padding-top: max(0.5rem, env(safe-area-inset-top));
+        }
+
+        .cover-image-section .cover-overlay {
+          position: static;
+          align-items: flex-start;
+          padding-top: 0.75rem;
+          padding-bottom: 0.75rem;
+          margin-top: 0.25rem;
+          overflow: visible;
+        }
+
+        .cover-image-section .cover-overlay .cover-overlay-inner {
+          width: 100%;
+          max-width: 720px;
+          margin: 0.5rem auto;
+          padding: 0.75rem;
+          background: rgba(0, 0, 0, 0.42);
+          border-radius: 0.5rem;
+        }
+
+        /* Safer wrapping for long words/URLs and smaller type sizes */
+        .cover-image-section .cover-overlay .kicker {
+          font-size: clamp(0.85rem, 3vw, 0.95rem);
+          line-height: 1.35;
+          overflow-wrap: anywhere;
+          word-break: break-word;
+          hyphens: auto;
+          margin-bottom: 0.35rem;
+        }
+
+        .cover-image-section .cover-overlay h1 {
+          font-size: clamp(1.15rem, 4.6vw, 1.55rem) !important;
+          line-height: 1.2;
+          margin-bottom: 0.35rem !important;
+          overflow-wrap: anywhere;
+          word-break: break-word;
+          hyphens: auto;
+        }
+
+        .cover-image-section .cover-overlay p.lead {
+          font-size: clamp(0.9rem, 3.2vw, 1rem) !important;
+          line-height: 1.45;
+          overflow-wrap: anywhere;
+          word-break: break-word;
+          hyphens: auto;
+          margin-bottom: 0.4rem;
+        }
+
+        .cover-image-section .cover-overlay .meta {
+          row-gap: 0.35rem;
+          column-gap: 0.5rem;
+          flex-wrap: wrap;
+          display: block;
+        }
+
+        /* Stack meta rows and allow long date strings to wrap safely */
+        .cover-image-section .cover-overlay .meta .post-meta {
+          width: 100%;
+        }
+        .cover-image-section .cover-overlay .meta .post-meta-primary {
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 0.35rem;
+        }
+        .cover-image-section .cover-overlay .meta .post-date,
+        .cover-image-section .cover-overlay .meta .post-date time,
+        .cover-image-section .cover-overlay .meta .updated-date time {
+          white-space: normal !important;
+          overflow-wrap: anywhere;
+          word-break: break-word;
+          hyphens: auto;
+        }
+        .cover-image-section .cover-overlay .meta .post-authors,
+        .cover-image-section .cover-overlay .meta .post-taxonomies {
+          justify-content: flex-start;
+        }
+        .cover-image-section .cover-overlay .meta .badge {
+          font-size: clamp(0.8rem, 2.8vw, 0.9rem) !important;
+          line-height: 1.2 !important;
+        }
+
+        .cover-image-section .cover-overlay .meta,
+        .cover-image-section .cover-overlay .meta * {
+          font-size: clamp(0.85rem, 3vw, 1rem) !important;
+          line-height: 1.35 !important;
+          overflow-wrap: anywhere;
+          word-break: break-word;
+        }
+      }
+
+      @media (max-width: 576px) {
+        .cover-image-img {
+          aspect-ratio: 4/3;
+        }
+      }
+
+      /* Critical layout styles */
+      .container-fluid, .container {
+        width: 100%;
+      }
+
+      /* Prevent flash of unstyled content */
+      .no-js .wa-icon {
+        display: none;
+      }
+    </style> {{/* DNS-prefetch / Preconnect / Preload fonts -------------------------- */}}
+    {{/* Web Awesome is now served locally, removed CDN preconnects */}}
+    <link rel="dns-prefetch" href="https://cdn.jsdelivr.net" />
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+
+    {{/* Load main site stylesheet LAST so it can override both Bootstrap & WA */}}
+    <link
+      rel="preload"
+      href="{{ $styles.RelPermalink }}"
+      as="style"
+      onload="this.onload=null;this.rel='stylesheet'"
+    />
+    <noscript>
+      <link rel="stylesheet" href="{{ $styles.RelPermalink }}" />
+    </noscript>
+
+    {{/* Performance optimization: enable JS for CSS loading */}}
+    <script>
+      // Remove no-js class to enable progressive enhancement
+      document.documentElement.classList.remove("no-js");
+
+      // Polyfill for preload rel=stylesheet loading
+      !(function (e) {
+        "use strict";
+        var t = function (t, n, r) {
+          function o(e) {
+            return i.body
+              ? e()
+              : void setTimeout(function () {
+                  o(e);
+                });
+          }
+          function a() {
+            (d.addEventListener && d.removeEventListener("load", a),
+              (d.media = r || "all"));
+          }
+          var l,
+            i = e.document,
+            d = i.createElement("link");
+          if (n) l = n;
+          else {
+            var s = (i.body || i.getElementsByTagName("head")[0]).childNodes;
+            l = s[s.length - 1];
+          }
+          var u = i.styleSheets;
+          ((d.rel = "stylesheet"),
+            (d.href = t),
+            (d.media = "only x"),
+            o(function () {
+              l.parentNode.insertBefore(d, n ? l : l.nextSibling);
+            }));
+          var f = function (e) {
+            for (var t = d.href, n = u.length; n--; )
+              if (u[n].href === t) return e();
+            setTimeout(function () {
+              f(e);
+            });
+          };
+          return (
+            d.addEventListener && d.addEventListener("load", a),
+            (d.onloadcssdefined = f),
+            f(a),
+            d
+          );
+        };
+        "undefined" != typeof exports ? (exports.loadCSS = t) : (e.loadCSS = t);
+      })("undefined" != typeof global ? global : this);
+    </script>
+
+    {{/* Site-verification, sitemap ping etc. ------------------------------- */}}
+    {{ partial "head/site-verification" . }}
+    {{ partial "seo/sitemap.html"      . }}
+
+    {{/* Head hook (per-page or per-section) -------------------------------- */}}
+    {{ block "extra_head" . }}{{ end }}
+
+    {{/* NOTE: Google Analytics / GTM are now injected AFTER consent (see privacy/consent partial) */}}
+
+
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+    <meta name="apple-mobile-web-app-title" content="{{ .Site.Title }}" />
+    <link
+      rel="apple-touch-icon"
+      href="{{ (.Site.Params.favicons.apple_touch_icon | default "/images/icons/apple-touch-icon.png") | absURL }}"
+    />
+  </head>
+
+  {{/* ──────────────────────────────────────────────────────────────
+    Dynamic BODY classes
+    ─────────────────────────────────────────────────────────────────
+  */}}
+  {{- $bodyClasses := slice -}}
+  {{- if .File }}
+    {{- $bodyClasses = $bodyClasses | append (printf "page-%s" (.File.TranslationBaseName | urlize)) -}}
+  {{- else if .IsHome }}
+    {{- $bodyClasses = $bodyClasses | append "page-home" -}}
+  {{- else if .IsSection }}
+    {{- $bodyClasses = $bodyClasses | append (printf "page-section-%s" .Section) -}}
+  {{- else if .Data.Singular }}
+    {{- /* For taxonomy pages, .Data.Term may be nil on taxonomy index pages; default safely */ -}}
+    {{- $taxKey := (.Data.Term | default .Data.Singular | default .Data.Plural | default "taxonomy") -}}
+    {{- $bodyClasses = $bodyClasses | append (printf "page-taxonomy-%s" $taxKey) -}}
+  {{- end }}
+  {{- $bodyClasses = $bodyClasses | append (printf "lang-%s" .Language.Lang) -}}
+  {{- if eq (.Language.LanguageDirection | default "ltr") "rtl" }}
+    {{- $bodyClasses = $bodyClasses | append "dir-rtl" -}}
+  {{- end -}}
+
+
+  <body
+    class="{{ delimit $bodyClasses " " }}"
+    style="min-height: 100vh; display: flex; flex-direction: column;"
+  >
+    {{/* Consent-managed analytics: GTM noscript removed until consent */}}
+
+
+    <div style="flex: 1; display: flex; flex-direction: column;">
+      <a class="visually-hidden-focusable" href="#main"
+        >{{ i18n "skip_to_content" | default "Skip to main content" }}</a
+      >
+
+      <!-- ============================================================
+         HEADER / NAVBAR - Using improved navigation
+    ============================================================= -->
+      {{ partial "nav.html" . }}
+
+      <main
+        id="main"
+        class="flex-grow-1"
+        role="main"
+        {{ if .IsHome }}itemscope itemtype="https://schema.org/WebPage"{{ end }}
+      >
+        {{ block "main" . }}{{ end }}
+      </main>
+    </div>
+
+    <footer role="contentinfo">
+      {{ partial "footer.html" . }}
+    </footer>
+
+    {{ partial "scripts/scripts" .Site.Data.scripts.files }}
+    {{ partial "scripts/language-dropdown.html" . }}
+    {{ partial "scripts/offcanvas-fallback.html" . }}
+    {{ partial "scripts/theme-toggle.html" . }}
+
+    {{/* Defer Web Awesome loader scripts to end of body - using local wapro dist */}}
+    {{- $waKitCode := .Site.Params.webawesome.kitCode | default "54b6985a3e" -}}
+    {{- $waIconFamily := .Site.Params.webawesome.iconFamily | default "sharp-duotone" -}}
+    <script
+      type="module"
+      src="/wapro/dist/webawesome.loader.js"
+      data-webawesome="/wapro/dist"
+    ></script>
+    <script type="module" data-fa-kit-code="{{ $waKitCode }}">
+      import { setDefaultIconFamily } from "/wapro/dist/webawesome.js";
+      setDefaultIconFamily("{{ $waIconFamily }}");
+    </script>
+
+    <noscript
+      ><link rel="stylesheet" href="{{ $styles.RelPermalink }}"
+    /></noscript>
+
+    {{/* GDPR / Cookie consent banner + deferred analytics loader */}}
+    {{ partial "privacy/consent" . }}
+
+    {{/* Newsletter signup (Mailchimp) */}}
+    {{ partial "newsletter/signup" . }}
+
+    {{ block "body_end" . }}{{ partial "hooks/body-end" . }}{{ end }}
+  </body>
+</html>

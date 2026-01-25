@@ -152,6 +152,55 @@
             <span>GitHub</span>
           </a>
         </li>
+
+        {{/* Theme toggle */}}
+        <li class="nav-item ms-2">
+          <button
+            class="btn btn-link"
+            type="button"
+            id="themeToggle"
+            role="button"
+            aria-label="{{ i18n "theme_toggle" | default "Toggle theme" }}"
+            title="{{ i18n "theme_auto" | default "Auto theme" }}"
+          >
+            <wa-icon name="circle-half-stroke" aria-hidden="true"></wa-icon>
+          </button>
+        </li>
+
+        {{/* Language dropdown */}}
+        {{ if gt (len $.Site.Home.AllTranslations) 1 }}
+          <li class="nav-item dropdown ms-2">
+            <button
+              id="languageDropdown"
+              class="btn btn-link dropdown-toggle"
+              data-bs-toggle="dropdown"
+              aria-expanded="false"
+              aria-controls="languageMenu"
+              title="{{ i18n "change_language" | default "Change language" }} - {{ .Language.LanguageName | default (upper .Lang) }}"
+            >
+              <wa-icon name="globe"></wa-icon>
+            </button>
+            <ul
+              id="languageMenu"
+              class="dropdown-menu dropdown-menu-end"
+              aria-labelledby="languageDropdown"
+            >
+              {{ range .AllTranslations }}
+                {{ if ne $.Lang .Lang }}
+                  <li>
+                    <a
+                      hreflang="{{ .Language.LanguageCode | default .Language.Lang }}"
+                      class="dropdown-item"
+                      href="{{ .Permalink }}"
+                      title="{{ i18n "switch_to" | default "Switch to" }} {{ .Language.LanguageName | default (upper .Lang) }}"
+                      >{{ .Language.LanguageName | default (upper .Lang) }}</a
+                    >
+                  </li>
+                {{ end }}
+              {{ end }}
+            </ul>
+          </li>
+        {{ end }}
       </ul>
     </div>
 
