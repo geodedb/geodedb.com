@@ -362,7 +362,6 @@ Each release includes:
 - **Source Code**: GitLab repository tag
 - **Binaries**: Pre-compiled for common platforms
 - **Docker Images**: On Docker Hub
-- **Nix Packages**: Nix flakes and derivations
 - **Client Libraries**: Language-specific packages
 - **Documentation**: Updated docs for release version
 

@@ -1,12 +1,11 @@
 ---
 title: "Deployment and Integration Guide"
-description: "Deploy Geode with Docker Compose or NixOS, configure Vault/MinIO/Prometheus/Grafana, set up S3 backups and CDC/webhooks, and integrate client libraries"
+description: "Deploy Geode with Docker Compose or Kubernetes, configure Vault/MinIO/Prometheus/Grafana, set up S3 backups and CDC/webhooks, and integrate client libraries"
 weight: 10
 tags:
   - deployment
   - docker
   - kubernetes
-  - nix
   - production
   - backup
   - cdc
@@ -15,7 +14,6 @@ categories:
 keywords:
   - deploy geode
   - docker compose
-  - nixos module
   - vault kms
   - s3 backup
   - cdc
@@ -128,65 +126,9 @@ docker-compose ps
 - Vault: `http://localhost:8200`
 - MinIO: `http://localhost:9000` (minioadmin/minioadmin)
 
-### NixOS Managed Service
+### Kubernetes (Helm)
 
-From `NIX_DEPLOYMENT.md`:
-
-**NixOS module** provides declarative configuration and lifecycle management.
-
-**Configuration** (`/etc/nixos/configuration.nix`):
-
-```nix
-{ config, pkgs, ... }:
-
-{
-  imports = [ <geode/nixos/module.nix> ];
-
-  services.geode = {
-    enable = true;
-    package = pkgs.geode;
-
-    # Server config
-    listen = "0.0.0.0:3141";
-    dataDir = "/var/lib/geode";
-
-    # TLS
-    tls = {
-      cert = "/etc/geode/certs/server-cert.pem";
-      key = "/etc/geode/certs/server-key.pem";
-    };
-
-    # TDE with Vault
-    tde = {
-      enabled = true;
-      provider = "vault";
-      vaultAddress = "https://vault.example.com:8200";
-      vaultTokenFile = "/run/secrets/vault-token";
-      vaultKeyPath = "secret/geode/tde-key";
-    };
-
-    # Audit logging
-    audit = {
-      enabled = true;
-      logPath = "/var/log/geode/audit.jsonl";
-      syslogAddress = "syslog.example.com:514";
-    };
-  };
-
-  # Firewall
-  networking.firewall.allowedUDPPorts = [ 3141 ];  # QUIC
-}
-```
-
-**Apply configuration**:
-
-```bash
-sudo nixos-rebuild switch
-```
-
-**Kubernetes** (Helm chart):
-
-From `NIX_DEPLOYMENT.md`, Kubernetes section:
+Deploy Geode to Kubernetes with Helm for production clusters.
 
 ```bash
 # Add Helm repository
@@ -643,4 +585,3 @@ docker-compose up -d --scale geode=3
 - **[Monitoring and Telemetry](/docs/ops/observability)** - Metrics and logging
 - **[Security Guide](/docs/security/overview)** - TLS, TDE, FLE, audit logging
 - **[Client Libraries](/docs/client-libraries)** - Language-specific guides
-- **[Nix Deployment](/docs/ops/nix-deployment)** - NixOS module and Kubernetes

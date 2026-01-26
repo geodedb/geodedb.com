@@ -50,10 +50,62 @@ All clients communicate via QUIC+TLS using the JSON line protocol.
 
 ## Getting Started
 
+{{< tabs >}}
+{{< tab "Linux" >}}
+{{< tabs >}}
+{{< tab "Debian/Ubuntu" >}}
 ```bash
-# Install via Nix
-nix run github:codeprosorg/geode -- serve
+curl -L -o geode.deb https://gitlab.com/devnw/codepros/geode/geode/-/releases/latest/download/geode-linux-amd64.deb
+sudo apt install ./geode.deb
+```
+{{< /tab >}}
+{{< tab "RHEL/Fedora" >}}
+```bash
+curl -L -o geode.rpm https://gitlab.com/devnw/codepros/geode/geode/-/releases/latest/download/geode-linux-x86_64.rpm
+sudo rpm -i geode.rpm
+```
+{{< /tab >}}
+{{< tab "Generic" >}}
+```bash
+curl -L -o geode-linux-amd64 https://gitlab.com/devnw/codepros/geode/geode/-/releases/latest/download/geode-linux-amd64
+chmod +x geode-linux-amd64
+sudo install -m 0755 geode-linux-amd64 /usr/local/bin/geode
+```
+{{< /tab >}}
+{{< /tabs >}}
+{{< /tab >}}
+{{< tab "macOS" >}}
+```bash
+# Apple Silicon
+curl -L -o geode-darwin-arm64 https://gitlab.com/devnw/codepros/geode/geode/-/releases/latest/download/geode-darwin-arm64
+sudo install -m 0755 geode-darwin-arm64 /usr/local/bin/geode
 
+# Intel
+curl -L -o geode-darwin-amd64 https://gitlab.com/devnw/codepros/geode/geode/-/releases/latest/download/geode-darwin-amd64
+sudo install -m 0755 geode-darwin-amd64 /usr/local/bin/geode
+```
+{{< /tab >}}
+{{< tab "Windows (WSL)" >}}
+```bash
+# PowerShell
+wsl --install -d Ubuntu
+
+# Inside Ubuntu (WSL)
+curl -L -o geode.deb https://gitlab.com/devnw/codepros/geode/geode/-/releases/latest/download/geode-linux-amd64.deb
+sudo apt install ./geode.deb
+```
+{{< /tab >}}
+{{< /tabs >}}
+
+```bash
+# Start the server
+geode serve --listen 0.0.0.0:3141
+
+# Connect with shell
+geode shell
+```
+
+```bash
 # Or build from source
 git clone https://github.com/codeprosorg/geode
 cd geode

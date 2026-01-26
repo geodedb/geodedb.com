@@ -1,0 +1,32 @@
+{{/* Privacy Policy Single Page - styled to match Guides */}}
+{{ define "main" }}
+
+{{ $container := partial "helpers/container.html" (dict "Page" .) }}
+
+<div class="docs-shell docs-shell--guides">
+  <header class="docs-header bg-gradient pt-2 pb-3 border-bottom" role="banner">
+    <div class="{{ $container }} docs-header-inner">
+      <div class="row">
+        <div class="col-12">
+          {{ partial "docs/breadcrumbs" . }}
+          <div class="mt-2">
+            <h1 class="display-5 fw-bold mb-2">{{ .Title }}</h1>
+            {{ with .Description }}
+              <p class="lead text-muted mb-0">{{ . }}</p>
+            {{ end }}
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <div class="{{ $container }} pt-3 pb-4 docs-main">
+    <article class="docs-content">
+      <div class="article-body">
+        {{ .Content }}
+      </div>
+    </article>
+  </div>
+</div>
+
+{{ end }}

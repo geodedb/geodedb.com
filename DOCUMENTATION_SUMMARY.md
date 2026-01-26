@@ -16,7 +16,7 @@ Created comprehensive documentation for Geode graph database based on the detail
    - SEO: ISO GQL, MVCC, SSI, HNSW, BM25
 
 2. **Installation and Quick Start** (`/docs/get-started/install.md`)
-   - Install options: source, Docker, Nix
+   - Install options: OS packages, Docker, source builds
    - Server startup, CLI usage, REPL commands
    - Troubleshooting (TLS, ports, connections)
 
@@ -55,7 +55,7 @@ Created comprehensive documentation for Geode graph database based on the detail
    - Performance optimization (SIMD, cache-friendly access)
 
 9. **Deployment Guide** (`/docs/ops/deployment.md`)
-   - Deployment modes: single node, distributed, containerized, NixOS
+   - Deployment modes: single node, distributed, containerized, Kubernetes
    - Production stack (Vault, MinIO, Prometheus, Grafana, Loki, Nginx)
    - Backups (local, S3, point-in-time recovery)
    - CDC/webhooks for real-time integration
@@ -138,7 +138,7 @@ All content derived from provided `geode_docs` sources:
 - `GRAPH_ALGORITHM_PERFORMANCE_ENHANCEMENTS.md`
 - `ML_GRAPH_EMBEDDINGS.md`, `REAL_TIME_ANALYTICS.md`
 - `USAGE.md`, `QUICK_REFERENCE.md`, `REPL_USAGE.md`
-- `NIX_DEPLOYMENT.md`, `deployment/DEPLOYMENT.md`
+- `deployment/DEPLOYMENT.md`
 - `TELEMETRY.md`, `DOCKER_LOG_LEVEL_CONFIG.md`
 - `EXPLAIN_PROFILE.md`, `BM25_INDEX_OPTIMIZER_INTEGRATION.md`
 - `DISTRIBUTED_QUERY_COORDINATION.md`

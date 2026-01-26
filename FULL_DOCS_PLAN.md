@@ -123,21 +123,20 @@ Subdirectory structure (existing + planned):
 31. MATERIALIZED_VIEWS.md
 32. MIGRATION_GUIDE.md
 33. ML_GRAPH_EMBEDDINGS.md
-34. NIX_DEPLOYMENT.md
-35. QUICK_REFERENCE.md
-36. README.md
-37. REAL_TIME_ANALYTICS.md
-38. REPL_USAGE.md
-39. REQUIREMENTS.md
-40. SECURITY_PROGRESS.md
-41. SERVER_FEATURES.md
-42. SESSION_MANAGEMENT.md
-43. TELEMETRY.md
-44. TESTING.md
-45. TODO.md
-46. TRANSACTION_MANAGEMENT.md
-47. TYPES_AND_FUNCTIONS.md
-48. TYPE_CONVERSION_FUNCTIONS.md
+34. QUICK_REFERENCE.md
+35. README.md
+36. REAL_TIME_ANALYTICS.md
+37. REPL_USAGE.md
+38. REQUIREMENTS.md
+39. SECURITY_PROGRESS.md
+40. SERVER_FEATURES.md
+41. SESSION_MANAGEMENT.md
+42. TELEMETRY.md
+43. TESTING.md
+44. TODO.md
+45. TRANSACTION_MANAGEMENT.md
+46. TYPES_AND_FUNCTIONS.md
+47. TYPE_CONVERSION_FUNCTIONS.md
 49. TYPE_QUICK_REFERENCE.md
 50. UNICODE.md
 51. USAGE.md
@@ -422,7 +421,7 @@ Based on source documentation analysis:
 
 | ID | Doc Page | Primary Keyword | Source Refs | Status | Issue IID | PR/Commit | Notes | Updated |
 |----|----------|-----------------|-------------|--------|-----------|-----------|-------|---------|
-| WI-016 | `./content/docs/guides/multi-datacenter.md` | "multi-datacenter replication" | SERVER_FEATURES.md, NIX_DEPLOYMENT.md | **Complete** | - | 9379cf6 | 1,046 lines - Federation, CDC, HA, DR | 2026-01-23 |
+| WI-016 | `./content/docs/guides/multi-datacenter.md` | "multi-datacenter replication" | SERVER_FEATURES.md | **Complete** | - | 9379cf6 | 1,046 lines - Federation, CDC, HA, DR | 2026-01-23 |
 | WI-017 | `./content/docs/reference/changelog.md` | "release notes" | CHANGELOG.md, docs/CHANGELOG.md | **Complete** | - | 1820fb2 | 842 lines - v0.17.0 & v0.18.0 releases | 2026-01-23 |
 | WI-018 | `./content/docs/guides/backup-automation.md` | "automated backups" | Deployment docs + S3 examples | **Complete** | - | 1820fb2 | 682 lines - S3, cron, systemd, DR testing | 2026-01-23 |
 | WI-019 | `./content/docs/reference/error-codes.md` | "error codes reference" | CLIENT_ERRORS.md, error handling | **Complete** | - | 1820fb2 | 517 lines - GQLSTATUS & internal codes | 2026-01-23 |
@@ -441,7 +440,7 @@ Based on source documentation analysis:
 | WI-027 | `./content/docs/features/_index.md` | "features overview" | All feature docs | **Completed** | - | 270dd13 | Comparison matrix, 512 lines comprehensive | 2026-01-23 |
 | WI-028 | `./content/docs/guides/performance-benchmarking.md` | "benchmark guide" | Performance docs | **Completed** | - | 270dd13 | Locust, EXPLAIN/PROFILE, Prometheus | 2026-01-23 |
 
-### Priority 5: Advanced Topics & Deep Dives (Complete - 10/10)
+### Priority 5: Advanced Topics & Deep Dives (Complete - 9/9)
 
 | ID | Doc Page | Primary Keyword | Source Refs | Status | Issue IID | PR/Commit | Notes | Updated |
 |----|----------|-----------------|-------------|--------|-----------|-----------|-------|---------|
@@ -453,7 +452,6 @@ Based on source documentation analysis:
 | WI-034 | `./content/docs/gql/conformance-profile.md` | "GQL conformance" | gql/GQL_CONFORMANCE_PROFILE.md | **Completed** | - | TBD | 609 lines - ISO compliance details, test results | 2026-01-24 |
 | WI-035 | `./content/docs/security/session-management.md` | "session management" | SESSION_MANAGEMENT.md | **Completed** | - | TBD | 802 lines - Session lifecycle, connection pooling | 2026-01-24 |
 | WI-036 | `./content/docs/ops/telemetry-advanced.md` | "telemetry monitoring" | TELEMETRY.md | **Completed** | - | TBD | 880 lines - Advanced metrics, custom dashboards | 2026-01-24 |
-| WI-037 | `./content/docs/ops/nix-deployment.md` | "nix deployment" | NIX_DEPLOYMENT.md | **Completed** | - | TBD | 855 lines - NixOS deployment, declarative config | 2026-01-24 |
 | WI-038 | `./content/docs/development/repl-advanced.md` | "REPL features" | development/REPL_ADVANCED_FEATURES.md | **Completed** | - | TBD | 750 lines - Advanced shell usage, scripting | 2026-01-24 |
 
 ### Priority 6: Specialized Topics & Technical Deep Dives (Complete - 10/10)
@@ -520,10 +518,10 @@ Based on source documentation analysis:
 - Commits: b1d8513 (knowledge graphs, social networks), 270dd13 (supply chain, vector search, transactions, contributing, features, benchmarking)
 - Pages: 3 use cases (knowledge graphs, social networks, supply chain), 2 tutorials (vector search, transaction patterns), contributing guide, features overview, performance benchmarking
 
-**Priority 5: Advanced Topics & Deep Dives** (10/10 complete)
+**Priority 5: Advanced Topics & Deep Dives** (9/9 complete)
 - Total: 8,706 lines
-- Commits: 0b33e27 (Docker deployment), 998abab (FLE, KMS integration), d7b094a (LSP, API reference, GQL conformance, session management, telemetry, Nix, REPL)
-- Pages: Docker deployment, field-level encryption, KMS integration, LSP guide, complete API reference, GQL conformance profile, session management, advanced telemetry, Nix deployment, advanced REPL features
+- Commits: 0b33e27 (Docker deployment), 998abab (FLE, KMS integration), d7b094a (LSP, API reference, GQL conformance, session management, telemetry, REPL)
+- Pages: Docker deployment, field-level encryption, KMS integration, LSP guide, complete API reference, GQL conformance profile, session management, advanced telemetry, advanced REPL features
 
 **Priority 6: Specialized Topics & Technical Deep Dives** (10/10 complete)
 - Total: 7,149 lines
@@ -744,7 +742,7 @@ Ongoing documentation maintenance recommendations:
    - GQL syntax reference (complete)
    - Security implementation guide (auth, encryption, audit)
    - Client library integration guides (4 languages)
-   - Deployment patterns (single-node, distributed, Docker, Nix)
+   - Deployment patterns (single-node, distributed, Docker, Kubernetes)
 
 4. **Build & Validation**:
    - Run `hugo` build to verify existing pages

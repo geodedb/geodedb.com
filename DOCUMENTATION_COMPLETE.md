@@ -14,7 +14,7 @@ Created comprehensive documentation for Geode graph database with proper Hugo YA
    - ISO GQL compliance, MVCC+SSI, security stack, feature highlights
 
 2. ✅ **Installation and Quick Start** (`/docs/get-started/install.md`)
-   - Install options (source, Docker, Nix), server startup, CLI/REPL usage
+   - Install options (OS packages, Docker, source builds), server startup, CLI/REPL usage
 
 3. ✅ **GQL Guide** (`/docs/gql/guide.md`)
    - Complete GQL syntax, pattern matching, transactions, EXPLAIN/PROFILE
@@ -93,10 +93,9 @@ These pages are linked but can be created later as needed:
 - `/docs/reference/graph-algorithms.md` - Algorithm catalog
 - `/docs/reference/telemetry.md` - Telemetry documentation
 
-### Other (6 pages)
+### Other (5 pages)
 - `/docs/query/bm25-integration.md` - BM25 tuning
 - `/docs/analytics/real-time.md` - Real-time analytics
-- `/docs/ops/nix-deployment.md` - NixOS deployment
 - `/docs/kb/rls-implementation.md` - RLS implementation notes
 - `/docs/gql-reference/compliance.md` - GQL compliance details
 - `/docs/releases/changelog.md` - Changelog

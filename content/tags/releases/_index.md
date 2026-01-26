@@ -181,11 +181,28 @@ Geode provides multiple release channels for different use cases:
 
 ## Download and Installation
 
-**Nix (Recommended)**:
+**Linux Packages**:
 
 ```bash
-# Run Geode directly
-nix run github:codeprosorg/geode -- serve
+# Debian/Ubuntu
+curl -L -o geode.deb https://gitlab.com/devnw/codepros/geode/geode/-/releases/latest/download/geode-linux-amd64.deb
+sudo apt install ./geode.deb
+
+# RHEL/Fedora
+curl -L -o geode.rpm https://gitlab.com/devnw/codepros/geode/geode/-/releases/latest/download/geode-linux-x86_64.rpm
+sudo rpm -i geode.rpm
+```
+
+**macOS Binaries**:
+
+```bash
+# Apple Silicon
+curl -L -o geode-darwin-arm64 https://gitlab.com/devnw/codepros/geode/geode/-/releases/latest/download/geode-darwin-arm64
+sudo install -m 0755 geode-darwin-arm64 /usr/local/bin/geode
+
+# Intel
+curl -L -o geode-darwin-amd64 https://gitlab.com/devnw/codepros/geode/geode/-/releases/latest/download/geode-darwin-amd64
+sudo install -m 0755 geode-darwin-amd64 /usr/local/bin/geode
 ```
 
 **From Source**:
@@ -212,7 +229,7 @@ docker pull geodedb/geode:0.18.0
 docker run -p 3141:3141 geodedb/geode:0.18.0
 ```
 
-Package managers and binary artifacts are not currently published; use Nix, Docker, or build from source.
+Additional package managers are not currently published; use release artifacts, Docker, or build from source.
 
 ## Release Testing Process
 

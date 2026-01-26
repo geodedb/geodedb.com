@@ -4,38 +4,38 @@
   body,
   main,
   .page-content {
-    background-color: #0b1120 !important;
-    color: #e2e8f0 !important;
+    background-color: #120b1c !important;
+    color: #f3ecff !important;
   }
 
   .bg-light {
-    background-color: #0f172a !important; /* Slate 900 */
-    color: #e2e8f0 !important;
+    background-color: rgba(26, 16, 40, 0.82) !important;
+    color: #f3ecff !important;
   }
 
   .hero-section {
-    background: #020617 !important; /* Slate 950 */
+    background: transparent !important;
   }
 
   .features-section {
-    background-color: #0f172a !important; /* Slate 900 */
+    background-color: rgba(26, 16, 40, 0.78) !important;
   }
 
   .cta-section .card-modern {
-    background: #1e293b !important; /* Slate 800 */
-    border: 1px solid rgba(148, 163, 184, 0.2);
+    background: rgba(42, 31, 58, 0.84) !important;
+    border: 1px solid rgba(177, 123, 246, 0.25);
   }
 
   .card-modern {
-    background-color: #1e293b !important;
-    border-color: rgba(148, 163, 184, 0.2);
-    color: #e2e8f0;
+    background-color: rgba(42, 31, 58, 0.82) !important;
+    border-color: rgba(177, 123, 246, 0.25);
+    color: #f3ecff;
   }
 
   .hero-code-example .card-header,
   .hero-code-example .card-body,
   .hero-code-example .card-footer {
-    background-color: #020617 !important;
-    border-color: rgba(148, 163, 184, 0.2) !important;
+    background-color: #0a0614 !important;
+    border-color: rgba(177, 123, 246, 0.2) !important;
   }
 }

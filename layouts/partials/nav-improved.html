@@ -24,8 +24,8 @@
         src="{{ .Site.Params.branding.light.logo | default .Site.Params.logo }}"
         alt="{{ .Site.Params.logo_alt | default .Site.Title }}"
         class="logo-light"
-        width="150"
-        height="40"
+        width="220"
+        height="56"
         loading="eager"
         decoding="async"
       />
@@ -34,8 +34,8 @@
         src="{{ .Site.Params.branding.dark.logo | default .Site.Params.logo }}"
         alt="{{ .Site.Params.logo_alt | default .Site.Title }}"
         class="logo-dark"
-        width="150"
-        height="40"
+        width="220"
+        height="56"
         loading="eager"
         decoding="async"
       />
@@ -133,6 +133,9 @@
                 {{ end }}{{ .Name }}{{ with .Post }}
                   <wa-icon name="{{ . }}" class="ms-1"></wa-icon>
                 {{ end }}
+                {{ if $isExternal }}
+                  <wa-icon name="arrow-up-right-from-square" class="ms-1 small text-muted"></wa-icon>
+                {{ end }}
               </a>
             </li>
           {{ end }}
@@ -148,8 +151,8 @@
 
         <li class="nav-item ms-2">
           <a href="https://gitlab.com/devnw/codepros/geode/geode" target="_blank" rel="noopener" class="btn btn-outline-secondary btn-sm px-3 d-none d-lg-inline-flex align-items-center gap-2">
-            <wa-icon name="gitlab" aria-hidden="true"></wa-icon>
-            <span>GitHub</span>
+            <wa-icon name="gitlab" aria-hidden="true" family="brands"></wa-icon>
+            <span>GitLab</span>
           </a>
         </li>
       </ul>
@@ -159,13 +162,13 @@
     <button
       class="navbar-toggler border-0 d-lg-none"
       type="button"
-      data-bs-toggle="offcanvas"
-      data-bs-target="#{{ $offID }}"
+      data-offcanvas-toggle="offcanvas"
+      data-offcanvas-target="#{{ $offID }}"
       aria-controls="{{ $offID }}"
       aria-expanded="false"
       aria-label="{{ $navToggle }}"
     >
-      <wa-icon name="bars" class="navbar-toggler-icon"></wa-icon>
+      <span class="navbar-toggler-icon" aria-hidden="true"></span>
     </button>
 
     <!-- Mobile off-canvas -->
@@ -243,14 +246,21 @@
                 </div>
               </li>
             {{ else }}
+              {{- $isExternal := not (or (hasPrefix $url "/") (hasPrefix $url $baseURL)) -}}
               <li class="nav-item">
                 <a
                   class="nav-link px-4 py-3 d-flex align-items-center {{ if $isActive }}active bg-light{{ end }}"
                   href="{{ $url }}"
+                  {{ if $isExternal }}
+                    target="_blank" rel="noopener noreferrer"
+                  {{ end }}
                   {{ if $isActive }}aria-current="page"{{ end }}
                 >
                   {{ with .Pre }}<wa-icon name="{{ . }}" class="me-2"></wa-icon>{{ end }}
                   {{ .Name }}
+                  {{ if $isExternal }}
+                    <wa-icon name="arrow-up-right-from-square" class="ms-2 small text-muted"></wa-icon>
+                  {{ end }}
                 </a>
               </li>
             {{ end }}
@@ -263,7 +273,7 @@
               Get Started
             </a>
             <a href="https://gitlab.com/devnw/codepros/geode/geode" target="_blank" rel="noopener" class="btn btn-outline-secondary w-100">
-              <wa-icon name="gitlab" class="me-2"></wa-icon>
+              <wa-icon name="gitlab" class="me-2" family="brands"></wa-icon>
               View on GitLab
             </a>
           </li>
@@ -277,8 +287,8 @@
   /* Enhanced navigation styles */
   .navbar-modern {
     transition: all var(--duration-normal) var(--ease-out);
-    backdrop-filter: blur(10px);
-    background: rgba(255, 255, 255, 0.95) !important;
+    backdrop-filter: none;
+    background: #ffffff !important;
   }
 
   .navbar-modern.scrolled {
@@ -346,13 +356,37 @@
     transform: rotate(180deg);
   }
 
+  [data-bs-theme="dark"] .navbar-modern {
+    background: #120b1c !important;
+  }
+
+  [data-bs-theme="dark"] .navbar-modern .nav-link:hover,
+  [data-bs-theme="dark"] .navbar-modern .nav-link:focus,
+  [data-bs-theme="dark"] .navbar-modern .nav-link.active {
+    background: transparent !important;
+  }
+
+  [data-bs-theme="dark"] .navbar-modern .navbar-nav,
+  [data-bs-theme="dark"] .navbar-modern .navbar-nav .nav-item,
+  [data-bs-theme="dark"] .navbar-modern .navbar-nav .nav-link {
+    background: transparent !important;
+  }
+
   @media (prefers-color-scheme: dark) {
-    .navbar-modern {
-      background: rgba(17, 24, 39, 0.95) !important;
+    [data-bs-theme="auto"] .navbar-modern {
+      background: #120b1c !important;
     }
 
-    .navbar-modern .nav-link:hover {
-      background: var(--color-neutral-800);
+    [data-bs-theme="auto"] .navbar-modern .nav-link:hover,
+    [data-bs-theme="auto"] .navbar-modern .nav-link:focus,
+    [data-bs-theme="auto"] .navbar-modern .nav-link.active {
+      background: transparent !important;
+    }
+
+    [data-bs-theme="auto"] .navbar-modern .navbar-nav,
+    [data-bs-theme="auto"] .navbar-modern .navbar-nav .nav-item,
+    [data-bs-theme="auto"] .navbar-modern .navbar-nav .nav-link {
+      background: transparent !important;
     }
   }
 </style>

@@ -17,19 +17,39 @@
       var(--color-neutral-50) 100%
     );
   }
+
+  .hero-bg-decoration {
+    pointer-events: none;
+  }
+
+  .btn {
+    position: relative;
+    z-index: 2;
+  }
+}
+
+.hero-kicker {
+  background: var(--wa-color-brand-fill-quiet);
+  border: 1px solid var(--wa-color-brand-border-quiet);
+  color: var(--wa-color-brand-on-quiet);
+}
+
+.hero-kicker wa-icon,
+.hero-kicker .hero-kicker__text {
+  color: inherit;
 }
 
 .hero-code-example {
   .card-header {
-    background: #2d2d2d !important;
+    background: #1a0f2a !important;
   }
 
   .card-body {
-    background: #1e1e1e !important;
+    background: #120b1c !important;
   }
 
   .card-footer {
-    background: #2d2d2d !important;
+    background: #1a0f2a !important;
   }
 
   pre code {
@@ -83,6 +103,12 @@
         transparent 70%
       );
       animation: pulse 15s ease-in-out infinite;
+      pointer-events: none;
+    }
+
+    > * {
+      position: relative;
+      z-index: 1;
     }
   }
 }
@@ -504,7 +530,7 @@
    Dark Mode Adjustments
    ---------------------------------------------------------------------------- */
 
-@media (prefers-color-scheme: dark) {
+[data-bs-theme="dark"] {
   .article-card {
     background: var(--color-neutral-800);
     border-color: var(--color-neutral-700);
@@ -551,6 +577,60 @@
 
       td {
         color: var(--color-neutral-300);
+      }
+    }
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  [data-bs-theme="auto"] {
+    .article-card {
+      background: var(--color-neutral-800);
+      border-color: var(--color-neutral-700);
+
+      .card-title {
+        color: var(--color-neutral-100);
+
+        a:hover {
+          color: var(--color-primary-400);
+        }
+      }
+
+      .card-excerpt {
+        color: var(--color-neutral-400);
+      }
+
+      .card-meta {
+        color: var(--color-neutral-500);
+        border-color: var(--color-neutral-700);
+      }
+    }
+
+    .table-modern {
+      thead {
+        background: linear-gradient(135deg,
+          var(--color-neutral-800),
+          var(--color-neutral-700)
+        );
+
+        th {
+          color: var(--color-neutral-300);
+          border-color: var(--color-neutral-600);
+        }
+      }
+
+      tbody {
+        tr {
+          background: var(--color-neutral-800);
+
+          &:hover {
+            background: var(--color-neutral-700);
+          }
+        }
+
+        td {
+          color: var(--color-neutral-300);
+        }
       }
     }
   }

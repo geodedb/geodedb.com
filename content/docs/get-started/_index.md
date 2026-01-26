@@ -1,13 +1,12 @@
 ---
 title: "Installation and Quick Start"
-description: "Install Geode via source, Docker, or Nix; start the QUIC/TLS server; connect with CLI/REPL; run your first GQL query"
+description: "Install Geode via OS packages, Docker, or source; start the QUIC/TLS server; connect with CLI/REPL; run your first GQL query"
 weight: 10
 tags:
   - installation
   - quick-start
   - getting-started
   - docker
-  - nix
 categories:
   - getting-started
   - deployment-and-devops
@@ -16,7 +15,6 @@ keywords:
   - geode cli
   - gql shell
   - docker
-  - nix
 ---
 
 <!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
@@ -47,32 +45,54 @@ Get Geode running locally in minutes, from zero to executing your first GQL quer
 
 ## Installation Options
 
-### Option 1: Build from Source
+### Option 1: Install by Operating System
 
-**Requirements**: Zig 0.15.1+ ([download from ziglang.org](https://ziglang.org/download/))
-
+{{< tabs >}}
+{{< tab "Linux" >}}
+{{< tabs >}}
+{{< tab "Debian/Ubuntu" >}}
 ```bash
-# Clone repository
-git clone https://github.com/codeprosorg/geode
-cd geode
-
-# Debug build (faster compilation)
-make build
-
-# Or release build (optimized, recommended for production)
-make release
-
-# Verify installation
-geode --version
+curl -L -o geode.deb https://gitlab.com/devnw/codepros/geode/geode/-/releases/latest/download/geode-linux-amd64.deb
+sudo apt install ./geode.deb
 ```
+{{< /tab >}}
+{{< tab "RHEL/Fedora" >}}
+```bash
+curl -L -o geode.rpm https://gitlab.com/devnw/codepros/geode/geode/-/releases/latest/download/geode-linux-x86_64.rpm
+sudo rpm -i geode.rpm
+```
+{{< /tab >}}
+{{< tab "Generic" >}}
+```bash
+curl -L -o geode-linux-amd64 https://gitlab.com/devnw/codepros/geode/geode/-/releases/latest/download/geode-linux-amd64
+chmod +x geode-linux-amd64
+sudo install -m 0755 geode-linux-amd64 /usr/local/bin/geode
+```
+{{< /tab >}}
+{{< /tabs >}}
+{{< /tab >}}
+{{< tab "macOS" >}}
+```bash
+# Apple Silicon
+curl -L -o geode-darwin-arm64 https://gitlab.com/devnw/codepros/geode/geode/-/releases/latest/download/geode-darwin-arm64
+sudo install -m 0755 geode-darwin-arm64 /usr/local/bin/geode
 
-**Make targets** (from `QUICK_REFERENCE.md`):
-- `make build` - Debug build with symbols
-- `make release` - ReleaseSafe build (recommended)
-- `make test` - Run core unit tests
-- `make geodetestlab-comprehensive` - Full test suite (97.4% pass rate)
+# Intel
+curl -L -o geode-darwin-amd64 https://gitlab.com/devnw/codepros/geode/geode/-/releases/latest/download/geode-darwin-amd64
+sudo install -m 0755 geode-darwin-amd64 /usr/local/bin/geode
+```
+{{< /tab >}}
+{{< tab "Windows (WSL)" >}}
+```bash
+# PowerShell
+wsl --install -d Ubuntu
 
-For detailed build options, see [Install from Source](/docs/installation/from-source).
+# Inside Ubuntu (WSL)
+curl -L -o geode.deb https://gitlab.com/devnw/codepros/geode/geode/-/releases/latest/download/geode-linux-amd64.deb
+sudo apt install ./geode.deb
+```
+{{< /tab >}}
+{{< /tabs >}}
 
 ### Option 2: Docker
 
@@ -111,38 +131,32 @@ docker run -d \
 
 See [Docker Deployment](/docs/ops/deployment#docker) for the full production stack (Vault, MinIO, Prometheus, Grafana, Loki, Nginx).
 
-### Option 3: Nix / NixOS
+### Option 3: Build from Source
 
-**Run directly** (no installation):
+**Requirements**: Zig 0.15.1+ ([download from ziglang.org](https://ziglang.org/download/))
 
 ```bash
-nix run github:codeprosorg/geode -- serve
+# Clone repository
+git clone https://github.com/codeprosorg/geode
+cd geode
+
+# Debug build (faster compilation)
+make build
+
+# Or release build (optimized, recommended for production)
+make release
+
+# Verify installation
+geode --version
 ```
 
-**Install as NixOS module**:
+**Make targets** (from `QUICK_REFERENCE.md`):
+- `make build` - Debug build with symbols
+- `make release` - ReleaseSafe build (recommended)
+- `make test` - Run core unit tests
+- `make geodetestlab-comprehensive` - Full test suite (97.4% pass rate)
 
-```nix
-# /etc/nixos/configuration.nix
-{ config, pkgs, ... }:
-
-{
-  imports = [ <geode/nixos/module.nix> ];
-
-  services.geode = {
-    enable = true;
-    listen = "0.0.0.0:3141";
-    dataDir = "/var/lib/geode";
-    tls = {
-      cert = "/etc/geode/certs/server-cert.pem";
-      key = "/etc/geode/certs/server-key.pem";
-    };
-  };
-}
-```
-
-**Kubernetes deployment** via Nix:
-
-See [NIX_DEPLOYMENT.md](/docs/ops/deployment#nix) for Helm charts and Kubernetes manifests.
+For detailed build options, see [Install from Source](/docs/installation/from-source).
 
 ## Start the Server
 

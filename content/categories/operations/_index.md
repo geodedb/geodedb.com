@@ -34,7 +34,6 @@ Production operations span the entire database lifecycle: initial capacity plann
 **Deployment Options**
 - Docker containers for simple deployments
 - Kubernetes for orchestrated clusters
-- Nix for reproducible system configuration
 - Binary installation for traditional deployments
 - Cloud-specific deployment (AWS, Azure, GCP)
 - On-premises installation guides
@@ -54,7 +53,6 @@ Production operations span the entire database lifecycle: initial capacity plann
 - Kubernetes Helm charts
 - Docker Compose configurations
 - Ansible playbooks
-- Nix system configurations
 - GitOps workflows
 
 ### Monitoring and Observability

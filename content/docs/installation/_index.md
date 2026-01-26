@@ -1,14 +1,13 @@
 ---
 title: "Installation"
-description: "Install Geode from source, Docker, or Nix with step-by-step instructions for all supported platforms"
-summary: "Complete installation guides for Geode covering source builds, Docker containers, and Nix packages on Linux, macOS, and Windows platforms."
+description: "Install Geode from OS packages, Docker, or source with step-by-step instructions for all supported platforms"
+summary: "Complete installation guides for Geode covering OS packages, source builds, and Docker containers on Linux, macOS, and Windows platforms."
 weight: 15
 keywords:
   - installation
   - install geode
   - build from source
   - docker install
-  - nix install
   - setup
   - deployment
 tags:
@@ -22,8 +21,8 @@ categories:
 toc: true
 params:
   seo:
-    keywords: "install geode, geode installation, build from source, docker setup, nix install, database setup"
-    description: "Install Geode graph database with comprehensive guides for source builds, Docker containers, and Nix packages across all platforms"
+    keywords: "install geode, geode installation, build from source, docker setup, database setup"
+    description: "Install Geode graph database with comprehensive guides for OS packages, source builds, and Docker containers across all platforms"
 ---
 
 <!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
@@ -34,11 +33,22 @@ Get Geode running on your system with step-by-step installation instructions for
 
 ## Overview
 
-Geode provides multiple installation options to suit different use cases and environments. Whether you're building from source for development, deploying with Docker for production, or using Nix for declarative infrastructure, Geode supports your workflow.
+Geode provides multiple installation options to suit different use cases and environments. Whether you're installing OS packages, deploying with Docker for production, or building from source for development, Geode supports your workflow.
 
 This section provides comprehensive installation guides for each method, including platform-specific instructions, prerequisites, verification steps, and troubleshooting tips.
 
 ## Installation Methods
+
+### OS Packages and Binaries
+
+Install Geode from official release artifacts. This method is ideal for:
+
+- **Quick Start**: Install without build tools
+- **Platform Support**: Linux .deb/.rpm packages and macOS binaries
+- **Automation**: Easy to roll out via configuration management
+- **Stability**: Versioned release artifacts
+
+**See**: [Quick Start](#quick-start) or [Getting Started](/docs/get-started/)
 
 ### Build from Source
 
@@ -65,19 +75,6 @@ Run Geode in Docker containers for isolated, reproducible deployments. Docker in
 **Requirements**: Docker 20.10+ or Docker Desktop
 
 **See**: [Docker Deployment](/docs/ops/docker-deployment/)
-
-### Nix Installation
-
-Use Nix for declarative, reproducible Geode installations. Nix installation is ideal for:
-
-- **NixOS**: Native integration with NixOS modules
-- **Reproducibility**: Bit-for-bit reproducible builds
-- **Development**: Nix flakes for development environments
-- **Hermetic Builds**: Zero-dependency build environments
-
-**Requirements**: Nix 2.4+ with flakes enabled
-
-**See**: [Nix Deployment](/docs/ops/nix-deployment/)
 
 ## Topics in This Section
 
@@ -133,7 +130,61 @@ Use Nix for declarative, reproducible Geode installations. Nix installation is i
 
 ## Quick Start
 
-### Option 1: Docker (Fastest)
+### Option 1: Install by Operating System
+
+{{< tabs >}}
+{{< tab "Linux" >}}
+{{< tabs >}}
+{{< tab "Debian/Ubuntu" >}}
+```bash
+curl -L -o geode.deb https://gitlab.com/devnw/codepros/geode/geode/-/releases/latest/download/geode-linux-amd64.deb
+sudo apt install ./geode.deb
+```
+{{< /tab >}}
+{{< tab "RHEL/Fedora" >}}
+```bash
+curl -L -o geode.rpm https://gitlab.com/devnw/codepros/geode/geode/-/releases/latest/download/geode-linux-x86_64.rpm
+sudo rpm -i geode.rpm
+```
+{{< /tab >}}
+{{< tab "Generic" >}}
+```bash
+curl -L -o geode-linux-amd64 https://gitlab.com/devnw/codepros/geode/geode/-/releases/latest/download/geode-linux-amd64
+chmod +x geode-linux-amd64
+sudo install -m 0755 geode-linux-amd64 /usr/local/bin/geode
+```
+{{< /tab >}}
+{{< /tabs >}}
+{{< /tab >}}
+{{< tab "macOS" >}}
+```bash
+# Apple Silicon
+curl -L -o geode-darwin-arm64 https://gitlab.com/devnw/codepros/geode/geode/-/releases/latest/download/geode-darwin-arm64
+sudo install -m 0755 geode-darwin-arm64 /usr/local/bin/geode
+
+# Intel
+curl -L -o geode-darwin-amd64 https://gitlab.com/devnw/codepros/geode/geode/-/releases/latest/download/geode-darwin-amd64
+sudo install -m 0755 geode-darwin-amd64 /usr/local/bin/geode
+```
+{{< /tab >}}
+{{< tab "Windows (WSL)" >}}
+```bash
+# PowerShell
+wsl --install -d Ubuntu
+
+# Inside Ubuntu (WSL)
+curl -L -o geode.deb https://gitlab.com/devnw/codepros/geode/geode/-/releases/latest/download/geode-linux-amd64.deb
+sudo apt install ./geode.deb
+```
+{{< /tab >}}
+{{< /tabs >}}
+
+```bash
+# Start the server
+geode serve --listen 0.0.0.0:3141
+```
+
+### Option 2: Docker (Fastest)
 
 ```bash
 # Pull and run Geode
@@ -147,7 +198,7 @@ docker run -d \
 docker logs geode
 ```
 
-### Option 2: Build from Source
+### Option 3: Build from Source
 
 ```bash
 # Clone repository
@@ -162,16 +213,6 @@ make build
 
 # Verify installation
 ./zig-out/bin/geode --version
-```
-
-### Option 3: Nix
-
-```bash
-# Run directly (no installation)
-nix run github:codeprosorg/geode -- serve
-
-# Or install to profile
-nix profile install github:codeprosorg/geode
 ```
 
 ## Verification

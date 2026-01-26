@@ -22,7 +22,7 @@
   <ul class="nav nav-tabs" id="{{ $id }}" role="tablist">
     {{- $tabs := findRE `(?s)<tab.*?>(.*?)</tab>` .Inner -}}
     {{- range $index, $tab := $tabs -}}
-      {{- $tabTitle := replaceRE `(?s)<tab\s+["]([^"]+)["].*` "$1" $tab -}}
+    {{- $tabTitle := replaceRE `(?s)<tab[^>]*\sdata-title=["]([^"]+)["][^>]*>` "$1" $tab -}}
       {{- $tabId := printf "%s-tab-%d" $id $index -}}
       {{- $active := eq $index 0 -}}
       <li class="nav-item" role="presentation">
@@ -46,7 +46,7 @@
     {{- range $index, $tab := $tabs -}}
       {{- $tabId := printf "%s-tab-%d" $id $index -}}
       {{- $active := eq $index 0 -}}
-      {{- $content := replaceRE `(?s)<tab\s+["].*?["]\s*>(.*?)</tab>` "$1" $tab -}}
+      {{- $content := replaceRE `(?s)<tab[^>]*\sdata-title=["][^"]+["][^>]*>(.*?)</tab>` "$1" $tab -}}
       <div
         class="tab-pane fade{{ if $active }} show active{{ end }}"
         id="{{ $tabId }}"

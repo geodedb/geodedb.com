@@ -5,18 +5,18 @@
    ============================================================================ */
 
 :root {
-  --code-bg: #0b1f23;
-  --code-text: #e2f1ee;
-  --code-comment: #7aa5a0;
-  --code-keyword: #7dd3fc;
-  --code-string: #facc15;
-  --code-number: #fb7185;
-  --code-function: #22c55e;
-  --code-operator: #f97316;
-  --code-tag: #f97316;
-  --code-attr: #22c55e;
-  --code-punctuation: #e2f1ee;
-  --code-border: #12343a;
+  --code-bg: #120b1c;
+  --code-text: #f5efff;
+  --code-comment: #7a7285;
+  --code-keyword: #b17bf6;
+  --code-string: #cca8fb;
+  --code-number: #b988f7;
+  --code-function: #9a5be5;
+  --code-operator: #b17bf6;
+  --code-tag: #9a5be5;
+  --code-attr: #b17bf6;
+  --code-punctuation: #f3ecff;
+  --code-border: #2a1f3a;
 }
 
 .docs-shell {
@@ -30,11 +30,11 @@ code:not(pre code) {
   padding: 0.2em 0.4em;
   margin: 0;
   font-size: 0.875em;
-  background-color: rgba(27, 31, 35, 0.05);
+  background-color: rgba(177, 123, 246, 0.12);
   border-radius: 0.25rem;
   font-family: 'IBM Plex Mono', 'SFMono-Regular', 'Consolas', 'Liberation Mono', 'Menlo', 'Monaco', 'Courier New', monospace;
-  color: #d73a49;
-  border: 1px solid rgba(27, 31, 35, 0.1);
+  color: #601ca0;
+  border: 1px solid rgba(96, 28, 160, 0.2);
 }
 
 /* Code block container */
@@ -55,7 +55,7 @@ div.highlight {
   border-radius: 0.85rem;
   border: 1px solid var(--code-border);
   overflow: hidden;
-  box-shadow: 0 10px 24px rgba(2, 6, 23, 0.2);
+  box-shadow: 0 10px 24px rgba(53, 4, 107, 0.2);
   background: var(--code-bg);
 }
 
@@ -65,13 +65,13 @@ div.highlight {
   top: 0.6rem;
   left: 0.75rem;
   padding: 0.2rem 0.6rem;
-  background: rgba(15, 118, 110, 0.3);
-  color: #e2f1ee;
+  background: rgba(96, 28, 160, 0.25);
+  color: #f3ecff;
   font-size: 0.7rem;
   font-weight: 600;
   text-transform: uppercase;
   border-radius: 999px;
-  border: 1px solid rgba(226, 241, 238, 0.15);
+  border: 1px solid rgba(177, 123, 246, 0.25);
   letter-spacing: 0.04em;
 }
 
@@ -112,9 +112,9 @@ pre {
   top: 0.45rem;
   right: 0.45rem;
   padding: 0.35rem 0.65rem;
-  background: rgba(15, 118, 110, 0.25);
-  color: #e2f1ee;
-  border: 1px solid rgba(226, 241, 238, 0.2);
+  background: rgba(96, 28, 160, 0.25);
+  color: #f3ecff;
+  border: 1px solid rgba(177, 123, 246, 0.25);
   border-radius: 0.5rem;
   font-size: 0.75rem;
   font-weight: 600;
@@ -128,14 +128,14 @@ pre {
 }
 
 .code-block-wrapper .copy-button:hover {
-  background: rgba(15, 118, 110, 0.4);
-  border-color: rgba(226, 241, 238, 0.35);
+  background: rgba(96, 28, 160, 0.4);
+  border-color: rgba(177, 123, 246, 0.45);
 }
 
 .code-block-wrapper .copy-button.copied {
-  background: rgba(34, 197, 94, 0.2);
-  border-color: rgba(34, 197, 94, 0.5);
-  color: #bbf7d0;
+  background: rgba(177, 123, 246, 0.25);
+  border-color: rgba(177, 123, 246, 0.6);
+  color: #f7f2ff;
 }
 
 .code-block-wrapper .copy-button wa-icon {
@@ -269,7 +269,7 @@ pre {
   .vc,
   .vg,
   .vi {
-    color: #fb923c;
+    color: #b988f7;
   }
 
   .bp {
@@ -304,7 +304,7 @@ pre {
   }
 
   pre {
-    border: 1px solid #ccc;
+    border: 1px solid #d7cbee;
     page-break-inside: avoid;
   }
 }

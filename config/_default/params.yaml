@@ -3,7 +3,7 @@ webawesome:
   version: '3.0.0-beta.4'
   theme: 'premium'
   palette: 'anodized'
-  brand: 'cyan'
+  brand: 'blue'
   neutral: 'gray'
   success: 'green'
   warning: 'yellow'
@@ -146,8 +146,8 @@ pwa:
     name: 'Geode Database'
     short_name: Geode
     description: 'Enterprise Graph Database with ISO GQL Compliance'
-    background_color: '#ffffff'
-    theme_color: '#2563eb'
+    background_color: '#f7f2ff'
+    theme_color: '#601ca0'
     display: standalone
     icons:
       - src: 'images/icons/android-chrome-192x192.png'

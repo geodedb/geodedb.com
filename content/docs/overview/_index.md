@@ -193,9 +193,17 @@ Get started with Geode in minutes:
 
 ```bash
 # Install (choose one method)
-make build                  # From source
-docker pull geodedb/geode   # Docker
-nix run github:codeprosorg/geode -- serve  # Nix
+# Linux binary (example)
+curl -L -o geode-linux-amd64 https://gitlab.com/devnw/codepros/geode/geode/-/releases/latest/download/geode-linux-amd64
+sudo install -m 0755 geode-linux-amd64 /usr/local/bin/geode
+
+# Docker
+docker pull geodedb/geode:latest
+
+# From source
+git clone https://github.com/codeprosorg/geode
+cd geode
+make build
 
 # Start server
 geode serve --listen 0.0.0.0:3141

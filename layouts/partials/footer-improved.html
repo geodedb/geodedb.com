@@ -28,22 +28,22 @@
           <div class="social-links d-flex gap-3">
             {{ with .Site.Params.social.github }}
               <a href="{{ . }}" target="_blank" rel="noopener" class="social-link" aria-label="GitHub">
-                <wa-icon name="gitlab" aria-hidden="true"></wa-icon>
+                <wa-icon name="gitlab" aria-hidden="true" family="brands"></wa-icon>
               </a>
             {{ end }}
             {{ with .Site.Params.social.twitter }}
               <a href="{{ . }}" target="_blank" rel="noopener" class="social-link" aria-label="Twitter">
-                <wa-icon name="twitter" aria-hidden="true"></wa-icon>
+                <wa-icon name="twitter" aria-hidden="true" family="brands"></wa-icon>
               </a>
             {{ end }}
             {{ with .Site.Params.social.linkedin }}
               <a href="{{ . }}" target="_blank" rel="noopener" class="social-link" aria-label="LinkedIn">
-                <wa-icon name="linkedin" aria-hidden="true"></wa-icon>
+                <wa-icon name="linkedin" aria-hidden="true" family="brands"></wa-icon>
               </a>
             {{ end }}
             {{ with .Site.Params.social.discord }}
               <a href="{{ . }}" target="_blank" rel="noopener" class="social-link" aria-label="Discord">
-                <wa-icon name="discord" aria-hidden="true"></wa-icon>
+                <wa-icon name="discord" aria-hidden="true" family="brands"></wa-icon>
               </a>
             {{ end }}
           </div>
@@ -66,7 +66,10 @@
           <h4 class="h6 fw-semibold mb-3 text-uppercase">Resources</h4>
           <ul class="list-unstyled footer-links">
             <li><a href="/docs/guides/">Guides</a></li>
-            <li><a href="https://codepros.org/blog">Blog</a></li>
+            <li><a href="https://codepros.org/blog" target="_blank" rel="noopener">
+              Blog
+              <wa-icon name="arrow-up-right-from-square" class="ms-1 small"></wa-icon>
+            </a></li>
             <li><a href="/docs/contribute/">Contributing</a></li>
             <li><a href="https://gitlab.com/devnw/codepros/geode/geode/releases" target="_blank" rel="noopener">
               Releases
@@ -95,11 +98,20 @@
         <div class="col-6 col-lg-2">
           <h4 class="h6 fw-semibold mb-3 text-uppercase">Company</h4>
           <ul class="list-unstyled footer-links">
-            <li><a href="/about/">About</a></li>
+            <li><a href="https://codepros.org/about" target="_blank" rel="noopener">
+              About
+              <wa-icon name="arrow-up-right-from-square" class="ms-1 small"></wa-icon>
+            </a></li>
             <li><a href="/privacy/">Privacy Policy</a></li>
-            <li><a href="/terms/">Terms of Service</a></li>
-            <li><a href="/security/">Security</a></li>
-            <li><a href="/license/">License</a></li>
+            <li><a href="/terms/">Terms of Use</a></li>
+            <li><a href="https://gitlab.com/devnw/codepros/geode/geode/-/blob/main/SECURITY.md" target="_blank" rel="noopener">
+              Security
+              <wa-icon name="arrow-up-right-from-square" class="ms-1 small"></wa-icon>
+            </a></li>
+            <li><a href="https://gitlab.com/devnw/codepros/geode/geode/-/blob/main/LICENSE" target="_blank" rel="noopener">
+              License
+              <wa-icon name="arrow-up-right-from-square" class="ms-1 small"></wa-icon>
+            </a></li>
           </ul>
         </div>
       </div>
@@ -123,7 +135,7 @@
             <span class="text-white-50">•</span>
             <a href="https://gitlab.com/devnw/codepros/geode/geode" target="_blank" rel="noopener" class="text-white-50 text-decoration-none small d-flex align-items-center gap-1">
               View Source
-              <wa-icon name="gitlab" class="small" aria-hidden="true"></wa-icon>
+              <wa-icon name="gitlab" class="small" aria-hidden="true" family="brands"></wa-icon>
             </a>
           </div>
         </div>
@@ -183,5 +195,43 @@
   .footer-bottom a:hover {
     color: white !important;
     text-decoration: underline;
+  }
+
+  /* Light mode footer adjustments */
+  [data-bs-theme="light"] .footer-modern {
+    background: linear-gradient(180deg, #f8fafc 0%, #eef2f7 100%);
+    color: #0e2a6e;
+    border-top: 1px solid rgba(15, 23, 42, 0.08);
+  }
+
+  [data-bs-theme="light"] .footer-modern h3,
+  [data-bs-theme="light"] .footer-modern h4 {
+    color: #0e2a6e;
+  }
+
+  [data-bs-theme="light"] .footer-modern .text-white-50 {
+    color: rgba(14, 42, 110, 0.65) !important;
+  }
+
+  [data-bs-theme="light"] .footer-modern .footer-links a {
+    color: #0e2a6e;
+  }
+
+  [data-bs-theme="light"] .footer-modern .footer-links a:hover {
+    color: #1961af;
+  }
+
+  [data-bs-theme="light"] .footer-modern .social-link {
+    background: rgba(14, 42, 110, 0.08);
+    color: #0e2a6e;
+  }
+
+  [data-bs-theme="light"] .footer-modern .social-link:hover {
+    background: rgba(14, 42, 110, 0.16);
+    color: #0e2a6e;
+  }
+
+  [data-bs-theme="light"] .footer-modern .footer-bottom a:hover {
+    color: #1961af !important;
   }
 </style>

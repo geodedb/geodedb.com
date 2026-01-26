@@ -2,11 +2,13 @@
   Base layout (Hugo ≥0.120) – fully localised, accessible, SEO-friendly
   ─────────────────────────────────────────────────────────────────*/
 -}}
+{{- $waKitCode := .Site.Params.webawesome.kitCode | default "54b6985a3e" -}}
 <!doctype html>
 <html
   lang="{{ .Language.Lang | default .Site.Language.Lang | default "en" }}"
   dir="{{ .Language.LanguageDirection | default "ltr" }}"
   class="wa-theme-{{ .Site.Params.webawesome.theme | default "premium" }} wa-palette-{{ .Site.Params.webawesome.palette | default "anodized" }} wa-brand-{{ .Site.Params.webawesome.brand | default "cyan" }} wa-neutral-{{ .Site.Params.webawesome.neutral | default "gray" }} wa-success-{{ .Site.Params.webawesome.success | default "green" }} wa-warning-{{ .Site.Params.webawesome.warning | default "yellow" }} wa-danger-{{ .Site.Params.webawesome.danger | default "red" }} no-js"
+  data-fa-kit-code="{{ $waKitCode }}"
 >
   <head prefix="og: http://ogp.me/ns#">
     {{/* Basic meta */}}
@@ -501,14 +503,17 @@
 
   <body
     class="{{ delimit $bodyClasses " " }}"
-    style="min-height: 100vh; display: flex; flex-direction: column;"
+    style="min-height: 100vh; display: flex; flex-direction: column; background: transparent !important;"
   >
     {{/* Consent-managed analytics: GTM noscript removed until consent */}}
 
     {{/* UX Enhancements: skip links, back to top, reading progress */}}
     {{ partial "ux-enhancements.html" . }}
 
-    <div style="flex: 1; display: flex; flex-direction: column;">
+    {{/* Global animated site background */}}
+    {{ partial "site-background.html" . }}
+
+    <div class="site-shell" style="flex: 1; display: flex; flex-direction: column;">
 
       <!-- ============================================================
          HEADER / NAVBAR - Using improved navigation
@@ -519,6 +524,7 @@
         id="main"
         class="flex-grow-1"
         role="main"
+        style="background: transparent !important;"
         {{ if .IsHome }}itemscope itemtype="https://schema.org/WebPage"{{ end }}
       >
         {{ block "main" . }}{{ end }}

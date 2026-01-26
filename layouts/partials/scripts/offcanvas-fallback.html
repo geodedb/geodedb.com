@@ -1,0 +1,132 @@
+{{/* Offcanvas hamburger fallback / rescue for shadow DOM + missing Bootstrap */}}
+<script>
+  (() => {
+    if (window.__offcanvasFallbackInit) return;
+    window.__offcanvasFallbackInit = true;
+
+    const bootstrapAvailable = !!(window.bootstrap && window.bootstrap.Offcanvas);
+    const customSelector = '[data-offcanvas-toggle][data-offcanvas-target]';
+    const bsSelector = '[data-bs-toggle="offcanvas"][data-bs-target]';
+    const SELECTOR_TOGGLER = bootstrapAvailable
+      ? customSelector
+      : `${customSelector}, ${bsSelector}`;
+    if (bootstrapAvailable && !document.querySelector(SELECTOR_TOGGLER)) return;
+
+    const SELECTOR_DISMISS = '[data-bs-dismiss="offcanvas"]';
+    let backdropEl = null;
+    const onBackdropClick = () => hideAll();
+
+    function findInPath(target, selector) {
+      if (!target) return null;
+      const path = typeof target.composedPath === "function" ? target.composedPath() : [];
+      for (const el of path) {
+        if (el && el.matches && el.matches(selector)) return el;
+      }
+      if (target.closest) return target.closest(selector);
+      return null;
+    }
+
+    function showBackdrop() {
+      if (!backdropEl) {
+        backdropEl = document.createElement("div");
+        backdropEl.className = "offcanvas-backdrop fade";
+        document.body.appendChild(backdropEl);
+      }
+      backdropEl.style.display = "block";
+      document.body.style.overflow = "hidden";
+      backdropEl.classList.add("show");
+      backdropEl.addEventListener("click", onBackdropClick);
+    }
+
+    function hideBackdrop() {
+      if (backdropEl) {
+        backdropEl.classList.remove("show");
+        backdropEl.removeEventListener("click", onBackdropClick);
+        backdropEl.style.display = "none";
+        backdropEl.parentNode && backdropEl.parentNode.removeChild(backdropEl);
+        backdropEl = null;
+      }
+      document.body.style.overflow = "";
+    }
+
+    function getTarget(btn) {
+      const sel =
+        btn.getAttribute("data-offcanvas-target") ||
+        btn.getAttribute("data-bs-target");
+      if (!sel) return null;
+      try {
+        return document.querySelector(sel);
+      } catch {
+        return null;
+      }
+    }
+
+    function toggleOffcanvas(btn, target) {
+      const isOpen = target.classList.contains("show");
+      if (isOpen) hideOffcanvas(btn, target);
+      else showOffcanvas(btn, target);
+    }
+
+    function showOffcanvas(btn, target) {
+      hideAll();
+      btn.setAttribute("aria-expanded", "true");
+      target.classList.add("show");
+      target.removeAttribute("aria-hidden");
+      target.style.visibility = "visible";
+      showBackdrop();
+      const closeBtn = target.querySelector(SELECTOR_DISMISS + ", .btn-close");
+      (closeBtn || target).focus({ preventScroll: true });
+    }
+
+    function hideOffcanvas(btn, target) {
+      btn.setAttribute("aria-expanded", "false");
+      target.classList.remove("show");
+      target.setAttribute("aria-hidden", "true");
+      target.style.visibility = "";
+      hideBackdrop();
+    }
+
+    function hideAll() {
+      document.querySelectorAll(".offcanvas.show").forEach((oc) => {
+        oc.classList.remove("show");
+        oc.setAttribute("aria-hidden", "true");
+        oc.style.visibility = "";
+      });
+      document
+        .querySelectorAll(SELECTOR_TOGGLER)
+        .forEach((t) => t.setAttribute("aria-expanded", "false"));
+      hideBackdrop();
+    }
+
+    document.addEventListener(
+      "click",
+      (e) => {
+        const dismissBtn = findInPath(e.target, SELECTOR_DISMISS);
+        if (dismissBtn) {
+          const target = dismissBtn.closest(".offcanvas");
+          if (target) hideAll();
+          return;
+        }
+
+        const btn = findInPath(e.target, SELECTOR_TOGGLER);
+        if (!btn) return;
+        e.preventDefault();
+        const target = getTarget(btn);
+        if (!target) return;
+
+        toggleOffcanvas(btn, target);
+      },
+      true,
+    );
+
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") hideAll();
+    });
+
+    document.addEventListener("click", (e) => {
+      const link = findInPath(e.target, ".offcanvas a[href]");
+      if (!link) return;
+      hideAll();
+    });
+  })();
+</script>

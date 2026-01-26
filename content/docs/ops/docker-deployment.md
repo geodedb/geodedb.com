@@ -100,7 +100,7 @@ docker pull ghcr.io/spyderorg/geode:prod
 
 ## Development Environment
 
-A complete Docker-based development environment replicating the Nix flake setup.
+A complete Docker-based development environment replicating the local development stack.
 
 ### What's Included
 

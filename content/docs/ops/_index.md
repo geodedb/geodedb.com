@@ -1,7 +1,7 @@
 ---
 title: "Operations"
 description: "Operational guides for deploying, monitoring, and maintaining Geode in production environments"
-summary: "Comprehensive operational documentation covering deployment strategies, Docker and Nix deployment, observability, audit logging, and telemetry for production Geode systems."
+summary: "Comprehensive operational documentation covering deployment strategies, Docker deployment, observability, audit logging, and telemetry for production Geode systems."
 weight: 85
 keywords:
   - operations
@@ -13,7 +13,6 @@ keywords:
   - production
   - docker
   - kubernetes
-  - nix
 tags:
   - operations
   - deployment
@@ -40,7 +39,7 @@ Comprehensive operational guides for deploying, monitoring, and maintaining Geod
 
 Running Geode in production requires careful attention to deployment architecture, monitoring, security, and operational procedures. This section provides battle-tested guidance for operators, SREs, and DevOps engineers managing Geode systems.
 
-Whether you're deploying with Docker, Kubernetes, Nix, or bare metal, these guides cover deployment strategies, health monitoring, backup procedures, incident response, and compliance requirements. Built on real-world production experience, these practices ensure reliability, performance, and security.
+Whether you're deploying with Docker, Kubernetes, or bare metal, these guides cover deployment strategies, health monitoring, backup procedures, incident response, and compliance requirements. Built on real-world production experience, these practices ensure reliability, performance, and security.
 
 ## Deployment Options
 
@@ -56,12 +55,6 @@ Cloud-native deployment with Helm charts, StatefulSets, and Kubernetes operators
 
 **Best For**: Large-scale production, multi-tenant environments, cloud platforms
 
-### Nix Deployment
-
-Declarative deployment with NixOS modules and Nix flakes for reproducible infrastructure. Provides bit-for-bit reproducible builds and system configurations.
-
-**Best For**: Infrastructure-as-code, reproducible deployments, NixOS environments
-
 ### Bare Metal Deployment
 
 Direct installation on physical or virtual servers for maximum performance and control. Includes systemd service configuration and system tuning.
@@ -72,7 +65,6 @@ Direct installation on physical or virtual servers for maximum performance and c
 
 - **[Deployment](deployment/)** - Complete production deployment guide with Vault, MinIO, Prometheus, Grafana, Loki, and Nginx reverse proxy
 - **[Docker Deployment](docker-deployment/)** - Docker and Docker Compose deployment including singleton and distributed cluster configurations
-- **[Nix Deployment](nix-deployment/)** - NixOS modules, Nix flakes, and declarative infrastructure for reproducible deployments
 - **[Observability](observability/)** - Monitoring, metrics, logging, and distributed tracing for production visibility
 - **[Audit Logging](audit-logging/)** - Comprehensive audit trail for compliance including GDPR, SOX, HIPAA, and PCI-DSS
 - **[Advanced Telemetry](telemetry-advanced/)** - Advanced telemetry patterns including distributed tracing, custom metrics, and log aggregation
@@ -259,7 +251,7 @@ network:
 
 ### Deployment
 
-- Use configuration management (Ansible, Terraform, Nix)
+- Use configuration management (Ansible, Terraform)
 - Implement blue-green or canary deployments
 - Test deployments in staging environment
 - Document deployment procedures

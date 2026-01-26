@@ -489,19 +489,6 @@ make docker-test
 make docker-down
 ```
 
-### Nix Testing
-
-```bash
-# Validate Nix configurations
-nix flake check
-
-# Run tests in Nix environment
-nix develop -c make test
-
-# Full verification
-nix develop -c make verify-all
-```
-
 ## Test Development Guidelines
 
 ### Writing Unit Tests
@@ -763,7 +750,7 @@ Geode provides comprehensive testing infrastructure:
 - **Module Testing**: Dependency injection and mock I/O interfaces
 - **Fuzz Testing**: Deterministic fuzzing for parser, planner, storage
 - **Performance Benchmarking**: Automated regression detection
-- **CI/CD Integration**: GitLab CI, Docker, Nix
+- **CI/CD Integration**: GitLab CI, Docker
 - **CANARY Tracking**: 1,735 governance markers tracking 2,190+ requirements
 
 Use appropriate testing strategies based on component type: unit tests for isolated logic, integration tests for end-to-end scenarios, regression tests for bug prevention, and benchmarks for performance validation. Maintain test isolation, check for memory leaks, and test error paths explicitly.

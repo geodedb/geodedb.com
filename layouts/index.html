@@ -34,9 +34,9 @@
       <div class="row align-items-center">
         <div class="col-lg-6 mb-5 mb-lg-0 animate-fadeInUp">
           {{/* Kicker/Label */}}
-          <div class="d-inline-flex align-items-center mb-4 px-3 py-2 bg-primary bg-opacity-10 rounded-pill">
-            <wa-icon name="check-circle" class="text-primary me-2" aria-hidden="true"></wa-icon>
-            <span class="small fw-semibold text-primary">100% ISO GQL Compliant • Production Ready</span>
+          <div class="hero-kicker d-inline-flex align-items-center mb-4 px-3 py-2 rounded-pill">
+            <wa-icon name="check-circle" class="hero-kicker__icon me-2" aria-hidden="true"></wa-icon>
+            <span class="hero-kicker__text small fw-semibold">100% ISO GQL Compliant • Production Ready</span>
           </div>
 
           {{/* Main headline */}}
@@ -62,7 +62,7 @@
               Documentation
             </a>
             <a href="https://gitlab.com/devnw/codepros/geode/geode" target="_blank" rel="noopener" class="btn btn-outline-secondary btn-outline-modern btn-lg-modern">
-              <wa-icon name="gitlab" aria-hidden="true"></wa-icon>
+              <wa-icon name="gitlab" aria-hidden="true" family="brands"></wa-icon>
               View on GitLab
             </a>
           </div>
@@ -200,7 +200,7 @@ LIMIT 10`}}</code></pre>
             </div>
             <h3>Multi-Language Support</h3>
             <p>
-              Official clients for Go, Python, Rust, and Zig. All with connection pooling, prepared statements,
+              Official clients for Go, Python, Rust, Node.js, and Zig. All with connection pooling, prepared statements,
               and async support.
             </p>
             <a href="/docs/client-libraries/" class="stretched-link" aria-label="Learn more about Client Libraries"></a>
@@ -242,7 +242,7 @@ LIMIT 10`}}</code></pre>
               <wa-icon name="check-circle" class="text-success me-3 mt-1" aria-hidden="true"></wa-icon>
               <div>
                 <strong>Simple Installation</strong><br>
-                <span class="text-muted">Via Nix, Docker, or direct binary download</span>
+                <span class="text-muted">OS packages, Docker, or build from source</span>
               </div>
             </li>
             <li class="d-flex align-items-start mb-3">
@@ -269,20 +269,113 @@ LIMIT 10`}}</code></pre>
 
         <div class="col-lg-7">
           <div class="card-modern p-4">
-            <pre class="mb-0"><code class="language-bash">{{`# Install via Nix
-nix run gitlab:devnw/codepros/geode/geode
+            <div class="docs-tabs mb-0">
+              <ul class="nav nav-tabs" id="home-install-tabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                  <button
+                    class="nav-link active"
+                    id="home-install-linux-tab"
+                    data-bs-toggle="tab"
+                    data-bs-target="#home-install-linux"
+                    type="button"
+                    role="tab"
+                    aria-controls="home-install-linux"
+                    aria-selected="true"
+                  >
+                    Linux
+                  </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                  <button
+                    class="nav-link"
+                    id="home-install-macos-tab"
+                    data-bs-toggle="tab"
+                    data-bs-target="#home-install-macos"
+                    type="button"
+                    role="tab"
+                    aria-controls="home-install-macos"
+                    aria-selected="false"
+                  >
+                    macOS
+                  </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                  <button
+                    class="nav-link"
+                    id="home-install-windows-tab"
+                    data-bs-toggle="tab"
+                    data-bs-target="#home-install-windows"
+                    type="button"
+                    role="tab"
+                    aria-controls="home-install-windows"
+                    aria-selected="false"
+                  >
+                    Windows (WSL)
+                  </button>
+                </li>
+              </ul>
+              <div class="tab-content border border-top-0 rounded-bottom p-3">
+                <div
+                  class="tab-pane fade show active"
+                  id="home-install-linux"
+                  role="tabpanel"
+                  aria-labelledby="home-install-linux-tab"
+                >
+                  <pre class="mb-0"><code class="language-bash">{{`# Debian/Ubuntu (.deb)
+curl -L -o geode.deb https://gitlab.com/devnw/codepros/geode/geode/-/releases/latest/download/geode-linux-amd64.deb
+sudo apt install ./geode.deb
 
-# Or download binary
-wget https://gitlab.com/devnw/codepros/geode/geode/-/releases/latest/download/geode-linux-amd64
+# RHEL/Fedora (.rpm)
+curl -L -o geode.rpm https://gitlab.com/devnw/codepros/geode/geode/-/releases/latest/download/geode-linux-x86_64.rpm
+sudo rpm -i geode.rpm
+
+# Generic binary
+curl -L -o geode-linux-amd64 https://gitlab.com/devnw/codepros/geode/geode/-/releases/latest/download/geode-linux-amd64
 chmod +x geode-linux-amd64
+sudo install -m 0755 geode-linux-amd64 /usr/local/bin/geode
 
 # Start the server
-./geode-linux-amd64 serve --listen 0.0.0.0:3141
+geode serve --listen 0.0.0.0:3141
 
 # Connect and query
-./geode-linux-amd64 shell
+geode shell
 geode> CREATE (n:Person {name: 'Alice', age: 30})
 geode> MATCH (n:Person) RETURN n`}}</code></pre>
+                </div>
+                <div
+                  class="tab-pane fade"
+                  id="home-install-macos"
+                  role="tabpanel"
+                  aria-labelledby="home-install-macos-tab"
+                >
+                  <pre class="mb-0"><code class="language-bash">{{`# Apple Silicon
+curl -L -o geode-darwin-arm64 https://gitlab.com/devnw/codepros/geode/geode/-/releases/latest/download/geode-darwin-arm64
+sudo install -m 0755 geode-darwin-arm64 /usr/local/bin/geode
+
+# Intel
+curl -L -o geode-darwin-amd64 https://gitlab.com/devnw/codepros/geode/geode/-/releases/latest/download/geode-darwin-amd64
+sudo install -m 0755 geode-darwin-amd64 /usr/local/bin/geode
+
+geode serve --listen 0.0.0.0:3141
+geode shell`}}</code></pre>
+                </div>
+                <div
+                  class="tab-pane fade"
+                  id="home-install-windows"
+                  role="tabpanel"
+                  aria-labelledby="home-install-windows-tab"
+                >
+                  <pre class="mb-0"><code class="language-bash">{{`# Install WSL2 (PowerShell)
+wsl --install -d Ubuntu
+
+# Then inside Ubuntu (WSL)
+curl -L -o geode.deb https://gitlab.com/devnw/codepros/geode/geode/-/releases/latest/download/geode-linux-amd64.deb
+sudo apt install ./geode.deb
+geode serve --listen 0.0.0.0:3141
+geode shell`}}</code></pre>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -316,7 +409,7 @@ geode> MATCH (n:Person) RETURN n`}}</code></pre>
         </div>
         <div class="col-md-3 col-6">
           <div class="stat-item">
-            <div class="display-4 fw-bold mb-2">4</div>
+            <div class="display-4 fw-bold mb-2">5</div>
             <div class="text-white-50">Client Libraries</div>
           </div>
         </div>

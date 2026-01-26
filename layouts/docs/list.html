@@ -100,6 +100,7 @@
       {{ $pages := where .Pages ".Params.draft" "!=" true }}
       {{ $regularPages := where $pages "Kind" "page" }}
       {{ $sections := where $pages "Kind" "section" }}
+      {{ $hasIntro := gt (len (plainify .Content)) 0 }}
 
       {{/* Display subsections first */}}
       {{ if gt (len $sections) 0 }}
@@ -183,7 +184,7 @@
       {{ end }}
 
       {{/* Empty state - no pages yet */}}
-      {{ if and (eq (len $regularPages) 0) (eq (len $sections) 0) }}
+      {{ if and (eq (len $regularPages) 0) (eq (len $sections) 0) (not $hasIntro) }}
         <div class="alert alert-info d-flex align-items-center" role="alert">
           <wa-icon name="circle-info" class="me-2 flex-shrink-0" aria-hidden="true"></wa-icon>
           <div>

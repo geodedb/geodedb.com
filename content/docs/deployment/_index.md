@@ -38,7 +38,7 @@ Deploy Geode with confidence using production-ready deployment patterns designed
 
 Geode's deployment model is designed for flexibility without compromising on enterprise requirements. Whether you're running a development instance on your laptop or a multi-region production cluster serving high-throughput workloads (read-only up to 100,000 txn/sec; read-write 10,000-50,000 txn/sec), Geode provides the deployment primitives you need.
 
-The deployment subsystem integrates with modern infrastructure tooling including Docker, Kubernetes, Nix, and cloud-native platforms. Built-in support for federation, Raft consensus, and automatic failover ensures high availability without complex manual configuration.
+The deployment subsystem integrates with modern infrastructure tooling including Docker, Kubernetes, and cloud-native platforms. Built-in support for federation, Raft consensus, and automatic failover ensures high availability without complex manual configuration.
 
 ## Deployment Patterns
 
@@ -61,7 +61,6 @@ Kubernetes-ready deployment with Helm charts, StatefulSets, and native cloud int
 ## Related Documentation
 
 - [Docker Deployment](/docs/ops/docker-deployment/) - Docker Compose and container deployment
-- [Nix Deployment](/docs/ops/nix-deployment/) - NixOS modules and Nix flakes for declarative deployment
 - [Deployment Guide](/docs/ops/deployment/) - Complete production deployment guide with Vault, MinIO, and observability stack
 - [Observability](/docs/ops/observability/) - Monitoring, metrics, and telemetry for production deployments
 
