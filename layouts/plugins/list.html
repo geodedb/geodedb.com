@@ -1,0 +1,138 @@
+{{/* ──────────────────────────────────────────────────────────────
+  Plugins List Page Layout
+  - Displays all plugin subsections
+  ────────────────────────────────────────────────────────────────
+*/}}
+
+{{ define "main" }}
+
+{{ $container := partial "helpers/container.html" (dict "Page" .) }}
+
+<div class="docs-shell">
+  {{/* Section header */}}
+  <header class="docs-header bg-gradient pt-2 pb-3 border-bottom" role="banner">
+    <div class="{{ $container }} docs-header-inner">
+      <div class="row">
+        <div class="col-12">
+          {{/* Breadcrumb navigation */}}
+          {{ partial "docs/breadcrumbs" . }}
+
+          {{/* Section title and description */}}
+          <div class="mt-2">
+            <h1 class="display-5 fw-bold mb-2">{{ .Title }}</h1>
+            {{ with .Description }}
+              <p class="lead text-muted mb-0">{{ . }}</p>
+            {{ end }}
+
+            {{/* Page count indicator */}}
+            {{ $pages := where .Pages ".Params.draft" "!=" true }}
+            {{ if gt (len $pages) 0 }}
+              <div class="text-muted small mt-2">
+                <wa-icon name="file-lines" class="me-1" aria-hidden="true"></wa-icon>
+                {{ len $pages }} {{ if eq (len $pages) 1 }}{{ i18n "page" | default "page" }}{{ else }}{{ i18n "pages" | default "pages" }}{{ end }}
+              </div>
+            {{ end }}
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  {{/* Main content area */}}
+  <div class="{{ $container }} pt-3 pb-4 docs-main">
+    <div class="row">
+      <div class="col-12">
+
+        {{/* Section introduction (from _index.md content) */}}
+        {{ with .Content }}
+          <article class="docs-section-intro mb-5">
+            <div class="card border-0 shadow-sm docs-panel">
+              <div class="card-body">
+                {{ . }}
+              </div>
+            </div>
+          </article>
+        {{ end }}
+
+        {{/* Get all pages and sections */}}
+        {{ $allPages := .Pages }}
+        {{ $sections := slice }}
+        {{ $regularPages := slice }}
+        
+        {{ range $allPages }}
+          {{ if eq .Kind "section" }}
+            {{ $sections = $sections | append . }}
+          {{ else if eq .Kind "page" }}
+            {{ $regularPages = $regularPages | append . }}
+          {{ end }}
+        {{ end }}
+
+        {{/* Display subsections first */}}
+        {{ if gt (len $sections) 0 }}
+          <section class="docs-subsections mb-5">
+            <h2 class="h4 mb-4 d-flex align-items-center">
+              <wa-icon name="folder-open" class="me-2 text-primary" aria-hidden="true"></wa-icon>
+              Available Plugins
+            </h2>
+            <div class="row g-4">
+              {{ range $sections.ByWeight }}
+                <div class="col-md-6 col-xl-4">
+                  <div class="card h-100 border-0 shadow-sm hover-lift docs-panel">
+                    <div class="card-body">
+                      <h3 class="card-title h5 mb-2">
+                        <a href="{{ .Permalink }}" class="text-decoration-none stretched-link">
+                          {{ .Title }}
+                        </a>
+                      </h3>
+                      {{ with .Description }}
+                        <p class="card-text text-muted small mb-2">{{ . }}</p>
+                      {{ end }}
+                    </div>
+                  </div>
+                </div>
+              {{ end }}
+            </div>
+          </section>
+        {{ end }}
+
+        {{/* Display regular pages if any */}}
+        {{ if gt (len $regularPages) 0 }}
+          <section class="docs-pages">
+            <h2 class="h4 mb-4 d-flex align-items-center">
+              <wa-icon name="book-open" class="me-2 text-primary" aria-hidden="true"></wa-icon>
+              Pages
+            </h2>
+            <div class="list-group list-group-flush">
+              {{ range $regularPages.ByWeight }}
+                <a href="{{ .Permalink }}" class="list-group-item list-group-item-action border-0 border-bottom docs-list-item">
+                  <div class="d-flex w-100 justify-content-between align-items-start">
+                    <div class="flex-grow-1">
+                      <h3 class="h6 mb-1 fw-semibold">{{ .Title }}</h3>
+                      {{ with .Description }}
+                        <p class="mb-1 text-muted small">{{ . }}</p>
+                      {{ end }}
+                    </div>
+                    <div class="flex-shrink-0 ms-3 text-muted">
+                      <wa-icon name="arrow-right" aria-hidden="true"></wa-icon>
+                    </div>
+                  </div>
+                </a>
+              {{ end }}
+            </div>
+          </section>
+        {{ end }}
+
+        {{/* Empty state */}}
+        {{ if and (eq (len $regularPages) 0) (eq (len $sections) 0) }}
+          <div class="alert alert-info d-flex align-items-center" role="alert">
+            <wa-icon name="circle-info" class="me-2 flex-shrink-0" aria-hidden="true"></wa-icon>
+            <div>No plugins available yet.</div>
+          </div>
+        {{ end }}
+
+      </div>
+    </div>
+  </div>
+</div>
+
+{{ end }}
