@@ -7,10 +7,11 @@
     const bootstrapAvailable = !!(window.bootstrap && window.bootstrap.Offcanvas);
     const customSelector = '[data-offcanvas-toggle][data-offcanvas-target]';
     const bsSelector = '[data-bs-toggle="offcanvas"][data-bs-target]';
-    const SELECTOR_TOGGLER = bootstrapAvailable
-      ? customSelector
-      : `${customSelector}, ${bsSelector}`;
-    if (bootstrapAvailable && !document.querySelector(SELECTOR_TOGGLER)) return;
+    
+    // If Bootstrap is available, let it handle everything
+    if (bootstrapAvailable) return;
+    
+    const SELECTOR_TOGGLER = `${customSelector}, ${bsSelector}`;
 
     const SELECTOR_DISMISS = '[data-bs-dismiss="offcanvas"]';
     let backdropEl = null;

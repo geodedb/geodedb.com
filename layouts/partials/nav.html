@@ -24,8 +24,8 @@
         src="{{ .Site.Params.branding.light.logo | default .Site.Params.logo }}"
         alt="{{ .Site.Params.logo_alt | default .Site.Title }}"
         class="logo-light"
-        width="150"
-        height="40"
+        width="300"
+        height="80"
         loading="eager"
         decoding="async"
       />
@@ -34,8 +34,8 @@
         src="{{ .Site.Params.branding.dark.logo | default .Site.Params.logo }}"
         alt="{{ .Site.Params.logo_alt | default .Site.Title }}"
         class="logo-dark"
-        width="150"
-        height="40"
+        width="300"
+        height="80"
         loading="eager"
         decoding="async"
       />
@@ -47,11 +47,13 @@
       type="button"
       data-bs-toggle="offcanvas"
       data-bs-target="#{{ $offID }}"
+      data-offcanvas-toggle="offcanvas"
+      data-offcanvas-target="#{{ $offID }}"
       aria-controls="{{ $offID }}"
       aria-expanded="false"
       aria-label="{{ $navToggle }}"
     >
-      <wa-icon name="bars" class="navbar-toggler-icon"></wa-icon>
+      <wa-icon name="bars"></wa-icon>
     </button>
 
     <!-- Mobile off-canvas -->
@@ -72,7 +74,7 @@
         </button>
       </div>
 
-      <div class="offcanvas-body p-0">
+      <div class="offcanvas-body">
         <ul class="navbar-nav ms-lg-auto align-items-lg-center flex-grow-1 pe-3">
           {{ $current := . }}
           {{ range .Site.Menus.main }}
@@ -176,13 +178,13 @@
 
           <li class="nav-item ms-2 d-none d-lg-flex">
             <a href="https://gitlab.com/devnw/codepros/geode/geode" target="_blank" rel="noopener" class="btn btn-outline-secondary btn-sm px-3 d-inline-flex align-items-center gap-2">
-              <wa-icon name="gitlab" aria-hidden="true"></wa-icon>
+              <wa-icon name="gitlab" family="brands" aria-hidden="true"></wa-icon>
               <span>GitLab</span>
             </a>
           </li>
 
-          {{/* Theme toggle */}}
-          <li class="nav-item ms-2">
+          {{/* Theme toggle (desktop only) */}}
+          <li class="nav-item ms-2 d-none d-lg-flex">
             <button
               class="btn btn-link"
               type="button"
@@ -195,9 +197,9 @@
             </button>
           </li>
 
-          {{/* Language dropdown */}}
+          {{/* Language dropdown (desktop only) */}}
           {{ if gt (len $.Site.Home.AllTranslations) 1 }}
-            <li class="nav-item dropdown ms-2">
+            <li class="nav-item dropdown ms-2 d-none d-lg-flex">
               <button
                 id="languageDropdown"
                 class="btn btn-link dropdown-toggle"
@@ -230,16 +232,72 @@
             </li>
           {{ end }}
 
+          {{/* ===== MOBILE-ONLY SECTION ===== */}}
+          
           {{/* Mobile CTAs */}}
-          <li class="nav-item border-top mt-3 pt-3 px-4 d-lg-none">
-            <a href="/docs/getting-started/" class="btn btn-primary w-100 mb-2">
-              <wa-icon name="rocket" class="me-2"></wa-icon>
-              Get Started
+          <li class="nav-item mobile-cta-section d-lg-none">
+            <a href="/docs/getting-started/" class="mobile-cta-btn mobile-cta-primary">
+              <wa-icon name="rocket" aria-hidden="true"></wa-icon>
+              <span>Get Started</span>
             </a>
-            <a href="https://gitlab.com/devnw/codepros/geode/geode" target="_blank" rel="noopener" class="btn btn-outline-secondary w-100">
-              <wa-icon name="gitlab" class="me-2"></wa-icon>
-              View on GitLab
+          </li>
+
+          <li class="nav-item mobile-cta-section d-lg-none">
+            <a href="https://gitlab.com/devnw/codepros/geode/geode" target="_blank" rel="noopener" class="mobile-cta-btn mobile-cta-secondary">
+              <wa-icon name="gitlab" family="brands" aria-hidden="true"></wa-icon>
+              <span>View on GitLab</span>
             </a>
+          </li>
+
+          {{/* Mobile utility buttons (theme + language) */}}
+          <li class="nav-item mobile-utils-section d-lg-none">
+            <div class="mobile-utils-row">
+              {{/* Mobile theme toggle */}}
+              <button
+                class="mobile-util-btn"
+                type="button"
+                id="themeToggleMobile"
+                aria-label="{{ i18n "theme_toggle" | default "Toggle theme" }}"
+              >
+                <wa-icon name="circle-half-stroke" aria-hidden="true"></wa-icon>
+                <span>Theme</span>
+              </button>
+
+              {{/* Mobile language selector */}}
+              {{ if gt (len $.Site.Home.AllTranslations) 1 }}
+                <div class="dropdown mobile-lang-dropdown">
+                  <button
+                    class="mobile-util-btn dropdown-toggle"
+                    type="button"
+                    id="languageDropdownMobile"
+                    data-bs-toggle="dropdown"
+                    aria-expanded="false"
+                  >
+                    <wa-icon name="globe" aria-hidden="true"></wa-icon>
+                    <span>{{ .Language.LanguageName | default (upper .Lang) }}</span>
+                  </button>
+                  <ul class="dropdown-menu" aria-labelledby="languageDropdownMobile">
+                    {{ range .AllTranslations }}
+                      {{ if ne $.Lang .Lang }}
+                        <li>
+                          <a
+                            class="dropdown-item"
+                            href="{{ .Permalink }}"
+                            hreflang="{{ .Language.LanguageCode | default .Language.Lang }}"
+                          >{{ .Language.LanguageName | default (upper .Lang) }}</a>
+                        </li>
+                      {{ end }}
+                    {{ end }}
+                  </ul>
+                </div>
+              {{ else }}
+                {{/* Placeholder for consistent layout when no translations */}}
+                <div class="mobile-util-btn mobile-util-placeholder" aria-hidden="true">
+                  <wa-icon name="code" aria-hidden="true"></wa-icon>
+                  <span>v0.18</span>
+                </div>
+              {{ end }}
+            </div>
           </li>
         </ul>
       </div>
@@ -257,6 +315,34 @@
 
   .navbar-modern.scrolled {
     box-shadow: var(--shadow-md) !important;
+  }
+
+  /* Brand logo fix */
+  .navbar-brand {
+    display: flex;
+    align-items: center;
+  }
+
+  .navbar-brand img {
+    display: block;
+    max-height: 80px;
+    width: auto;
+  }
+
+  /* Desktop navbar buttons - centered text */
+  .navbar-modern .btn {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    text-align: center !important;
+  }
+
+  .navbar-modern .btn span {
+    display: inline-block;
+  }
+
+  .navbar-modern .btn wa-icon {
+    flex-shrink: 0;
   }
 
   .navbar-modern .nav-link {
@@ -311,23 +397,13 @@
     color: var(--color-primary-700);
   }
 
-  /* Mobile menu styles */
+  /* Mobile menu chevron animation */
   .offcanvas .dropdown-chevron {
-    transition: transform var(--duration-fast) var(--ease-out);
+    transition: transform 0.2s ease;
   }
 
   .offcanvas [aria-expanded="true"] .dropdown-chevron {
     transform: rotate(180deg);
-  }
-
-  @media (prefers-color-scheme: dark) {
-    .navbar-modern {
-      background: rgba(17, 24, 39, 0.95) !important;
-    }
-
-    .navbar-modern .nav-link:hover {
-      background: var(--color-neutral-800);
-    }
   }
 </style>
 
@@ -362,5 +438,38 @@
     }
 
     window.addEventListener('scroll', requestTick, { passive: true });
+  })();
+
+  // Mobile theme toggle - sync with desktop toggle
+  (function() {
+    const mobileToggle = document.getElementById('themeToggleMobile');
+    const desktopToggle = document.getElementById('themeToggle');
+    
+    if (mobileToggle && desktopToggle) {
+      mobileToggle.addEventListener('click', function() {
+        // Trigger click on desktop toggle to use existing theme logic
+        desktopToggle.click();
+      });
+    } else if (mobileToggle) {
+      // Fallback if desktop toggle doesn't exist
+      mobileToggle.addEventListener('click', function() {
+        const html = document.documentElement;
+        const current = html.getAttribute('data-bs-theme');
+        
+        if (current === 'dark') {
+          html.setAttribute('data-bs-theme', 'light');
+          localStorage.setItem('theme', 'light');
+        } else if (current === 'light') {
+          html.setAttribute('data-bs-theme', 'dark');
+          localStorage.setItem('theme', 'dark');
+        } else {
+          // Auto mode - switch to opposite of system preference
+          const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+          const newTheme = prefersDark ? 'light' : 'dark';
+          html.setAttribute('data-bs-theme', newTheme);
+          localStorage.setItem('theme', newTheme);
+        }
+      });
+    }
   })();
 </script>
