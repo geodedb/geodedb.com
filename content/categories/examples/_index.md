@@ -23,7 +23,7 @@ The **Examples** category provides practical, production-ready code samples and 
 
 Learning by example is one of the most effective ways to understand new technology. Geode's example library includes everything from basic "Hello World" applications to sophisticated production systems handling millions of nodes and relationships. Each example is complete, tested, and documented with explanations of key concepts and design decisions.
 
-All examples are maintained in the Geode repository and validated as part of the continuous integration pipeline, ensuring they remain current and functional with each release. Examples cover all supported client libraries (Go, Python, Rust, Zig) and demonstrate both basic operations and advanced features like vector search, full-text indexing, and distributed transactions.
+All examples are maintained in the Geode repository and validated as part of the continuous integration pipeline, ensuring they remain current and functional with each release. Examples cover all supported client libraries (Go, Python, Rust, Node.js, Zig) and demonstrate both basic operations and advanced features like vector search, full-text indexing, and distributed transactions.
 
 ## Getting Started Examples
 

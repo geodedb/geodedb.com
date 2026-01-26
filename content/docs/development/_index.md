@@ -111,7 +111,7 @@ All development follows these standards:
 - [Architecture Overview](/docs/architecture/) - System architecture and design
 - [GQL Guide](/docs/gql/guide/) - Complete GQL query language reference
 - [API Reference](/docs/reference/api-reference-complete/) - Complete API documentation
-- [Client Libraries](/docs/client-libraries/) - Build applications with Go, Python, Rust, or Zig clients
+- [Client Libraries](/docs/client-libraries/) - Build applications with Go, Python, Rust, Node.js, or Zig clients
 
 ## Getting Help
 

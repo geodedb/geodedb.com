@@ -40,7 +40,7 @@ Welcome to the complete documentation for Geode, an enterprise-ready graph datab
 
 ### Client Libraries
 
-- **[Client Libraries](client-libraries/)** - Official libraries for Go, Python, Rust, and Zig
+- **[Client Libraries](client-libraries/)** - Official libraries for Go, Python, Rust, Node.js, and Zig
   - [Go Client](client-libraries/go-client/) - Production-ready database/sql driver
   - [Python Client](client-libraries/python-client/) - Async Python with type hints
   - [Rust Client](client-libraries/rust-client/) - High-performance type-safe client

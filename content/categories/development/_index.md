@@ -22,7 +22,7 @@ The **Development & Developer Tools** category encompasses comprehensive resourc
 
 ## Introduction
 
-Modern database development requires more than just query capabilities—developers need rich tooling, intuitive APIs, and streamlined workflows. Geode provides a complete development ecosystem designed for productivity and ease of use. The REPL shell enables interactive query development with syntax highlighting and auto-completion. Client libraries for Go, Python, Rust, and Zig offer idiomatic APIs for each language. LSP integration brings IDE features like error checking and go-to-definition to any editor. CLI tools automate common tasks from schema management to deployment.
+Modern database development requires more than just query capabilities—developers need rich tooling, intuitive APIs, and streamlined workflows. Geode provides a complete development ecosystem designed for productivity and ease of use. The REPL shell enables interactive query development with syntax highlighting and auto-completion. Client libraries for Go, Python, Rust, Node.js, and Zig offer idiomatic APIs for each language. LSP integration brings IDE features like error checking and go-to-definition to any editor. CLI tools automate common tasks from schema management to deployment.
 
 This category documents the full development experience, from writing your first query in the REPL to building production applications with client libraries. Whether you're prototyping a new feature, debugging a complex query, or optimizing application performance, these resources provide the knowledge and tools you need. Topics span programming language integrations, development workflows, testing strategies, debugging techniques, and operational best practices.
 

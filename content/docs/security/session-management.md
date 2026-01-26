@@ -777,5 +777,5 @@ logging:
 
 **ISO Standard**: ISO/IEC 39075:2024 §15.3-15.4
 **Session Types**: GRAPH, VALUE, BINDING TABLE parameters
-**Pooling**: All 4 client libraries (Go, Python, Rust, Zig)
+**Pooling**: All 5 client libraries (Go, Python, Rust, Node.js, Zig)
 **Status**: Production-ready

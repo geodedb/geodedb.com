@@ -113,7 +113,7 @@ Development workflow, testing strategies, debugging techniques, IDE integration,
 
 **[Browse Client Libraries →](/categories/client-libraries/)**
 
-Complete documentation for Geode's polyglot client libraries including Go, Python, Rust, and Zig. Learn connection management, query execution, transactions, and language-specific patterns.
+Complete documentation for Geode's polyglot client libraries including Go, Python, Rust, Node.js, and Zig. Learn connection management, query execution, transactions, and language-specific patterns.
 
 **Key topics**: Go client, Python client, Rust client, Zig client, connection pooling, transactions, prepared statements
 

@@ -34,7 +34,7 @@ This is the current stable release with 100% ISO/IEC 39075:2024 GQL compliance, 
 - 1,735 CANARY governance markers tracking 2,190+ requirements
 - Enterprise security features (TDE, FLE, RLS, audit logging)
 - Advanced analytics (vector search, full-text search, graph algorithms)
-- Polyglot client libraries (Go, Python, Rust, Zig)
+- Polyglot client libraries (Go, Python, Rust, Node.js, Zig)
 
 ## Version History
 
@@ -50,7 +50,7 @@ This is the current stable release with 100% ISO/IEC 39075:2024 GQL compliance, 
 - Transparent Data Encryption (TDE) for data at rest
 - Field-Level Encryption (FLE) with application-managed keys
 - Comprehensive audit logging for compliance
-- Production-ready client libraries for Go, Python, Rust, and Zig
+- Production-ready client libraries for Go, Python, Rust, Node.js, and Zig
 
 **Performance Improvements**:
 - Query optimizer with cost-based planning

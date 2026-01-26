@@ -17,7 +17,7 @@ params:
 
 Contributing to Geode means joining a vibrant open-source community dedicated to building a production-ready, ISO/IEC 39075:2024-compliant graph database. Whether you're fixing bugs, adding features, improving documentation, or helping other users, your contributions help make Geode better for everyone. This category provides comprehensive guidance for contributing effectively, understanding the codebase, following project conventions, and participating in the community.
 
-Geode is written primarily in Zig, with polyglot client libraries in Go, Python, Rust, and Zig. The project maintains rigorous quality standards including 97.4% test coverage, evidence-based development with CANARY governance markers tracking 2,190+ requirements, and comprehensive documentation. Understanding these standards and the contribution workflow ensures your contributions can be reviewed, merged, and maintained effectively.
+Geode is written primarily in Zig, with polyglot client libraries in Go, Python, Rust, Node.js, and Zig. The project maintains rigorous quality standards including 97.4% test coverage, evidence-based development with CANARY governance markers tracking 2,190+ requirements, and comprehensive documentation. Understanding these standards and the contribution workflow ensures your contributions can be reviewed, merged, and maintained effectively.
 
 This guide covers everything from setting up your development environment through submitting pull requests, writing tests, maintaining documentation, and participating in design discussions. Whether you're making your first open-source contribution or you're an experienced contributor, this guide provides the information you need.
 

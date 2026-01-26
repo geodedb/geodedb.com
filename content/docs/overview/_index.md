@@ -105,7 +105,7 @@ Built with modern technologies: Zig for performance and safety, QUIC for efficie
 
 - **LSP Support**: IDE integration for any editor
 - **Interactive REPL**: Powerful shell for query development
-- **Client Libraries**: Go, Python, Rust, and Zig with idiomatic APIs
+- **Client Libraries**: Go, Python, Rust, Node.js, and Zig with idiomatic APIs
 - **Comprehensive Documentation**: 40+ guides and references
 
 ## Use Cases

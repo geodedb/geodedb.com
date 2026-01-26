@@ -33,7 +33,7 @@ Complete API documentation for all Geode components:
 
 - **Server API**: REST and QUIC/TLS endpoints, authentication methods, session management
 - **GQL Language Reference**: Complete ISO/IEC 39075:2024 syntax coverage, operators, functions, expressions
-- **Client Libraries**: Go, Python, Rust, and Zig client APIs with usage examples
+- **Client Libraries**: Go, Python, Rust, Node.js, and Zig client APIs with usage examples
 - **Protocol Specification**: JSON line protocol details, message formats, error codes
 - **Extension APIs**: Plugin interfaces, custom functions, stored procedures
 

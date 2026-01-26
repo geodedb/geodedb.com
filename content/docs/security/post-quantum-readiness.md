@@ -110,7 +110,7 @@ For authentication and integrity (e.g., commit logs, backups), we are evaluating
 
 To leverage Geode's Post-Quantum readiness features:
 
-1.  **Use Official Clients**: Our Go, Python, Rust, and Zig clients negotiate the highest shared security protocol automatically.
+1.  **Use Official Clients**: Our Go, Python, Rust, Node.js, and Zig clients negotiate the highest shared security protocol automatically.
 2.  **Enable Key Rotation**: Configure your KMS provider to rotate keys every 90 days.
 3.  **Avoid Static Keys**: Never hardcode encryption keys. Use the environment-based KMS integration.
 4.  **Use Field-Level Encryption**: For highly sensitive fields (PII, secrets), use Geode's client-side FLE, which ensures the server (and any potential quantum attacker of the database files) never sees the plaintext.
