@@ -7,6 +7,8 @@ slug: "features"
 canonical: "https://geodedb.com/docs/features/"
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 # Features Overview
 
 Geode is an enterprise-ready graph database with 100% ISO GQL compliance, advanced security, and production-grade performance.
@@ -403,15 +405,16 @@ Geode is an enterprise-ready graph database with 100% ISO GQL compliance, advanc
 ### Quick Start (5 minutes)
 
 ```bash
-# Download and extract
-tar -xzf geode-0.18.0.tar.gz
-cd geode-0.18.0
+# Build from source
+git clone https://github.com/codeprosorg/geode
+cd geode
+make build
 
 # Start server
-./geode serve --listen 0.0.0.0:3141
+./zig-out/bin/geode serve --listen 0.0.0.0:3141
 
 # Connect with shell (new terminal)
-./geode shell
+./zig-out/bin/geode shell
 
 # Run your first query
 RETURN 1 AS hello;
@@ -499,7 +502,7 @@ RETURN b.name, length(path) AS degrees_of_separation;
 
 ## Community
 
-- **Source**: [GitLab Repository](https://gitlab.com/devnw/codepros/geode)
+- **Source**: [GitHub Repository](https://github.com/codeprosorg/geode)
 - **Issues**: [Issue Tracker](https://gitlab.com/devnw/codepros/geode/-/issues)
 - **Contributing**: [Contributing Guide](/docs/contribute/)
 - **License**: [Apache License 2.0](https://www.apache.org/licenses/LICENSE-2.0)

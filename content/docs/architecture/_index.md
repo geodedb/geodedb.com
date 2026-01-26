@@ -2,7 +2,16 @@
 title: "Architecture"
 description: "Geode system architecture, storage engine design, and distributed systems overview"
 weight: 60
+
+keywords:
+  - Geode architecture
+  - graph database architecture
+  - distributed graph database
+  - query engine
+  - storage engine
 ---
+
+<!-- CANARY: REQ=REQ-ENGINE-005; FEATURE="Engine"; ASPECT=CostBasedOptimizer; STATUS=TESTED; OWNER=engine; UPDATED=2026-01-15 -->
 
 # Geode Architecture
 
@@ -57,7 +66,7 @@ Geode is an enterprise-ready graph database built with a modular, high-performan
 - Lexer with complete token support
 - Recursive descent parser
 - AST generation
-- **Performance**: <1ms parse time for typical queries
+- **Performance**: Optimized parsing pipeline for low latency
 
 **2. Query Planner** (`src/planner/`)
 - Cost-based optimization (CBO)
@@ -71,7 +80,7 @@ Geode is an enterprise-ready graph database built with a modular, high-performan
 - Path evaluation (variable-length paths)
 - Aggregation and grouping
 - Set operations (UNION, INTERSECT, EXCEPT)
-- **Performance**: 10,000+ queries/second
+- **Performance**: Workload-dependent throughput aligned with server baselines
 
 **4. Expression Evaluator** (`src/eval.zig`)
 - Type promotion and coercion
@@ -235,22 +244,24 @@ src/
 
 ### Query Performance
 
-- **Simple queries**: <1ms latency
-- **Complex patterns**: <10ms (10-hop traversals)
-- **Throughput**: 10,000+ queries/second
+- **Point lookup**: <1ms (typically 100-500us)
+- **Short path (1-2 hops)**: 1-5ms
+- **Multi-hop path (3-5 hops)**: 10-100ms
 - **Vector search**: <50ns per distance calculation (8D L2)
+- **Transaction throughput**: Read-only up to 100,000 txn/sec; read-write 10,000-50,000 txn/sec; write-heavy 5,000-20,000 txn/sec
 
 ### Storage Performance
 
-- **Write throughput**: 100,000+ writes/second with WAL
-- **Read latency**: <100μs for indexed lookups
+- **Read-only throughput**: Up to 100,000 txn/sec (workload dependent)
+- **Read-write throughput**: 10,000-50,000 txn/sec
+- **Write-heavy throughput**: 5,000-20,000 txn/sec
 - **Memory-mapped I/O**: 13.18x improvement over traditional I/O
-- **Cache hit ratio**: >90% for typical workloads
+- **Indexed lookups**: Optimized via B-tree and hash indexes
 
 ### Scalability
 
-- **Nodes**: Tested with 100M+ nodes
-- **Relationships**: Tested with 1B+ edges
+- **Nodes**: 100M+ (load-test target)
+- **Relationships**: 1B+ (load-test target)
 - **Concurrent connections**: 10,000+ with connection pooling
 - **Shards**: Up to 32 shards with linear scale-out
 

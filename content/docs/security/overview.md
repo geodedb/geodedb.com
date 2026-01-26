@@ -23,6 +23,8 @@ keywords:
   - Argon2id
 ---
 
+<!-- CANARY: REQ=REQ-SEC-AUDIT-LOG-001; FEATURE="Security"; ASPECT=AuditLog; STATUS=TESTED; OWNER=security; UPDATED=2026-01-16 -->
+
 # Security and Compliance Guide
 
 Comprehensive security features for enterprise deployments: authentication, authorization, encryption, and audit logging.

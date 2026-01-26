@@ -15,6 +15,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 Geode documentation tagged with **Language Server Protocol (LSP)**. LSP is a standardized protocol for language tooling that enables IDE features like auto-completion, error checking, and refactoring across editors without requiring editor-specific implementations.
 
 ## Introduction to Language Server Protocol

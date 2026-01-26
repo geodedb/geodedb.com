@@ -17,6 +17,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 # Getting Started with Geode
 
 Welcome to Geode, an enterprise-ready graph database implementing the ISO/IEC 39075:2024 GQL standard. This guide helps you install Geode, execute your first queries, and understand fundamental graph database concepts within 30 minutes.
@@ -31,7 +33,7 @@ Geode is a production-ready graph database that stores data as nodes (entities) 
 
 **Production-Ready**: With 97.4% test coverage, 100% GQL compliance, and comprehensive client libraries in Python, Go, Rust, and Zig, Geode is battle-tested for demanding production workloads.
 
-**Performance**: QUIC-based transport with TLS 1.3 encryption delivers high throughput—1,000+ queries/second in Python, 10,000+ in Rust—while maintaining security.
+**Performance**: QUIC-based transport with TLS 1.3 encryption delivers high-throughput, secure communication. Throughput is workload-dependent; server baselines are read-only up to 100,000 txn/sec, read-write 10,000-50,000 txn/sec, and write-heavy 5,000-20,000 txn/sec.
 
 **ACID Transactions**: Full transactional consistency ensures your data integrity is never compromised, with support for savepoints and isolated concurrent access.
 
@@ -49,8 +51,8 @@ Geode is a production-ready graph database that stores data as nodes (entities) 
 
 ```bash
 # Clone the repository
-git clone https://gitlab.com/devnw/codepros/geode.git
-cd geode/geode
+git clone https://github.com/codeprosorg/geode
+cd geode
 
 # Build the server (debug mode)
 make build
@@ -59,7 +61,7 @@ make build
 make release
 
 # Start the server
-./zig-out/bin/geode serve --listen 0.0.0.0:3141
+geode serve --listen 0.0.0.0:3141
 ```
 
 The server is now running on port 3141, ready to accept connections.
@@ -89,7 +91,7 @@ Check that Geode is running:
 
 ```bash
 # Using the built-in shell
-./zig-out/bin/geode shell
+geode shell
 
 # Should display:
 # Geode Shell v0.18.0

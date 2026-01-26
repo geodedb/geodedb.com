@@ -19,6 +19,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 # Database Clustering
 
 Database clustering is fundamental to building distributed, highly-available graph database systems. Geode provides enterprise-grade clustering capabilities that enable organizations to deploy multi-node graph databases with automatic failover, load distribution, and horizontal scalability. This comprehensive guide explores clustering architecture, consensus protocols, configuration strategies, and operational best practices for production deployments.

@@ -17,6 +17,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 # Implementation Guides
 
 Implementation guides provide comprehensive, architecture-focused documentation for building production-quality applications with Geode graph database. Unlike step-by-step tutorials that walk through specific tasks, guides explain concepts, patterns, and design decisions that inform your implementation strategy.

@@ -1,0 +1,72 @@
+{{- printf "<?xml version=\"1.0\" encoding=\"utf-8\" standalone=\"yes\"?>" | safeHTML }}
+<urlset
+  xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+  xmlns:xhtml="http://www.w3.org/1999/xhtml"
+>
+  {{- /* Iterate over all site pages to ensure full coverage */ -}}
+  {{- range site.AllPages }}
+    {{- if and (ne .Kind "page") (ne .Kind "section") (ne .Kind "taxonomy") (ne .Kind "term") (ne .Kind "home") }}
+
+      {{- continue }}
+    {{- end }}
+
+    {{- $changeFreq := .Sitemap.ChangeFreq | default "monthly" }}
+    {{- $priority := .Sitemap.Priority }}
+
+    {{- /* Set priorities based on content type and section */ -}}
+    {{- if eq .Kind "home" }}
+      {{- $changeFreq = "weekly" }}
+      {{- $priority = 1.0 }}
+    {{- else if eq .Section "services" }}
+      {{- $changeFreq = "monthly" }}
+      {{- $priority = 0.9 }}
+    {{- else if or (eq .Section "articles") (eq .Section "blog") }}
+      {{- $changeFreq = "weekly" }}
+      {{- $priority = 0.8 }}
+    {{- else if or (eq .Section "about") (eq .Section "contact") }}
+      {{- $changeFreq = "monthly" }}
+      {{- $priority = 0.7 }}
+    {{- else if or (eq .Kind "taxonomy") (eq .Kind "term") }}
+      {{- $changeFreq = "weekly" }}
+      {{- $priority = 0.6 }}
+    {{- else if eq .Section "events" }}
+      {{- $changeFreq = "weekly" }}
+      {{- $priority = 0.7 }}
+    {{- else }}
+      {{- $changeFreq = "monthly" }}
+      {{- $priority = 0.5 }}
+    {{- end }}
+
+
+    <url>
+      <loc>{{ .Permalink }}</loc>
+      {{- if not .Lastmod.IsZero }}
+        <lastmod
+          >{{ .Lastmod.Format "2006-01-02T15:04:05-07:00" | safeHTML }}</lastmod
+        >
+      {{- end }}
+      <changefreq>{{ $changeFreq }}</changefreq>
+      <priority>{{ $priority }}</priority>
+      {{- if .IsTranslated }}
+        {{- range .AllTranslations }}
+          <xhtml:link
+            rel="alternate"
+            hreflang="{{ .Language.Lang }}"
+            href="{{ .Permalink }}"
+          />
+        {{- end }}
+        {{- /* Add x-default for English version */ -}}
+        {{- $englishPage := .GetPage "/" }}
+        {{- range .AllTranslations }}
+          {{- if eq .Language.Lang "en" }}
+            <xhtml:link
+              rel="alternate"
+              hreflang="x-default"
+              href="{{ .Permalink }}"
+            />
+          {{- end }}
+        {{- end }}
+      {{- end }}
+    </url>
+  {{- end }}
+</urlset>

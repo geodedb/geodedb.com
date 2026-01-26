@@ -21,6 +21,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 Documentation tagged with **indexes** in the Geode graph database. This comprehensive collection covers index design, implementation strategies, performance optimization, maintenance procedures, and best practices for leveraging indexes to accelerate graph queries and ensure optimal database performance.
 
 ## Overview
@@ -52,7 +54,7 @@ MATCH (u:User)
 WHERE u.email = 'user@example.com'
 RETURN u;
 
-// Performance: 50,000+ QPS vs 100 QPS without index
+// Performance: Significantly faster than full scans (workload dependent)
 ```
 
 **Benefits**:

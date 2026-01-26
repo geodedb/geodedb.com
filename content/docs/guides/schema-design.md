@@ -19,6 +19,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 ## Overview
 
 Designing an effective graph schema is critical for query performance, maintainability, and accurately representing your domain. This guide covers best practices for modeling data as property graphs in Geode.

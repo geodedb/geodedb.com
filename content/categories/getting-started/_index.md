@@ -15,6 +15,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 The **Getting Started** category provides everything you need to begin working with Geode graph database. From installation and configuration to writing your first queries, these guides help you go from zero to productive in minutes.
 
 ## Introduction to Getting Started
@@ -39,22 +41,10 @@ docker run -p 3141:3141 codepros/geode:latest
 docker exec -it <container_id> geode shell
 ```
 
-**Using Pre-built Binaries**:
-```bash
-# Download for your platform
-wget https://gitlab.com/devnw/codepros/geode/geode/releases/latest/download/geode-linux-x64.tar.gz
-
-# Extract
-tar xzf geode-linux-x64.tar.gz
-
-# Run
-./geode serve
-```
-
 **Building from Source** (requires Zig 0.15.1+):
 ```bash
 # Clone repository
-git clone https://gitlab.com/devnw/codepros/geode/geode.git
+git clone https://github.com/codeprosorg/geode
 cd geode
 
 # Build
@@ -520,7 +510,7 @@ async with client.transaction() as tx:
 
 ```bash
 # 1. Clone repository
-git clone https://gitlab.com/devnw/codepros/geode/geode.git
+git clone https://github.com/codeprosorg/geode
 cd geode
 
 # 2. Build
@@ -530,10 +520,10 @@ make build
 make test
 
 # 4. Start development server
-./zig-out/bin/geode serve --dev
+geode serve --dev
 
 # 5. Open shell in another terminal
-./zig-out/bin/geode shell
+geode shell
 ```
 
 ### Configuration for Development

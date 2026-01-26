@@ -1,3 +1,5 @@
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 # Geode Database Documentation
 
 Official documentation for the Geode Graph Database, hosted at [geodedb.com](https://geodedb.com).

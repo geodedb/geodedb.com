@@ -18,6 +18,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 Comprehensive API reference documentation for Geode covering GQL language syntax, client library interfaces, wire protocol specification, and all developer-facing APIs.
 
 ## GQL Language Reference

@@ -1,6 +1,6 @@
 ---
 title: "Python Client Library - Async Graph Database Integration"
-description: "Production-ready Geode Python client with async/await support, connection pooling (1000+ queries/sec), query builders, transaction management, Row-Level Security, savepoints, and FastAPI integration for modern Python applications."
+description: "Production-ready Geode Python client with async/await support, connection pooling for high-throughput workloads, query builders, transaction management, Row-Level Security, savepoints, and FastAPI integration for modern Python applications."
 keywords:
   - Python client
   - asyncio
@@ -27,15 +27,17 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 # Python Client Library
 
-The Geode Python client is a production-ready, async-first library engineered for modern Python applications leveraging asyncio. Built on aioquic for high-performance QUIC protocol support, it delivers 1,000+ queries per second with connection pooling, type-safe query builders, comprehensive transaction management including savepoints, and full integration with Geode's advanced features like Row-Level Security policies.
+The Geode Python client is a production-ready, async-first library engineered for modern Python applications leveraging asyncio. Built on aioquic for high-performance QUIC protocol support, it delivers high-throughput performance with connection pooling, type-safe query builders, comprehensive transaction management including savepoints, and full integration with Geode's advanced features like Row-Level Security policies.
 
 ## Why Choose the Python Client?
 
 **Async-First Architecture**: Native asyncio integration ensures non-blocking I/O for concurrent operations without threading complexity. Perfect for high-throughput web applications, data pipelines, and microservices.
 
-**Production-Ready Performance**: Optimized connection pooling achieves 1,000+ queries per second, with automatic connection lifecycle management, health checks, and graceful degradation under load.
+**Production-Ready Performance**: Optimized connection pooling improves throughput, with automatic connection lifecycle management, health checks, and graceful degradation under load.
 
 **Type Safety**: Type-safe query builders and parameter handling prevent common errors at development time, while comprehensive error types with ISO status codes enable precise exception handling.
 
@@ -91,7 +93,7 @@ async with GeodeClient("localhost:3141") as client:
 
 ### Connection Pooling
 
-High-performance connection pool (1000+ queries/second):
+High-performance connection pool for high-throughput workloads:
 
 ```python
 from geode_client import ConnectionPool
@@ -670,7 +672,7 @@ await client.authenticate(username, password)
 
 ## Performance Benchmarks
 
-**Connection Pooling**: 1,000+ queries/second with min_connections=10, max_connections=100
+**Connection Pooling**: Workload-dependent throughput with min_connections=10, max_connections=100
 
 **Query Latency**: p50=5ms, p95=15ms, p99=30ms for simple MATCH queries on warm cache
 

@@ -7,6 +7,8 @@ slug: "graph-algorithms-tutorial"
 canonical: "https://geodedb.com/docs/tutorials/graph-algorithms-tutorial/"
 ---
 
+<!-- CANARY: REQ=REQ-CENTRALITY-001; FEATURE="Centrality"; ASPECT=PageRank; STATUS=TESTED; OWNER=engine; UPDATED=2026-01-15 -->
+
 # Graph Algorithms Tutorial
 
 Learn to run powerful graph algorithms on your data in this hands-on 20-minute tutorial.

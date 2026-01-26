@@ -19,6 +19,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-SERVER-REFACTOR-015; FEATURE="ServerRefactoring"; ASPECT=ConfigManagement; STATUS=TESTED; OWNER=server; UPDATED=2026-01-15 -->
+
 ## Overview
 
 This guide provides complete reference documentation for configuring the Geode database server. Configuration can be provided through:
@@ -41,7 +43,7 @@ This guide provides complete reference documentation for configuring the Geode d
 ### Server Binary: `geode serve`
 
 ```bash
-./zig-out/bin/geode serve [OPTIONS]
+geode serve [OPTIONS]
 ```
 
 | Flag | Type | Default | Description |
@@ -70,7 +72,7 @@ openssl req -x509 -newkey rsa:4096 \
     -days 365 -nodes -subj "/CN=localhost"
 
 # Start server
-./zig-out/bin/geode serve \
+geode serve \
     --listen 0.0.0.0:3141 \
     --tls-cert server.crt \
     --tls-key server.key
@@ -78,7 +80,7 @@ openssl req -x509 -newkey rsa:4096 \
 
 **Production Server** with all options:
 ```bash
-./zig-out/bin/geode serve \
+geode serve \
     --listen 0.0.0.0:3141 \
     --data-dir /var/lib/geode/data \
     --wal-dir /var/lib/geode/wal \
@@ -94,7 +96,7 @@ openssl req -x509 -newkey rsa:4096 \
 
 **Using Configuration File**:
 ```bash
-./zig-out/bin/geode serve --config /etc/geode/config.yaml
+geode serve --config /etc/geode/config.yaml
 ```
 
 ---
@@ -277,13 +279,13 @@ monitoring:
 
 ```bash
 # Load from file
-./zig-out/bin/geode serve --config /etc/geode/config.yaml
+geode serve --config /etc/geode/config.yaml
 
 # Override with environment variables
-GEODE_LOG_LEVEL=debug ./zig-out/bin/geode serve --config /etc/geode/config.yaml
+GEODE_LOG_LEVEL=debug geode serve --config /etc/geode/config.yaml
 
 # Override with command-line flags (highest precedence)
-./zig-out/bin/geode serve \
+geode serve \
     --config /etc/geode/config.yaml \
     --max-connections 20000
 ```
@@ -319,7 +321,7 @@ optimizer:
 
 **Start Command**:
 ```bash
-./zig-out/bin/geode serve --config dev-config.yaml
+geode serve --config dev-config.yaml
 ```
 
 ### Staging Configuration
@@ -536,7 +538,7 @@ openssl req -x509 -newkey rsa:4096 \
     -subj "/CN=localhost"
 
 # Start server
-./zig-out/bin/geode serve \
+geode serve \
     --tls-cert server.crt \
     --tls-key server.key
 ```
@@ -558,7 +560,7 @@ sudo certbot certonly --standalone \
 # /etc/letsencrypt/live/geode.example.com/privkey.pem
 
 # Start server
-sudo ./zig-out/bin/geode serve \
+sudo geode serve \
     --tls-cert /etc/letsencrypt/live/geode.example.com/fullchain.pem \
     --tls-key /etc/letsencrypt/live/geode.example.com/privkey.pem
 
@@ -573,7 +575,7 @@ sudo ./zig-out/bin/geode serve \
 cat server.crt intermediate.crt root.crt > fullchain.pem
 
 # Start server
-./zig-out/bin/geode serve \
+geode serve \
     --tls-cert fullchain.pem \
     --tls-key server.key
 ```
@@ -821,10 +823,10 @@ readinessProbe:
 **Issue: Server won't start with config file**
 ```bash
 # Check config syntax
-./zig-out/bin/geode serve --config /etc/geode/config.yaml --validate
+geode serve --config /etc/geode/config.yaml --validate
 
 # Use debug logging to see what's failing
-./zig-out/bin/geode serve \
+geode serve \
     --config /etc/geode/config.yaml \
     --log-level debug
 ```
@@ -835,7 +837,7 @@ readinessProbe:
 env | grep GEODE
 
 # Test with explicit values
-GEODE_LOG_LEVEL=debug ./zig-out/bin/geode serve
+GEODE_LOG_LEVEL=debug geode serve
 ```
 
 **Issue: TLS certificate errors**

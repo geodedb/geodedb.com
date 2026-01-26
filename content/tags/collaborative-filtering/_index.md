@@ -25,6 +25,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 # Collaborative Filtering in Geode
 
 Collaborative filtering (CF) is a recommendation technique that leverages user behavior patterns and item similarities to predict preferences. Unlike content-based approaches that require item metadata, CF discovers patterns purely from user-item interactions. Geode's native graph structure makes it ideal for implementing both user-based and item-based collaborative filtering at scale, handling billions of ratings with sub-second query latency.

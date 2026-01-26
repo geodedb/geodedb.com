@@ -20,6 +20,8 @@ keywords:
   - loki
 ---
 
+<!-- CANARY: REQ=REQ-SERVER-STARTUP-INTEGRATION-001; FEATURE="Server Startup Integration Tests"; ASPECT=EndToEndServerTesting; STATUS=TESTED; OWNER=server; UPDATED=2025-10-05 -->
+
 # Monitoring and Telemetry
 
 Comprehensive observability for Geode: health checks, Prometheus metrics, optional telemetry, and audit logging.

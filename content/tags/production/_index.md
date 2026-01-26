@@ -17,6 +17,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 # Production Deployment
 
 Deploy Geode graph database to production environments with confidence. This comprehensive guide covers high-availability architecture, monitoring strategies, backup procedures, security hardening, and operational excellence for running Geode at scale.
@@ -29,7 +31,7 @@ Geode is battle-tested for demanding production workloads:
 - 97.4% test coverage (1644/1688 tests passing)
 - 100% GQL compliance (70/70 ISO tests)
 - ACID-compliant transactions
-- Production deployments handling millions of queries daily
+- Production deployments handling high query volumes
 
 **Enterprise Features**:
 - Row-level security for multi-tenant architectures
@@ -38,10 +40,9 @@ Geode is battle-tested for demanding production workloads:
 - Comprehensive audit logging
 
 **Performance at Scale**:
-- Python: 1,000+ queries/second
-- Rust: 10,000+ queries/second
-- Concurrent connections: 10,000+
-- Transaction latency: < 10ms (local network)
+- Transaction throughput: read-only up to 100,000 txn/sec; read-write 10,000-50,000 txn/sec; write-heavy 5,000-20,000 txn/sec
+- Concurrent connections: 10,000+ supported
+- Point lookup latency: <1ms (typically 100-500us); short path 1-5ms
 
 ## Architecture Patterns
 
@@ -49,7 +50,7 @@ Geode is battle-tested for demanding production workloads:
 
 **Use Cases**:
 - Development and testing environments
-- Low-traffic production workloads (< 100 QPS)
+- Low-traffic production workloads
 - Applications requiring ACID guarantees without replication complexity
 - Budget-constrained deployments
 
@@ -112,7 +113,7 @@ systemctl start geode
 
 **Use Cases**:
 - Business-critical applications requiring 99.99% uptime
-- High-traffic workloads (> 1000 QPS)
+- High-traffic workloads (throughput depends on workload and server limits)
 - Geographic distribution for disaster recovery
 - Applications with strict RTO/RPO requirements
 
@@ -630,10 +631,10 @@ systemctl start geode
 - Indexes: 10-30% of data size depending on indexed properties
 
 **CPU Requirements**:
-- Query parsing: 1 core per 100 QPS
-- Transaction processing: 1 core per 50 TPS
-- Replication: 1-2 cores per follower
-- Recommended: 4-8 cores for production
+- Query parsing and planning scale with query complexity and concurrency
+- Transaction processing scales with write mix and index maintenance
+- Replication overhead depends on follower count and network latency
+- Benchmark your workload; Geode scales linearly up to 64 cores
 
 ### Load Testing
 

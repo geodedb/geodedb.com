@@ -1,3 +1,5 @@
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 # FULL_DOCS_PLAN.md
 
 **Last Updated**: 2026-01-24

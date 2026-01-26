@@ -13,6 +13,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 Documentation tagged with **ACID Transactions** in the Geode graph database. ACID (Atomicity, Consistency, Isolation, Durability) represents the fundamental guarantees that make database transactions reliable, ensuring data integrity even in the face of failures, concurrent access, and system crashes.
 
 ## Introduction to ACID

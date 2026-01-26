@@ -22,6 +22,8 @@ params:
     description: "Ensure data integrity in Geode with ACID transactions, schema constraints, validation rules, and consistency checks. Maintain high-quality, reliable graph data."
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 Data integrity and consistency are fundamental to reliable database systems. Geode provides comprehensive mechanisms to ensure your graph data remains accurate, valid, and consistent through ACID transactions, schema constraints, validation rules, and automated integrity checks.
 
 ## Data Integrity Fundamentals

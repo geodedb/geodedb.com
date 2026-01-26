@@ -18,6 +18,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCUMENTATION-STRUCTURE-001; FEATURE="DocStructure"; ASPECT=StructureTests; STATUS=TESTED; OWNER=claude; UPDATED=2026-01-16 -->
+
 ## Overview
 
 Geode provides a complete Language Server Protocol (LSP) implementation for GQL files, bringing professional IDE features to graph query development. The LSP server delivers real-time syntax checking, intelligent code completion, hover documentation, and more.

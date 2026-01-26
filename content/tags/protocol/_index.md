@@ -19,6 +19,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 Geode uses a modern, efficient wire protocol built on QUIC+TLS 1.3 transport with JSON line messaging. This design provides security, performance, and simplicity while maintaining compatibility across all client libraries.
 
 ## Transport Layer

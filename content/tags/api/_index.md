@@ -5,6 +5,8 @@ keywords: ["API", "REST API", "GraphQL", "client libraries", "API design", "API 
 weight: 10
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 # API Development
 
 API development encompasses the design, implementation, and documentation of interfaces for accessing Geode's graph database functionality. Well-designed APIs enable developers to build powerful applications while maintaining security, performance, and backward compatibility.
@@ -97,7 +99,7 @@ asyncio.run(main())
 
 Features:
 - Full async/await support
-- Connection pooling (1000+ QPS)
+- Connection pooling (workload-dependent throughput)
 - Query builders
 - Row-Level Security policy management
 - Savepoint support
@@ -132,7 +134,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 Features:
 - Zero-cost abstractions
 - Type-safe query builders
-- Connection pooling (10,000+ QPS)
+- Connection pooling (workload-dependent throughput)
 - Transaction support
 - Compile-time query validation
 

@@ -22,6 +22,8 @@ params:
     description: "Implement fine-grained access control with Geode's Row-Level Security. Protect sensitive data at the node level with flexible security policies for enterprise graph databases."
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 Row-Level Security (RLS) in Geode provides fine-grained access control at the node and relationship level, allowing you to restrict which graph elements users can access based on flexible policy rules. This is essential for multi-tenant applications, data privacy compliance, and protecting sensitive information within shared graph databases.
 
 ## Understanding Row-Level Security

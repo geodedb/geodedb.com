@@ -19,6 +19,8 @@ keywords:
   - real-time analytics
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 # Fraud and Anomaly Detection
 
 Build a real-time fraud detection system using graph patterns, machine learning embeddings, and change data capture (CDC).

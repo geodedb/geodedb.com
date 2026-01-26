@@ -18,6 +18,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-API-DOCS-002; FEATURE="APIDocumentation"; ASPECT=BuildTarget; STATUS=EXEMPT; OWNER=tooling; UPDATED=2026-01-03 -->
+
 ## Overview
 
 This document provides a complete reference for Geode's GQL (Graph Query Language) implementation, including all keywords, functions, types, and procedures. All features conform to the ISO/IEC 39075:2024 GQL standard.

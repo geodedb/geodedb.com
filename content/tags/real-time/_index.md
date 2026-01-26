@@ -17,6 +17,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 Real-time processing in Geode enables applications to query and analyze graph data with millisecond latency, react to data changes instantly, and maintain up-to-date materialized views. Geode's architecture is optimized for concurrent read/write workloads with predictable performance.
 
 ## What Is Real-Time Graph Processing?

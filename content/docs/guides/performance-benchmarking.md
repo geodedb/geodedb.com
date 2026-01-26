@@ -7,6 +7,8 @@ slug: "performance-benchmarking"
 canonical: "https://geodedb.com/docs/guides/performance-benchmarking/"
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 # Performance Benchmarking Guide
 
 Measure and optimize Geode performance with comprehensive benchmarking and profiling techniques.
@@ -78,8 +80,9 @@ Long-running tests for stability
 
 ```bash
 # Install Geode
-tar -xzf geode-0.18.0.tar.gz
-cd geode-0.18.0
+git clone https://github.com/codeprosorg/geode
+cd geode
+make build
 
 # Install benchmark tools
 pip install locust geode-client

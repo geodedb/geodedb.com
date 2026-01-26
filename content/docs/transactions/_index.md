@@ -27,6 +27,8 @@ params:
     description: "Complete transaction guide for Geode covering ACID guarantees, MVCC, six isolation levels, and transaction patterns"
 ---
 
+<!-- CANARY: REQ=REQ-TXN-ISOLATION-003; FEATURE="Serializable Snapshot Isolation"; ASPECT=SerializableSSI; STATUS=TESTED; OWNER=txn; UPDATED=2025-10-05 -->
+
 # Transactions
 
 Geode provides full ACID transaction guarantees with Multi-Version Concurrency Control (MVCC) and six isolation levels ranging from Read Uncommitted to Linearizable.

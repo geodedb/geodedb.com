@@ -29,6 +29,8 @@ params:
     description: "Enterprise security for Geode including encryption at rest and in transit, fine-grained access control, and compliance features"
 ---
 
+<!-- CANARY: REQ=REQ-SEC-AUDIT-LOG-001; FEATURE="Security"; ASPECT=AuditLog; STATUS=TESTED; OWNER=security; UPDATED=2026-01-16 -->
+
 # Security
 
 Enterprise-grade security features for protecting your data at rest, in transit, and in use. Geode provides comprehensive security capabilities including encryption, authentication, authorization, and compliance features.
@@ -65,6 +67,7 @@ Geode implements multiple layers of security:
 - **[Field-Level Encryption](field-level-encryption/)** - Searchable encryption for sensitive fields with key rotation and performance optimization
 - **[KMS Integration](kms-integration/)** - Key Management Service integration with HashiCorp Vault for secure key storage and rotation
 - **[Password Hashing](password-hashing/)** - Secure password storage with Argon2id, bcrypt, and PBKDF2 algorithms
+- **[Post-Quantum Readiness](post-quantum-readiness/)** - Cryptographic architecture for the Post-Quantum era including forward secrecy and algorithmic choices
 - **[Session Management](session-management/)** - Secure session handling including session tokens, timeout, and revocation
 
 ## Encryption

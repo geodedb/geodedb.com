@@ -21,6 +21,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 Documentation tagged with **scaling** in the Geode graph database. This comprehensive collection covers scaling strategies, capacity planning, replication patterns, sharding techniques, and best practices for building highly scalable graph database deployments that handle enterprise workloads.
 
 ## Overview
@@ -43,7 +45,7 @@ Scale up by adding resources to a single server:
 
 **When to Use**:
 
-- Data fits on single machine (< 100M nodes)
+- Data fits on a single machine (size depends on hardware and indexing)
 - Simple operational requirements
 - Cost-effective for small to medium workloads
 - No application changes needed
@@ -55,13 +57,13 @@ Scale up by adding resources to a single server:
 # - 4 vCPUs
 # - 16 GB RAM
 # - 500 GB SSD
-# Performance: ~5,000 QPS
+# Performance: workload dependent (benchmark-specific)
 
 # After: Large instance
 # - 32 vCPUs
 # - 256 GB RAM
 # - 2 TB NVMe SSD
-# Performance: ~40,000 QPS
+# Performance: workload dependent (benchmark-specific)
 ```
 
 **Configuration for Vertical Scaling**:
@@ -427,7 +429,7 @@ client, err := geode.Connect(config)
 
 ### Growth Modeling
 
-Project resource needs:
+Project resource needs (numbers below are illustrative; calibrate with your benchmarks):
 
 ```python
 # capacity_planner.py
@@ -456,7 +458,7 @@ def estimate_resources(
     index_cache_gb = index_storage_mb / 1000
     required_memory_gb = working_set_gb + index_cache_gb + 16  # OS overhead
 
-    # CPU calculation (1 core per 500 QPS)
+    # CPU calculation (example heuristic: 1 core per 500 QPS)
     required_cores = math.ceil(qps_target / 500)
 
     # Server count (assuming 32-core, 256GB servers)
@@ -599,7 +601,7 @@ readinessProbe:
 
 ### Start Simple, Scale Gradually
 
-**Phase 1: Single Server** (0-1M nodes):
+**Phase 1: Single Server** (initial deployments):
 
 ```yaml
 deployment: single-server
@@ -607,10 +609,10 @@ resources:
   cpu: 8 cores
   memory: 64 GB
   storage: 500 GB SSD
-performance: 5,000-10,000 QPS
+performance: workload-dependent (benchmark-specific)
 ```
 
-**Phase 2: Vertical Scaling** (1M-10M nodes):
+**Phase 2: Vertical Scaling** (single-node scale-up):
 
 ```yaml
 deployment: single-server
@@ -618,10 +620,10 @@ resources:
   cpu: 32 cores
   memory: 256 GB
   storage: 2 TB NVMe
-performance: 20,000-40,000 QPS
+performance: workload-dependent (benchmark-specific)
 ```
 
-**Phase 3: Read Replicas** (10M-50M nodes):
+**Phase 3: Read Replicas** (read-heavy workloads):
 
 ```yaml
 deployment: primary + replicas
@@ -632,10 +634,10 @@ resources_per_server:
   cpu: 16 cores
   memory: 128 GB
   storage: 2 TB NVMe
-performance: 50,000-100,000 QPS (reads)
+performance: workload-dependent (benchmark-specific)
 ```
 
-**Phase 4: Sharding** (50M+ nodes):
+**Phase 4: Sharding** (distributed datasets):
 
 ```yaml
 deployment: sharded-cluster
@@ -646,7 +648,7 @@ resources_per_server:
   cpu: 32 cores
   memory: 256 GB
   storage: 4 TB NVMe
-performance: 100,000+ QPS
+performance: workload-dependent (benchmark-specific)
 ```
 
 ### Data Locality

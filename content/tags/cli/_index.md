@@ -17,6 +17,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 # Command-Line Interface
 
 The Geode command-line interface (CLI) provides comprehensive tools for database administration, interactive query execution, server management, and automation. The CLI is the primary interface for operators, developers, and administrators working with Geode databases.

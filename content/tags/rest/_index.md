@@ -17,6 +17,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 # REST API Integration
 
 Geode provides a comprehensive REST API for HTTP-based integration, enabling access from any platform or language that can make HTTP requests. While native QUIC clients offer optimal performance, the REST API provides broad compatibility, ease of use, and standardized error handling for web services and microservices architectures.

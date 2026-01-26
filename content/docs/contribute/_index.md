@@ -7,6 +7,8 @@ slug: "contribute"
 canonical: "https://geodedb.com/docs/contribute/"
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 # Contributing to Geode
 
 Thank you for your interest in contributing to Geode! This guide will help you get started.
@@ -43,7 +45,7 @@ Thank you for your interest in contributing to Geode! This guide will help you g
 
 ```bash
 # Clone repository
-git clone https://gitlab.com/devnw/codepros/geode.git
+git clone https://github.com/codeprosorg/geode
 cd geode
 
 # Install Zig 0.15.1+
@@ -108,7 +110,7 @@ pub fn calc(g: *Graph, i: u32, d: f64) !PR {
 All implementations must include CANARY markers for governance tracking:
 
 ```zig
-// CANARY: REQ-GQL-042.1 TESTED "Implements PageRank algorithm"
+// CANARY: REQ=REQ-XXX; FEATURE="PageRank"; ASPECT=Algorithm; STATUS=TESTED; TEST=TestPageRankBasic; OWNER=graph; UPDATED=2026-01-24
 pub fn pageRank(graph: *Graph, config: PageRankConfig) !Result {
     // Implementation
 }
@@ -116,7 +118,7 @@ pub fn pageRank(graph: *Graph, config: PageRankConfig) !Result {
 
 **CANARY Format**:
 ```
-// CANARY: <requirement-id> <status> "<description>"
+// CANARY: REQ=REQ-XXX; FEATURE="Name"; ASPECT=Aspect; STATUS=IMPL; TEST=TestName; OWNER=team; UPDATED=YYYY-MM-DD
 ```
 
 **Statuses**: `TESTED`, `BENCHED`, `IMPL`, `EXEMPT`
@@ -170,7 +172,7 @@ feat(query): Add PageRank graph algorithm
 Implements PageRank algorithm with configurable damping factor
 and iteration count. Includes HNSW index integration.
 
-CANARY: REQ-GQL-042.1 TESTED
+CANARY: REQ=REQ-XXX; FEATURE="PageRank"; ASPECT=Algorithm; STATUS=TESTED; TEST=TestPageRankBasic; OWNER=graph; UPDATED=2026-01-24
 Closes #123
 
 fix(storage): Resolve WAL corruption on crash
@@ -178,7 +180,7 @@ fix(storage): Resolve WAL corruption on crash
 Fixed race condition in WAL sync that could cause corruption
 during ungraceful shutdown.
 
-CANARY: REQ-STORAGE-15.3 TESTED
+CANARY: REQ=REQ-XXX; FEATURE="WAL"; ASPECT=CrashRecovery; STATUS=TESTED; TEST=TestWalCrashRecovery; OWNER=storage; UPDATED=2026-01-24
 Fixes #456
 ```
 
@@ -511,7 +513,7 @@ When contributing performance improvements:
 - [Development TODO](https://gitlab.com/devnw/codepros/geode/-/blob/main/docs/TODO.md)
 
 ### Code
-- [Source Repository](https://gitlab.com/devnw/codepros/geode)
+- [Source Repository](https://github.com/codeprosorg/geode)
 - [Issue Tracker](https://gitlab.com/devnw/codepros/geode/-/issues)
 - [Continuous Integration](https://gitlab.com/devnw/codepros/geode/-/pipelines)
 

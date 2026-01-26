@@ -5,6 +5,8 @@ keywords: ["event streaming", "stream processing", "real-time events", "event-dr
 weight: 10
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 # Event Streaming
 
 Event streaming is a paradigm for capturing, storing, and processing continuous flows of events in real-time. Geode's event streaming capabilities enable building reactive, scalable applications that respond to changes as they happen, powering use cases from real-time analytics to complex event processing.

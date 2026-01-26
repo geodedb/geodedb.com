@@ -7,6 +7,8 @@ slug: "supply-chain"
 canonical: "https://geodedb.com/docs/use-cases/supply-chain/"
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 # Supply Chain Optimization
 
 Optimize supply chain operations with Geode for route planning, inventory tracking, and real-time logistics analytics.

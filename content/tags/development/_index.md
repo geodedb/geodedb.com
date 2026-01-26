@@ -19,6 +19,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 # Development Guide
 
 This comprehensive guide covers everything developers need to build applications with Geode, from initial setup through testing, debugging, and deployment. Whether you're building web applications, microservices, or data pipelines, this guide provides the foundation for successful Geode integration.
@@ -58,8 +60,8 @@ docker logs geode
 **Option 2: Build from Source**:
 ```bash
 # Clone repository
-git clone https://gitlab.com/devnw/codepros/geode.git
-cd geode/geode
+git clone https://github.com/codeprosorg/geode
+cd geode
 
 # Build
 make build
@@ -673,7 +675,7 @@ curl http://localhost:8000/users/u1/recommendations
 ```bash
 # Fork and clone
 git clone https://gitlab.com/YOUR_USERNAME/geode.git
-cd geode/geode
+cd geode
 
 # Build
 make build

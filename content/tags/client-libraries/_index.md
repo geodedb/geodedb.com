@@ -22,6 +22,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 # Client Libraries
 
 Geode provides production-ready client libraries for Go, Python, Rust, and Zig, each optimized for their respective language ecosystems while maintaining consistent behavior through the ISO/IEC 39075:2024 GQL standard. All clients communicate via QUIC+TLS for high performance and security, providing developers with native, idiomatic interfaces for integrating graph database capabilities into their applications.
@@ -97,7 +99,7 @@ func main() {
 - **Transaction Management**: ACID transactions with Begin/Commit/Rollback
 - **Error Handling**: Go-idiomatic error types with ISO error code mapping
 
-#### Performance: 5,000+ queries/second
+#### Performance: Workload-dependent throughput
 
 #### Installation
 
@@ -146,13 +148,13 @@ asyncio.run(main())
 #### Key Features
 
 - **Async/Await**: Native asyncio integration for non-blocking I/O
-- **Connection Pooling**: High-performance pool supporting 1,000+ queries/second
+- **Connection Pooling**: High-performance pool for high-throughput workloads
 - **Query Builder**: Type-safe query construction with fluent API
 - **Row-Level Security**: Built-in RLS policy management
 - **Streaming Results**: Memory-efficient streaming for large result sets
 - **Type Safety**: Comprehensive type hints for improved IDE support
 
-#### Performance: 1,000+ queries/second with connection pooling
+#### Performance: Workload-dependent throughput with connection pooling
 
 #### Installation
 
@@ -213,7 +215,7 @@ async fn main() -> Result<(), Error> {
 - **Quinn QUIC**: High-performance QUIC implementation
 - **Memory Safety**: Rust's ownership model prevents memory errors
 
-#### Performance: 10,000+ queries/second
+#### Performance: Workload-dependent throughput
 
 #### Installation
 
@@ -286,9 +288,9 @@ pub fn main() !void {
 - **Vendored QUIC**: No external dependencies for maximum portability
 - **Cross-Platform**: Linux, macOS, Windows support
 - **Low-Level Control**: Fine-grained control over allocations and resources
-- **Performance**: 8,000+ queries/second with minimal overhead
+- **Performance**: Workload-dependent throughput with minimal overhead
 
-#### Performance: 8,000+ queries/second
+#### Performance: Workload-dependent throughput
 
 #### Installation
 
@@ -345,7 +347,7 @@ Query compilation and caching for improved performance:
 - **Query Compilation**: Queries parsed and compiled once
 - **Parameter Binding**: Safe parameter substitution prevents injection
 - **Cache Management**: Automatic caching of compiled queries
-- **Performance Gains**: 2-3x faster for repeated queries
+- **Performance Gains**: Reduced overhead for repeated queries
 
 ### Error Handling
 

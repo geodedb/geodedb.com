@@ -17,6 +17,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 # Developer Guide
 
 The complete technical reference for developing applications with Geode graph database. This guide covers API documentation, query syntax, client libraries, architectural patterns, and production best practices for building scalable graph applications.
@@ -40,10 +42,9 @@ Geode is built on modern, production-ready foundations:
 - Client Protocol Handler
 
 **Performance Characteristics**:
-- Python client: 1,000+ queries/second
-- Rust client: 10,000+ queries/second
-- Transaction latency: < 10ms (local)
-- Concurrent connections: 10,000+
+- Transaction throughput: read-only up to 100,000 txn/sec; read-write 10,000-50,000 txn/sec; write-heavy 5,000-20,000 txn/sec
+- Point lookup latency: <1ms (typically 100-500us); short path 1-5ms
+- Concurrent connections: 10,000+ supported
 
 ## Query Language Reference
 

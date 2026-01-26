@@ -19,6 +19,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 Understanding what changes between versions is critical for maintaining stable, secure, and performant graph database deployments. Geode maintains a comprehensive changelog documenting every feature addition, bug fix, performance improvement, and breaking change across all releases. This transparency enables informed upgrade decisions and smooth migration paths.
 
 As an enterprise-ready graph database implementing the ISO/IEC 39075:2024 GQL standard, Geode follows semantic versioning (MAJOR.MINOR.PATCH) and maintains backward compatibility within major versions. This guide explains how to track changes, understand release cycles, and plan upgrades effectively.
@@ -142,13 +144,13 @@ v2.0.0: Feature removed
 
 ```bash
 # View full changelog
-https://github.com/devnw/geode/blob/main/CHANGELOG.md
+https://github.com/codeprosorg/geode/blob/main/CHANGELOG.md
 
 # View changes between versions
 git log v0.17.0..v0.18.0 --oneline
 
 # View release notes
-https://github.com/devnw/geode/releases
+https://github.com/codeprosorg/geode/releases
 ```
 
 **Built-in Command**:

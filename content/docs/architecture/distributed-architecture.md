@@ -7,6 +7,8 @@ slug: "distributed-architecture"
 canonical: "https://geodedb.com/docs/architecture/distributed-architecture/"
 ---
 
+<!-- CANARY: REQ=REQ-DISTRIBUTED-001; FEATURE="Distributed Query Federation"; ASPECT=ModuleStructure; STATUS=TESTED; OWNER=distributed; UPDATED=2026-01-15 -->
+
 Geode's distributed architecture enables enterprise-scale graph database deployments with transparent query coordination across multiple shards and nodes. This guide provides comprehensive coverage of the distributed query system, federation capabilities, sharding strategies, fault tolerance mechanisms, and performance optimization techniques.
 
 ## Overview

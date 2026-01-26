@@ -7,6 +7,8 @@ slug: "error-codes"
 canonical: "https://geodedb.com/docs/reference/error-codes/"
 ---
 
+<!-- CANARY: REQ=REQ-GQL-017-STATUS; FEATURE="Docs"; ASPECT=StatusWireMapping; STATUS=TESTED; OWNER=engine; UPDATED=2026-01-16 -->
+
 Geode follows ISO/IEC SQL error code standards for consistent error reporting across all client libraries and interfaces. This reference provides complete documentation of all error codes, their meanings, and resolution strategies.
 
 ## Error Code Format

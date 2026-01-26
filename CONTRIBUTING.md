@@ -1,3 +1,5 @@
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 # Contributing to Geode Documentation
 
 Thank you for your interest in contributing to the Geode documentation!

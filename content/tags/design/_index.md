@@ -5,6 +5,8 @@ keywords: ["design patterns", "software patterns", "architectural patterns", "Ga
 weight: 10
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 # Design Patterns
 
 Design patterns are reusable solutions to commonly occurring problems in software design. Geode leverages proven design patterns to create maintainable, scalable, and testable code across its graph database implementation.

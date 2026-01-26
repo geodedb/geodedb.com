@@ -13,6 +13,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 Documentation tagged with **Hierarchical Navigable Small World (HNSW)** in the Geode graph database. HNSW is a state-of-the-art algorithm for approximate nearest neighbor (ANN) search in high-dimensional vector spaces, enabling fast and accurate vector similarity search for machine learning applications.
 
 ## Introduction to HNSW
@@ -386,13 +388,13 @@ Example (1M vectors, 768 dims, M=16):
 = 3.4 GB
 ```
 
-### Throughput Benchmarks
+### Performance Benchmarks
 
-Typical performance (1M vectors, 768 dimensions):
+Typical performance (10k vectors, 10-NN):
 
-- **QPS (queries per second)**: 1,000-10,000 depending on ef_search
-- **Recall@10**: 95-99% depending on parameters
-- **Latency p99**: 1-10ms depending on ef_search
+- **Latency**: 1-5ms at ~90% recall
+- **Recall@10**: ~90% (parameter dependent)
+- **Notes**: Performance varies with ef_search, vector dimensions, and hardware
 
 ## Monitoring and Troubleshooting
 
@@ -703,7 +705,7 @@ config_latency = {
     "ef_search": 32,
     "batch_size": 1
 }
-# Latency: 1-2ms, Recall: 90-93%
+# Latency and recall depend on dataset, dimensions, and ef_search
 
 # Throughput-optimized (batch queries)
 config_throughput = {
@@ -712,7 +714,7 @@ config_throughput = {
     "ef_search": 64,
     "batch_size": 100
 }
-# QPS: 5000-10000, Recall: 95-97%
+# Throughput and recall depend on dataset, dimensions, and hardware
 ```
 
 ## Further Reading

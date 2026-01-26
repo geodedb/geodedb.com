@@ -17,6 +17,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 Testing documentation for Geode covers unit testing, integration testing, performance benchmarking, and quality assurance practices. Learn how to test applications built on Geode, validate queries, and ensure production readiness with comprehensive test coverage.
 
 ## Testing Philosophy
@@ -374,8 +376,11 @@ async def test_load_performance(client):
     """Test system under load."""
     results = await load_test(client, concurrent_queries=50, duration_seconds=30)
 
+    baseline_qps = 0  # Set based on your benchmark baseline
     assert results["error_rate"] < 0.01, f"Error rate {results['error_rate']} exceeds 1%"
-    assert results["queries_per_second"] > 1000, f"QPS {results['queries_per_second']} below 1000"
+    assert results["queries_per_second"] >= baseline_qps, (
+        f"QPS {results['queries_per_second']} below baseline {baseline_qps}"
+    )
 ```
 
 ## Testing Best Practices

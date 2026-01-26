@@ -32,6 +32,8 @@ params:
       tags: ["WebSocket", "real-time", "networking", "browser", "communication"]
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 # WebSocket Support in Geode
 
 WebSocket protocol revolutionizes real-time communication between browsers and servers by providing full-duplex, bidirectional channels over a single TCP connection. While Geode primarily uses QUIC for optimal performance, WebSocket support enables seamless integration with web applications, browser-based clients, and environments where QUIC is unavailable. This comprehensive guide explores WebSocket implementation in Geode, covering real-time subscriptions, live dashboards, collaborative editing, security patterns, and production deployment strategies.

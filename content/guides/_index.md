@@ -2,7 +2,16 @@
 title: "Guides"
 description: "Step-by-step guides for common Geode tasks and patterns"
 weight: 4
+
+keywords:
+  - Geode guides
+  - graph database guides
+  - GQL tutorials
+  - graph modeling
+  - deployment guides
 ---
+
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
 
 # Geode Guides
 

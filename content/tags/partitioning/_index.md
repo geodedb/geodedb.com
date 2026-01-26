@@ -19,6 +19,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 # Graph Partitioning Strategies
 
 Graph partitioning is the process of dividing a graph database across multiple nodes to enable horizontal scalability and distributed processing. Unlike traditional database partitioning, graph partitioning must consider the interconnected nature of graph data, balancing data distribution with query performance. Geode provides sophisticated partitioning strategies that minimize cross-partition communication while maintaining balanced data distribution across cluster nodes.

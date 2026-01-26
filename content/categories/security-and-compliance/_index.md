@@ -19,6 +19,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 The **Security and Compliance** category provides comprehensive guidance on securing Geode deployments and meeting regulatory requirements. From authentication and encryption to audit logging and privacy compliance, these resources help you build and maintain secure, compliant graph database systems.
 
 ## Security Architecture

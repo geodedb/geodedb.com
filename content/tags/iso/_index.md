@@ -15,6 +15,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 Geode documentation tagged with **ISO/IEC 39075:2024 GQL Standard**. ISO/IEC 39075:2024 is the first international standard for graph query languages, providing a vendor-neutral specification for querying property graphs with full interoperability.
 
 ## Introduction to ISO/IEC 39075:2024

@@ -7,6 +7,8 @@ slug: "kms-integration"
 canonical: "https://geodedb.com/docs/security/kms-integration/"
 ---
 
+<!-- CANARY: REQ=REQ-SEC-AUDIT-LOG-001; FEATURE="Security"; ASPECT=AuditLog; STATUS=TESTED; OWNER=security; UPDATED=2026-01-16 -->
+
 # Key Management System (KMS) Integration
 
 Geode provides enterprise-grade Key Management Service integration for Transparent Data Encryption (TDE) with support for multiple KMS providers, automated key rotation, and comprehensive audit trails.
@@ -459,13 +461,12 @@ Data Encryption Keys:
 
 ### Benchmarks
 
-| Operation | Latency | Impact |
-|-----------|---------|--------|
-| DEK wrap (Vault) | <50ms | On startup only |
-| DEK unwrap (Vault) | <50ms | On startup only |
-| DEK cache hit | <5µs | 99.9% of operations |
-| Page encryption (local DEK) | <100µs | <1% overhead |
-| KMS API call (AWS) | <100ms | Cached, infrequent |
+| Operation | Expected Behavior | Notes |
+|-----------|-------------------|-------|
+| DEK wrap/unwrap | External KMS latency (milliseconds-scale) | Primarily at startup or rotation |
+| DEK cache hit | Microsecond-scale | Hot path |
+| Page encryption (local DEK) | Sub-millisecond | Low overhead |
+| KMS API call | External latency | Cached and infrequent |
 
 ### Caching Strategy
 
@@ -484,7 +485,7 @@ security:
 - DEKs cached after unwrap
 - Automatic refresh before expiry
 - LRU eviction under memory pressure
-- 99.9%+ hit rate in production
+- Track cache hit rate with telemetry and tune TTL/size
 
 ### Connection Pooling
 

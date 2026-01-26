@@ -13,7 +13,7 @@
 
 {{- if and $enable $valid -}}
   <nav
-    class="docs-toc-nav card border-0 shadow-sm mb-4"
+    class="docs-toc-nav card border-0 shadow-sm mb-4 docs-panel docs-toc-panel"
     id="docsTOC"
     role="navigation"
     aria-labelledby="tocTitle"
@@ -30,62 +30,6 @@
       </div>
     </div>
   </nav>
-
-  {{/* Enhanced TOC styling */}}
-  <style>
-    /* TOC specific styles */
-    .docs-toc-content nav ul {
-      list-style: none;
-      padding-left: 0;
-      margin-bottom: 0;
-    }
-
-    .docs-toc-content nav ul ul {
-      padding-left: 1rem;
-      margin-top: 0.5rem;
-    }
-
-    .docs-toc-content nav ul li {
-      margin-bottom: 0.5rem;
-      line-height: 1.5;
-    }
-
-    .docs-toc-content nav a {
-      color: var(--bs-body-color);
-      text-decoration: none;
-      display: block;
-      padding: 0.25rem 0.5rem;
-      border-left: 2px solid transparent;
-      transition: all 0.15s ease-in-out;
-    }
-
-    .docs-toc-content nav a:hover {
-      color: var(--bs-primary);
-      background-color: rgba(var(--bs-primary-rgb), 0.05);
-      border-left-color: var(--bs-primary);
-    }
-
-    .docs-toc-content nav a.active {
-      color: var(--bs-primary);
-      font-weight: 600;
-      background-color: rgba(var(--bs-primary-rgb), 0.1);
-      border-left-color: var(--bs-primary);
-    }
-
-    /* Smooth scroll behavior */
-    html {
-      scroll-behavior: smooth;
-    }
-
-    /* Scroll margin for anchor targets (accounts for fixed header) */
-    :target {
-      scroll-margin-top: 5rem;
-    }
-
-    h1[id], h2[id], h3[id], h4[id], h5[id], h6[id] {
-      scroll-margin-top: 5rem;
-    }
-  </style>
 
   {{/* Optional: Active section highlighting script */}}
   <script>

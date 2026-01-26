@@ -7,6 +7,8 @@ slug: "social-networks"
 canonical: "https://geodedb.com/docs/use-cases/social-networks/"
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 # Social Network Analysis
 
 Build scalable social networks with Geode for community detection, influence analysis, and real-time engagement tracking.

@@ -13,6 +13,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 Indexing is fundamental to achieving high-performance graph queries in Geode. As an enterprise-ready graph database implementing the ISO/IEC 39075:2024 GQL standard, Geode provides sophisticated indexing capabilities that enable fast lookups, efficient pattern matching, and optimized query execution across massive graph datasets.
 
 Understanding how to leverage Geode's indexing strategies can dramatically improve query performance, reduce latency, and scale your graph applications effectively. This comprehensive guide explores indexing concepts, implementation patterns, and optimization techniques specific to Geode's architecture.

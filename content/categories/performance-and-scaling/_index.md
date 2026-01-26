@@ -18,6 +18,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 The **Performance and Scaling** category provides comprehensive guidance on optimizing Geode for maximum throughput, minimal latency, and efficient resource utilization. Whether you're tuning a single-node deployment or planning a distributed architecture, these resources help you achieve production-ready performance.
 
 ## Understanding Graph Database Performance

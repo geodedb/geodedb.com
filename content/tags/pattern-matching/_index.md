@@ -20,6 +20,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 Pattern matching is the cornerstone of graph querying in Geode, allowing you to describe the structural patterns you want to find in your graph data. Using GQL's intuitive syntax, you can express complex graph traversals and relationships with clear, visual patterns.
 
 ## What is Pattern Matching?

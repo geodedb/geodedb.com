@@ -19,6 +19,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 # Graph Query Language (GQL)
 
 The **Graph Query Language (GQL)** is the ISO/IEC 39075:2024 international standard for querying property graphs. As the SQL of graph databases, GQL provides declarative syntax for expressing graph patterns, traversals, and analytics. Geode implements 100% of the GQL specification, passing all 70 ISO conformance tests, ensuring standards compliance and application portability across GQL-compliant databases.
@@ -50,7 +52,7 @@ Geode provides a complete, production-ready GQL implementation:
 - **Query Optimization**: Cost-based optimizer with index-aware execution planning
 - **EXPLAIN/PROFILE**: Visibility into query execution for performance tuning
 - **Error Messages**: Clear, actionable error messages with ISO status codes
-- **Performance**: Optimized implementation achieving millions of queries per second
+- **Performance**: Optimized execution with transaction baselines (read-only up to 100,000 txn/sec; read-write 10,000-50,000; write-heavy 5,000-20,000; workload dependent)
 
 ### ISO/IEC 39075:2024 Conformance
 

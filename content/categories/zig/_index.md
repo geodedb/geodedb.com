@@ -17,6 +17,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 The **Zig Programming Language** category provides comprehensive documentation on Zig's role in Geode, including why Zig was chosen as the implementation language, how to build Geode from source, contributing guidelines, and insights into Zig's unique features that make Geode performant and reliable.
 
 ## Why Zig for Geode?
@@ -180,7 +182,7 @@ zig version
 
 ```bash
 # Clone repository
-git clone https://gitlab.com/devnw/codepros/geode.git
+git clone https://github.com/codeprosorg/geode
 cd geode
 
 # Build debug version (fast compile, includes debug symbols)
@@ -413,9 +415,9 @@ zig build test --summary all
 Geode uses CANARY governance markers to track requirements:
 
 ```zig
-// CANARY: geode/query-execution/pattern-matching/basic-patterns
+// CANARY: REQ=REQ-XXX; FEATURE="PatternMatching"; ASPECT=BasicMatch; STATUS=TESTED; TEST=TestBasicNodePattern; OWNER=engine; UPDATED=2026-01-24
 // Requirement: Implement basic node pattern matching
-// Evidence: Test case test_basic_node_pattern in query_tests.zig
+// Evidence: TestBasicNodePattern
 pub fn matchNodePattern(pattern: NodePattern) ![]Node {
     // Implementation
 }

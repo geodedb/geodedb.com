@@ -14,6 +14,8 @@ keywords:
   - knowledge graph database
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 # Use Case Guides
 
 Real-world domain modeling patterns and implementation guides for common graph database applications.

@@ -7,6 +7,8 @@ slug: "testing-guide"
 canonical: "https://geodedb.com/docs/development/testing-guide"
 ---
 
+<!-- CANARY: REQ=REQ-DOCUMENTATION-STRUCTURE-001; FEATURE="DocStructure"; ASPECT=StructureTests; STATUS=TESTED; OWNER=claude; UPDATED=2026-01-16 -->
+
 # Testing Guide
 
 Geode maintains industry-leading test coverage with 97.4% integration test pass rate (1644/1688 tests) and 100% GQL compliance (70/70 ISO tests). This guide covers all testing frameworks, strategies, and best practices.

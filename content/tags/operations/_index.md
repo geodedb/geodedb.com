@@ -17,6 +17,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 Database operations encompass the day-to-day management, monitoring, and maintenance activities required to keep Geode running smoothly in production environments. Effective operational practices ensure high availability, optimal performance, and data integrity for your graph database workloads.
 
 ## Understanding Database Operations
@@ -43,13 +45,13 @@ The basic server startup command initializes Geode with default settings:
 
 ```bash
 cd geode
-./zig-out/bin/geode serve --listen 0.0.0.0:3141
+geode serve --listen 0.0.0.0:3141
 ```
 
 For production deployments, additional parameters control memory allocation, connection limits, and security settings:
 
 ```bash
-./zig-out/bin/geode serve \
+geode serve \
   --listen 0.0.0.0:3141 \
   --max-connections 1000 \
   --data-dir /var/lib/geode/data \
@@ -97,7 +99,7 @@ Continuous monitoring provides visibility into database health and performance c
 The PING command provides basic connectivity verification:
 
 ```bash
-./zig-out/bin/geode shell
+geode shell
 > PING
 PONG
 ```
@@ -261,7 +263,7 @@ openssl req -x509 -newkey rsa:4096 \
   -days 365 -nodes
 
 # Configure server with certificate
-./zig-out/bin/geode serve \
+geode serve \
   --cert cert.pem \
   --key key.pem \
   --listen 0.0.0.0:3141
@@ -289,7 +291,7 @@ Tracking database access and modifications provides security audit trails. Confi
 
 ```bash
 # Configure audit log
-./zig-out/bin/geode serve \
+geode serve \
   --audit-log /var/log/geode/audit.log \
   --audit-level all
 ```
@@ -822,7 +824,7 @@ class CapacityPlanner:
             WHERE timestamp > NOW() - INTERVAL '30' DAY
         """)
 
-        # Rough estimate: 1 core per 100 QPS
+        # Example heuristic: calibrate cores with your own benchmarks
         recommended_cores = int(query_stats[0]['peak_qps'] / 100) + 2
 
         return {

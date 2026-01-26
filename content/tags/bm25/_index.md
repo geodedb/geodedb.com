@@ -13,6 +13,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 Documentation tagged with **BM25 Ranking Algorithm** in the Geode graph database. BM25 (Best Matching 25) is a probabilistic ranking function used for text search and information retrieval, providing relevance scoring for keyword-based document searches.
 
 ## Introduction to BM25

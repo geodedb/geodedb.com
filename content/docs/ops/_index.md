@@ -30,6 +30,8 @@ params:
     description: "Complete operational guides for deploying and maintaining Geode in production with monitoring, observability, and audit compliance"
 ---
 
+<!-- CANARY: REQ=REQ-SERVER-STARTUP-INTEGRATION-001; FEATURE="Server Startup Integration Tests"; ASPECT=EndToEndServerTesting; STATUS=TESTED; OWNER=server; UPDATED=2025-10-05 -->
+
 # Operations
 
 Comprehensive operational guides for deploying, monitoring, and maintaining Geode in production environments. From single-node installations to globally distributed clusters, these guides cover everything you need for operational excellence.

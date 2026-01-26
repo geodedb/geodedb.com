@@ -15,6 +15,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 The **Documentation** category provides comprehensive reference materials, API documentation, and technical specifications for Geode graph database. This collection serves as the authoritative source for understanding Geode's capabilities, features, and usage patterns.
 
 ## Introduction to Geode Documentation

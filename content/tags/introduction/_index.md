@@ -18,6 +18,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 # Introduction to Geode
 
 Welcome to Geode, an enterprise-ready graph database that implements the ISO/IEC 39075:2024 Graph Query Language (GQL) standard. This guide introduces you to graph databases, explains why Geode is different, and helps you get started building your first graph applications.
@@ -224,27 +226,27 @@ docker exec -it <container_id> geode shell
 
 ```bash
 # Clone repository
-git clone https://gitlab.com/devnw/codepros/geode.git
-cd geode/geode
+git clone https://github.com/codeprosorg/geode
+cd geode
 
 # Build (requires Zig 0.15.1+)
 make build
 
 # Run server
-./zig-out/bin/geode serve --listen 0.0.0.0:3141
+geode serve --listen 0.0.0.0:3141
 
 # Connect via shell (in another terminal)
-./zig-out/bin/geode shell
+geode shell
 ```
 
 ### Verify Installation
 
 ```bash
 # Check version
-./zig-out/bin/geode --version
+geode --version
 
 # Test connection
-./zig-out/bin/geode shell
+geode shell
 ```
 
 In the shell:
@@ -606,7 +608,7 @@ ps aux | grep geode
 netstat -an | grep 3141
 
 # Test connection
-./zig-out/bin/geode shell
+geode shell
 ```
 
 ### Query Performance

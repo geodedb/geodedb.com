@@ -2,7 +2,16 @@
 title: "Rust Client"
 description: "Complete guide to the Geode Rust async client library with type-safe API"
 weight: 30
+
+keywords:
+  - Geode Rust client
+  - Rust SDK
+  - GQL driver
+  - graph database Rust
+  - client library
 ---
+
+<!-- CANARY: REQ=REQ-CLIENT-INTEGRATION-001; FEATURE="RustClientIntegration"; ASPECT=QUICTransport; STATUS=TESTED; OWNER=clients; UPDATED=2026-01-15 -->
 
 # Geode Rust Client Library
 
@@ -426,7 +435,7 @@ conn.commit().await?;
 The QUIC client provides:
 
 - **Low latency**: ~1-2ms per query (localhost)
-- **High throughput**: 10,000+ queries/second with connection pooling
+- **High throughput**: Depends on workload and pool sizing
 - **Zero-cost abstractions**: Minimal overhead from Rust's type system
 - **Concurrent**: Full async support for parallel queries
 

@@ -17,6 +17,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 # GraphQL Integration
 
 While Geode uses ISO/IEC 39075:2024 Graph Query Language (GQL) as its native query language, it can be seamlessly integrated with GraphQL to provide a modern API layer for frontend applications. This integration enables developers to leverage GraphQL's type system and tooling while benefiting from Geode's powerful graph capabilities.

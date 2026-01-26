@@ -17,6 +17,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 Real-time analytics in Geode enables instant insights from graph data through streaming aggregations, temporal queries, and incremental computation. Build live dashboards, detect trends, and monitor business metrics with millisecond-latency queries on continuously evolving data.
 
 ## What Are Real-Time Graph Analytics?

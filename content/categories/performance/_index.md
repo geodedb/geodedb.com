@@ -21,6 +21,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 # Performance & Optimization
 
 The **Performance & Optimization** category provides comprehensive guidance for maximizing Geode's performance across all workloads. From query optimization and index design through system tuning and capacity planning, these resources help achieve optimal throughput and latency whether you're running analytical queries, real-time transactions, or mixed workloads at scale.
@@ -29,13 +31,13 @@ The **Performance & Optimization** category provides comprehensive guidance for 
 
 Database performance optimization requires understanding query patterns, data characteristics, system architecture, and operational requirements. Geode provides extensive tooling for performance analysis and optimization: EXPLAIN visualizes query execution plans before execution; PROFILE measures actual execution time and resource usage; metrics expose system-level bottlenecks; and tracing reveals complete query lifecycles. Combined with proper indexing, query optimization, and system tuning, these tools enable achieving exceptional performance.
 
-This category covers performance optimization at all levels: **query-level** optimization through better GQL patterns and index usage; **system-level** tuning through configuration and resource allocation; **operational** optimization through monitoring and capacity planning. Whether optimizing a single slow query or scaling to millions of queries per second, these resources provide actionable guidance grounded in production experience.
+This category covers performance optimization at all levels: **query-level** optimization through better GQL patterns and index usage; **system-level** tuning through configuration and resource allocation; **operational** optimization through monitoring and capacity planning. Whether optimizing a single slow query or scaling to high-throughput workloads (read-only up to 100,000 txn/sec; read-write 10,000-50,000 txn/sec), these resources provide actionable guidance grounded in production experience.
 
 ## Performance Fundamentals
 
 ### Performance Dimensions
 
-**Throughput**: Queries processed per second (QPS). Critical for high-volume applications. Geode achieves millions of QPS with proper indexing and batching.
+**Throughput**: Queries processed per second (QPS). Critical for high-volume applications. Geode throughput is workload-dependent (read-only up to 100,000 txn/sec; read-write 10,000-50,000 txn/sec; write-heavy 5,000-20,000 txn/sec).
 
 **Latency**: Time to execute individual queries. Measured at p50 (median), p95, and p99 percentiles. Critical for user-facing applications requiring consistent response times.
 
@@ -612,8 +614,8 @@ ORDER BY users DESC
 
 ---
 
-**Performance**: Millions of queries per second
-**Latency**: Sub-millisecond for indexed queries
-**Scalability**: Linear scaling with cores and nodes
+**Performance**: Read-only up to 100,000 txn/sec; read-write 10,000-50,000 txn/sec; write-heavy 5,000-20,000 txn/sec
+**Latency**: Point lookup <1ms (typically 100-500us); short path 1-5ms
+**Scalability**: Linear scaling to 64 cores; up to 32 shards
 **Last Updated**: January 2026
 **Geode Version**: v0.18.0+

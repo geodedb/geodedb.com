@@ -28,13 +28,15 @@ params:
     description: "Deploy Geode in production with standalone, distributed, or cloud-native architectures for high availability and scalability"
 ---
 
+<!-- CANARY: REQ=REQ-SERVER-STARTUP-INTEGRATION-001; FEATURE="Server Startup Integration Tests"; ASPECT=EndToEndServerTesting; STATUS=TESTED; OWNER=server; UPDATED=2025-10-05 -->
+
 # Deployment
 
 Deploy Geode with confidence using production-ready deployment patterns designed for reliability, scalability, and operational excellence. From single-node installations to globally distributed clusters, Geode supports a wide range of deployment architectures.
 
 ## Overview
 
-Geode's deployment model is designed for flexibility without compromising on enterprise requirements. Whether you're running a development instance on your laptop or a multi-region production cluster serving millions of queries per second, Geode provides the deployment primitives you need.
+Geode's deployment model is designed for flexibility without compromising on enterprise requirements. Whether you're running a development instance on your laptop or a multi-region production cluster serving high-throughput workloads (read-only up to 100,000 txn/sec; read-write 10,000-50,000 txn/sec), Geode provides the deployment primitives you need.
 
 The deployment subsystem integrates with modern infrastructure tooling including Docker, Kubernetes, Nix, and cloud-native platforms. Built-in support for federation, Raft consensus, and automatic failover ensures high availability without complex manual configuration.
 

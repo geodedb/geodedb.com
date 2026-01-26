@@ -21,6 +21,8 @@ params:
     description: "Configure enterprise security in Geode. Complete guide to authentication, authorization, encryption, audit logging, and security hardening for production deployments."
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 Security configuration is critical for deploying Geode in production environments. This comprehensive guide covers all aspects of security configuration, from authentication and authorization to encryption and audit logging, ensuring your graph database meets enterprise security requirements.
 
 ## Configuration File Structure

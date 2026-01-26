@@ -17,6 +17,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 # Step-by-Step Tutorials
 
 Step-by-step tutorials provide the most effective path to mastering Geode graph database and the ISO/IEC 39075:2024 GQL standard. Each tutorial breaks down complex topics into manageable, sequential steps that build your expertise incrementally.
@@ -151,7 +153,7 @@ While GQL syntax is consistent across clients, each programming language has idi
 
 **Type-Safe Query Builders**: Use Rust's type system to construct queries that are validated at compile time. Prevent runtime query errors through static analysis.
 
-**High-Performance Scenarios**: Build applications processing 10,000+ queries per second. Learn about zero-copy deserialization, connection pooling strategies, and CPU profiling.
+**High-Performance Scenarios**: Build applications for high-throughput workloads (workload dependent). Learn about zero-copy deserialization, connection pooling strategies, and CPU profiling.
 
 ### Zig Tutorial Path
 

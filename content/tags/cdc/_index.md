@@ -5,6 +5,8 @@ keywords: ["CDC", "change data capture", "change tracking", "event streaming", "
 weight: 10
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 # Change Data Capture (CDC)
 
 Change Data Capture (CDC) is a design pattern that identifies and captures changes made to data in a database and delivers those changes to downstream systems in real-time. Geode's CDC implementation enables applications to react to data modifications as they occur, powering use cases like real-time analytics, data synchronization, and event-driven architectures.

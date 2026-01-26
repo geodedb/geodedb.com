@@ -32,6 +32,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 Documentation tagged with **Serializable Snapshot Isolation (SSI)** in the Geode graph database. SSI is an advanced concurrency control mechanism that provides true serializability without the performance overhead of traditional two-phase locking, making it the gold standard for ACID-compliant distributed databases.
 
 ## Introduction to Serializable Snapshot Isolation

@@ -20,6 +20,8 @@ keywords:
   - transaction isolation
 ---
 
+<!-- CANARY: REQ=REQ-TXN-ISOLATION-003; FEATURE="Serializable Snapshot Isolation"; ASPECT=SerializableSSI; STATUS=TESTED; OWNER=txn; UPDATED=2025-10-05 -->
+
 # Transactions and Data Integrity
 
 Geode provides true ACID transactions with MVCC (Multi-Version Concurrency Control) and SSI (Serializable Snapshot Isolation) for the strongest consistency guarantees.

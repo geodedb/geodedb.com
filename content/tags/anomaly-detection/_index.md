@@ -18,6 +18,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 Anomaly detection identifies unusual patterns, outliers, and suspicious behaviors in graph data. Geode's native graph model excels at detecting relationship-based anomalies, structural outliers, and behavioral deviations that would be difficult to spot in traditional databases.
 
 ## What Is Graph-Based Anomaly Detection?

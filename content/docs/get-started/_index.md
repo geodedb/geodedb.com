@@ -13,12 +13,13 @@ categories:
   - deployment-and-devops
 keywords:
   - geode install
-  - geoded
-  - geodec
+  - geode cli
   - gql shell
   - docker
   - nix
 ---
+
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
 
 # Installation and Quick Start
 
@@ -52,8 +53,8 @@ Get Geode running locally in minutes, from zero to executing your first GQL quer
 
 ```bash
 # Clone repository
-git clone https://gitlab.com/devnw/codepros/geode.git
-cd geode/geode
+git clone https://github.com/codeprosorg/geode
+cd geode
 
 # Debug build (faster compilation)
 make build
@@ -62,7 +63,7 @@ make build
 make release
 
 # Verify installation
-./zig-out/bin/geode --version
+geode --version
 ```
 
 **Make targets** (from `QUICK_REFERENCE.md`):
@@ -115,7 +116,7 @@ See [Docker Deployment](/docs/ops/deployment#docker) for the full production sta
 **Run directly** (no installation):
 
 ```bash
-nix run gitlab:devnw/codepros/geode/geode
+nix run github:codeprosorg/geode -- serve
 ```
 
 **Install as NixOS module**:
@@ -209,14 +210,14 @@ security:
 
 ```bash
 # Execute a single query
-./geodec "RETURN 1 AS x"
+geode query "RETURN 1 AS x"
 
 # Execute from file
-./geodec -f query.gql
+geode query -f query.gql
 
 # Choose output format
-./geodec --format json "MATCH (n) RETURN n LIMIT 10"
-./geodec --format txt "MATCH (n) RETURN n LIMIT 10"
+geode query --format json "MATCH (n) RETURN n LIMIT 10"
+geode query --format txt "MATCH (n) RETURN n LIMIT 10"
 ```
 
 **Output formats** (from `USAGE.md`):

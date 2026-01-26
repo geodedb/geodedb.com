@@ -20,6 +20,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 Developer productivity is at the core of Geode's design philosophy. By implementing the ISO/IEC 39075:2024 GQL standard and providing comprehensive tooling across multiple programming languages, Geode enables developers to build graph-powered applications faster, with fewer errors, and greater confidence.
 
 ## Standards-Based Development
@@ -117,7 +119,7 @@ async def fetch_user_network(user_id: str):
         return profile, friends
 ```
 
-Connection pooling handles 1,000+ queries/second, maximizing throughput without manual connection management.
+Connection pooling maximizes throughput by reducing connection overhead; actual rates depend on workload and server limits.
 
 ### Rust Client Type Safety
 
@@ -148,7 +150,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 }
 ```
 
-The tokio runtime integration enables 10,000+ queries/second with proper resource management handled automatically.
+The tokio runtime integration improves throughput with efficient async scheduling; actual rates depend on workload and server limits.
 
 ## Development Tools and Workflow
 

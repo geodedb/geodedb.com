@@ -15,6 +15,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 Transaction management is a cornerstone of Geode's enterprise-ready architecture. Unlike many graph databases that sacrifice consistency for performance, Geode provides full ACID guarantees with Serializable Snapshot Isolation (SSI), ensuring your data remains consistent even under high concurrency and complex workloads.
 
 Geode's transaction system is built on Multi-Version Concurrency Control (MVCC), which enables high-performance concurrent access without locking readers. Combined with Write-Ahead Logging (WAL) for durability and savepoint support for complex transaction logic, Geode delivers the reliability and correctness required for mission-critical applications.

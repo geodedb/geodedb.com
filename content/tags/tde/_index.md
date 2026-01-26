@@ -13,6 +13,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 Documentation tagged with **Transparent Data Encryption (TDE)** in the Geode graph database. TDE provides encryption-at-rest for database files, protecting data stored on disk from unauthorized access while remaining transparent to applications and queries.
 
 ## Introduction to Transparent Data Encryption

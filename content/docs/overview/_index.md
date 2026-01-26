@@ -26,6 +26,8 @@ params:
     description: "Introduction to Geode, an enterprise-ready graph database with 100% ISO/IEC 39075:2024 GQL compliance and production-grade features"
 ---
 
+<!-- CANARY: REQ=REQ-GQL-001; FEATURE="BasicQuery"; ASPECT=Testing; STATUS=TESTED; OWNER=test; UPDATED=2025-10-02 -->
+
 # Overview
 
 Geode is an enterprise-ready graph database implementing the ISO/IEC 39075:2024 Graph Query Language (GQL) standard. Designed for production workloads, Geode combines standards compliance, high performance, and comprehensive security features.
@@ -34,7 +36,7 @@ Geode is an enterprise-ready graph database implementing the ISO/IEC 39075:2024 
 
 Geode is a property graph database that stores data as nodes, relationships, and properties. Unlike traditional relational databases optimized for tabular data, Geode excels at representing and querying highly connected data where relationships between entities are as important as the entities themselves.
 
-Built from the ground up in Zig for performance and memory safety, Geode achieves 10,000+ queries per second with sub-millisecond latency for typical queries. The modern QUIC+TLS transport ensures secure, low-latency communication with connection migration support.
+Built from the ground up in Zig for performance and memory safety, Geode targets high-throughput workloads with transaction baselines of read-only up to 100,000 txn/sec, read-write 10,000-50,000 txn/sec, and write-heavy 5,000-20,000 txn/sec (workload dependent). The modern QUIC+TLS transport ensures secure, low-latency communication with connection migration support.
 
 ## Key Features
 
@@ -55,8 +57,7 @@ Built from the ground up in Zig for performance and memory safety, Geode achieve
 
 ### High Performance
 
-- **10,000+ Queries/Second**: Production-grade throughput
-- **Sub-Millisecond Latency**: <1ms for typical queries
+- **Throughput Baselines**: Read-only up to 100,000 txn/sec; read-write 10,000-50,000 txn/sec; write-heavy 5,000-20,000 txn/sec (workload dependent)
 - **Memory-Mapped I/O**: 13.18x performance improvement
 - **SIMD Optimization**: 2x+ speedup for vector operations
 - **Six Index Types**: B-tree, Hash, HNSW, R-tree, Full-text, Patricia Trie
@@ -94,7 +95,7 @@ From encryption at rest (TDE) to fine-grained access control (RLS), Geode provid
 
 ### High Performance
 
-Memory-mapped I/O, SIMD optimization, and six specialized index types deliver exceptional performance. Tested with 100M+ nodes and 1B+ relationships.
+Memory-mapped I/O, SIMD optimization, and six specialized index types deliver exceptional performance. Load-test models target 100M+ nodes and 1B+ relationships.
 
 ### Modern Architecture
 
@@ -151,7 +152,7 @@ GQL Parser → Planner (CBO) → Execution Engine → Storage Engine
 
 - **Parser**: 100% ISO/IEC 39075:2024 compliant
 - **Planner**: Cost-based optimization with statistics
-- **Execution**: 10,000+ queries/second
+- **Execution**: Throughput aligned with transaction baselines (workload dependent)
 - **Storage**: Memory-mapped I/O with WAL
 
 ### Storage Engine
@@ -194,7 +195,7 @@ Get started with Geode in minutes:
 # Install (choose one method)
 make build                  # From source
 docker pull geodedb/geode   # Docker
-nix run gitlab:devnw/codepros/geode/geode  # Nix
+nix run github:codeprosorg/geode -- serve  # Nix
 
 # Start server
 geode serve --listen 0.0.0.0:3141

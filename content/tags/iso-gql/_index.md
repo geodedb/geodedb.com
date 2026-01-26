@@ -18,6 +18,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 Comprehensive guide to Geode's implementation of ISO/IEC 39075:2024 GQL standard, covering architecture, design decisions, optimization strategies, and development methodology for standards-compliant graph database systems.
 
 ## Implementation Architecture

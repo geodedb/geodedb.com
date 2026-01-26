@@ -18,6 +18,8 @@ keywords:
 weight: 10
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 # Virtual Properties
 
 Virtual properties are calculated on-demand at query time and never persisted to storage. They provide dynamically computed values derived from stored properties, relationships, or external data sources without consuming disk space. Ideal for transient calculations, display formatting, and derived data that changes frequently or is rarely queried.

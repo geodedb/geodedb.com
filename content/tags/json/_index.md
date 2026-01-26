@@ -19,6 +19,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 JSON (JavaScript Object Notation) is the universal format for semi-structured data in modern applications. Geode provides first-class JSON support as a native data type, enabling you to store, query, index, and manipulate JSON documents alongside graph data. This integration allows flexible schema evolution, hierarchical data storage, and seamless interoperability with web services and APIs.
 
 As an ISO/IEC 39075:2024 GQL-compliant graph database, Geode treats JSON as a fundamental data type with rich operator support, specialized functions, and optimized storage. Whether you're storing user preferences, configuration data, API responses, or complex nested structures, Geode's JSON capabilities provide the flexibility and performance your applications need.

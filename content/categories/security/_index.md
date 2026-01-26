@@ -17,6 +17,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 The **Security & Compliance** category encompasses comprehensive documentation for protecting your Geode graph database and meeting regulatory requirements. From transport encryption and authentication through data-at-rest protection and audit logging, these resources cover the full security stack required for enterprise deployments.
 
 ## Introduction

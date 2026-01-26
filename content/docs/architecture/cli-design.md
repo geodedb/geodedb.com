@@ -18,6 +18,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-CLI-MOD-001; FEATURE="CLI Modularization"; ASPECT=SubcommandParsing; STATUS=TESTED; OWNER=cli; UPDATED=2026-01-15 -->
+
 ## Overview
 
 Geode's CLI architecture has evolved from a multi-binary design with subprocess spawning to a **unified binary** approach that eliminates subprocess management overhead. This architectural transformation simplifies deployment, improves performance, and provides a consistent user experience through direct function calls.

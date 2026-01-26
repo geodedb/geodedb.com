@@ -22,6 +22,8 @@ params:
     description: "Understand transaction isolation in Geode. Full ACID compliance with configurable isolation levels, snapshot isolation, and optimistic concurrency control for graph operations."
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 Transaction isolation in Geode ensures that concurrent transactions execute correctly without interference, maintaining data consistency and integrity. Geode implements full ACID guarantees with configurable isolation levels to balance consistency requirements with performance needs.
 
 ## Isolation Fundamentals

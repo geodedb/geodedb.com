@@ -41,169 +41,6 @@
       />
     </a>
 
-    <!-- Desktop navigation -->
-    <div class="collapse navbar-collapse" id="navbarNav">
-      <ul class="navbar-nav ms-auto align-items-lg-center">
-        {{ $current := . }}
-
-        {{/* Main menu items */}}
-        {{ range .Site.Menus.main }}
-          {{- $url := .URL -}}
-          {{- if hasPrefix .URL "/" -}}
-            {{- $url = .URL | relLangURL -}}
-          {{- else -}}
-            {{- $url = .URL | absURL -}}
-          {{- end -}}
-          {{- $isActive := or (eq $current.Permalink $url)
-            ($current.IsMenuCurrent "main" .)
-          -}}
-
-          {{ if .HasChildren }}
-            <li class="nav-item dropdown">
-              <a
-                class="nav-link dropdown-toggle px-3 {{ if $isActive }}active{{ end }}"
-                href="#"
-                id="dropdown{{ .Identifier }}"
-                role="button"
-                data-bs-toggle="dropdown"
-                aria-expanded="false"
-                aria-haspopup="true"
-              >
-                {{ with .Pre }}
-                  <wa-icon name="{{ . }}" class="me-1"></wa-icon>
-                {{ end }}{{ .Name }}
-              </a>
-
-              <ul
-                class="dropdown-menu dropdown-menu-modern shadow-lg border-0"
-                aria-labelledby="dropdown{{ .Identifier }}"
-                role="menu"
-              >
-                {{ range .Children }}
-                  {{ if .Params.divider }}
-                    <li role="separator"><hr class="dropdown-divider my-2" /></li>
-                  {{ else }}
-                    {{- $childURL := .URL -}}
-                    {{- if hasPrefix .URL "/" -}}
-                      {{- $childURL = .URL | relLangURL -}}
-                    {{- else -}}
-                      {{- $childURL = .URL | absURL -}}
-                    {{- end -}}
-                    {{- $childActive:= or (eq $current.Permalink $childURL)
-                      ($current.IsMenuCurrent "main" .)
-                    -}}
-                    {{- $isExternal := not (or (hasPrefix $childURL "/") (hasPrefix $childURL $baseURL)) -}}
-                    <li role="menuitem">
-                      <a
-                        class="dropdown-item px-3 py-2 {{ if $childActive }}active{{ end }}"
-                        href="{{ $childURL }}"
-                        {{ if $isExternal }}
-                          target="_blank" rel="noopener noreferrer"
-                        {{ end }}
-                      >
-                        {{ with .Pre }}
-                          <wa-icon name="{{ . }}" class="me-2"></wa-icon>
-                        {{ end }}
-                        <span>{{ .Name }}</span>
-                        {{ with .Post }}
-                          <wa-icon name="{{ . }}" class="ms-auto"></wa-icon>
-                        {{ end }}
-                        {{ if $isExternal }}
-                          <wa-icon name="arrow-up-right-from-square" class="ms-2 small text-muted"></wa-icon>
-                        {{ end }}
-                      </a>
-                    </li>
-                  {{ end }}
-                {{ end }}
-              </ul>
-            </li>
-          {{ else }}
-            {{- $isExternal := not (or (hasPrefix $url "/") (hasPrefix $url $baseURL)) -}}
-            <li class="nav-item">
-              <a
-                class="nav-link px-3 {{ if $isActive }}active{{ end }}"
-                href="{{ $url }}"
-                {{ if $isExternal }}
-                  target="_blank" rel="noopener noreferrer"
-                {{ end }}
-                {{ if $isActive }}aria-current="page"{{ end }}
-              >
-                {{ with .Pre }}
-                  <wa-icon name="{{ . }}" class="me-1"></wa-icon>
-                {{ end }}{{ .Name }}{{ with .Post }}
-                  <wa-icon name="{{ . }}" class="ms-1"></wa-icon>
-                {{ end }}
-              </a>
-            </li>
-          {{ end }}
-        {{ end }}
-
-        {{/* Quick action buttons */}}
-        <li class="nav-item ms-lg-2">
-          <a href="/docs/getting-started/" class="btn btn-primary btn-sm px-3 d-none d-lg-inline-flex align-items-center gap-2">
-            <wa-icon name="rocket" aria-hidden="true"></wa-icon>
-            <span>Get Started</span>
-          </a>
-        </li>
-
-        <li class="nav-item ms-2">
-          <a href="https://gitlab.com/devnw/codepros/geode/geode" target="_blank" rel="noopener" class="btn btn-outline-secondary btn-sm px-3 d-none d-lg-inline-flex align-items-center gap-2">
-            <wa-icon name="gitlab" aria-hidden="true"></wa-icon>
-            <span>GitLab</span>
-          </a>
-        </li>
-
-        {{/* Theme toggle */}}
-        <li class="nav-item ms-2">
-          <button
-            class="btn btn-link"
-            type="button"
-            id="themeToggle"
-            role="button"
-            aria-label="{{ i18n "theme_toggle" | default "Toggle theme" }}"
-            title="{{ i18n "theme_auto" | default "Auto theme" }}"
-          >
-            <wa-icon name="circle-half-stroke" aria-hidden="true"></wa-icon>
-          </button>
-        </li>
-
-        {{/* Language dropdown */}}
-        {{ if gt (len $.Site.Home.AllTranslations) 1 }}
-          <li class="nav-item dropdown ms-2">
-            <button
-              id="languageDropdown"
-              class="btn btn-link dropdown-toggle"
-              data-bs-toggle="dropdown"
-              aria-expanded="false"
-              aria-controls="languageMenu"
-              title="{{ i18n "change_language" | default "Change language" }} - {{ .Language.LanguageName | default (upper .Lang) }}"
-            >
-              <wa-icon name="globe"></wa-icon>
-            </button>
-            <ul
-              id="languageMenu"
-              class="dropdown-menu dropdown-menu-end"
-              aria-labelledby="languageDropdown"
-            >
-              {{ range .AllTranslations }}
-                {{ if ne $.Lang .Lang }}
-                  <li>
-                    <a
-                      hreflang="{{ .Language.LanguageCode | default .Language.Lang }}"
-                      class="dropdown-item"
-                      href="{{ .Permalink }}"
-                      title="{{ i18n "switch_to" | default "Switch to" }} {{ .Language.LanguageName | default (upper .Lang) }}"
-                      >{{ .Language.LanguageName | default (upper .Lang) }}</a
-                    >
-                  </li>
-                {{ end }}
-              {{ end }}
-            </ul>
-          </li>
-        {{ end }}
-      </ul>
-    </div>
-
     <!-- Mobile toggler -->
     <button
       class="navbar-toggler border-0 d-lg-none"
@@ -236,7 +73,7 @@
       </div>
 
       <div class="offcanvas-body p-0">
-        <ul class="navbar-nav">
+        <ul class="navbar-nav ms-lg-auto align-items-lg-center flex-grow-1 pe-3">
           {{ $current := . }}
           {{ range .Site.Menus.main }}
             {{- $url := .URL -}}
@@ -250,63 +87,151 @@
             -}}
 
             {{ if .HasChildren }}
-              <li class="nav-item">
+              <li class="nav-item dropdown">
                 <a
-                  class="nav-link px-4 py-3 d-flex align-items-center justify-content-between {{ if $isActive }}active bg-light{{ end }}"
-                  data-bs-toggle="collapse"
-                  href="#collapse{{ .Identifier }}"
+                  class="nav-link dropdown-toggle px-3 {{ if $isActive }}active{{ end }}"
+                  href="#"
+                  id="dropdown{{ .Identifier }}"
                   role="button"
-                  aria-expanded="{{ if $isActive }}true{{ else }}false{{ end }}"
+                  data-bs-toggle="dropdown"
+                  aria-expanded="false"
+                  aria-haspopup="true"
                 >
-                  <span>
-                    {{ with .Pre }}<wa-icon name="{{ . }}" class="me-2"></wa-icon>{{ end }}
-                    {{ .Name }}
-                  </span>
-                  <wa-icon name="chevron-down" class="dropdown-chevron"></wa-icon>
+                  {{ with .Pre }}
+                    <wa-icon name="{{ . }}" class="me-1"></wa-icon>
+                  {{ end }}{{ .Name }}
                 </a>
-                <div class="collapse {{ if $isActive }}show{{ end }}" id="collapse{{ .Identifier }}">
-                  <ul class="list-unstyled bg-light">
-                    {{ range .Children }}
-                      {{ if not .Params.divider }}
-                        {{- $childURL := .URL -}}
-                        {{- if hasPrefix .URL "/" -}}
-                          {{- $childURL = .URL | relLangURL -}}
-                        {{- else -}}
-                          {{- $childURL = .URL | absURL -}}
-                        {{- end -}}
-                        {{- $childActive:= or (eq $current.Permalink $childURL)
-                          ($current.IsMenuCurrent "main" .)
-                        -}}
-                        <li>
-                          <a
-                            class="nav-link px-5 py-2 d-flex align-items-center {{ if $childActive }}active text-primary fw-semibold{{ end }}"
-                            href="{{ $childURL }}"
-                          >
-                            {{ with .Pre }}<wa-icon name="{{ . }}" class="me-2"></wa-icon>{{ end }}
-                            {{ .Name }}
-                          </a>
-                        </li>
-                      {{ end }}
+
+                <ul
+                  class="dropdown-menu dropdown-menu-modern shadow-lg border-0"
+                  aria-labelledby="dropdown{{ .Identifier }}"
+                  role="menu"
+                >
+                  {{ range .Children }}
+                    {{ if .Params.divider }}
+                      <li role="separator"><hr class="dropdown-divider my-2" /></li>
+                    {{ else }}
+                      {{- $childURL := .URL -}}
+                      {{- if hasPrefix .URL "/" -}}
+                        {{- $childURL = .URL | relLangURL -}}
+                      {{- else -}}
+                        {{- $childURL = .URL | absURL -}}
+                      {{- end -}}
+                      {{- $childActive:= or (eq $current.Permalink $childURL)
+                        ($current.IsMenuCurrent "main" .)
+                      -}}
+                      {{- $isExternal := not (or (hasPrefix $childURL "/") (hasPrefix $childURL $baseURL)) -}}
+                      <li role="menuitem">
+                        <a
+                          class="dropdown-item px-3 py-2 {{ if $childActive }}active{{ end }}"
+                          href="{{ $childURL }}"
+                          {{ if $isExternal }}
+                            target="_blank" rel="noopener noreferrer"
+                          {{ end }}
+                        >
+                          {{ with .Pre }}
+                            <wa-icon name="{{ . }}" class="me-2"></wa-icon>
+                          {{ end }}
+                          <span>{{ .Name }}</span>
+                          {{ with .Post }}
+                            <wa-icon name="{{ . }}" class="ms-auto"></wa-icon>
+                          {{ end }}
+                          {{ if $isExternal }}
+                            <wa-icon name="arrow-up-right-from-square" class="ms-2 small text-muted"></wa-icon>
+                          {{ end }}
+                        </a>
+                      </li>
                     {{ end }}
-                  </ul>
-                </div>
+                  {{ end }}
+                </ul>
               </li>
             {{ else }}
+              {{- $isExternal := not (or (hasPrefix $url "/") (hasPrefix $url $baseURL)) -}}
               <li class="nav-item">
                 <a
-                  class="nav-link px-4 py-3 d-flex align-items-center {{ if $isActive }}active bg-light{{ end }}"
+                  class="nav-link px-3 {{ if $isActive }}active{{ end }}"
                   href="{{ $url }}"
+                  {{ if $isExternal }}
+                    target="_blank" rel="noopener noreferrer"
+                  {{ end }}
                   {{ if $isActive }}aria-current="page"{{ end }}
                 >
-                  {{ with .Pre }}<wa-icon name="{{ . }}" class="me-2"></wa-icon>{{ end }}
-                  {{ .Name }}
+                  {{ with .Pre }}
+                    <wa-icon name="{{ . }}" class="me-1"></wa-icon>
+                  {{ end }}{{ .Name }}{{ with .Post }}
+                    <wa-icon name="{{ . }}" class="ms-1"></wa-icon>
+                  {{ end }}
                 </a>
               </li>
             {{ end }}
           {{ end }}
 
+          {{/* Quick action buttons (desktop) */}}
+          <li class="nav-item ms-lg-2 d-none d-lg-flex">
+            <a href="/docs/getting-started/" class="btn btn-primary btn-sm px-3 d-inline-flex align-items-center gap-2">
+              <wa-icon name="rocket" aria-hidden="true"></wa-icon>
+              <span>Get Started</span>
+            </a>
+          </li>
+
+          <li class="nav-item ms-2 d-none d-lg-flex">
+            <a href="https://gitlab.com/devnw/codepros/geode/geode" target="_blank" rel="noopener" class="btn btn-outline-secondary btn-sm px-3 d-inline-flex align-items-center gap-2">
+              <wa-icon name="gitlab" aria-hidden="true"></wa-icon>
+              <span>GitLab</span>
+            </a>
+          </li>
+
+          {{/* Theme toggle */}}
+          <li class="nav-item ms-2">
+            <button
+              class="btn btn-link"
+              type="button"
+              id="themeToggle"
+              role="button"
+              aria-label="{{ i18n "theme_toggle" | default "Toggle theme" }}"
+              title="{{ i18n "theme_auto" | default "Auto theme" }}"
+            >
+              <wa-icon name="circle-half-stroke" aria-hidden="true"></wa-icon>
+            </button>
+          </li>
+
+          {{/* Language dropdown */}}
+          {{ if gt (len $.Site.Home.AllTranslations) 1 }}
+            <li class="nav-item dropdown ms-2">
+              <button
+                id="languageDropdown"
+                class="btn btn-link dropdown-toggle"
+                data-bs-toggle="dropdown"
+                aria-expanded="false"
+                aria-controls="languageMenu"
+                title="{{ i18n "change_language" | default "Change language" }} - {{ .Language.LanguageName | default (upper .Lang) }}"
+              >
+                <wa-icon name="globe"></wa-icon>
+              </button>
+              <ul
+                id="languageMenu"
+                class="dropdown-menu dropdown-menu-end"
+                aria-labelledby="languageDropdown"
+              >
+                {{ range .AllTranslations }}
+                  {{ if ne $.Lang .Lang }}
+                    <li>
+                      <a
+                        hreflang="{{ .Language.LanguageCode | default .Language.Lang }}"
+                        class="dropdown-item"
+                        href="{{ .Permalink }}"
+                        title="{{ i18n "switch_to" | default "Switch to" }} {{ .Language.LanguageName | default (upper .Lang) }}"
+                        >{{ .Language.LanguageName | default (upper .Lang) }}</a
+                      >
+                    </li>
+                  {{ end }}
+                {{ end }}
+              </ul>
+            </li>
+          {{ end }}
+
           {{/* Mobile CTAs */}}
-          <li class="nav-item border-top mt-3 pt-3 px-4">
+          <li class="nav-item border-top mt-3 pt-3 px-4 d-lg-none">
             <a href="/docs/getting-started/" class="btn btn-primary w-100 mb-2">
               <wa-icon name="rocket" class="me-2"></wa-icon>
               Get Started

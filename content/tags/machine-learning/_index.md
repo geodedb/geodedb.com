@@ -18,6 +18,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 # Machine Learning Integration with Geode
 
 Geode serves as a powerful foundation for machine learning workflows, providing graph-based feature engineering, embedding storage, and deployment infrastructure for graph neural networks (GNNs) and ML models that leverage network structure.

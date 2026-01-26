@@ -7,6 +7,8 @@ slug: "status-codes"
 canonical: "https://geodedb.com/docs/reference/status-codes"
 ---
 
+<!-- CANARY: REQ=REQ-GQL-017-STATUS; FEATURE="Docs"; ASPECT=StatusWireMapping; STATUS=TESTED; OWNER=engine; UPDATED=2026-01-16 -->
+
 # ISO GQL Status Codes Reference
 
 Geode implements the complete ISO/IEC 39075:2024 GQL status code system (GQLSTATUS) for standardized error reporting and handling across all client libraries and protocols.

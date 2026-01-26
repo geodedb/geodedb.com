@@ -19,6 +19,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 Standards compliance ensures portability, interoperability, and predictable behavior across database implementations. Geode's commitment to standards-based development, particularly the ISO/IEC 39075:2024 Graph Query Language (GQL) standard, provides enterprise users with confidence that their graph applications will be maintainable, portable, and future-proof.
 
 As an enterprise-ready graph database, Geode doesn't just implement standards—it validates compliance through rigorous testing, maintains comprehensive documentation, and participates in standards development to ensure the graph database ecosystem evolves in the right direction.
@@ -75,7 +77,7 @@ DELETE u;
 
 ```bash
 # Run ISO compliance test suite
-cd geode/geode-test-harness
+cd geode-test-harness
 make test-gql-compliance
 
 # Results: 70/70 tests passing (100%)
@@ -308,9 +310,8 @@ geode_connections_active 45
 Geode uses CANARY markers for governance tracking:
 
 ```zig
-// CANARY: GQL-COMPLIANCE-001 | Pattern matching implementation
-// EVIDENCE: test_pattern_matching() validates ISO/IEC 39075:2024 §7.2
-// STATUS: IMPLEMENTED | VALIDATED | TESTED
+// CANARY: REQ=REQ-XXX; FEATURE="GQLCompliance"; ASPECT=PatternMatching; STATUS=TESTED; TEST=TestPatternMatching; OWNER=parser; UPDATED=2026-01-24
+// Evidence: TestPatternMatching validates ISO/IEC 39075:2024 §7.2
 ```
 
 **Current Governance Statistics**:

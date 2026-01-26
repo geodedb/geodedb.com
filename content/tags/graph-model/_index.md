@@ -19,6 +19,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 # Property Graph Model
 
 The property graph model is the most widely adopted graph database model, used by Geode, Neo4j, Amazon Neptune, TigerGraph, and many others. It provides an intuitive, flexible way to model complex, interconnected data by representing entities as nodes and connections as relationships, with both capable of holding rich property data.

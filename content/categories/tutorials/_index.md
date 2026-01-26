@@ -17,6 +17,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 The **Tutorials & Learning Guides** category provides structured, hands-on learning paths for mastering Geode graph database. From installation through advanced features, these tutorials build skills progressively with complete code examples, expected outputs, and practical exercises.
 
 ## Introduction
@@ -290,7 +292,7 @@ RETURN p.name, p.email
 **Step 1: Start the REPL**
 
 ```bash
-./zig-out/bin/geode shell
+geode shell
 Connected to Geode v0.18.0
 geode>
 ```
@@ -624,7 +626,7 @@ Error: connection refused at localhost:3141
 ps aux | grep geode
 
 # Start server if not running
-./zig-out/bin/geode serve --listen 0.0.0.0:3141
+geode serve --listen 0.0.0.0:3141
 
 # Check firewall rules
 sudo ufw status

@@ -19,16 +19,18 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-ZIG-CLIENT-002; FEATURE="ZigClientV2"; ASPECT=QUICTransport; STATUS=TESTED; OWNER=clients; UPDATED=2026-01-15 -->
+
 ## Overview
 
-The Geode Zig client library provides native, type-safe access to Geode graph database from Zig applications. It uses vendor/quic for guaranteed server compatibility and provides idiomatic Zig interfaces for all graph operations.
+The Geode Zig client library provides native, type-safe access to Geode graph database from Zig applications. It uses vendor/quic for QUIC transport and provides idiomatic Zig interfaces for graph operations.
 
 **Key Features:**
 - **Native QUIC Transport** - Direct QUIC integration with vendor/quic
 - **Type-Safe Operations** - Compile-time safety for graph operations
 - **Zero-Cost Abstractions** - Performance comparable to direct network calls
 - **Allocator Support** - Full control over memory allocation
-- **Production Ready** - Battle-tested with comprehensive test suite
+- **Production Ready** - Ready for basic operations; validate QUIC interoperability in your environment
 
 **Quick Links:**
 - [Installation](#installation)

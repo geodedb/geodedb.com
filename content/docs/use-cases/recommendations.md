@@ -19,6 +19,8 @@ keywords:
   - personalization
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 # Recommendation Systems
 
 Build scalable, real-time recommendation engines using graph traversal, ML embeddings, and vector similarity search.

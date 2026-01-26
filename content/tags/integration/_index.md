@@ -17,6 +17,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 # System Integration
 
 Geode provides comprehensive integration capabilities designed to fit seamlessly into modern application architectures. From native client libraries and standard protocols to data pipeline connectors and third-party integrations, Geode supports diverse integration patterns across multiple languages and platforms.
@@ -278,7 +280,7 @@ async fn server() -> std::io::Result<()> {
 - Zero-cost abstractions with compile-time optimization
 - Native tokio integration for async Rust applications
 - Type-safe query execution with serde deserialization
-- High performance (10,000+ queries/second)
+- High-performance, workload-dependent throughput
 
 ## HTTP/REST Integration
 

@@ -27,6 +27,8 @@ params:
     description: "Real-world use cases for Geode graph database covering social networks, fraud detection, recommendations, and supply chain optimization"
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 # Use Cases
 
 Discover how Geode's graph database capabilities solve real-world problems across industries. From social networks to fraud detection, knowledge graphs to supply chain optimization, graph databases excel at representing and querying connected data.

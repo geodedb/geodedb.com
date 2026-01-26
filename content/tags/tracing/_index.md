@@ -19,6 +19,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 Distributed tracing provides end-to-end visibility into request flows through complex systems, enabling you to understand how queries propagate through Geode's execution pipeline and identify performance bottlenecks with precision. By capturing detailed timing information for each operation, tracing reveals exactly where time is spent during query execution.
 
 Geode implements distributed tracing using OpenTelemetry, the industry-standard observability framework. Traces capture spans for query parsing, optimization, execution, index lookups, relationship traversals, and result serialization, providing comprehensive visibility into database operations.

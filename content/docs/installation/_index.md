@@ -26,6 +26,8 @@ params:
     description: "Install Geode graph database with comprehensive guides for source builds, Docker containers, and Nix packages across all platforms"
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 # Installation
 
 Get Geode running on your system with step-by-step installation instructions for all supported platforms and installation methods.
@@ -149,8 +151,8 @@ docker logs geode
 
 ```bash
 # Clone repository
-git clone https://gitlab.com/devnw/codepros/geode.git
-cd geode/geode
+git clone https://github.com/codeprosorg/geode
+cd geode
 
 # Build (requires Zig 0.15.1+)
 make build
@@ -166,7 +168,7 @@ make build
 
 ```bash
 # Run directly (no installation)
-nix run gitlab:devnw/codepros/geode/geode
+nix run github:codeprosorg/geode -- serve
 
 # Or install to profile
 nix profile install github:codeprosorg/geode

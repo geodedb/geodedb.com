@@ -16,6 +16,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 Installing Geode involves obtaining source code, installing build dependencies, compiling the database server, and deploying it to target environments. This comprehensive guide covers installation across different platforms, from development environments to production deployments, ensuring reliable operation of your GQL-compliant graph database.
 
 ## Installation Overview
@@ -206,7 +208,7 @@ mkdir -p ~/projects
 cd ~/projects
 
 # Clone repository
-git clone https://gitlab.com/devnw/codepros/geode.git
+git clone https://github.com/codeprosorg/geode
 cd geode
 
 # Verify successful clone

@@ -7,6 +7,8 @@ slug: "indexing-tutorial"
 canonical: "https://geodedb.com/docs/tutorials/indexing-tutorial/"
 ---
 
+<!-- CANARY: REQ=REQ-GQL-016; FEATURE="MultiIndexOptimizer"; ASPECT=IndexTypeSelection; STATUS=TESTED; OWNER=engine; UPDATED=2025-10-03 -->
+
 # Indexing and Query Optimization Tutorial
 
 Learn to create indexes and optimize query performance using EXPLAIN and PROFILE in this hands-on 15-minute tutorial.

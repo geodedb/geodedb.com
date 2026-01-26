@@ -32,6 +32,8 @@ params:
       tags: ["infrastructure", "IaC", "Terraform", "CloudFormation", "automation", "DevOps"]
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 # Infrastructure Management for Geode
 
 Infrastructure as Code (IaC) has transformed how organizations deploy and manage database infrastructure, replacing error-prone manual processes with version-controlled, repeatable, and automated provisioning. This comprehensive guide explores Infrastructure as Code practices for Geode graph database deployments, covering Terraform, CloudFormation, Pulumi, Ansible, and production-ready patterns across cloud and on-premises environments.
@@ -320,21 +322,28 @@ Outputs:
     - name: Install dependencies
       apt:
         name:
-          - wget
+          - git
           - ca-certificates
         state: present
         update_cache: yes
 
-    - name: Download Geode
-      get_url:
-        url: "https://releases.geodedb.com/{{ geode_version }}/geode-linux-x86_64.tar.gz"
-        dest: "/tmp/geode.tar.gz"
+    - name: Clone Geode
+      git:
+        repo: "https://github.com/codeprosorg/geode"
+        dest: "/opt/geode"
+        version: "{{ geode_version }}"
 
-    - name: Extract Geode
-      unarchive:
-        src: "/tmp/geode.tar.gz"
-        dest: "/usr/local/bin/"
-        remote_src: yes
+    - name: Build Geode
+      command: make build
+      args:
+        chdir: "/opt/geode"
+
+    - name: Install Geode binary
+      copy:
+        src: "/opt/geode/zig-out/bin/geode"
+        dest: "/usr/local/bin/geode"
+        mode: "0755"
+        remote_src: true
 
     - name: Create geode user
       user:
@@ -436,9 +445,11 @@ for i in range(3):
         ),
         user_data="""#!/bin/bash
 apt-get update
-apt-get install -y wget
-wget https://releases.geodedb.com/v0.18.0/geode-linux-x86_64.tar.gz
-tar xzf geode-linux-x86_64.tar.gz -C /usr/local/bin/
+apt-get install -y git make
+git clone https://github.com/codeprosorg/geode
+cd geode
+make build
+cp ./zig-out/bin/geode /usr/local/bin/geode
 useradd -r -s /bin/false geode
 mkdir -p /var/lib/geode
 chown geode:geode /var/lib/geode

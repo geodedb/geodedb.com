@@ -22,6 +22,8 @@ params:
     description: "Implement comprehensive data governance in Geode. Track data lineage, enforce quality policies, manage metadata, and maintain compliance with enterprise governance frameworks."
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 Data governance in Geode provides comprehensive capabilities for managing data quality, tracking lineage, enforcing policies, and maintaining compliance across your graph database. This guide covers the tools and practices for implementing effective data governance in enterprise environments.
 
 ## Data Governance Overview

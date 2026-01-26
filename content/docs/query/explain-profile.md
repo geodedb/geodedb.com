@@ -18,6 +18,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-GQL-024; FEATURE="Conformance Flagger"; ASPECT=ImplDefinedCollationAndNullOrdering; STATUS=TESTED; OWNER=engine; UPDATED=2025-09-21 -->
+
 ## Overview
 
 Geode provides two powerful commands for understanding and optimizing query execution: **EXPLAIN** and **PROFILE**. These tools are essential for query optimization, performance tuning, and understanding how Geode processes your graph queries.
@@ -700,7 +702,7 @@ MATCH (p:Person) WHERE p.age > 30 RETURN p.name
 
 **Workaround:** Use external timing for now:
 ```bash
-time ./zig-out/bin/geode query "MATCH (p:Person) RETURN count(p)"
+time geode query "MATCH (p:Person) RETURN count(p)"
 ```
 
 **Future:** Real timing will be implemented in a future release.

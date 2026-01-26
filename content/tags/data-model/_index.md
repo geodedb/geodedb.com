@@ -31,6 +31,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 Data modeling in Geode translates your domain into an effective property graph structure. Learn to design nodes, relationships, properties, and labels that optimize both query performance and semantic clarity. This comprehensive guide covers production-proven modeling patterns, performance optimization strategies, and real-world design decisions for enterprise graph databases.
 
 ## Graph Data Modeling Fundamentals

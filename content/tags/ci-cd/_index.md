@@ -15,6 +15,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 # CI/CD Pipelines for Geode
 
 Continuous Integration and Continuous Deployment (CI/CD) pipelines automate the software development lifecycle, from code commit through testing, building, and deployment to production. For database systems like Geode, robust CI/CD practices ensure reliability, maintain quality standards, and enable rapid iteration while preventing regressions that could impact data integrity.

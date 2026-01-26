@@ -20,6 +20,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 Geode's implementation of the ISO/IEC 39075:2024 GQL standard enables organizations to build sophisticated graph-powered applications across diverse industries. This guide explores real-world use cases where Geode's capabilities deliver measurable business value through efficient relationship modeling and traversal.
 
 ## Social Platform Applications
@@ -470,17 +472,14 @@ Real-world Geode deployments demonstrate production-ready performance:
 - 5+ hop traversals: <200ms
 - Aggregations on millions of nodes: <500ms
 
-**Throughput:**
-- Go client: 10,000+ queries/second
-- Python client: 1,000+ queries/second
-- Rust client: 15,000+ queries/second
-- Concurrent connections: 5,000+ per server
+**Throughput baselines (server features):**
+- Read-only: up to 100,000 txn/sec
+- Read-write: 10,000-50,000 txn/sec
+- Write-heavy: 5,000-20,000 txn/sec
 
-**Scalability:**
-- Graphs with 100M+ nodes in production
-- 500M+ relationships indexed
-- Multi-terabyte datasets
-- Horizontal scaling through read replicas
+**Scalability targets:**
+- 100M+ nodes and 1B+ relationships in load-test models
+- Horizontal scale-out via federated query coordination
 
 ## Implementation Best Practices
 

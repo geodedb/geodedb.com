@@ -19,6 +19,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 # Best Practices & Design Patterns
 
 Building production-ready graph applications with Geode requires understanding not just the technology, but proven patterns and practices that ensure performance, maintainability, and scalability. This comprehensive guide covers schema design, query optimization, security, and operational best practices for Geode deployments.

@@ -29,6 +29,8 @@ params:
     description: "Developer guides for building with Geode including LSP, REPL, testing frameworks, and evidence-based governance practices"
 ---
 
+<!-- CANARY: REQ=REQ-DOCUMENTATION-STRUCTURE-001; FEATURE="DocStructure"; ASPECT=StructureTests; STATUS=TESTED; OWNER=claude; UPDATED=2026-01-16 -->
+
 # Development
 
 Build with Geode using modern development tools and practices. This section covers everything developers need to be productive, from LSP integration in your favorite editor to advanced testing strategies and evidence-based governance.
@@ -76,8 +78,8 @@ This ensures every feature is backed by evidence, maintainable, and traceable to
 
 ```bash
 # Clone repository
-git clone https://gitlab.com/devnw/codepros/geode.git
-cd geode/geode
+git clone https://github.com/codeprosorg/geode
+cd geode
 
 # Build debug version
 make build

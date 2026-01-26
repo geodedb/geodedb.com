@@ -13,6 +13,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 # Vector Similarity Search in Geode
 
 Vector similarity search is a powerful feature in Geode that enables efficient nearest-neighbor queries over high-dimensional vector embeddings stored directly in graph properties. This capability is essential for modern machine learning applications including semantic search, recommendation systems, image similarity, and retrieval-augmented generation (RAG) workloads.
@@ -280,10 +282,10 @@ CREATE (p:Product {name: 'New Item', embedding: $emb});
 
 ### Query Performance
 
-**Typical latency** (1M vector dataset):
-- Single vector search: 1-5ms
-- Combined graph + vector: 10-50ms
-- Batch queries: 100-500 QPS
+**Typical latency** (10k vectors, 10-NN):
+- Single vector search: 1-5ms at ~90% recall
+- Combined graph + vector: workload-dependent (varies by traversal and filters)
+- Batch queries: throughput depends on workload and hardware
 
 **Tuning runtime accuracy** (not yet exposed, coming soon):
 ```gql

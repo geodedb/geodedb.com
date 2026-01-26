@@ -18,6 +18,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 Graph modeling is the foundational practice of designing how data is structured, connected, and queried in a graph database. In Geode, effective graph modeling determines query performance, data integrity, and application scalability.
 
 ## What is Graph Modeling?

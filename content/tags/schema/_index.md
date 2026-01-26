@@ -17,6 +17,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 Schema design in Geode defines the structure, constraints, and indexes that govern your graph data. While Geode supports schema-optional modeling, explicit schema definitions improve data quality, query performance, and application reliability.
 
 ## Schema-Optional vs. Schema-Required

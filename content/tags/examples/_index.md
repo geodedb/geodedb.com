@@ -17,6 +17,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 # Code Examples
 
 Code examples provide immediate, practical demonstrations of Geode features through working code snippets. Unlike tutorials that explain concepts step-by-step, examples show you exactly how to accomplish specific tasks with copy-paste-ready code in Python, Go, Rust, and Zig.

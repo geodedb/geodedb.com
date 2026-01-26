@@ -1,0 +1,277 @@
+{{/*  layouts/_default/_markup/render-heading.html  */}}
+
+{{/* 0 ░░ calculate level (Goldmark gives 0-based) ░░ */}}
+{{- $level := add .Level 1 -}}
+
+{{/* 1 ░░ heading ID and plain text (for aria-labels) */}}
+{{- $id    := .Anchor -}}
+{{- $label := .PlainText -}}
+
+{{/* 2 ░░ localised strings */}}
+{{- $tShare  := i18n "ShareLink"     | default "Share link"       -}}
+{{- $tCopied := i18n "Copied"        | default "Copied"           -}}
+{{- $tCopy   := i18n "Copy"          | default "Copy"             -}}
+{{- $tClose  := i18n "Close"         | default "Close"            -}}
+{{- $tShareHeading := i18n "ShareThisSection" | default "Share this section" -}}
+
+{{/* 3 ░░ emit HTML ░░ */}}
+<h{{ $level }} id="{{ $id }}" class="position-relative d-flex align-items-center group">
+  <span>{{ .Text | safeHTML }}</span>
+  <button type="button"
+          class="h-share btn btn-link p-0 text-decoration-none link-secondary opacity-50 hover-opacity-100 transition-all ms-1"
+          data-share-target="{{ $id }}"
+          aria-haspopup="dialog"
+          aria-label="{{ printf "%s: %s" $tShare $label }}">
+    <i class="fa-sharp-duotone fa-solid fa-share-nodes" aria-hidden="true" style="font-size: 0.8em;"></i>
+    <span class="visually-hidden">{{ $tShare }}</span>
+  </button>
+</h{{ $level }}>
+
+{{- if not (.Page.Scratch.Get "headingShareAssets") -}}
+  {{- .Page.Scratch.Set "headingShareAssets" true -}}
+  <div id="headingShareModal" class="heading-share-modal" role="dialog" aria-modal="true" aria-labelledby="headingShareTitle" hidden>
+    <div class="hsm-dialog" role="document">
+      <!-- Header -->
+      <div class="hsm-header">
+        <h2 id="headingShareTitle" class="h6 mb-0 fw-bold">{{ $tShareHeading }}</h2>
+        <button type="button" class="hsm-close" aria-label="{{ $tClose }}">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      
+      <!-- Body -->
+      <div class="hsm-body">
+        <label for="headingShareInput" class="form-label small text-muted mb-1 text-uppercase fw-bold" style="font-size: 0.7rem; letter-spacing: 0.5px;">Permalink</label>
+        <div class="input-group mb-4 hsm-url-group">
+          <input id="headingShareInput" type="text" class="form-control font-monospace" readonly aria-readonly="true" style="font-size: 0.85rem;" />
+          <button class="btn btn-primary hsm-copy" type="button" aria-label="{{ $tCopy }}" title="{{ $tCopy }}">
+            <i class="fa-duotone fa-clipboard" aria-hidden="true"></i>
+          </button>
+        </div>
+        
+        <!-- Share Links -->
+        <div class="small fw-bold mb-2 text-muted text-uppercase" style="font-size: 0.7rem; letter-spacing: 0.5px;">Share via</div>
+        <div class="hsm-share-grid">
+          <a id="share-twitter" class="btn btn-outline-secondary w-100" target="_blank" rel="noopener noreferrer">
+            <i class="fa-brands fa-twitter me-2"></i>Twitter
+          </a>
+          <a id="share-linkedin" class="btn btn-outline-secondary w-100" target="_blank" rel="noopener noreferrer">
+            <i class="fa-brands fa-linkedin me-2"></i>LinkedIn
+          </a>
+          <a id="share-facebook" class="btn btn-outline-secondary w-100" target="_blank" rel="noopener noreferrer">
+            <i class="fa-brands fa-facebook me-2"></i>Facebook
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <style>
+    .heading-share-modal { 
+      position: fixed; 
+      inset: 0; 
+      display: flex; 
+      justify-content: center; 
+      align-items: center; 
+      background: rgba(0, 0, 0, 0.6); 
+      z-index: 1050; 
+      padding: 1rem; 
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
+    }
+    .heading-share-modal[hidden] { display: none !important; }
+    
+    .hsm-dialog { 
+      max-width: 420px; 
+      width: 100%; 
+      background: var(--bs-body-bg, #fff); 
+      color: var(--bs-body-color, #212529); 
+      border: 1px solid var(--bs-border-color, rgba(0,0,0,0.1)); 
+      border-radius: 1rem; 
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+      overflow: hidden;
+      animation: hsm-fade-in 0.2s ease-out;
+    }
+    
+    @keyframes hsm-fade-in {
+      from { opacity: 0; transform: scale(0.95); }
+      to { opacity: 1; transform: scale(1); }
+    }
+    
+    [data-bs-theme="dark"] .hsm-dialog { 
+      background: #1e293b; 
+      border-color: rgba(255,255,255,0.1); 
+      color: #f8f9fa; 
+    }
+    
+    .hsm-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem 1.5rem;
+      border-bottom: 1px solid var(--bs-border-color, rgba(0,0,0,0.1));
+      background: rgba(0,0,0,0.02);
+    }
+    
+    [data-bs-theme="dark"] .hsm-header {
+      background: rgba(255,255,255,0.02);
+      border-color: rgba(255,255,255,0.1);
+    }
+    
+    .hsm-close {
+      background: transparent;
+      border: none;
+      color: inherit;
+      opacity: 0.5;
+      padding: 0.25rem 0.5rem;
+      border-radius: 0.25rem;
+      font-size: 1.2rem;
+      line-height: 1;
+      transition: opacity 0.2s;
+    }
+    
+    .hsm-close:hover {
+      opacity: 1;
+    }
+    
+    .hsm-body {
+      padding: 1.5rem;
+    }
+    
+    .hsm-url-group {
+      display: flex !important;
+      align-items: stretch;
+    }
+
+    .hsm-url-group .form-control {
+      flex: 1;
+      min-width: 0;
+      margin: 0;
+      background: var(--bs-secondary-bg, #f8f9fa);
+      border-color: var(--bs-border-color, #dee2e6);
+      border-top-right-radius: 0;
+      border-bottom-right-radius: 0;
+      height: 42px;
+    }
+    
+    .hsm-url-group .btn {
+      flex: 0 0 auto;
+      margin: 0;
+      margin-left: -1px;
+      border-top-left-radius: 0;
+      border-bottom-left-radius: 0;
+      height: 42px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 1.25rem;
+      z-index: 2;
+    }
+    
+    [data-bs-theme="dark"] .hsm-url-group .form-control {
+      background: #0f172a;
+      border-color: #334155;
+      color: #e2e8f0;
+    }
+    
+    .hsm-share-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+    
+    .hsm-share-grid .btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.9rem;
+      padding: 0.6rem;
+      border-color: var(--bs-border-color);
+      width: 100%;
+    }
+    
+    [data-bs-theme="dark"] .hsm-share-grid .btn {
+      color: #e2e8f0;
+      border-color: #475569;
+    }
+    
+    [data-bs-theme="dark"] .hsm-share-grid .btn:hover {
+      background: #334155;
+      border-color: #cbd5e1;
+    }
+    
+  </style>
+  <script>
+    (function(){
+      const modal = document.getElementById('headingShareModal');
+      if(!modal) return;
+      const input = modal.querySelector('#headingShareInput');
+      const copyBtn = modal.querySelector('.hsm-copy');
+      const twitter = modal.querySelector('#share-twitter');
+      const linkedin = modal.querySelector('#share-linkedin');
+      const facebook = modal.querySelector('#share-facebook');
+      const closeBtn = modal.querySelector('.hsm-close');
+      let lastFocus=null;
+      let trapBound=false;
+      function buildUrl(id){ return window.location.origin + window.location.pathname + '#' + id; }
+      function isOpen(){ return !modal.hasAttribute('hidden'); }
+      function hydrate(id){
+        const url=buildUrl(id);
+        input.value=url;
+        const enc=encodeURIComponent(url);
+        const text=encodeURIComponent(document.title);
+        if(twitter) twitter.href=`https://twitter.com/intent/tweet?url=${enc}&text=${text}`;
+        if(linkedin) linkedin.href=`https://www.linkedin.com/sharing/share-offsite/?url=${enc}`;
+        if(facebook) facebook.href=`https://www.facebook.com/sharer/sharer.php?u=${enc}`;
+      }
+      function openModal(id){
+        lastFocus=document.activeElement;
+        hydrate(id);
+        if(!isOpen()){
+          modal.removeAttribute('hidden');
+        }
+        requestAnimationFrame(()=>{ input.focus(); });
+        trapFocus();
+      }
+      function closeModal(){
+        if(!isOpen()) return;
+        modal.setAttribute('hidden','');
+        if(lastFocus && typeof lastFocus.focus==='function') lastFocus.focus();
+      }
+      function copyCurrent(){
+        try{ navigator.clipboard.writeText(input.value).then(()=>feedback(true),()=>fallback()); }
+        catch(e){ fallback(); }
+      }
+      function fallback(){ input.select(); try{ document.execCommand('copy'); feedback(true);}catch(e){ feedback(false);} }
+      function feedback(ok){ if(!copyBtn) return; const icon=copyBtn.querySelector('i'); if(!icon) return; const prev=copyBtn.getAttribute('data-prev')||icon.className; if(!copyBtn.getAttribute('data-prev')) copyBtn.setAttribute('data-prev',prev); icon.className= ok ? 'fa-duotone fa-clipboard-check':'fa-duotone fa-circle-exclamation'; setTimeout(()=>{ icon.className=prev; },1800); }
+      function handleShareClick(e){ e.preventDefault(); const btn=e.currentTarget; const id=btn.getAttribute('data-share-target'); if(id) openModal(id); }
+      function bindShareButtons(){
+        document.querySelectorAll('.h-share').forEach(btn=>{
+          if(!btn.dataset.hShareBound){ btn.addEventListener('click', handleShareClick); btn.dataset.hShareBound='1'; }
+        });
+      }
+      bindShareButtons();
+      if(document.readyState==='loading'){
+        document.addEventListener('DOMContentLoaded', bindShareButtons);
+      } else {
+        requestAnimationFrame(bindShareButtons);
+      }
+      document.addEventListener('click', function(e){
+        const shareBtn=e.target.closest && e.target.closest('.h-share');
+        if(shareBtn && !shareBtn.dataset.hShareBound){ handleShareClick.call(shareBtn, e); }
+      }, true);
+      document.addEventListener('click', e=>{
+        if(e.target===modal) closeModal();
+        if(e.target.closest && e.target.closest('.hsm-close')){ e.preventDefault(); closeModal(); }
+        if(copyBtn && (e.target===copyBtn || (e.target.closest && e.target.closest('.hsm-copy')))) { e.preventDefault(); copyCurrent(); }
+      });
+      document.addEventListener('keydown', e=>{ if(e.key==='Escape' && isOpen()) closeModal(); });
+      function trapFocus(){
+        if(trapBound) return;
+        trapBound=true;
+        modal.addEventListener('keydown', f=>{ if(f.key==='Tab' && isOpen()){ const focusable=[...modal.querySelectorAll('a[href],button,input,textarea,select,[tabindex]:not([tabindex="-1"])')].filter(el=>!el.hasAttribute('disabled')); if(!focusable.length) return; const first=focusable[0]; const last=focusable[focusable.length-1]; if(f.shiftKey && document.activeElement===first){ f.preventDefault(); last.focus(); } else if(!f.shiftKey && document.activeElement===last){ f.preventDefault(); first.focus(); } } });
+      }
+      if(closeBtn) closeBtn.addEventListener('click', e=>{ e.preventDefault(); closeModal(); });
+    })();
+  </script>
+{{- end -}}

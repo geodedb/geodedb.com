@@ -15,6 +15,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 # Continuous Integration for Geode
 
 Continuous Integration (CI) is the practice of automatically building, testing, and validating code changes as they're committed to version control. For Geode, CI ensures that every change maintains database correctness, preserves GQL standards compliance, prevents performance regressions, and validates polyglot client compatibility.

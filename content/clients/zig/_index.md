@@ -4,7 +4,14 @@ description: "Official Zig client library for Geode"
 weight: 4
 tags: ["zig", "client", "native", "performance"]
 categories: ["clients", "documentation"]
+keywords:
+  - Geode Zig client
+  - Zig SDK
+  - GQL driver
+  - graph database Zig
 ---
+
+<!-- CANARY: REQ=REQ-ZIG-CLIENT-002; FEATURE="ZigClientV2"; ASPECT=QUICTransport; STATUS=TESTED; OWNER=clients; UPDATED=2026-01-15 -->
 
 # Zig Client Library
 

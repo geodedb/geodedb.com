@@ -16,6 +16,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 # Server Configuration
 
 Geode server configuration encompasses all aspects of running, managing, and optimizing the database server for production workloads. From basic startup parameters to advanced performance tuning, proper server configuration is essential for reliability, performance, and maintainability.

@@ -20,6 +20,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 Graph databases excel at modeling and querying highly connected data. Geode's implementation of the ISO/IEC 39075:2024 GQL standard makes it straightforward to implement common graph use cases with declarative, readable queries. This guide explores practical examples demonstrating how to leverage Geode for real-world applications.
 
 ## Social Network Use Cases

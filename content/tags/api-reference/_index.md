@@ -21,6 +21,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 Geode provides comprehensive client libraries for Python, Go, Rust, and Zig, all implementing consistent APIs for connecting to Geode servers, executing GQL queries, and managing transactions. This reference covers all client library APIs and integration patterns.
 
 ## Client Library Overview

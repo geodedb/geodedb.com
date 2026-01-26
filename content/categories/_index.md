@@ -17,6 +17,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 # Documentation Categories
 
 Geode's documentation is organized into focused categories to help you find exactly what you need. Whether you're learning GQL for the first time, optimizing query performance, understanding system architecture, or deploying in production, these categories provide structured paths through our comprehensive documentation library.

@@ -2,7 +2,16 @@
 title: "GQL Query Language Reference"
 description: "Complete reference for the Graph Query Language (GQL) with ISO/IEC 39075:2024 compliance"
 weight: 30
+
+keywords:
+  - GQL reference
+  - Graph Query Language reference
+  - ISO 39075
+  - GQL syntax
+  - Geode GQL
 ---
+
+<!-- CANARY: REQ=REQ-GQL-001; FEATURE="BasicQuery"; ASPECT=Testing; STATUS=TESTED; OWNER=test; UPDATED=2025-10-02 -->
 
 # GQL Query Language Reference
 

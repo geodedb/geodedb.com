@@ -4,7 +4,15 @@ description: "VSCode extension for Geode with full IDE support"
 weight: 3
 tags: ["vscode", "plugin", "ide", "lsp"]
 categories: ["plugins", "documentation"]
+keywords:
+  - Geode VS Code extension
+  - GQL syntax highlighting
+  - VS Code plugin
+  - Geode tooling
+  - Graph query IDE
 ---
+
+<!-- CANARY: REQ=REQ-SYNTAX-GEN-002; FEATURE="VSCodeSyntaxGeneration"; ASPECT=BuildTarget; STATUS=EXEMPT; OWNER=tooling; UPDATED=2026-01-03 -->
 
 # VSCode Extension for Geode
 

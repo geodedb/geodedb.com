@@ -20,6 +20,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 EXPLAIN and PROFILE are essential tools for understanding and optimizing query performance in Geode. They provide visibility into how the query planner executes your GQL queries, helping you identify bottlenecks and optimize performance.
 
 ## What is EXPLAIN?

@@ -18,6 +18,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 Geode achieves 100% compliance with the ISO/IEC 39075:2024 GQL (Graph Query Language) standard, passing all 70 official ISO test cases and implementing the complete specification.
 
 ## Compliance Overview
@@ -878,7 +880,7 @@ All features link to ISO specification sections:
 // geode/src/gql/parser.zig
 
 /// Parse MATCH clause per ISO/IEC 39075:2024 §9.1
-/// CANARY: ISO-9.1-MATCH-CLAUSE
+/// CANARY: REQ=REQ-XXX; FEATURE="GQLCompliance"; ASPECT=MatchClause; STATUS=TESTED; TEST=TestGqlMatchClause; OWNER=parser; UPDATED=2026-01-24
 fn parseMatchClause(self: *Parser) !MatchClause {
     // Implementation follows spec exactly
     try self.expect(.MATCH);

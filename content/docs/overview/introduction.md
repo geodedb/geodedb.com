@@ -21,6 +21,8 @@ keywords:
   - QUIC
 ---
 
+<!-- CANARY: REQ=REQ-GQL-001; FEATURE="BasicQuery"; ASPECT=Testing; STATUS=TESTED; OWNER=test; UPDATED=2025-10-02 -->
+
 # Introduction to Geode
 
 Geode is an enterprise-ready graph database implementing the **ISO/IEC 39075:2024 Graph Query Language (GQL)** standard. Built with Zig for performance and reliability, Geode provides QUIC+TLS transport, ACID transactions, and comprehensive enterprise security features.
@@ -155,10 +157,10 @@ Geode may not be the best fit for:
 - **Governance**: 1,735 CANARY markers tracking requirements with evidence
 
 **Performance Metrics**:
-- 10,000+ queries/second (query throughput)
+- 10,000-50,000 read-write transactions/sec (throughput range)
 - <50ns per distance calculation (8D L2 vector similarity)
 - 13.18x I/O improvement with memory-mapped storage
-- Successfully tested with 100M+ nodes, 1B+ edges
+- Load-test targets up to 100M+ nodes and 1B+ edges
 
 ## Next Steps
 
@@ -175,6 +177,6 @@ Explore use cases:
 
 Join the community:
 
-- **GitHub**: [https://gitlab.com/devnw/codepros/geode](https://gitlab.com/devnw/codepros/geode)
+- **GitHub**: [https://github.com/codeprosorg/geode](https://github.com/codeprosorg/geode)
 - **Documentation**: [https://geodedb.com/docs](https://geodedb.com/docs)
 - **Discord**: Community chat and support

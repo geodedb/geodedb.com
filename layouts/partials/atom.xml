@@ -1,0 +1,103 @@
+{{- $pctx := . -}}
+{{- if .IsHome -}}{{ $pctx = .Site }}{{- end -}}
+{{- $pages := slice -}}
+{{- if or $.IsHome $.IsSection -}}
+{{- $pages = $pctx.RegularPages -}}
+{{- else -}}
+{{- $pages = $pctx.Pages -}}
+{{- end -}}
+{{- $limit := .Site.Config.Services.RSS.Limit -}}
+{{- if ge $limit 1 -}}
+{{- $pages = $pages | first $limit -}}
+{{- end -}}
+{{- printf "<?xml version=\"1.0\" encoding=\"utf-8\"?>" | safeHTML }}
+<feed xmlns="http://www.w3.org/2005/Atom" xml:lang="{{ .Site.LanguageCode | default "en" }}">
+  <id>{{ .Permalink }}</id>
+  <title{{ if ne .Site.LanguageCode "en" }} xml:lang="{{ .Site.LanguageCode }}"{{ end }}>{{ if eq .Title .Site.Title }}{{ .Site.Title }}{{ else }}{{ with .Title }}{{ . }} - {{ end }}{{ .Site.Title }}{{ end }}</title>
+  <subtitle{{ if ne .Site.LanguageCode "en" }} xml:lang="{{ .Site.LanguageCode }}"{{ end }}>{{ with .Description }}{{ . }}{{ else }}{{ if eq .Title .Site.Title }}{{ .Site.Params.description | default (i18n "recent_content" . | default "Recent content") }}{{ else }}{{ i18n "recent_content" . | default "Recent content" }} {{ if ne .Title .Site.Title }}{{ with .Title }}{{ i18n "on" . | default "on" }} {{ . }}{{ end }}{{ end }}{{ end }}{{ end }}</subtitle>
+  <link href="{{ .Permalink }}" rel="alternate" type="text/html" />
+  {{- with .OutputFormats.Get "ATOM" }}
+  <link href="{{ .Permalink }}" rel="self" type="application/atom+xml" />
+  {{ end -}}
+  {{- /* Add alternate language links for multilingual Atom discovery */ -}}
+  {{- if hugo.IsMultilingual -}}
+    {{- range .Site.Languages -}}
+      {{- if ne . $.Site.Language -}}
+        {{- $altURL := $.Site.BaseURL | strings.TrimSuffix "/" -}}
+        {{- if ne .Lang $.Site.Params.DefaultContentLanguage -}}
+          {{- $altURL = printf "%s/%s" $altURL .Lang -}}
+        {{- end -}}
+        {{- if $.IsHome -}}
+          {{- $altURL = printf "%s/atom.xml" $altURL -}}
+        {{- else if $.IsSection -}}
+          {{- $altURL = printf "%s/%s/atom.xml" $altURL $.Section -}}
+        {{- else if $.IsPage -}}
+          {{- $altURL = printf "%s/%s/atom.xml" $altURL $.Section -}}
+        {{- end }}
+  <link href="{{ $altURL }}" rel="alternate" type="application/atom+xml" hreflang="{{ .Lang }}" title="{{ .LanguageName }}" />
+      {{- end -}}
+    {{- end -}}
+  {{- end -}}
+  <generator uri="https://gohugo.io/" version="{{ hugo.Version }}">Hugo</generator>
+  {{- if not .Date.IsZero }}
+  <updated>{{ .Date.Format "2006-01-02T15:04:05Z07:00" | safeHTML }}</updated>
+  {{ else }}
+  <updated>{{ now.Format "2006-01-02T15:04:05Z07:00" | safeHTML }}</updated>
+  {{ end -}}
+  {{- with .Site.Author }}
+  <author>
+    {{- with .name }}<name>{{ . }}</name>{{ end }}
+    {{- with .email }}<email>{{ . }}</email>{{ end }}
+    {{- with .uri }}<uri>{{ . }}</uri>{{ end }}
+  </author>
+  {{ end -}}
+  {{- with .Site.Copyright }}
+  <rights>{{ . }}</rights>
+  {{ end -}}
+  {{- /* Add feed icon if available */ -}}
+  {{- with .Site.Params.images -}}
+    {{- range first 1 . -}}
+      {{- $image := . -}}
+      {{- if not (strings.HasPrefix . "http") -}}
+        {{- $image = printf "%s%s" $.Site.BaseURL . -}}
+      {{- end }}
+  <icon>{{ $image }}</icon>
+  <logo>{{ $image }}</logo>
+    {{- end -}}
+  {{- end -}}
+  {{- range $pages }}
+  <entry>
+    <id>{{ .Permalink }}</id>
+    <title{{ if ne $.Site.LanguageCode "en" }} xml:lang="{{ $.Site.LanguageCode }}"{{ end }}>{{ .Title }}</title>
+    <link href="{{ .Permalink }}" rel="alternate" type="text/html" />
+    <published>{{ .Date.Format "2006-01-02T15:04:05Z07:00" | safeHTML }}</published>
+    <updated>{{ .Lastmod.Format "2006-01-02T15:04:05Z07:00" | safeHTML }}</updated>
+    {{- with $.Site.Author }}
+    <author>
+      {{- with .name }}<name>{{ . }}</name>{{ end }}
+      {{- with .email }}<email>{{ . }}</email>{{ end }}
+      {{- with .uri }}<uri>{{ . }}</uri>{{ end }}
+    </author>
+    {{ end -}}
+    {{- /* Add categories and tags */ -}}
+    {{- range .Params.categories -}}
+    <category term="{{ . }}" scheme="{{ $.Site.BaseURL }}categories/" />
+    {{- end -}}
+    {{- range .Params.tags -}}
+    <category term="{{ . }}" scheme="{{ $.Site.BaseURL }}tags/" />
+    {{- end -}}
+    {{- /* Content summary */ -}}
+    <summary{{ if ne $.Site.LanguageCode "en" }} xml:lang="{{ $.Site.LanguageCode }}"{{ end }} type="html">{{ .Summary | html }}</summary>
+    {{- /* Full content for Atom readers that support it */ -}}
+    {{- if .Site.Params.atom.fullContent -}}
+    <content{{ if ne $.Site.LanguageCode "en" }} xml:lang="{{ $.Site.LanguageCode }}"{{ end }} type="html"><![CDATA[{{ .Content }}]]></content>
+    {{- end -}}
+    {{- /* Add enclosure for media files */ -}}
+    {{- with .Params.podcast -}}
+      {{- with .file -}}
+    <link href="{{ . }}" rel="enclosure" {{ with $.Params.podcast.type }}type="{{ . }}"{{ else }}type="audio/mpeg"{{ end }} {{ with $.Params.podcast.length }}length="{{ . }}"{{ end }} />
+      {{- end -}}
+    {{- end -}}
+  </entry>
+  {{ end }}
+</feed>

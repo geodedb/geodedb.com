@@ -18,6 +18,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-SERVER-STARTUP-INTEGRATION-001; FEATURE="Server Startup Integration Tests"; ASPECT=EndToEndServerTesting; STATUS=TESTED; OWNER=server; UPDATED=2025-10-05 -->
+
 ## Overview
 
 Geode provides first-class Nix support for reproducible builds, declarative configuration, and seamless NixOS integration. This guide covers all aspects of Nix-based deployment from development to production.
@@ -43,7 +45,7 @@ Geode provides first-class Nix support for reproducible builds, declarative conf
 
 ```bash
 # Clone repository
-git clone https://gitlab.com/devnw/codepros/geode/geode.git
+git clone https://github.com/codeprosorg/geode
 cd geode
 
 # Build default package (production-ready)
@@ -199,7 +201,7 @@ Add to your `configuration.nix`:
   # Import Geode module
   imports = [
     (fetchGit {
-      url = "https://gitlab.com/devnw/codepros/geode/geode";
+      url = "https://github.com/codeprosorg/geode";
       ref = "main";
     } + "/nix/modules/geode-daemon.nix")
   ];

@@ -17,6 +17,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 Performance profiling is the systematic analysis of query execution to identify bottlenecks, optimize resource usage, and improve response times. In Geode, profiling capabilities provide detailed insights into how GQL queries execute, enabling data-driven optimization decisions for graph database workloads.
 
 ## Understanding Performance Profiling
@@ -430,7 +432,7 @@ Beyond the PROFILE command, additional techniques provide profiling insights.
 Configure Geode to log slow queries automatically:
 
 ```bash
-./zig-out/bin/geode serve \
+geode serve \
   --slow-query-log \
   --slow-query-threshold 1000  # Log queries >1s
 ```

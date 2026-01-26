@@ -21,6 +21,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 Documentation tagged with **query-optimization** in the Geode graph database. This comprehensive collection covers query performance analysis, optimization techniques, execution plan understanding, and strategies for achieving maximum efficiency in your GQL queries.
 
 ## Overview

@@ -18,6 +18,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 # Community Detection in Geode
 
 Community detection identifies groups of densely connected nodes within a graph, revealing organizational structure, social circles, functional modules, and natural clusters. Geode provides native GQL support for implementing various community detection algorithms efficiently at scale.

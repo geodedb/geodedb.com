@@ -20,6 +20,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 Built-in functions extend GQL with powerful data manipulation, aggregation, and computation capabilities. Geode implements the complete ISO/IEC 39075:2024 function specification plus performance-optimized extensions.
 
 ## Function Categories

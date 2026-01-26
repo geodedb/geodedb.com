@@ -7,6 +7,8 @@ slug: "backup-automation"
 canonical: "https://geodedb.com/docs/guides/backup-automation/"
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 Implementing robust automated backup strategies is critical for production Geode deployments. This guide covers automated backup configuration, scheduling, testing, and disaster recovery procedures.
 
 ## Overview

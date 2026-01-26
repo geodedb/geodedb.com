@@ -13,6 +13,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 # Nix Package Manager Integration
 
 Nix is a powerful package manager and build system that provides reproducible, declarative, and reliable software deployments. Geode offers first-class Nix integration, making it easy to install, configure, and deploy Geode in reproducible environments across development, staging, and production.
@@ -54,7 +56,7 @@ sh <(curl -L https://nixos.org/nix/install) --daemon
 echo "experimental-features = nix-command flakes" >> ~/.config/nix/nix.conf
 
 # Run Geode directly from the repository
-nix run github:devnw/geode -- serve --listen 0.0.0.0:3141
+nix run github:codeprosorg/geode -- serve --listen 0.0.0.0:3141
 
 # Or install to your profile
 nix profile install github:devnw/geode
@@ -67,7 +69,7 @@ geode serve
 
 ```bash
 # Clone repository
-git clone https://github.com/devnw/geode.git
+git clone https://github.com/codeprosorg/geode
 cd geode
 
 # Build with Nix
@@ -92,7 +94,7 @@ Add Geode to your NixOS configuration:
   # Import Geode module
   imports = [
     (builtins.fetchGit {
-      url = "https://github.com/devnw/geode";
+      url = "https://github.com/codeprosorg/geode";
       ref = "main";
     } + "/nix/module.nix")
   ];

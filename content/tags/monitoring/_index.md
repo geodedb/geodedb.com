@@ -13,6 +13,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 Monitoring and observability are essential for operating Geode in production environments. Comprehensive monitoring enables you to track system health, identify performance bottlenecks, detect anomalies, and respond to issues before they impact users.
 
 Geode provides rich telemetry through Prometheus metrics, structured logging, distributed tracing, and real-time performance profiling. Combined with integration capabilities for popular monitoring stacks like Grafana, Datadog, and New Relic, Geode gives you deep visibility into your graph database operations.

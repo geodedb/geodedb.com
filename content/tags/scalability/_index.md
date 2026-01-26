@@ -19,9 +19,11 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 # Horizontal Scalability
 
-Horizontal scalability is the ability to increase system capacity by adding more nodes to a distributed system rather than upgrading individual machines. Geode's architecture is purpose-built for horizontal scaling, enabling organizations to grow from single-node deployments to massive distributed clusters handling billions of nodes and relationships. This comprehensive guide explores scaling strategies, architectural patterns, configuration options, and operational best practices for building infinitely scalable graph databases.
+Horizontal scalability is the ability to increase system capacity by adding more nodes to a distributed system rather than upgrading individual machines. Geode's architecture is purpose-built for horizontal scaling, enabling organizations to grow from single-node deployments to distributed clusters targeting 100M+ nodes and 1B+ relationships in load-test models. This comprehensive guide explores scaling strategies, architectural patterns, configuration options, and operational best practices for building large-scale graph databases.
 
 ## Understanding Horizontal Scalability
 
@@ -418,7 +420,7 @@ load_balancing:
 
 ### Growth Modeling
 
-Project future capacity requirements:
+Project future capacity requirements (replace values with your own benchmarks; numbers below are illustrative):
 
 ```python
 # Capacity planning model
@@ -442,7 +444,7 @@ capacity_planning:
     12_months:
       estimated_nodes: 50
       estimated_storage_tb: 378
-      estimated_peak_qps: 130000
+      estimated_peak_qps: 100000
 
   # Scaling thresholds
   thresholds:
@@ -453,7 +455,7 @@ capacity_planning:
 
 ### Benchmark-Based Sizing
 
-Determine cluster size from performance requirements:
+Determine cluster size from performance requirements (use measured per-node capacity from your benchmarks):
 
 ```yaml
 sizing:

@@ -2,7 +2,16 @@
 title: "Client Libraries"
 description: "Official client libraries for Go, Python, Rust, and Zig with QUIC+TLS support"
 weight: 50
+
+keywords:
+  - Geode client libraries
+  - GQL SDKs
+  - graph database drivers
+  - API clients
+  - developer tools
 ---
+
+<!-- CANARY: REQ=REQ-CLIENT-INTEGRATION-001; FEATURE="RustClientIntegration"; ASPECT=QUICTransport; STATUS=TESTED; OWNER=clients; UPDATED=2026-01-15 -->
 
 # Client Libraries
 
@@ -17,7 +26,7 @@ Full `database/sql` driver implementation with connection pooling and transactio
 - **Package**: `go.codepros.org/geode`
 - **Status**: Production Ready
 - **Features**: Complete `database/sql` interface, prepared statements, context support
-- **Performance**: High throughput with connection pooling
+- **Performance**: Throughput depends on workload and pool sizing
 
 [Go Client Documentation →](go-client/)
 
@@ -28,7 +37,7 @@ Modern async Python client with full type hints and asyncio support.
 - **Package**: `geode-client`
 - **Status**: Production Ready
 - **Features**: Fully async with type hints, connection pooling, query builders
-- **Performance**: 1000+ queries/second with pooling
+- **Performance**: Throughput depends on workload and pool sizing
 
 [Python Client Documentation →](python-client/)
 
@@ -37,19 +46,19 @@ Modern async Python client with full type hints and asyncio support.
 Type-safe async Rust client with zero-cost abstractions.
 
 - **Package**: `geode-client`
-- **Status**: Production Ready
+- **Status**: Compatibility Notes
 - **Features**: Tokio-based async, type-safe API, connection pooling
-- **Performance**: 10,000+ queries/second
+- **Performance**: Validate QUIC interoperability in your environment
 
 [Rust Client Documentation →](rust-client/)
 
 ### Zig Client (Native)
 
-Native Zig client library (coming soon).
+Native Zig client library with QUIC transport.
 
-- **Status**: In Development
+- **Status**: Production Ready for basic operations
 - **Features**: Zero allocations, comptime type safety
-- **Performance**: Maximum performance with minimal overhead
+- **Performance**: Validate QUIC interoperability in your environment
 
 ## Quick Start
 
@@ -415,7 +424,7 @@ Contributions to client libraries are welcome! Each library follows language-spe
 ## Support
 
 - **Documentation**: See language-specific guides
-- **Issues**: [GitHub Issues](https://github.com/devnw/geode/issues)
+- **Issues**: [GitHub Issues](https://github.com/codeprosorg/geode/issues)
 - **Discord**: [Community Chat](https://discord.gg/geode)
 - **Email**: [email protected]
 

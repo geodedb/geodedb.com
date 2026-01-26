@@ -13,6 +13,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 Kubernetes provides production-grade orchestration for running Geode at scale. As a cloud-native graph database, Geode integrates seamlessly with Kubernetes, leveraging StatefulSets for stable storage, Services for networking, ConfigMaps and Secrets for configuration, and Operators for advanced lifecycle management.
 
 Deploying Geode on Kubernetes enables automatic scaling, self-healing, rolling updates, and multi-region deployments. Whether you're running a single-node development cluster or a globally distributed production system, Kubernetes provides the infrastructure automation needed for enterprise graph database operations.

@@ -18,6 +18,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-API-DOCS-002; FEATURE="APIDocumentation"; ASPECT=BuildTarget; STATUS=EXEMPT; OWNER=tooling; UPDATED=2026-01-03 -->
+
 ## Overview
 
 Geode implements a complete set of operators as defined in the ISO/IEC 39075:2024 GQL standard. This reference covers all supported operators, their precedence rules, type compatibility, and practical usage examples.

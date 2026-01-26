@@ -15,6 +15,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 The **Graph Databases 101** category provides foundational knowledge for understanding graph databases, their unique characteristics, and when to use them. Whether you're new to graph databases or coming from relational databases, these resources help you build a solid conceptual foundation.
 
 ## Introduction to Graph Databases

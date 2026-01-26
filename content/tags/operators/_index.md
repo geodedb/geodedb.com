@@ -20,6 +20,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 Operators are the building blocks of GQL expressions, enabling you to compare values, perform calculations, manipulate strings and lists, and construct complex query logic. Geode implements the complete ISO/IEC 39075:2024 operator specification.
 
 ## What are GQL Operators?

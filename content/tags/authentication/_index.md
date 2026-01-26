@@ -13,6 +13,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 Authentication and authorization are critical components of Geode's enterprise security architecture. As a production-ready graph database handling sensitive data, Geode provides comprehensive security controls to ensure only authorized users and applications can access your data.
 
 Geode implements multiple authentication mechanisms, fine-grained authorization policies, and integration with enterprise identity providers. Combined with Row-Level Security (RLS), encryption, and audit logging, Geode delivers the security guarantees required for regulated industries and mission-critical applications.

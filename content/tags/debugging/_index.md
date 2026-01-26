@@ -17,6 +17,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 Debugging and troubleshooting documentation for Geode covering query debugging, connection issues, performance problems, error diagnosis, logging configuration, distributed tracing, and systematic troubleshooting approaches.
 
 ## Query Debugging

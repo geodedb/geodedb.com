@@ -20,6 +20,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 # Graph Analytics in Geode
 
 Graph analytics transforms connected data into actionable insights by revealing patterns, relationships, and structures invisible in traditional databases. Geode's implementation of the ISO/IEC 39075:2024 GQL standard provides powerful analytical capabilities for path analysis, centrality measurement, community detection, and business intelligence.

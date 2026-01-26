@@ -23,6 +23,8 @@ params:
     description: "Secure your graph data with Geode's comprehensive encryption. AES-256-GCM encryption at rest, TLS 1.3 in transit, and enterprise key management for complete data protection."
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 Geode provides enterprise-grade encryption for protecting sensitive graph data both at rest and in transit. This comprehensive encryption implementation uses industry-standard algorithms and follows cryptographic best practices to ensure data confidentiality, integrity, and compliance with security regulations.
 
 ## Encryption Architecture

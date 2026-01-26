@@ -18,6 +18,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-SEC-AUDIT-LOG-001; FEATURE="Security"; ASPECT=AuditLog; STATUS=TESTED; OWNER=security; UPDATED=2026-01-16 -->
+
 ## Overview
 
 Geode provides comprehensive session management features for maintaining stateful connections to the database. Sessions enable parameter storage, transaction management, connection pooling, and timeout configuration.
@@ -253,7 +255,7 @@ async with pool.acquire() as conn:
 await pool.close()
 ```
 
-**Performance**: 1000+ queries/second with connection reuse
+**Performance**: Throughput depends on workload, network, and server limits; pooling reduces connection overhead
 
 #### Rust Client Pooling
 
@@ -274,7 +276,7 @@ let pool = ConnectionPool::new(PoolConfig {
 let result = pool.query("MATCH (n:Person) RETURN n LIMIT 10").await?;
 ```
 
-**Performance**: 10,000+ queries/second with tokio runtime
+**Performance**: Throughput depends on workload, network, and server limits; pooling reduces connection overhead
 
 #### Zig Client Pooling
 

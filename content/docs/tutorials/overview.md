@@ -15,6 +15,8 @@ keywords:
   - HNSW tutorial
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 # Tutorials and Examples
 
 Hands-on learning paths with executable examples and expected outputs.

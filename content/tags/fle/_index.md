@@ -13,6 +13,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 Documentation tagged with **Field-Level Encryption (FLE)** in the Geode graph database. FLE provides application-level encryption for specific sensitive fields, ensuring that confidential data like credit cards, SSNs, and health records remain encrypted even from database administrators.
 
 ## Introduction to Field-Level Encryption

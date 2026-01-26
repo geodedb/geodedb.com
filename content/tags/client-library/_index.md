@@ -20,6 +20,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 Geode provides production-ready client libraries for Go, Python, Rust, and Zig, enabling developers to build graph-powered applications in their preferred language. All clients communicate via QUIC+TLS on port 3141 using a standardized JSON line protocol, ensuring consistent behavior across platforms while leveraging language-specific idioms and patterns.
 
 ## Client Library Architecture
@@ -173,7 +175,7 @@ for _, email := range emails {
 
 ### Performance Characteristics
 
-- Throughput: 10,000+ queries/second
+- Throughput: Workload-dependent (see server baselines)
 - Connection overhead: ~1ms per new connection
 - Query latency: <5ms for simple queries
 - Memory: ~5KB per idle connection
@@ -306,7 +308,7 @@ except GeodeError as e:
 
 ### Performance Characteristics
 
-- Throughput: 1,000+ queries/second
+- Throughput: Workload-dependent (see server baselines)
 - Connection pooling: 50+ concurrent connections
 - Query latency: <10ms for simple queries
 - Memory: ~10KB per connection
@@ -412,7 +414,7 @@ tx.commit().await?;
 
 ### Performance Characteristics
 
-- Throughput: 15,000+ queries/second
+- Throughput: Workload-dependent (see server baselines)
 - Zero-copy deserialization where possible
 - Query latency: <3ms for simple queries
 - Memory: ~3KB per idle connection
@@ -482,7 +484,7 @@ defer results.deinit();  // Free result memory
 
 ### Performance Characteristics
 
-- Throughput: 12,000+ queries/second
+- Throughput: Workload-dependent (see server baselines)
 - Explicit memory management
 - Query latency: <4ms for simple queries
 - Memory: ~2KB per idle connection

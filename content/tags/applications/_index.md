@@ -19,6 +19,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 Building applications with Geode enables developers to leverage graph database capabilities for modeling complex relationships, traversing networks efficiently, and discovering patterns in connected data. This guide explores application development patterns, architecture strategies, and best practices for graph-powered systems.
 
 ## Application Architecture Patterns

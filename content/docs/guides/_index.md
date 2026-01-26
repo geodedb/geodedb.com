@@ -29,6 +29,8 @@ params:
     description: "Practical guides for operating Geode including backup automation, migration strategies, multi-datacenter deployment, and performance optimization"
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 # Guides
 
 Practical, real-world guides for operating Geode in production. These guides provide step-by-step instructions, best practices, and proven patterns for common operational scenarios.

@@ -19,6 +19,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 Modern development requires sophisticated IDE support for productivity, code quality, and developer experience. Geode provides comprehensive IDE integration through Language Server Protocol (LSP) implementation, syntax highlighting, intelligent auto-completion, real-time error checking, and debugging capabilities for GQL query development across popular editors and IDEs.
 
 Whether you're using Visual Studio Code, IntelliJ IDEA, Vim, Emacs, or other LSP-compatible editors, Geode's tooling provides the rich development experience developers expect from enterprise database platforms.

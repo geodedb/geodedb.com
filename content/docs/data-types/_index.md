@@ -2,7 +2,16 @@
 title: "Data Types Reference"
 description: "Complete reference for Geode's 50+ specialized data types including vectors, geographic, network, and cryptographic types"
 weight: 40
+
+keywords:
+  - Geode data types
+  - GQL types
+  - graph database types
+  - property types
+  - vector types
 ---
+
+<!-- CANARY: REQ=REQ-TYPES-001; FEATURE="Types"; ASPECT=TypeCoercion; STATUS=TESTED; OWNER=engine; UPDATED=2026-01-15 -->
 
 # Data Types Reference
 

@@ -18,6 +18,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 Application logging is a critical component of system observability, providing detailed event records that capture the "why" behind system behavior. Geode implements comprehensive structured logging in JSON format, making logs machine-readable, easily queryable, and integrable with modern log aggregation platforms.
 
 Effective logging enables debugging, security auditing, performance analysis, and compliance tracking. Geode's logging system balances detail with performance, providing rich context without impacting query throughput.

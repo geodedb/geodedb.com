@@ -4,7 +4,15 @@ description: "Best practices for designing effective graph schemas in Geode"
 weight: 10
 tags: ["schema", "modeling", "design", "best-practices"]
 categories: ["guides", "design"]
+keywords:
+  - graph modeling
+  - property graph
+  - schema design
+  - Geode
+  - graph database design
 ---
+
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
 
 # Graph Modeling Guide
 

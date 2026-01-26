@@ -5,6 +5,8 @@ keywords: ["pub/sub", "publish-subscribe", "messaging", "message broker", "topic
 weight: 10
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 # Publish-Subscribe Messaging
 
 Publish-Subscribe (Pub/Sub) is a messaging pattern where publishers send messages to topics without knowing who will receive them, and subscribers receive messages from topics they're interested in without knowing who sent them. This decoupling enables scalable, flexible, event-driven architectures.

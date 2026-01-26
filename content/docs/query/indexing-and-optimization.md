@@ -22,6 +22,8 @@ keywords:
   - query planner
 ---
 
+<!-- CANARY: REQ=REQ-GQL-024; FEATURE="Conformance Flagger"; ASPECT=ImplDefinedCollationAndNullOrdering; STATUS=TESTED; OWNER=engine; UPDATED=2025-09-21 -->
+
 # Querying, Indexing, and Query Optimization
 
 Learn how Geode executes queries, how to create indexes for different access patterns, and how to use EXPLAIN/PROFILE to tune performance.

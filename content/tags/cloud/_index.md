@@ -16,6 +16,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 # Cloud Deployment for Geode
 
 Cloud platforms provide scalable, managed infrastructure for deploying Geode graph database systems. This guide covers cloud-native deployment patterns, platform-specific configurations, and best practices for running Geode on AWS, Google Cloud Platform (GCP), and Microsoft Azure.

@@ -4,7 +4,15 @@ description: "Vim plugin for Geode GQL syntax highlighting and basic features"
 weight: 2
 tags: ["vim", "plugin", "editor", "syntax"]
 categories: ["plugins", "documentation"]
+keywords:
+  - Geode Vim plugin
+  - GQL syntax highlighting
+  - Vim integration
+  - Geode tooling
+  - Graph query editor
 ---
+
+<!-- CANARY: REQ=REQ-SYNTAX-VIM-002; FEATURE="VimSyntaxGeneration"; ASPECT=BuildTarget; STATUS=EXEMPT; OWNER=tooling; UPDATED=2026-01-03 -->
 
 # Vim Plugin for Geode
 

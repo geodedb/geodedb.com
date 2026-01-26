@@ -18,6 +18,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-SERVER-STARTUP-INTEGRATION-001; FEATURE="Server Startup Integration Tests"; ASPECT=EndToEndServerTesting; STATUS=TESTED; OWNER=server; UPDATED=2025-10-05 -->
+
 ## Overview
 
 Geode provides a comprehensive, security-first audit logging and tracing subsystem designed for enterprise compliance and operational security. The system instruments authentication actions and database operations, emitting structured logs with tamper-evident guarantees through cryptographic hash chains and digital signatures.
@@ -516,14 +518,14 @@ Verify tamper-evident chain and signatures:
 
 ```bash
 # Verify single file
-./zig-out/bin/geode audit verify \
+geode audit verify \
   --file /var/log/geode/audit.jsonl \
   --algo sha256 \
   --pubkey $GEODE_AUDIT_PUB
 
 # Verify rotated files (chronological order)
 for file in $(ls -tr /var/log/geode/audit.jsonl*); do
-  ./zig-out/bin/geode audit verify \
+  geode audit verify \
     --file $file \
     --algo sha256 \
     --pubkey $GEODE_AUDIT_PUB
@@ -579,7 +581,7 @@ jq 'select(.event_type == "auth.login" and .result == "failure")' \
 ```bash
 # Extract seq 100-200 and verify hash chain
 jq 'select(.seq_no >= 100 and .seq_no <= 200)' audit.jsonl > segment.jsonl
-./zig-out/bin/geode audit verify --file segment.jsonl --algo sha256
+geode audit verify --file segment.jsonl --algo sha256
 ```
 
 ## Integration
@@ -812,7 +814,7 @@ head -n -1 audit.jsonl > audit_fixed.jsonl
 mv audit_fixed.jsonl audit.jsonl
 
 # Re-run verification
-./zig-out/bin/geode audit verify --file audit.jsonl
+geode audit verify --file audit.jsonl
 ```
 
 ---
@@ -828,7 +830,7 @@ nc -zv syslog.example.com 514
 sudo iptables -L | grep 514
 
 # Enable debug logging
-GEODE_LOG_LEVEL=debug ./zig-out/bin/geode serve
+GEODE_LOG_LEVEL=debug geode serve
 
 # Verify CEF format
 tcpdump -i any port 514 -A

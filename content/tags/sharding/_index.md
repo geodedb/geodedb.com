@@ -19,6 +19,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 # Data Sharding
 
 Data sharding is a horizontal partitioning technique that distributes data across multiple independent database instances (shards) to achieve massive scale. While partitioning divides data within a cluster, sharding creates completely separate database instances that can operate independently. Geode provides sophisticated sharding capabilities that enable organizations to scale graph databases to billions of nodes and petabytes of data while maintaining query performance and operational simplicity.

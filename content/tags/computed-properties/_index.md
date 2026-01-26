@@ -21,6 +21,8 @@ keywords:
 weight: 10
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 # Computed Properties
 
 Computed properties are node or edge properties whose values are automatically calculated from other data through formulas and expressions. Unlike stored properties that persist static values, computed properties derive their values dynamically from base properties, relationships, or aggregations, ensuring they always reflect the current state of your graph. Computed properties are type-safe, indexable, and eliminate data redundancy while maintaining query performance.

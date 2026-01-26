@@ -17,6 +17,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 Monitoring dashboards provide visual representations of system metrics, enabling at-a-glance health checks, trend analysis, and rapid problem identification. Well-designed dashboards surface critical information, guide investigation workflows, and enable data-driven decision-making for operations and capacity planning.
 
 Geode's comprehensive metrics expose detailed performance data that can be visualized through Grafana, Datadog, New Relic, or custom dashboard platforms. Effective dashboard design balances detail with clarity, focusing on actionable insights rather than raw data dumps.

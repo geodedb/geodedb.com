@@ -18,6 +18,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-SEC-AUDIT-LOG-001; FEATURE="Security"; ASPECT=AuditLog; STATUS=TESTED; OWNER=security; UPDATED=2026-01-16 -->
+
 ## Overview
 
 Geode uses **Argon2id** for password hashing, the industry-standard password hashing algorithm recommended by OWASP and cryptography experts. This document explains Geode's password hashing implementation, security properties, configuration options, and best practices for credential management.
@@ -471,7 +473,7 @@ Geode includes comprehensive tests for password hashing:
 
 ```bash
 # Run authentication tests
-./zig-out/bin/geode query --insecure --user testuser --password testpass -
+geode query --insecure --user testuser --password testpass -
 ```
 
 **Expected Results**:

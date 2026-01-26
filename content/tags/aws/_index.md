@@ -16,6 +16,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 # Geode on Amazon Web Services (AWS)
 
 Amazon Web Services provides a comprehensive cloud platform for deploying Geode graph database. This guide covers AWS-specific deployment patterns, service integrations, and optimization strategies for running production Geode workloads on AWS infrastructure.
@@ -113,14 +115,16 @@ set -e
 apt-get update
 apt-get upgrade -y
 
-# Install dependencies
-apt-get install -y wget curl jq
+# Install dependencies (assumes Zig 0.15.1+ available)
+apt-get install -y git make jq
 
-# Download Geode
+# Build Geode from source
 GEODE_VERSION="v0.18.0"
-wget https://releases.geodedb.com/${GEODE_VERSION}/geode-linux-arm64.tar.gz
-tar -xzf geode-linux-arm64.tar.gz
-mv geode /usr/local/bin/
+git clone https://github.com/codeprosorg/geode
+cd geode
+git checkout ${GEODE_VERSION}
+make build
+cp ./zig-out/bin/geode /usr/local/bin/geode
 chmod +x /usr/local/bin/geode
 
 # Create geode user

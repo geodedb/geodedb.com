@@ -21,6 +21,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 Documentation tagged with **query-performance** in the Geode graph database. This comprehensive collection covers performance analysis, benchmarking methodologies, monitoring strategies, tuning techniques, and best practices for achieving maximum throughput and minimal latency in production graph workloads.
 
 ## Overview
@@ -39,14 +41,13 @@ Performance considerations include:
 
 ### Geode Benchmarks
 
-Real-world performance metrics from production deployments:
+Representative performance metrics from the server features documentation:
 
 **Point Queries**:
 
 ```gql
-// Single node lookup by unique ID
-// Throughput: 50,000-100,000 QPS
-// Latency: <1ms p50, <5ms p99
+// Point lookup by unique ID (indexed)
+// Latency: <1ms (typically 100-500us)
 MATCH (u:User {user_id: '12345'})
 RETURN u.name, u.email, u.created_at;
 ```
@@ -54,9 +55,8 @@ RETURN u.name, u.email, u.created_at;
 **Pattern Matching**:
 
 ```gql
-// Two-hop traversal with filters
-// Throughput: 10,000-25,000 QPS
-// Latency: 2-10ms p50, 15-50ms p99
+// Short path (1-2 hops) with filters
+// Latency: 1-5ms
 MATCH (u:User {region: 'West'})-[:FOLLOWS]->(f:User)-[:POSTS]->(p:Post)
 WHERE p.created_at > '2025-01-01'
 RETURN u.name, f.name, p.title
@@ -66,9 +66,8 @@ LIMIT 100;
 **Aggregations**:
 
 ```gql
-// Grouped aggregation over relationships
-// Throughput: 5,000-15,000 QPS
-// Latency: 5-20ms p50, 30-100ms p99
+// Aggregation over relationships
+// Latency: 5-20ms for ~10k rows; 100-500ms for ~1M rows
 MATCH (u:User)-[:PURCHASED]->(p:Product)
 WHERE u.region = 'East'
 RETURN u.region, COUNT(p) AS purchases, SUM(p.price) AS total
@@ -79,8 +78,7 @@ GROUP BY u.region;
 
 ```gql
 // Variable-length path with filters
-// Throughput: 1,000-5,000 QPS
-// Latency: 10-50ms p50, 100-500ms p99
+// Latency: 10-100ms for 3-5 hops
 MATCH path = (u:User)-[:FOLLOWS*1..3]->(influencer:User)
 WHERE u.id = 'user123' AND influencer.verified = true
 RETURN influencer.name, LENGTH(path) AS hops
@@ -96,13 +94,13 @@ Performance scales with hardware resources:
 
 - Graph traversals are CPU-intensive
 - Pattern matching benefits from multiple cores
-- Parallel query execution scales linearly up to 8-16 cores
+- Parallel query execution scales linearly up to 64 cores
 - Aggregations can leverage SIMD instructions
 
 **Memory**:
 
 - Hot working set should fit in RAM
-- Index caching improves lookup performance 10-100x
+- Index caching improves lookup performance significantly
 - Large result sets require memory for materialization
 - Graph cache reduces disk I/O dramatically
 

@@ -22,6 +22,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 # Graph Algorithms & Analytics in Geode
 
 Graph algorithms unlock powerful analytical capabilities in Geode, enabling you to extract insights from connected data that would be impossible with traditional relational queries. From finding shortest paths and detecting communities to ranking influential nodes and identifying anomalies, graph algorithms are essential tools for modern data science and analytics.

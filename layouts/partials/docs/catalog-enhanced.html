@@ -8,7 +8,7 @@
 */}}
 
 <nav class="docs-catalog-nav mb-4" aria-label="{{ i18n "documentation_navigation" | default "Documentation navigation" }}">
-  <div class="card border-0 shadow-sm">
+  <div class="card border-0 shadow-sm docs-panel docs-catalog-panel">
     <div class="card-header bg-transparent border-bottom">
       <h2 class="h6 mb-0 fw-semibold d-flex align-items-center">
         <wa-icon name="book" class="me-2 text-primary" aria-hidden="true"></wa-icon>
@@ -94,101 +94,3 @@
     {{- end -}}
   </ul>
 {{- end -}}
-
-{{/* Enhanced catalog styles */}}
-<style>
-  /* Navigation list */
-  .docs-nav-list {
-    padding: 0.5rem 0;
-  }
-
-  .docs-nav-item {
-    position: relative;
-  }
-
-  /* Navigation links */
-  .docs-nav-link {
-    display: flex;
-    align-items: center;
-    padding: 0.5rem 1rem;
-    color: var(--bs-body-color);
-    text-decoration: none;
-    border-left: 3px solid transparent;
-    transition: all 0.15s ease-in-out;
-    font-size: 0.9rem;
-  }
-
-  .docs-nav-link:hover {
-    background-color: rgba(var(--bs-primary-rgb), 0.05);
-    color: var(--bs-primary);
-    border-left-color: rgba(var(--bs-primary-rgb), 0.3);
-  }
-
-  .docs-nav-link.active {
-    background-color: rgba(var(--bs-primary-rgb), 0.1);
-    color: var(--bs-primary);
-    font-weight: 600;
-    border-left-color: var(--bs-primary);
-  }
-
-  /* Section header */
-  .docs-nav-section {
-    padding: 0;
-  }
-
-  /* Toggle button */
-  .docs-nav-toggle {
-    border: none;
-    color: var(--bs-body-color);
-    opacity: 0.6;
-    transition: transform 0.2s ease-in-out, opacity 0.2s ease-in-out;
-  }
-
-  .docs-nav-toggle:hover {
-    opacity: 1;
-  }
-
-  .docs-nav-toggle:not(.collapsed) .docs-nav-chevron {
-    transform: rotate(180deg);
-  }
-
-  .docs-nav-chevron {
-    transition: transform 0.2s ease-in-out;
-  }
-
-  /* Nested navigation */
-  .docs-nav-nested {
-    padding-left: 1rem;
-    border-left: 1px solid rgba(0, 0, 0, 0.1);
-    margin-left: 1rem;
-    margin-top: 0.25rem;
-  }
-
-  .docs-nav-nested .docs-nav-link {
-    padding: 0.4rem 1rem;
-    font-size: 0.85rem;
-  }
-
-  .docs-nav-nested .docs-nav-nested {
-    padding-left: 0.75rem;
-    margin-left: 0.75rem;
-  }
-
-  /* Icons */
-  .docs-nav-link wa-icon {
-    opacity: 0.7;
-    flex-shrink: 0;
-  }
-
-  .docs-nav-link.active wa-icon,
-  .docs-nav-link:hover wa-icon {
-    opacity: 1;
-  }
-
-  /* Dark mode adjustments */
-  @media (prefers-color-scheme: dark) {
-    .docs-nav-nested {
-      border-left-color: rgba(255, 255, 255, 0.1);
-    }
-  }
-</style>

@@ -19,6 +19,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 Modern applications serve global audiences with diverse languages, scripts, and cultural conventions. Geode provides comprehensive Unicode support and internationalization (i18n) capabilities, enabling you to build truly global graph applications that handle multilingual content, complex scripts, and locale-specific operations with ease and correctness.
 
 As an ISO/IEC 39075:2024 GQL-compliant graph database, Geode uses UTF-8 encoding throughout, supporting the full Unicode 15.0 character set including emoji, mathematical symbols, ancient scripts, and all modern languages. From right-to-left text to combining diacritical marks, Geode handles the complexities of international text processing transparently and efficiently.

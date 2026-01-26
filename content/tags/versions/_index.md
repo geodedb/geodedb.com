@@ -19,6 +19,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 Managing database versions effectively is critical for maintaining stable, secure, and performant systems. Geode provides comprehensive version management capabilities including explicit version tracking, compatibility matrices, automated upgrade paths, and multi-version deployment support for enterprise environments.
 
 As an ISO/IEC 39075:2024 GQL-compliant graph database, Geode follows semantic versioning with clear compatibility guarantees, enabling predictable upgrade strategies and safe dependency management across complex deployment environments.

@@ -17,6 +17,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 # Software Development Kits (SDKs)
 
 Geode provides production-ready SDKs for Go, Python, Rust, and Zig, enabling developers to integrate graph database capabilities into applications with minimal setup. Each SDK is designed to leverage language-specific features while maintaining consistent behavior across platforms through adherence to the ISO/IEC 39075:2024 GQL standard.
@@ -31,7 +33,7 @@ Geode's SDKs provide:
 - **Connection Pooling**: Built-in connection management for performance
 - **Transaction Management**: Full ACID transaction support with savepoints
 - **Error Handling**: Language-appropriate error types with ISO error codes
-- **Performance**: Optimized for high throughput (1,000-10,000+ queries/second)
+- **Performance**: Optimized for high-throughput workloads (runtime and workload dependent)
 
 ## SDK Comparison Matrix
 
@@ -44,7 +46,7 @@ Geode's SDKs provide:
 | **Transaction Support** | ✓ | ✓ | ✓ | ✓ |
 | **Prepared Statements** | ✓ | ✓ | ✓ | ✓ |
 | **Query Builder** | Planned | ✓ | ✓ | Planned |
-| **Performance** | 5K qps | 1K qps | 10K qps | 8K qps |
+| **Performance** | Workload-dependent | Workload-dependent | Workload-dependent | Workload-dependent |
 
 ## Go SDK
 
@@ -155,7 +157,7 @@ asyncio.run(main())
 ### Features
 
 - **Async/Await**: Native asyncio integration
-- **Connection Pooling**: Configurable pool (1000+ qps)
+- **Connection Pooling**: Configurable pool to reduce connection overhead (throughput depends on workload)
 - **Query Builder**: Type-safe query construction
 - **Row-Level Security**: Built-in RLS policy management
 - **Type System**: Comprehensive value type support
@@ -219,7 +221,7 @@ async fn main() -> Result<(), Error> {
 - **Zero-Cost Abstractions**: Compile-time optimization
 - **Tokio Integration**: Native async runtime
 - **Type Safety**: Compile-time type checking
-- **High Performance**: 10,000+ queries/second
+- **High Performance**: Designed for high-throughput workloads (see server throughput baselines)
 - **Serde Integration**: Automatic serialization/deserialization
 
 ### Documentation
@@ -293,7 +295,7 @@ pub fn main() !void {
 ### Features
 
 - **Memory Safety**: Compile-time memory management
-- **Performance**: 8,000+ queries/second
+- **Performance**: Workload-dependent throughput with low client overhead
 - **Comptime Features**: Compile-time query validation
 - **Vendored QUIC**: No external dependencies
 - **Cross-Platform**: Linux, macOS, Windows support

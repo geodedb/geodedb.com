@@ -76,13 +76,30 @@
 
     {{/* Resource hints for performance ------------------------------------ */}}
     {{/* Preload critical fonts */}}
-    <link
-      rel="preload"
-      href="/webfonts/open-sans-v16-latin-regular.woff2"
-      as="font"
-      type="font/woff2"
-      crossorigin
-    />
+    {{ if eq .Section "docs" }}
+      <link
+        rel="preload"
+        href="/webfonts/docs/ibm-plex-sans-400.woff2"
+        as="font"
+        type="font/woff2"
+        crossorigin
+      />
+      <link
+        rel="preload"
+        href="/webfonts/docs/sora-600.woff2"
+        as="font"
+        type="font/woff2"
+        crossorigin
+      />
+    {{ else }}
+      <link
+        rel="preload"
+        href="/webfonts/open-sans-v16-latin-regular.woff2"
+        as="font"
+        type="font/woff2"
+        crossorigin
+      />
+    {{ end }}
 
     {{/* CSS (Critical + bundle) -------------------------------------------- */}}
     {{/* 1. Critical above-the-fold CSS – inlined for performance */}}
@@ -93,7 +110,6 @@
     {{/* Define $styles variable for noscript fallback */}}
     {{ $scssOpts := dict
       "transpiler"    "dartsass"
-      "vars"          (partialCached "get-scss-vars.html" .)
       "includePaths"  (slice "assets/scss")
     -}}
     {{ $mainScss := resources.Get "scss/styles.scss" }}
@@ -473,6 +489,9 @@
     {{- /* For taxonomy pages, .Data.Term may be nil on taxonomy index pages; default safely */ -}}
     {{- $taxKey := (.Data.Term | default .Data.Singular | default .Data.Plural | default "taxonomy") -}}
     {{- $bodyClasses = $bodyClasses | append (printf "page-taxonomy-%s" $taxKey) -}}
+  {{- end }}
+  {{- if .Section }}
+    {{- $bodyClasses = $bodyClasses | append (printf "section-%s" (.Section | urlize)) -}}
   {{- end }}
   {{- $bodyClasses = $bodyClasses | append (printf "lang-%s" .Language.Lang) -}}
   {{- if eq (.Language.LanguageDirection | default "ltr") "rtl" }}

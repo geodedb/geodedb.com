@@ -17,6 +17,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 Performance metrics are quantitative measurements that provide visibility into Geode's operational behavior, resource utilization, and query performance. Geode exposes hundreds of metrics covering every aspect of database operations, from query execution times and transaction throughput to memory consumption and disk I/O patterns.
 
 By collecting and analyzing metrics, you can identify performance bottlenecks, detect anomalies, optimize resource allocation, and ensure your Geode deployment meets service level objectives (SLOs). Metrics form the foundation of observability, enabling data-driven decisions about scaling, tuning, and capacity planning.

@@ -24,6 +24,8 @@ params:
     description: "Meet regulatory compliance requirements with Geode's enterprise security features. GDPR, HIPAA, SOC2, PCI DSS support with comprehensive audit logging and data protection."
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 Geode is designed to help organizations meet stringent regulatory compliance requirements across multiple frameworks including GDPR, HIPAA, SOC2, PCI DSS, and industry-specific regulations. This comprehensive guide covers how Geode's security features support compliance objectives and best practices for deploying compliant graph database systems.
 
 ## Compliance Framework Overview

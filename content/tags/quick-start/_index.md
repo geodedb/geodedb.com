@@ -31,6 +31,8 @@ params:
       tags: ["quick-start", "tutorial", "installation", "beginner-guide"]
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 # Quick Start Guide
 
 Get Geode graph database running and execute your first queries in under 10 minutes. This streamlined guide delivers exactly what you need to move from installation to production-ready queries, with copy-paste examples for Python, Go, Rust, and Zig developers.
@@ -43,7 +45,7 @@ Before we dive into installation, understand what makes Geode the right choice f
 
 **Production-Ready**: With 97.4% test coverage, 100% GQL compliance, and battle-tested client libraries, Geode handles production workloads from day one. No "beta" disclaimers or experimental warnings.
 
-**High Performance**: QUIC-based transport with TLS 1.3 delivers 1,000+ queries/second in Python, 10,000+ in Rust. Sub-millisecond local query latency makes Geode suitable for real-time applications.
+**High Performance**: QUIC-based transport with TLS 1.3 supports high-throughput workloads with workload-dependent performance. Server baselines are read-only up to 100,000 txn/sec, read-write 10,000-50,000 txn/sec, and write-heavy 5,000-20,000 txn/sec.
 
 **Enterprise Security**: Row-level security, field-level encryption, transparent data encryption, and comprehensive audit logging meet compliance requirements for regulated industries.
 
@@ -56,8 +58,8 @@ Now let's get you up and running.
 ### Option 1: Build from Source
 
 ```bash
-git clone https://gitlab.com/devnw/codepros/geode.git
-cd geode/geode
+git clone https://github.com/codeprosorg/geode
+cd geode
 make build
 ./zig-out/bin/geode serve --listen 0.0.0.0:3141
 ```

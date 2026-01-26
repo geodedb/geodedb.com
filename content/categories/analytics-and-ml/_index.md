@@ -13,6 +13,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 Graph analytics and machine learning represent one of the most powerful applications of graph database technology. Geode provides a comprehensive platform for advanced analytics, combining native graph algorithms, vector embeddings, full-text search, and seamless integration with modern ML frameworks. This enables organizations to extract insights from connected data, build recommendation systems, detect anomalies, identify communities, and power intelligent applications.
 
 Geode's analytics capabilities leverage its graph structure to efficiently compute metrics that would require complex joins in relational databases. Built-in algorithms for centrality, community detection, pathfinding, and similarity analysis run directly on Geode's storage engine with optimizations for graph traversal. Vector search with HNSW indexing enables semantic similarity queries for AI/ML workloads, while BM25 full-text search powers content discovery and ranking.

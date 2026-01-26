@@ -16,6 +16,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 The **Development & Developer Tools** category encompasses comprehensive resources for building applications with Geode graph database. From initial setup through production deployment, these resources cover the complete development lifecycle with practical guides, API references, and tooling documentation.
 
 ## Introduction

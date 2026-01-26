@@ -19,6 +19,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 Geode implements the Graph Query Language (GQL) as standardized in ISO/IEC 39075:2024, providing a powerful, declarative language for querying graph databases. GQL builds on decades of query language evolution, combining the best aspects of SQL's familiarity with specialized graph traversal capabilities.
 
 ## What is GQL?

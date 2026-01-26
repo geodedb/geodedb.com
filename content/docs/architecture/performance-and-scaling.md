@@ -17,6 +17,8 @@ keywords:
   - HNSW SIMD
 ---
 
+<!-- CANARY: REQ=REQ-PERF-PHASE1-001; FEATURE="PerfPhase1"; ASPECT=Optimization; STATUS=TESTED; OWNER=performance; UPDATED=2026-01-16 -->
+
 # Performance and Scalability
 
 Learn how Geode achieves high performance through optimized storage, query planning, indexing, and distributed coordination.
@@ -104,9 +106,8 @@ From `SERVER_FEATURES.md`:
 - **AVX2/AVX-512 instructions**: 4-8x speedup
 - **Batch processing**: Compute multiple distances in parallel
 
-**Benchmark** (1M 128-dimensional vectors):
-- **Query time**: 2-5ms for k=10 neighbors
-- **Throughput**: 200-500 queries/second (single core)
+**Benchmark** (10k 128-dimensional vectors):
+- **Query time**: 1-5ms for k=10 neighbors at ~90% recall
 - **Scaling**: Near-linear with cores (up to 8-16 cores)
 
 ### 5. BM25 Full-Text Optimization
@@ -119,10 +120,11 @@ From `BM25_INDEX_OPTIMIZER_INTEGRATION.md`:
 - **Early termination**: Stop after top-K results
 - **Parallel scoring**: Multi-threaded relevance computation
 
-**Performance** (1M documents):
-- **Index build**: 30-60 seconds
-- **Query time**: 10-50ms for top-20 results
-- **Throughput**: 100-500 queries/second
+**Performance**:
+- **Single-term query**: ~10-50us
+- **Phrase query**: ~50-200us
+- **Boolean query**: ~100-500us
+- **Index build**: ~1-2ms per 1,000 documents
 
 ## Distributed Scaling Model
 
@@ -216,25 +218,25 @@ RETURN p.name, friend.name;
 
 ## Operational Ceilings
 
-From practical testing:
+From load-test modeling and benchmark targets:
 
-### Single-Node Limits
+### Single-Node Targets
 
-- **Nodes**: 100M+ (tested with 100M nodes)
-- **Relationships**: 1B+ (tested with 1B edges)
-- **Query throughput**: 10,000+ queries/second
-- **Vector search**: 200-500 ANN queries/second (128D)
+- **Nodes**: 100M+ (load-test target)
+- **Relationships**: 1B+ (load-test target)
+- **Read-write throughput**: 10,000-50,000 txn/sec
+- **Vector search**: HNSW with SIMD-optimized distance calculations
 
 **Recommended single-node sizing**:
 - **Memory**: 64GB+ (for 10M+ nodes with in-memory cache)
 - **CPU**: 8+ cores (for parallel query execution)
 - **Storage**: NVMe SSD (for memory-mapped I/O performance)
 
-### Distributed Cluster Limits
+### Distributed Cluster Targets
 
-- **Shards**: Tested with 4-16 shards
-- **Aggregate throughput**: Scales linearly (4 shards ≈ 4x throughput)
-- **Coordination overhead**: <5% (predicate pushdown is effective)
+- **Shards**: Up to 32 shards with automatic coordination
+- **Aggregate throughput**: Scales with shard count and query mix
+- **Coordination overhead**: Workload-dependent for federated queries
 
 **Shard count guidance**:
 - **Small datasets** (<10M nodes): Single node
@@ -247,7 +249,7 @@ From practical testing:
 
 ```bash
 # Use PROFILE to measure actual performance
-./geodec "PROFILE MATCH (p:Person)-[:KNOWS]->(friend) RETURN p.name, friend.name"
+./geode query "PROFILE MATCH (p:Person)-[:KNOWS]->(friend) RETURN p.name, friend.name"
 
 # Extract metrics
 # - Execution time

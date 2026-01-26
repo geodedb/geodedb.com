@@ -17,6 +17,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 # Hands-On Learning
 
 Hands-on learning provides the fastest path to mastering Geode through practical exercises, interactive challenges, and real-world scenarios. Learn by building, not just reading.
@@ -37,8 +39,8 @@ Hands-on learning provides the fastest path to mastering Geode through practical
 
 ```bash
 # Start Geode and connect
-./zig-out/bin/geode serve --listen localhost:3141 &
-./zig-out/bin/geode shell
+geode serve --listen localhost:3141 &
+geode shell
 ```
 
 ### Task 1.1: Create User Profiles

@@ -13,6 +13,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 Contributing to Geode means joining a vibrant open-source community dedicated to building a production-ready, ISO/IEC 39075:2024-compliant graph database. Whether you're fixing bugs, adding features, improving documentation, or helping other users, your contributions help make Geode better for everyone. This category provides comprehensive guidance for contributing effectively, understanding the codebase, following project conventions, and participating in the community.
 
 Geode is written primarily in Zig, with polyglot client libraries in Go, Python, Rust, and Zig. The project maintains rigorous quality standards including 97.4% test coverage, evidence-based development with CANARY governance markers tracking 2,190+ requirements, and comprehensive documentation. Understanding these standards and the contribution workflow ensures your contributions can be reviewed, merged, and maintained effectively.
@@ -35,7 +37,7 @@ This guide covers everything from setting up your development environment throug
 
 ```bash
 # Clone the monorepo
-git clone https://gitlab.com/devnw/codepros/geode.git
+git clone https://github.com/codeprosorg/geode
 cd geode
 
 # The monorepo contains:
@@ -189,12 +191,12 @@ Documentation updates are required for:
 Geode uses CANARY governance markers to track requirements:
 
 ```zig
-// CANARY:START:FEATURE:GQL-COMPLIANCE:MATCH-CLAUSE
+// CANARY-START:FEATURE:GQL-COMPLIANCE:MATCH-CLAUSE
 // Implementation of ISO/IEC 39075:2024 MATCH clause
 pub fn executeMatch(self: *QueryEngine, pattern: Pattern) !ResultSet {
     // Implementation that satisfies GQL spec
 }
-// CANARY:END:FEATURE:GQL-COMPLIANCE:MATCH-CLAUSE
+// CANARY-END:FEATURE:GQL-COMPLIANCE:MATCH-CLAUSE
 ```
 
 CANARY markers track:
@@ -459,11 +461,11 @@ All GQL features must comply with the standard:
 // 5. Add CANARY markers
 
 // Example: Implementing EXISTS predicate per spec section 8.4
-// CANARY:START:COMPLIANCE:GQL:EXISTS-PREDICATE
+// CANARY-START:COMPLIANCE:GQL:EXISTS-PREDICATE
 pub fn evaluateExists(self: *Evaluator, pattern: Pattern) !bool {
     // Implementation must match spec behavior exactly
 }
-// CANARY:END:COMPLIANCE:GQL:EXISTS-PREDICATE
+// CANARY-END:COMPLIANCE:GQL:EXISTS-PREDICATE
 ```
 
 ## Community Participation

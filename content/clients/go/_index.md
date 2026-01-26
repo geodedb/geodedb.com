@@ -8,11 +8,18 @@ tags:
   - client
   - database-sql
 categories:
+keywords:
+  - Geode Go client
+  - Go SDK
+  - GQL driver
+  - graph database Go
   - client-libraries
   - go
 series:
   - client-libraries
 ---
+
+<!-- CANARY: REQ=REQ-CLIENT-INTEGRATION-001; FEATURE="RustClientIntegration"; ASPECT=QUICTransport; STATUS=TESTED; OWNER=clients; UPDATED=2026-01-15 -->
 
 # Go Client Library
 

@@ -2,7 +2,16 @@
 title: "Claude Code Plugin"
 description: "AI-assisted Geode development with Claude Code"
 weight: 4
+
+keywords:
+  - Geode Claude plugin
+  - GQL assistance
+  - developer tooling
+  - Geode integrations
+  - AI assistant
 ---
+
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
 
 # Claude Code Plugin for Geode
 

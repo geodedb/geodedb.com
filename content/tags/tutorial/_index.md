@@ -17,6 +17,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 # Tutorials & Guides
 
 Welcome to Geode's comprehensive tutorial collection. Whether you're new to graph databases or transitioning from other systems, these tutorials provide structured, hands-on learning paths to master Geode and the ISO/IEC 39075:2024 GQL standard.
@@ -51,11 +53,11 @@ Begin your journey with installation, basic configuration, and your first GQL qu
 
 Geode provides production-ready clients in Python, Go, Rust, and Zig. Each language has its own idioms and patterns for database interaction.
 
-**Python Async Client**: Build asynchronous applications using Python's async/await syntax. Learn connection pooling for high-throughput scenarios (1000+ queries/second), context managers for transaction handling, and type-safe parameter binding. Example applications include web API backends using FastAPI and data processing pipelines.
+**Python Async Client**: Build asynchronous applications using Python's async/await syntax. Learn connection pooling for high-throughput scenarios (workload dependent), context managers for transaction handling, and type-safe parameter binding. Example applications include web API backends using FastAPI and data processing pipelines.
 
 **Go database/sql Driver**: Integrate Geode into Go applications using the standard database/sql interface. This tutorial covers prepared statements, connection lifecycle management, error handling with GQL status codes, and concurrent query execution. You'll build a REST API that exposes graph data through HTTP endpoints.
 
-**Rust High-Performance Client**: Leverage Rust's zero-cost abstractions and tokio runtime for maximum throughput (10,000+ queries/second). Learn about the query builder API, connection pooling, async streams for result iteration, and integration with web frameworks like Axum and Actix.
+**Rust High-Performance Client**: Leverage Rust's zero-cost abstractions and tokio runtime for maximum throughput (workload dependent). Learn about the query builder API, connection pooling, async streams for result iteration, and integration with web frameworks like Axum and Actix.
 
 **Zig Native Client**: For systems programming and embedded scenarios, the Zig client provides direct control over memory allocation and error handling. This tutorial shows how to integrate Geode into low-level applications requiring predictable performance and minimal overhead.
 

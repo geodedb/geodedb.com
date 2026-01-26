@@ -15,6 +15,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 The **Graph Modeling** category covers techniques, patterns, and best practices for designing effective graph database schemas. Learn how to translate your domain into nodes and relationships, optimize for query patterns, and build scalable, maintainable graph data models.
 
 ## Introduction to Graph Modeling

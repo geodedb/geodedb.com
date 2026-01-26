@@ -15,6 +15,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 Geode documentation tagged with **Read-Eval-Print Loop (REPL)**. The REPL is an interactive shell that reads GQL commands, evaluates them against your database, and prints results immediately—the primary tool for exploratory analysis, query development, and learning GQL.
 
 ## Introduction to the REPL

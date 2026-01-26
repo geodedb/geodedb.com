@@ -5,6 +5,8 @@ keywords: ["distributed systems", "distributed computing", "CAP theorem", "consi
 weight: 10
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 # Distributed Systems
 
 Distributed systems enable Geode to scale horizontally across multiple machines, providing high availability, fault tolerance, and improved performance. Understanding distributed systems concepts is essential for building reliable, scalable graph database deployments.

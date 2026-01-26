@@ -17,6 +17,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 # High Availability
 
 Geode implements comprehensive high availability features to ensure continuous operation even in the face of hardware failures, network partitions, or maintenance activities. The system achieves 99.99% uptime through automatic failover, multi-node replication, and zero-downtime deployments.

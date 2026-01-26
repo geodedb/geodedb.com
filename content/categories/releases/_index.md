@@ -16,6 +16,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 The **Releases and Changelog** category documents the evolution of Geode across all versions, including release notes, new features, bug fixes, breaking changes, and upgrade guidance. Stay informed about the latest improvements and plan your upgrade strategy effectively.
 
 ## Current Stable Release
@@ -56,7 +58,7 @@ This is the current stable release with 100% ISO/IEC 39075:2024 GQL compliance, 
 - Connection pooling in all client libraries
 - Prepared statement caching
 - MVCC for high-concurrency workloads
-- 10,000+ queries/second throughput on commodity hardware
+- Transaction throughput baselines: read-only up to 100,000 txn/sec; read-write 10,000-50,000 txn/sec; write-heavy 5,000-20,000 txn/sec
 
 **Developer Experience**:
 - Interactive GQL shell with syntax highlighting

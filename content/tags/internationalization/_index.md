@@ -24,6 +24,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 # Internationalization & Localization (i18n/l10n)
 
 Geode provides comprehensive internationalization (i18n) and localization (l10n) support for building global applications. From full Unicode support to locale-aware string operations, Geode enables you to build graph applications that serve users worldwide with proper language, cultural, and regional conventions.

@@ -19,6 +19,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 # Query Language & Patterns
 
 The **Query Language & Patterns** category provides comprehensive documentation for writing, optimizing, and debugging GQL queries in Geode. From basic pattern matching through advanced optimization techniques, these resources cover the complete query lifecycle including syntax, semantics, execution strategies, and performance tuning.
@@ -654,6 +656,6 @@ ORDER BY total DESC
 
 **Query Language**: ISO/IEC 39075:2024 GQL
 **Optimization**: Cost-based optimizer with index awareness
-**Performance**: Millions of queries per second
+**Performance**: Read-only up to 100,000 txn/sec; read-write 10,000-50,000 txn/sec; write-heavy 5,000-20,000 txn/sec
 **Last Updated**: January 2026
 **Geode Version**: v0.18.0+

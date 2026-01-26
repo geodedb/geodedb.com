@@ -7,6 +7,8 @@ slug: "deployment-patterns"
 canonical: "https://geodedb.com/docs/deployment/deployment-patterns"
 ---
 
+<!-- CANARY: REQ=REQ-SERVER-STARTUP-INTEGRATION-001; FEATURE="Server Startup Integration Tests"; ASPECT=EndToEndServerTesting; STATUS=TESTED; OWNER=server; UPDATED=2025-10-05 -->
+
 # Deployment Patterns
 
 Geode offers flexible deployment patterns to match your infrastructure requirements, from single-node development environments to distributed production clusters with full observability stacks.
@@ -42,7 +44,7 @@ This guide covers production-ready deployment patterns with best practices for s
 
 ```bash
 # Clone repository and setup deployment
-git clone https://gitlab.com/devnw/codepros/geode.git
+git clone https://github.com/codeprosorg/geode
 cd geode/deployment
 
 # Run setup script (generates certificates, passwords, .env)

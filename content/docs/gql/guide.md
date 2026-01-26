@@ -21,6 +21,8 @@ keywords:
   - PROFILE
 ---
 
+<!-- CANARY: REQ=REQ-GQL-001; FEATURE="BasicQuery"; ASPECT=Testing; STATUS=TESTED; OWNER=test; UPDATED=2025-10-02 -->
+
 # Graph Query Language (GQL) Guide
 
 Learn Geode's implementation of the ISO/IEC 39075:2024 Graph Query Language (GQL) standard with executable examples.

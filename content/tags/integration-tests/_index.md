@@ -14,6 +14,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 # Integration Testing in Geode
 
 Integration testing validates that Geode components work together correctly, from client libraries through the server to storage layers. Geode's test harness provides comprehensive cross-client validation ensuring all polyglot clients behave consistently.
@@ -217,9 +219,12 @@ async def test_throughput():
         qps = query_count / duration
         
         print(f"{client}: {qps:.2f} QPS")
-        
+
         # Verify minimum performance
-        assert qps > 100  # At least 100 QPS
+        baseline_qps = 0  # Set based on your benchmark baseline
+        assert qps >= baseline_qps, (
+            f"{client}: {qps:.2f} QPS below baseline {baseline_qps}"
+        )
 ```
 
 ## Error Handling Tests

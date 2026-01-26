@@ -27,6 +27,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 Query patterns represent proven, reusable solutions to common graph querying challenges. Understanding and applying effective query patterns is essential for writing performant, maintainable GQL queries in Geode. These patterns encode best practices learned from production deployments and help you avoid common pitfalls.
 
 Geode's implementation of the ISO/IEC 39075:2024 GQL standard enables powerful pattern matching capabilities. By mastering query patterns, you can write concise, expressive queries that leverage Geode's optimization engine effectively while maintaining code clarity and performance.

@@ -27,6 +27,8 @@ params:
     description: "Complete GQL reference with ISO/IEC 39075:2024 compliance covering syntax, advanced patterns, and conformance profile"
 ---
 
+<!-- CANARY: REQ=REQ-GQL-001; FEATURE="BasicQuery"; ASPECT=Testing; STATUS=TESTED; OWNER=test; UPDATED=2025-10-02 -->
+
 # GQL Language
 
 Master the Graph Query Language (GQL), the ISO/IEC 39075:2024 standard for querying property graph databases. Geode achieves 100% GQL compliance with all 70 official conformance tests passing.

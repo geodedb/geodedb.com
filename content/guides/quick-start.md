@@ -4,7 +4,15 @@ description: "Get started with Geode in 5 minutes"
 weight: 1
 tags: ["quickstart", "tutorial", "beginner"]
 categories: ["guides", "getting-started"]
+keywords:
+  - Geode quick start
+  - graph database tutorial
+  - GQL basics
+  - install Geode
+  - getting started
 ---
+
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
 
 # Quick Start Guide
 
@@ -55,7 +63,7 @@ docker-compose up -d
 ### From Source
 
 ```bash
-git clone https://gitlab.com/devnw/codepros/geode/geode.git
+git clone https://github.com/codeprosorg/geode
 cd geode
 make build
 ./bin/geode server
@@ -86,10 +94,11 @@ cargo add geode-client
 ### CLI Tool
 
 ```bash
-# Download latest release
-wget https://gitlab.com/devnw/codepros/geode/geode/-/releases/latest/download/geode-cli
-chmod +x geode-cli
-sudo mv geode-cli /usr/local/bin/geode
+# Build from source
+git clone https://github.com/codeprosorg/geode
+cd geode
+make build
+sudo cp ./zig-out/bin/geode /usr/local/bin/geode
 ```
 
 ## Step 3: Verify Connection

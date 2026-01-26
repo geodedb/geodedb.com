@@ -18,6 +18,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 # Recommendation Systems in Geode
 
 Recommendation systems leverage graph relationships to suggest relevant items, connections, and content based on user behavior, preferences, and network patterns. Geode's native graph traversal capabilities enable sophisticated recommendation algorithms that consider multi-hop relationships and complex similarity metrics.

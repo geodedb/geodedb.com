@@ -19,6 +19,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 # Property Graph Data Model
 
 The property graph model is the most intuitive and widely-adopted approach to graph database modeling, combining the simplicity of labeled nodes and relationships with the flexibility of arbitrary properties. Geode's implementation of the property graph model through the ISO/IEC 39075:2024 GQL standard provides a powerful foundation for modeling complex, connected data.

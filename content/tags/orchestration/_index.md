@@ -15,6 +15,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 # Container Orchestration for Geode
 
 Kubernetes provides production-grade orchestration for Geode, enabling automated deployment, scaling, and management of containerized database instances across clusters.

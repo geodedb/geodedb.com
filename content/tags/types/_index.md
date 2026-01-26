@@ -19,6 +19,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 Data types define the kinds of values that can be stored as properties in nodes and relationships. Geode implements the complete ISO/IEC 39075:2024 GQL type system, providing rich type support for graph data modeling.
 
 ## What are Data Types?

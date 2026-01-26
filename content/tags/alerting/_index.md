@@ -19,6 +19,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 Alert management is the practice of defining, configuring, and responding to automated notifications when system conditions deviate from expected behavior. Effective alerting enables rapid incident response, reduces downtime, and ensures service level objectives (SLOs) are met while minimizing alert fatigue and false positives.
 
 Geode integrates with Prometheus Alertmanager for flexible, powerful alerting on metrics, supporting multi-channel notifications, alert grouping, silencing, and escalation policies. Combined with comprehensive metrics coverage, Geode enables proactive monitoring and rapid problem detection.
@@ -550,7 +552,7 @@ promtool query instant \
 # Simulate alert condition (if safe)
 # Trigger slow queries to test alert
 for i in {1..100}; do
-  geode-cli query "MATCH (n) RETURN n" &
+  geode query "MATCH (n) RETURN n" &
 done
 ```
 

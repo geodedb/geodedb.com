@@ -1,6 +1,6 @@
 ---
 title: "Rust Client Library - Zero-Cost Graph Database Abstractions"
-description: "High-performance Geode Rust client achieving 10,000+ queries/second with zero-cost abstractions, compile-time type safety, tokio/async-std integration, Quinn QUIC protocol, serde serialization, and connection pooling for Rust applications."
+description: "High-performance Geode Rust client optimized for high-throughput workloads with zero-cost abstractions, compile-time type safety, tokio/async-std integration, Quinn QUIC protocol, serde serialization, and connection pooling for Rust applications."
 keywords:
   - Rust client
   - tokio
@@ -27,9 +27,11 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 # Rust Client Library
 
-The Geode Rust client delivers industry-leading performance with zero-cost abstractions, achieving 10,000+ queries per second while maintaining compile-time type safety. Built on Quinn for native QUIC protocol support and integrated with tokio for async runtime management, the client provides optimal performance for Rust applications requiring graph database capabilities. Comprehensive serde integration ensures seamless serialization/deserialization with compile-time guarantees.
+The Geode Rust client delivers industry-leading performance with zero-cost abstractions, optimized for high-throughput workloads while maintaining compile-time type safety. Built on Quinn for native QUIC protocol support and integrated with tokio for async runtime management, the client provides optimal performance for Rust applications requiring graph database capabilities. Comprehensive serde integration ensures seamless serialization/deserialization with compile-time guarantees.
 
 ## Why Choose the Rust Client?
 
@@ -39,7 +41,7 @@ The Geode Rust client delivers industry-leading performance with zero-cost abstr
 
 **Native Async Support**: First-class tokio and async-std integration enables efficient concurrent query execution without thread overhead. Connection pooling and multiplexing maximize throughput on limited connections.
 
-**Maximum Performance**: Benchmarked at 10,000+ queries per second with Quinn's optimized QUIC implementation. Zero-copy deserialization and streaming results minimize memory allocations.
+**Maximum Performance**: Quinn QUIC integration and tokio runtime reduce overhead while zero-copy deserialization and streaming results minimize memory allocations.
 
 **Production Ready**: Memory-safe by design with no undefined behavior, data races, or null pointer dereferences. Comprehensive error types and graceful degradation ensure reliability under load.
 
@@ -901,7 +903,7 @@ async fn batch_insert_users(
 
 ## Performance Benchmarks
 
-**Query Throughput**: 10,000+ queries/second with connection pooling (max_connections=100)
+**Query Throughput**: Workload-dependent; connection pooling improves throughput (max_connections=100)
 
 **Latency**: p50=2ms, p95=8ms, p99=15ms for simple MATCH queries with warm connection
 

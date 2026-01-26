@@ -18,6 +18,8 @@ keywords:
 weight: 10
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 # Data Import
 
 Data import loads external data into Geode from various sources and formats. Efficient import strategies ensure fast, reliable data loading while maintaining data integrity, handling errors gracefully, and optimizing for system performance during bulk operations.

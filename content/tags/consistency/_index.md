@@ -19,6 +19,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 # Data Consistency Models
 
 Data consistency is a fundamental concern in distributed graph databases, governing how and when changes become visible across multiple nodes. Geode provides flexible consistency models that allow you to balance between strong guarantees and high performance, depending on your application requirements. This comprehensive guide explores consistency theory, practical implementation strategies, and configuration options for building reliable distributed graph systems.

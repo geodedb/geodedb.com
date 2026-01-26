@@ -19,6 +19,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 Effective release management ensures database stability, predictable upgrade paths, and clear communication of changes. Geode follows industry-standard semantic versioning combined with rigorous testing and transparent release processes to deliver reliable, enterprise-grade graph database releases.
 
 As an ISO/IEC 39075:2024 GQL-compliant graph database, Geode's release strategy balances innovation with stability, providing regular feature updates while maintaining backward compatibility and production reliability. This guide explains Geode's versioning strategy, release cycles, and best practices for managing upgrades.
@@ -76,9 +78,8 @@ Examples:
 - Row-Level Security (RLS)
 
 **Performance**:
-- 10,000+ queries/second (Rust client)
-- 1,000+ queries/second (Python async client)
-- Sub-millisecond query execution for indexed lookups
+- Transaction throughput baselines: read-only up to 100,000 txn/sec; read-write 10,000-50,000 txn/sec; write-heavy 5,000-20,000 txn/sec
+- Point lookup latency: <1ms (typically 100-500us)
 - Efficient connection pooling
 - Optimized query execution plans
 
@@ -180,25 +181,21 @@ Geode provides multiple release channels for different use cases:
 
 ## Download and Installation
 
-**Package Managers**:
+**Nix (Recommended)**:
 
 ```bash
-# Debian/Ubuntu
-sudo apt-get update
-sudo apt-get install geode=0.18.0
+# Run Geode directly
+nix run github:codeprosorg/geode -- serve
+```
 
-# Red Hat/CentOS/Fedora
-sudo dnf install geode-0.18.0
+**From Source**:
 
-# macOS (Homebrew)
-brew install geode
-brew install geode@0.18
-
-# From source
-git clone https://github.com/devnw/geode.git
+```bash
+git clone https://github.com/codeprosorg/geode
 cd geode
 git checkout v0.18.0
-make install
+make build
+./zig-out/bin/geode serve --listen 0.0.0.0:3141
 ```
 
 **Docker**:
@@ -215,49 +212,7 @@ docker pull geodedb/geode:0.18.0
 docker run -p 3141:3141 geodedb/geode:0.18.0
 ```
 
-**Binary Downloads**:
-
-```bash
-# Linux x86_64
-curl -LO https://releases.geodedb.com/v0.18.0/geode-linux-amd64.tar.gz
-
-# Linux ARM64
-curl -LO https://releases.geodedb.com/v0.18.0/geode-linux-arm64.tar.gz
-
-# macOS (Intel)
-curl -LO https://releases.geodedb.com/v0.18.0/geode-darwin-amd64.tar.gz
-
-# macOS (Apple Silicon)
-curl -LO https://releases.geodedb.com/v0.18.0/geode-darwin-arm64.tar.gz
-
-# Windows
-curl -LO https://releases.geodedb.com/v0.18.0/geode-windows-amd64.zip
-```
-
-## Verifying Releases
-
-**Checksum Verification**:
-
-```bash
-# Download checksum file
-curl -LO https://releases.geodedb.com/v0.18.0/SHA256SUMS
-
-# Verify checksum
-sha256sum -c SHA256SUMS
-```
-
-**GPG Signature Verification**:
-
-```bash
-# Import Geode GPG key
-curl https://releases.geodedb.com/gpg-key.asc | gpg --import
-
-# Download signature
-curl -LO https://releases.geodedb.com/v0.18.0/geode-linux-amd64.tar.gz.sig
-
-# Verify signature
-gpg --verify geode-linux-amd64.tar.gz.sig geode-linux-amd64.tar.gz
-```
+Package managers and binary artifacts are not currently published; use Nix, Docker, or build from source.
 
 ## Release Testing Process
 

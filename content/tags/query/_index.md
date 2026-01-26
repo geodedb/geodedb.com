@@ -13,6 +13,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 # Query Language and Execution in Geode
 
 Querying is the primary interface for interacting with graph databases. Geode implements the ISO/IEC 39075:2024 Graph Query Language (GQL) standard, providing a powerful, declarative language for pattern matching, traversals, aggregations, and data manipulation across graph structures.
@@ -426,13 +428,13 @@ func queryExample() {
 - Index utilization (indexed vs. full scan)
 - Result cardinality (10 rows vs. 1M rows)
 - Graph complexity (1 hop vs. 6 hops)
-- Concurrent load (single query vs. 1000 QPS)
+- Concurrent load (single query vs. high-concurrency workloads)
 
 **Typical performance** (mid-range server):
-- Indexed point lookup: <1ms
+- Indexed point lookup: <1ms (typically 100-500us)
 - Simple 1-2 hop traversal: 1-5ms
 - Complex 3-4 hop pattern: 10-100ms
-- Analytical aggregation: 100ms-10s
+- Analytical aggregation: 100-500ms for ~1M rows
 
 **Use PROFILE to measure**:
 ```gql

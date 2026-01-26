@@ -7,9 +7,17 @@ tags:
   - sdk
   - api
 categories:
+keywords:
+  - Geode clients
+  - graph database drivers
+  - GQL SDKs
+  - client libraries
+  - API clients
   - client-libraries
   - integration
 ---
+
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
 
 # Client Libraries
 
@@ -59,12 +67,14 @@ All clients use:
 
 ## Performance Comparison
 
-| Client | Avg Latency | Max Throughput | Features |
-|--------|-------------|----------------|----------|
-| Go | 2-3ms | 1,000+ qps | connection pooling, stdlib integration |
-| Python | 2-3ms | 1,000+ qps | async/await, type hints |
-| Rust | 1-2ms | 10,000+ qps | zero-cost abstractions, tokio |
-| Zig | 1-2ms | 10,000+ qps | native performance |
+Client-side latency and throughput are workload-dependent and vary by runtime, network conditions, and server limits.
+
+| Client | Latency | Throughput | Features |
+|--------|---------|------------|----------|
+| Go | Workload-dependent | Workload-dependent | connection pooling, stdlib integration |
+| Python | Workload-dependent | Workload-dependent | async/await, type hints |
+| Rust | Workload-dependent | Workload-dependent | zero-cost abstractions, tokio |
+| Zig | Workload-dependent | Workload-dependent | native performance |
 
 ## Quick Start
 

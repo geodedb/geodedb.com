@@ -7,6 +7,8 @@ slug: "knowledge-graphs"
 canonical: "https://geodedb.com/docs/use-cases/knowledge-graphs/"
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 # Knowledge Graphs and Semantic Networks
 
 Build intelligent knowledge graphs with Geode for semantic search, entity linking, and complex information retrieval.

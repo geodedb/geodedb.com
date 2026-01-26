@@ -28,6 +28,8 @@ params:
     description: "Explore Geode's powerful analytics capabilities with graph algorithms, real-time pattern detection, and ML-powered anomaly detection"
 ---
 
+<!-- CANARY: REQ=REQ-ANALYTICS-001; FEATURE="Real-time Analytics"; ASPECT=StreamingIntegration; STATUS=TESTED; OWNER=analytics; UPDATED=2025-10-05 -->
+
 # Analytics
 
 Geode provides enterprise-grade analytics capabilities designed for both batch and real-time graph analysis. Leverage advanced graph algorithms, streaming pattern detection, and machine learning-powered insights to extract value from your connected data.

@@ -4,7 +4,14 @@ description: "Official Python client library for Geode"
 weight: 2
 tags: ["python", "client", "async", "aioquic"]
 categories: ["clients", "documentation"]
+keywords:
+  - Geode Python client
+  - Python SDK
+  - GQL driver
+  - graph database Python
 ---
+
+<!-- CANARY: REQ=REQ-CLIENT-INTEGRATION-001; FEATURE="RustClientIntegration"; ASPECT=QUICTransport; STATUS=TESTED; OWNER=clients; UPDATED=2026-01-15 -->
 
 # Python Client Library
 

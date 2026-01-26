@@ -17,6 +17,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 DevOps practices integrate development and operations workflows through automation, continuous integration, infrastructure as code, and systematic deployment processes. For Geode graph database deployments, DevOps enables reliable, repeatable deployments while maintaining high availability and rapid iteration cycles across development, staging, and production environments.
 
 ## Understanding DevOps for Graph Databases
@@ -93,7 +95,7 @@ test:integration:
     - build
   script:
     - cd geode
-    - ./zig-out/bin/geode serve --listen 127.0.0.1:3141 &
+    - geode serve --listen 127.0.0.1:3141 &
     - sleep 5
     - make geodetestlab-comprehensive
 ```
@@ -396,8 +398,8 @@ tar -xf zig-linux-x86_64-0.15.1.tar.xz -C /opt
 
 # Clone and build Geode
 cd /opt
-git clone https://gitlab.com/devnw/codepros/geode.git
-cd geode/geode
+git clone https://github.com/codeprosorg/geode
+cd geode
 /opt/zig-linux-x86_64-0.15.1/zig build -Doptimize=ReleaseSafe
 
 # Install as service

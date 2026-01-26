@@ -10,38 +10,39 @@
 
 {{ $container := partial "helpers/container.html" (dict "Page" .) }}
 
-{{/* Documentation section header */}}
-<header class="docs-header bg-gradient py-4 border-bottom" role="banner">
-  <div class="{{ $container }}">
-    <div class="row">
-      <div class="col-12">
-        {{/* Breadcrumb navigation */}}
-        {{ partial "docs/breadcrumbs" . }}
+<div class="docs-shell">
+  {{/* Documentation section header */}}
+  <header class="docs-header bg-gradient py-4 border-bottom" role="banner">
+    <div class="{{ $container }} docs-header-inner">
+      <div class="row">
+        <div class="col-12">
+          {{/* Breadcrumb navigation */}}
+          {{ partial "docs/breadcrumbs" . }}
 
-        {{/* Section title and description */}}
-        <div class="mt-3">
-          <h1 class="display-5 fw-bold mb-2">{{ .Title }}</h1>
-          {{ with .Description }}
-            <p class="lead text-muted mb-0">{{ . }}</p>
-          {{ end }}
+          {{/* Section title and description */}}
+          <div class="mt-3">
+            <h1 class="display-5 fw-bold mb-2">{{ .Title }}</h1>
+            {{ with .Description }}
+              <p class="lead text-muted mb-0">{{ . }}</p>
+            {{ end }}
 
-          {{/* Page count indicator */}}
-          {{ $pages := where .Pages ".Params.draft" "!=" true }}
-          {{ if gt (len $pages) 0 }}
-            <div class="text-muted small mt-2">
-              <wa-icon name="file-lines" class="me-1" aria-hidden="true"></wa-icon>
-              {{ len $pages }} {{ if eq (len $pages) 1 }}{{ i18n "page" | default "page" }}{{ else }}{{ i18n "pages" | default "pages" }}{{ end }}
-            </div>
-          {{ end }}
+            {{/* Page count indicator */}}
+            {{ $pages := where .Pages ".Params.draft" "!=" true }}
+            {{ if gt (len $pages) 0 }}
+              <div class="text-muted small mt-2">
+                <wa-icon name="file-lines" class="me-1" aria-hidden="true"></wa-icon>
+                {{ len $pages }} {{ if eq (len $pages) 1 }}{{ i18n "page" | default "page" }}{{ else }}{{ i18n "pages" | default "pages" }}{{ end }}
+              </div>
+            {{ end }}
+          </div>
         </div>
       </div>
     </div>
-  </div>
-</header>
+  </header>
 
-{{/* Main content area */}}
-<div class="{{ $container }} py-4">
-  <div class="row">
+  {{/* Main content area */}}
+  <div class="{{ $container }} py-4 docs-main">
+    <div class="row">
 
     {{/* ─────────────────────────────────────────────────────────────
       LEFT SIDEBAR: Navigation Catalog
@@ -68,7 +69,7 @@
 
       {{/* Navigation catalog */}}
       <div class="collapse d-lg-block" id="docsNav">
-        <div class="docs-sidebar-nav position-sticky" style="top: 1rem; max-height: calc(100vh - 2rem); overflow-y: auto;">
+        <div class="docs-sidebar-nav position-sticky">
           {{/* Search box */}}
           {{ partial "docs/search-box" . }}
 
@@ -87,7 +88,7 @@
       {{/* Section introduction (from _index.md content) */}}
       {{ with .Content }}
         <article class="docs-section-intro mb-5">
-          <div class="card border-0 shadow-sm">
+          <div class="card border-0 shadow-sm docs-panel">
             <div class="card-body">
               {{ . }}
             </div>
@@ -110,7 +111,7 @@
           <div class="row g-4">
             {{ range $sections.ByWeight }}
               <div class="col-md-6 col-xl-4">
-                <div class="card h-100 border-0 shadow-sm hover-lift">
+                <div class="card h-100 border-0 shadow-sm hover-lift docs-panel">
                   <div class="card-body">
                     <h3 class="card-title h5 mb-2">
                       <a href="{{ .Permalink }}" class="text-decoration-none stretched-link">
@@ -153,7 +154,7 @@
             {{ range $regularPages.ByWeight }}
               <a
                 href="{{ .Permalink }}"
-                class="list-group-item list-group-item-action border-0 border-bottom px-0"
+                class="list-group-item list-group-item-action border-0 border-bottom docs-list-item"
               >
                 <div class="d-flex w-100 justify-content-between align-items-start">
                   <div class="flex-grow-1">
@@ -200,21 +201,8 @@
 
     </div>
 
+    </div>
   </div>
 </div>
-
-{{/* Add custom CSS for hover effect */}}
-<style>
-  .hover-lift {
-    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
-  }
-  .hover-lift:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
-  }
-  .list-group-item-action:hover {
-    background-color: rgba(0, 0, 0, 0.02);
-  }
-</style>
 
 {{ end }}

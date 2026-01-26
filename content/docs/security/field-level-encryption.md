@@ -7,6 +7,8 @@ slug: "field-level-encryption"
 canonical: "https://geodedb.com/docs/security/field-level-encryption/"
 ---
 
+<!-- CANARY: REQ=REQ-SEC-AUDIT-LOG-001; FEATURE="Security"; ASPECT=AuditLog; STATUS=TESTED; OWNER=security; UPDATED=2026-01-16 -->
+
 # Field-Level Encryption Guide
 
 Geode provides native, application-level field-level encryption (FLE) with transparent encryption/decryption, equality search on encrypted fields, and online key rotation.
@@ -50,10 +52,10 @@ Master Key (Environment/KMS)
 
 ### Encryption Algorithms
 
-| Algorithm | Use Case | Performance | Platform |
-|-----------|----------|-------------|----------|
-| **AES-256-GCM** | Default for AES-NI hardware | <100 µs/2KB | x86-64, ARM with AES support |
-| **ChaCha20-Poly1305** | Fallback for non-AES platforms | <150 µs/2KB | All platforms (constant-time) |
+| Algorithm | Use Case | Performance Notes | Platform |
+|-----------|----------|-------------------|----------|
+| **AES-256-GCM** | Default for AES-NI hardware | Hardware-accelerated | x86-64, ARM with AES support |
+| **ChaCha20-Poly1305** | Fallback for non-AES platforms | Constant-time | All platforms |
 
 Both algorithms provide **authenticated encryption with associated data (AEAD)**, protecting against tampering and context-swapping attacks.
 
@@ -433,12 +435,12 @@ geode migrate encrypt \
 
 ### Benchmarks
 
-| Operation | Latency | Throughput |
-|-----------|---------|------------|
-| Encrypt 2KB field (AES-256-GCM) | <100 µs | 10,000+ ops/sec |
-| Decrypt 2KB field (cache hit) | <10 µs | 100,000+ ops/sec |
-| Blind index computation | <50 µs | 20,000+ ops/sec |
-| Key cache lookup | <5 µs | 200,000+ ops/sec |
+| Operation | Expected Behavior |
+|-----------|-------------------|
+| Encrypt field (AES-256-GCM) | Microsecond-scale overhead |
+| Decrypt field (cache hit) | Microsecond-scale overhead |
+| Blind index computation | Microsecond-scale overhead |
+| Key cache lookup | Microsecond-scale overhead |
 
 **Hardware**: x86-64 with AES-NI, 4-core CPU
 

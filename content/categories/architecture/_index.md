@@ -21,6 +21,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 # System Architecture & Design
 
 The **System Architecture & Design** category provides comprehensive documentation of Geode's internal architecture, implementation decisions, and design principles. Understanding Geode's architecture enables effective performance optimization, informed troubleshooting, strategic deployment decisions, and contributions to the codebase. From the QUIC wire protocol through query execution and storage management, these resources explain how Geode implements a production-ready graph database.
@@ -495,10 +497,9 @@ geode/src/
 
 **Example CANARY Marker**:
 ```zig
-// CANARY: GQL-PATTERN-MATCH-001
+// CANARY: REQ=REQ-XXX; FEATURE="PatternMatching"; ASPECT=BasicMatch; STATUS=TESTED; TEST=TestBasicNodePatternMatch; OWNER=engine; UPDATED=2026-01-24
 // Requirement: Support basic node pattern matching
-// Evidence: test_basic_node_pattern_match()
-// Status: IMPLEMENTED ✓
+// Evidence: TestBasicNodePatternMatch
 ```
 
 ### Testing Strategy

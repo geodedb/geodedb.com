@@ -19,6 +19,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 # Tags Overview
 
 The Geode documentation uses a comprehensive tagging system to help you navigate and discover content across 192+ topics. Whether you're looking for specific GQL features, deployment strategies, performance optimization techniques, or client library guides, our tag system provides multiple pathways to the information you need.
@@ -278,7 +280,7 @@ The tag system is continuously improved:
 - **[Documentation Home](/docs/)**: Full documentation index
 - **[Search](/search/)**: Full-text search across all content
 - **[Sitemap](/sitemap.xml)**: Complete site structure
-- **[GitHub](https://github.com/devnw/geode)**: Source code and issues
+- **[GitHub](https://github.com/codeprosorg/geode)**: Source code and issues
 
 ## Conclusion
 

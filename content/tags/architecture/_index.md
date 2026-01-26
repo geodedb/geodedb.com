@@ -5,6 +5,8 @@ keywords: ["architecture", "system design", "structural patterns", "graph databa
 weight: 10
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 # System Architecture
 
 System architecture encompasses the fundamental structural patterns, design decisions, and organizational principles that define how Geode's components interact, scale, and evolve. A well-designed architecture ensures maintainability, performance, and extensibility.

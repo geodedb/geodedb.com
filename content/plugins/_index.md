@@ -8,9 +8,17 @@ tags:
   - ide
   - tools
 categories:
+keywords:
+  - Geode plugins
+  - editor integrations
+  - GQL syntax highlighting
+  - developer tooling
+  - IDE support
   - plugins
   - development-tools
 ---
+
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
 
 # Editor & IDE Plugins
 

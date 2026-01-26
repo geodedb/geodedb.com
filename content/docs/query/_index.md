@@ -27,6 +27,8 @@ params:
     description: "Optimize Geode query performance with indexing strategies, EXPLAIN/PROFILE analysis, and materialized views"
 ---
 
+<!-- CANARY: REQ=REQ-GQL-024; FEATURE="Conformance Flagger"; ASPECT=ImplDefinedCollationAndNullOrdering; STATUS=TESTED; OWNER=engine; UPDATED=2025-09-21 -->
+
 # Query Optimization
 
 Master query optimization techniques to achieve maximum performance from Geode. This section covers indexing strategies, query analysis with EXPLAIN/PROFILE, materialized views, and performance tuning best practices.

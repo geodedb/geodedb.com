@@ -18,6 +18,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 Complete syntax guide for GQL (Graph Query Language) as implemented in Geode. This guide provides detailed grammar, syntax rules, and examples for writing correct GQL queries.
 
 ## Lexical Structure

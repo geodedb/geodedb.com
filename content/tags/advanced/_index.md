@@ -19,6 +19,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 # Advanced Features in Geode
 
 Geode is designed for enterprise-scale graph workloads with advanced features that go beyond basic graph operations. This comprehensive guide explores sophisticated capabilities including distributed transactions, graph algorithms, temporal queries, row-level security, and performance optimization techniques that distinguish Geode from other graph databases.

@@ -21,6 +21,8 @@ params:
     description: "Manage database sessions in Geode effectively. Configure session timeouts, handle state, manage concurrent sessions, and implement best practices for enterprise applications."
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 Session management in Geode provides stateful connections between clients and the database server, maintaining context for authentication, transactions, temporary data, and user preferences. Proper session management is essential for security, resource efficiency, and application scalability.
 
 ## Session Fundamentals

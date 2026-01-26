@@ -17,6 +17,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 # Network Configuration
 
 Network configuration is fundamental to Geode's performance, security, and reliability. Geode uses the modern QUIC protocol over UDP with mandatory TLS 1.3 encryption, providing superior performance compared to traditional TCP-based databases while maintaining enterprise-grade security.

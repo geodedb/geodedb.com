@@ -17,6 +17,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 # PageRank Algorithm in Geode
 
 PageRank is a graph algorithm that measures the importance of nodes based on their incoming connections and the importance of connecting nodes. Originally developed by Google to rank web pages, PageRank is now widely used for influence analysis, recommendation systems, and network centrality calculations.

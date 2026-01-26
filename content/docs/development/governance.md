@@ -18,6 +18,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCUMENTATION-STRUCTURE-001; FEATURE="DocStructure"; ASPECT=StructureTests; STATUS=TESTED; OWNER=claude; UPDATED=2026-01-16 -->
+
 ## Overview
 
 Geode's CANARY governance system provides comprehensive requirements tracking with 1,735 markers tracking 2,190+ requirements. This evidence-based development methodology ensures traceability, automated verification, and compliance throughout the software lifecycle.
@@ -39,7 +41,7 @@ Geode's CANARY governance system provides comprehensive requirements tracking wi
 
 **Format**:
 ```zig
-// CANARY: REQ=REQ-GQL-010; FEATURE="FeatureName"; ASPECT=AspectName; STATUS=TESTED; TEST=TestName; OWNER=team; UPDATED=2026-01-24
+// CANARY: REQ=REQ-XXX; FEATURE="FeatureName"; ASPECT=AspectName; STATUS=TESTED; TEST=TestName; OWNER=team; UPDATED=2026-01-24
 ```
 
 **Components**:
@@ -236,7 +238,7 @@ Benchmark: BenchmarkBasicMatch
 **Creation**:
 ```zig
 // New feature: Add CANARY marker
-// CANARY: REQ=REQ-NEW-001; FEATURE="NewFeature"; ASPECT=CoreLogic; STATUS=IMPL; OWNER=team; UPDATED=2026-01-24
+// CANARY: REQ=REQ-XXX; FEATURE="NewFeature"; ASPECT=CoreLogic; STATUS=IMPL; OWNER=team; UPDATED=2026-01-24
 pub fn newFeature() void {
     // Implementation...
 }
@@ -244,7 +246,7 @@ pub fn newFeature() void {
 
 **Testing**:
 ```zig
-// CANARY: REQ=REQ-NEW-001; FEATURE="NewFeature"; ASPECT=CoreLogic; STATUS=TESTED; TEST=TestNewFeature; OWNER=team; UPDATED=2026-01-24
+// CANARY: REQ=REQ-XXX; FEATURE="NewFeature"; ASPECT=CoreLogic; STATUS=TESTED; TEST=TestNewFeature; OWNER=team; UPDATED=2026-01-24
 test "TestNewFeature" {
     // Test implementation...
 }
@@ -252,7 +254,7 @@ test "TestNewFeature" {
 
 **Benchmarking**:
 ```zig
-// CANARY: REQ=REQ-NEW-001; FEATURE="NewFeature"; ASPECT=Performance; STATUS=BENCHED; BENCH=BenchmarkNewFeature; OWNER=team; UPDATED=2026-01-24
+// CANARY: REQ=REQ-XXX; FEATURE="NewFeature"; ASPECT=Performance; STATUS=BENCHED; BENCH=BenchmarkNewFeature; OWNER=team; UPDATED=2026-01-24
 benchmark "BenchmarkNewFeature" {
     // Benchmark implementation...
 }
@@ -344,21 +346,21 @@ zig run scripts/governance_trend_append.zig
 1. **One CANARY per Aspect**:
    ```zig
    // ✅ Good: One aspect per marker
-   // CANARY: REQ=REQ-X-001; ASPECT=CoreLogic; STATUS=IMPL
+   // CANARY: REQ=REQ-XXX; FEATURE="ExampleFeature"; ASPECT=CoreLogic; STATUS=IMPL; OWNER=team; UPDATED=2026-01-24
    
    // ❌ Bad: Multiple aspects in one marker
-   // CANARY: REQ=REQ-X-001; ASPECT=CoreLogic,Validation; STATUS=IMPL
+   // CANARY: REQ=REQ-XXX; FEATURE="ExampleFeature"; ASPECT=CoreLogic,Validation; STATUS=IMPL; OWNER=team; UPDATED=2026-01-24
    ```
 
 2. **Keep UPDATED Current**:
    ```zig
    // Update date when changing implementation
-   // CANARY: REQ=REQ-X-001; ASPECT=CoreLogic; UPDATED=2026-01-24
+   // CANARY: REQ=REQ-XXX; FEATURE="ExampleFeature"; ASPECT=CoreLogic; STATUS=IMPL; OWNER=team; UPDATED=2026-01-24
    ```
 
 3. **Link Tests Explicitly**:
    ```zig
-   // CANARY: TEST=TestExactName (must match actual test name)
+   // CANARY: REQ=REQ-XXX; FEATURE="ExampleFeature"; ASPECT=UnitTesting; STATUS=TESTED; TEST=TestExactName; OWNER=team; UPDATED=2026-01-24
    ```
 
 4. **Progress Status Appropriately**:
@@ -418,7 +420,7 @@ git commit -m "feat: Add X (REQ-Y-001 TESTED)"
 **Solution**:
 ```zig
 // Update CANARY marker with current date
-// CANARY: ...; UPDATED=2026-01-24
+// CANARY: REQ=REQ-XXX; FEATURE="ExampleFeature"; ASPECT=CoreLogic; STATUS=IMPL; OWNER=team; UPDATED=2026-01-24
 ```
 
 ---
@@ -441,7 +443,7 @@ grep -r "VarianceEnvelope" src/ | grep CANARY | wc -l
 **Solution**:
 ```zig
 // Ensure TEST field matches actual test name
-// CANARY: TEST=TestExactFunctionName
+// CANARY: REQ=REQ-XXX; FEATURE="ExampleFeature"; ASPECT=UnitTesting; STATUS=TESTED; TEST=TestExactFunctionName; OWNER=team; UPDATED=2026-01-24
 
 test "TestExactFunctionName" {
     // Must match exactly (case-sensitive)

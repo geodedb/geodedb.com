@@ -2,7 +2,16 @@
 title: "Performance Tuning"
 description: "Optimize Geode for maximum performance with tuning guides, benchmarks, and best practices"
 weight: 70
+
+keywords:
+  - Geode performance
+  - graph database performance
+  - query optimization
+  - benchmarking
+  - scaling
 ---
+
+<!-- CANARY: REQ=REQ-PERF-PHASE1-001; FEATURE="PerfPhase1"; ASPECT=Optimization; STATUS=TESTED; OWNER=performance; UPDATED=2026-01-16 -->
 
 # Performance Tuning Guide
 
@@ -12,23 +21,22 @@ This guide covers performance optimization strategies, configuration tuning, and
 
 ### Current Benchmarks
 
-**Query Performance**:
-- Simple queries: <1ms latency
-- Complex patterns: <10ms (10-hop traversals)
-- Throughput: 10,000+ queries/second
+**Query Performance (server features baselines)**:
+- Read-only throughput: up to 100,000 txn/sec
+- Read-write throughput: 10,000-50,000 txn/sec
+- Write-heavy throughput: 5,000-20,000 txn/sec
 - Vector similarity: <50ns per distance calculation (8D L2)
 
 **Storage Performance**:
-- Write throughput: 100,000+ writes/second with WAL
-- Read latency: <100μs for indexed lookups
 - Memory-mapped I/O: 13.18x improvement
-- Cache hit ratio: >90% typical
+- WAL-based durability with configurable tuning
+- Cache efficiency is workload-dependent (monitor metrics)
 
 **Scalability**:
-- Nodes: 100M+ tested
-- Relationships: 1B+ tested
-- Concurrent connections: 10,000+ with pooling
-- Shards: Up to 32 with linear scale-out
+- Nodes: 100M+ (load-test target)
+- Relationships: 1B+ (load-test target)
+- Concurrent connections: 10,000+ per server
+- Shards: Up to 32 with automatic coordination
 
 ## Query Optimization
 

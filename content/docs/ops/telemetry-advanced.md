@@ -18,6 +18,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-SERVER-STARTUP-INTEGRATION-001; FEATURE="Server Startup Integration Tests"; ASPECT=EndToEndServerTesting; STATUS=TESTED; OWNER=server; UPDATED=2025-10-05 -->
+
 ## Overview
 
 Geode provides comprehensive telemetry capabilities for production observability, including streaming paging events, Prometheus metrics integration, QUIC transport metrics, and customizable monitoring dashboards.

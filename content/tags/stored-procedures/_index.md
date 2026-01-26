@@ -18,6 +18,8 @@ keywords:
 weight: 10
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 # Stored Procedures
 
 Stored procedures are reusable, server-side programs written in GQL that encapsulate complex database logic within the database engine. They enable code reuse across applications, improve performance by reducing network roundtrips, enhance security through controlled data access, simplify maintenance by centralizing business logic, and provide transactional consistency for multi-step operations.

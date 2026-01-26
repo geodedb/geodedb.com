@@ -17,6 +17,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 The **API and Technical Reference** category provides authoritative, detailed documentation on every aspect of Geode's interfaces, syntax, and configuration. This is your go-to resource for precise specifications, function signatures, parameter details, and technical specifications.
 
 ## GQL Language Reference

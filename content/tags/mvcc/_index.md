@@ -13,6 +13,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 Documentation tagged with **Multi-Version Concurrency Control (MVCC)** in the Geode graph database. MVCC is a fundamental concurrency control mechanism that enables high-performance concurrent access to data while maintaining ACID transaction guarantees.
 
 ## Introduction to MVCC

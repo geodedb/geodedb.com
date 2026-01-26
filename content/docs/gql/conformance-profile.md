@@ -18,6 +18,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-GQL-001; FEATURE="BasicQuery"; ASPECT=Testing; STATUS=TESTED; OWNER=test; UPDATED=2025-10-02 -->
+
 ## Overview
 
 This document details Geode's conformance to the ISO/IEC 39075:2024 Graph Query Language (GQL) standard. Geode achieves **100% compliance** with all mandatory features and passes all 70 official ISO test cases.
@@ -599,7 +601,7 @@ MATCH (n:Person) RETURN n ORDER BY n.age
 
 **Standards Documentation**:
 - ISO/IEC 39075:2024 GQL Specification
-- Geode Implementation Status: [IMPLEMENTATION_STATUS.md](https://gitlab.com/devnw/codepros/geode/-/blob/main/geode/docs/IMPLEMENTATION_STATUS_OCTOBER_2025.md)
+- Geode Implementation Status: [IMPLEMENTATION_STATUS.md](https://github.com/codeprosorg/geode/blob/main/docs/IMPLEMENTATION_STATUS_OCTOBER_2025.md)
 
 ---
 

@@ -24,6 +24,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 # Geode on Microsoft Azure
 
 Microsoft Azure provides enterprise-grade cloud infrastructure for deploying Geode graph database with comprehensive managed services, global reach, hybrid cloud capabilities, and deep integration with Microsoft's ecosystem. This guide covers production-ready deployment patterns, best practices, and Azure-specific optimizations.

@@ -22,6 +22,8 @@ params:
     description: "Manage secure connections to Geode with QUIC transport, TLS 1.3 encryption, connection pooling, and enterprise authentication. Learn connection best practices and security."
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 Connection management in Geode encompasses establishing secure connections, managing connection pools, handling authentication, and optimizing network performance. Geode uses modern QUIC transport with TLS 1.3 encryption by default, providing secure and efficient connections for all client operations.
 
 ## Connection Architecture

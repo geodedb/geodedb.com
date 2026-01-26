@@ -13,6 +13,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 Prometheus is the industry-standard monitoring solution for cloud-native applications, and Geode provides first-class Prometheus integration. Geode exposes comprehensive metrics covering queries, transactions, connections, storage, memory, and system health through a Prometheus-compatible `/metrics` endpoint.
 
 By integrating Geode with Prometheus, you gain real-time visibility into database performance, can set up intelligent alerting on critical conditions, and build comprehensive dashboards for operational insights. Combined with Grafana for visualization, Prometheus and Geode form a powerful observability stack for production graph database deployments.

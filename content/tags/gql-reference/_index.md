@@ -18,6 +18,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 Complete reference documentation for GQL (Graph Query Language), the ISO/IEC 39075:2024 standard language for graph databases. This guide covers all GQL syntax, clauses, expressions, functions, and advanced features as implemented in Geode.
 
 ## What is GQL?

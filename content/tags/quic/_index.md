@@ -16,6 +16,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 Geode documentation tagged with **QUIC Protocol**. QUIC (Quick UDP Internet Connections) is a modern transport protocol that provides the reliability of TCP with the performance of UDP, featuring built-in encryption, multiplexing, and connection migration.
 
 ## Introduction to QUIC

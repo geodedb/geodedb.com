@@ -7,6 +7,8 @@ slug: "multi-datacenter"
 canonical: "https://geodedb.com/docs/guides/multi-datacenter/"
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 # Multi-Datacenter Deployment and Replication
 
 Deploy Geode across multiple datacenters for high availability, disaster recovery, and global data distribution.

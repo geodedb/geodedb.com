@@ -19,6 +19,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 # Geode Overview
 
 Geode is an enterprise-ready graph database that brings standards-based graph query capabilities with production-grade features, ACID guarantees, and high performance. Built from the ground up in Zig for memory safety and efficiency, Geode implements the ISO/IEC 39075:2024 Graph Query Language (GQL) standard and is designed for modern cloud-native deployments.
@@ -341,18 +343,18 @@ ORDER BY affected.criticality DESC;
 
 ### Benchmarks
 
-**Simple traversals** (2-3 hops): < 10ms
-**Complex pattern matching** (4-5 hops with filters): < 100ms
-**Aggregations** (millions of nodes): Seconds (parallel execution)
-**Bulk inserts**: 10,000+ nodes/sec (single thread)
+**Short paths** (1-2 hops): 1-5ms
+**Multi-hop paths** (3-5 hops with filters): 10-100ms
+**Large aggregations** (1M rows): 100-500ms
+**Bulk writes** (batched): 50,000-200,000 writes/sec
 
 ### Scalability
 
-**Nodes**: Billions supported
-**Relationships**: Tens of billions
-**Properties**: Unlimited per node/relationship
-**Concurrent connections**: 1,000+ simultaneous queries
-**Throughput**: 10,000+ queries/second (simple queries)
+**Nodes**: 100M+ (load-test target)
+**Relationships**: 1B+ (load-test target)
+**Properties**: Wide property sets supported (storage dependent)
+**Concurrent connections**: 10,000+ supported
+**Throughput**: Read-only up to 100,000 txn/sec; read-write 10,000-50,000 txn/sec; write-heavy 5,000-20,000 txn/sec
 
 ## Deployment Options
 

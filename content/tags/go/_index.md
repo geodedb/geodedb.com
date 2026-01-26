@@ -1,6 +1,6 @@
 ---
 title: "Go Client"
-description: "Production-ready Geode Go client implementing database/sql interface with connection pooling, prepared statements, context-aware operations, transaction support, and 5,000+ qps performance for Go applications."
+description: "Production-ready Geode Go client implementing database/sql interface with connection pooling, prepared statements, context-aware operations, transaction support, and high-throughput performance for Go applications."
 keywords:
   - Go
   - Golang
@@ -21,9 +21,11 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 # Go Client
 
-The Geode Go client implements the standard `database/sql` interface, providing seamless integration with Go applications and the broader Go database ecosystem. It offers connection pooling, prepared statements, transaction support, and context-aware operations for production deployments, achieving 5,000+ queries/second throughput.
+The Geode Go client implements the standard `database/sql` interface, providing seamless integration with Go applications and the broader Go database ecosystem. It offers connection pooling, prepared statements, transaction support, and context-aware operations for production deployments.
 
 ## Overview
 
@@ -34,7 +36,7 @@ The Go client is designed to feel natural for Go developers while providing acce
 - **Connection Pooling**: Automatic connection lifecycle management with configurable pool parameters
 - **Context Integration**: First-class context.Context support for timeouts, deadlines, and cancellation
 - **Type Safety**: Strong typing with Go's type system
-- **Production Ready**: Used in production environments handling millions of queries daily
+- **Production Ready**: Supports standard `database/sql` workflows with QUIC transport
 
 ## Installation
 
@@ -706,14 +708,14 @@ func TestUserService(t *testing.T) {
 }
 ```
 
-## Performance: 5,000+ queries/second
+## Performance and Throughput
 
-Benchmarks on commodity hardware (4-core CPU, 16GB RAM):
+Performance is workload-dependent and influenced by network conditions, server limits, and query patterns. The Go client minimizes overhead and integrates with `database/sql` for predictable behavior.
 
-- **Simple Queries**: 7,000+ qps
-- **Complex Queries**: 5,000+ qps
-- **Prepared Statements**: 10,000+ qps
-- **Transactions**: 3,000+ transactions/second
+- **Connection pooling**: Reduces connection setup overhead for higher throughput
+- **Prepared statements**: Reuse query plans for repeated operations
+- **Transactions**: Batch related operations to amortize latency
+- **Server baselines**: Read-only up to 100,000 txn/sec; read-write 10,000-50,000 txn/sec; write-heavy 5,000-20,000 txn/sec
 
 ## Related Topics
 

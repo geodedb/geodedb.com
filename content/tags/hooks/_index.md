@@ -5,6 +5,8 @@ keywords: ["database hooks", "triggers", "event triggers", "before trigger", "af
 weight: 10
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 # Database Hooks & Triggers
 
 Database hooks and triggers are mechanisms that automatically execute custom logic in response to specific database events. Geode's hooks and triggers enable reactive data management, constraint enforcement, and workflow automation without requiring application-level code.

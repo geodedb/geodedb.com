@@ -17,6 +17,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 # Quickstart Resources
 
 Quickstart resources provide the fastest path to productivity with Geode graph database. Skip lengthy explanations and jump straight into working code, essential commands, and production-ready patterns.
@@ -28,7 +30,7 @@ Quickstart resources provide the fastest path to productivity with Geode graph d
 docker run -d -p 3141:3141 --name geode geodedb/geode:latest
 
 # Or build from source
-git clone https://gitlab.com/devnw/codepros/geode.git && cd geode/geode && make build && ./zig-out/bin/geode serve
+git clone https://github.com/codeprosorg/geode && cd geode && make build && ./zig-out/bin/geode serve
 ```
 
 ## 30-Second First Query

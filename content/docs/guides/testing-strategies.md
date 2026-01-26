@@ -7,6 +7,8 @@ slug: "testing-strategies"
 canonical: "https://geodedb.com/docs/guides/testing-strategies/"
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 Geode maintains comprehensive test coverage across multiple testing frameworks ensuring production readiness with 97.4% integration test pass rate (1644/1688 tests) and 100% unit test pass rate (393/393 tests). This guide covers all testing strategies, frameworks, and best practices for developing robust graph database applications.
 
 ## Test Coverage Overview
@@ -390,7 +392,7 @@ LIMIT 10;
 Link tests to requirements for governance tracking:
 
 ```zig
-// CANARY: REQ=REQ-GQL-001; FEATURE="BasicQuery"; ASPECT=Testing; STATUS=TESTED; TEST=TestBasicQuery; OWNER=test; UPDATED=2025-10-02
+// CANARY: REQ=REQ-XXX; FEATURE="BasicQuery"; ASPECT=Testing; STATUS=TESTED; TEST=TestBasicQuery; OWNER=test; UPDATED=2026-01-24
 test "TestCANARY_REQ_GQL_001_BasicQuery" {
     const allocator = std.testing.allocator;
     const parser = @import("../src/gql/parser.zig");

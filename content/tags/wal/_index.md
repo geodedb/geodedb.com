@@ -13,6 +13,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 Documentation tagged with **Write-Ahead Logging (WAL)** in the Geode graph database. WAL is a fundamental technique for ensuring data durability and enabling crash recovery—every database modification is recorded in a sequential log file before being applied to the database itself.
 
 ## Introduction to Write-Ahead Logging

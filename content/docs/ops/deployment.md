@@ -21,6 +21,8 @@ keywords:
   - cdc
 ---
 
+<!-- CANARY: REQ=REQ-SERVER-STARTUP-INTEGRATION-001; FEATURE="Server Startup Integration Tests"; ASPECT=EndToEndServerTesting; STATUS=TESTED; OWNER=server; UPDATED=2025-10-05 -->
+
 # Deployment and Integration Guide
 
 Production deployment patterns, infrastructure stacks, backup strategies, and client integration for Geode.
@@ -40,7 +42,7 @@ Production deployment patterns, infrastructure stacks, backup strategies, and cl
 # Build and run
 cd geode
 make build
-./zig-out/bin/geode serve --listen 0.0.0.0:3141
+geode serve --listen 0.0.0.0:3141
 ```
 
 **Systemd service** (Linux):
@@ -550,7 +552,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 - Tokio async runtime
 - Type-safe query builders
 - Zero-cost abstractions
-- Connection pooling (10,000+ QPS)
+- Connection pooling (workload-dependent throughput)
 
 **See**: [Rust Client Guide](/docs/client-libraries/rust-client)
 

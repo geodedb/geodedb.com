@@ -7,6 +7,8 @@ slug: "docker-deployment"
 canonical: "https://geodedb.com/docs/ops/docker-deployment/"
 ---
 
+<!-- CANARY: REQ=REQ-SERVER-STARTUP-INTEGRATION-001; FEATURE="Server Startup Integration Tests"; ASPECT=EndToEndServerTesting; STATUS=TESTED; OWNER=server; UPDATED=2025-10-05 -->
+
 # Docker Deployment Guide
 
 Complete documentation for containerized deployment of Geode graph database using Docker and Docker Compose.
@@ -122,7 +124,7 @@ A complete Docker-based development environment replicating the Nix flake setup.
 
 ```bash
 # Clone repository
-git clone https://gitlab.com/devnw/codepros/geode.git
+git clone https://github.com/codeprosorg/geode
 cd geode
 
 # Start development environment (first build ~10 minutes)
@@ -145,7 +147,7 @@ make geodetestlab
 make verify-fast
 
 # Start Geode server
-./zig-out/bin/geode serve --listen 127.0.0.1:9999
+geode serve --listen 127.0.0.1:9999
 
 # View logs
 ./dev.sh logs -f

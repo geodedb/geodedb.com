@@ -1,0 +1,41 @@
+/* Forced Dark Mode Overrides */
+[data-bs-theme="dark"] {
+  html,
+  body,
+  main,
+  .page-content {
+    background-color: #0b1120 !important;
+    color: #e2e8f0 !important;
+  }
+
+  .bg-light {
+    background-color: #0f172a !important; /* Slate 900 */
+    color: #e2e8f0 !important;
+  }
+
+  .hero-section {
+    background: #020617 !important; /* Slate 950 */
+  }
+
+  .features-section {
+    background-color: #0f172a !important; /* Slate 900 */
+  }
+
+  .cta-section .card-modern {
+    background: #1e293b !important; /* Slate 800 */
+    border: 1px solid rgba(148, 163, 184, 0.2);
+  }
+
+  .card-modern {
+    background-color: #1e293b !important;
+    border-color: rgba(148, 163, 184, 0.2);
+    color: #e2e8f0;
+  }
+
+  .hero-code-example .card-header,
+  .hero-code-example .card-body,
+  .hero-code-example .card-footer {
+    background-color: #020617 !important;
+    border-color: rgba(148, 163, 184, 0.2) !important;
+  }
+}

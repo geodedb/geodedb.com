@@ -17,6 +17,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 The **Operations & Production Management** category provides comprehensive documentation for running Geode successfully in production environments. From initial deployment through ongoing maintenance, these resources cover monitoring, observability, backup strategies, disaster recovery, troubleshooting, and capacity planning.
 
 ## Introduction

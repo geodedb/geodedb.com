@@ -19,6 +19,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 # Graph Database Fundamentals
 
 Graph databases represent a fundamental shift in how we model and query connected data. Unlike traditional relational databases that use tables and joins, graph databases store data as nodes (entities) and relationships (connections), making them naturally suited for highly connected datasets where relationships are as important as the data itself.
@@ -470,7 +472,7 @@ Identify entities (nodes) and relationships:
 # Download and start Geode
 cd geode
 make build
-./zig-out/bin/geode serve --listen 0.0.0.0:3141
+geode serve --listen 0.0.0.0:3141
 ```
 
 ### 3. Create Your First Graph

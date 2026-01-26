@@ -15,6 +15,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 The **Guides** category provides practical, step-by-step instructions for accomplishing specific tasks with Geode graph database. From basic operations to advanced workflows, these guides help you implement solutions efficiently and correctly.
 
 ## Introduction to Geode Guides
@@ -44,22 +46,6 @@ docker run -d \
 docker exec geode geode ping
 ```
 
-**Using Pre-built Binaries**:
-```bash
-# Download for your platform
-wget https://gitlab.com/devnw/codepros/geode/geode/releases/latest/download/geode-linux-x64.tar.gz
-
-# Extract
-tar xzf geode-linux-x64.tar.gz
-cd geode
-
-# Run server
-./geode serve --listen 0.0.0.0:3141
-
-# Open shell in another terminal
-./geode shell
-```
-
 **Building from Source** (Zig 0.15.1+):
 ```bash
 # Install Zig
@@ -67,7 +53,7 @@ curl -L https://ziglang.org/download/0.15.1/zig-linux-x86_64-0.15.1.tar.xz | tar
 export PATH=$PATH:$(pwd)/zig-linux-x86_64-0.15.1
 
 # Clone and build
-git clone https://gitlab.com/devnw/codepros/geode/geode.git
+git clone https://github.com/codeprosorg/geode
 cd geode
 make build
 

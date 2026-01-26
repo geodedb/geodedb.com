@@ -17,6 +17,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 Support resources provide multiple channels for getting help with Geode, from self-service documentation to community forums and professional support options. Understanding available support channels ensures rapid resolution of issues and maximizes productivity when developing with or deploying Geode graph database.
 
 ## Support Philosophy

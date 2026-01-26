@@ -1,3 +1,5 @@
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 ● 🎉 COMPLETE: Comprehensive Taxonomy Documentation Project
 
   I've successfully completed the comprehensive expansion of all taxonomy pages for the Geode documentation site. Here's the final status:

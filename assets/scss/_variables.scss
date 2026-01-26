@@ -1,8 +1,7 @@
 // ───────────────────────────────────────────────────────────
-//  LOAD ALL VALUES EXPOSED BY HUGO'S  scss_variables  MAP
+//  LOAD ALL VALUES EXPOSED BY THE SCSS VARIABLES MAP
 // ───────────────────────────────────────────────────────────
-@use "sass:string"; // Must be loaded BEFORE hugo:vars to fix deprecation warnings
-@use "hugo:vars" as h; // <──  hugo variables are referenced with  h.$…
+@use "site-vars" as h; // <──  site variables are referenced with  h.$…
 @use "sass:color";
 
 // ───────────────────────────────────────────────────────────

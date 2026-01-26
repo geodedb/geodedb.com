@@ -18,6 +18,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-GQL-024; FEATURE="Conformance Flagger"; ASPECT=ImplDefinedCollationAndNullOrdering; STATUS=TESTED; OWNER=engine; UPDATED=2025-09-21 -->
+
 ## Overview
 
 The Geode Materialized Views System provides comprehensive view management with intelligent refresh strategies, dependency tracking, and query optimization. This system enables 10-100x performance improvements for complex analytical queries by pre-computing and storing query results with enterprise-grade reliability.

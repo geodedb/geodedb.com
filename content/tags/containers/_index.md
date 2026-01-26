@@ -31,6 +31,8 @@ params:
       tags: ["containers", "Docker", "Podman", "containerization", "DevOps"]
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 # Container Technologies for Geode
 
 Container technology has revolutionized application deployment by providing lightweight, portable, and consistent runtime environments. Containers package applications with their dependencies, ensuring identical behavior across development laptops, testing environments, and production clusters. This comprehensive guide explores container technologies for Geode graph database deployments, covering Docker, Podman, security hardening, image optimization, and production-ready patterns.

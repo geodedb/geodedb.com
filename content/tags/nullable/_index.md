@@ -5,6 +5,8 @@ keywords: ["nullable", "NULL", "optional fields", "missing data", "NULL handling
 weight: 10
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 # Nullable Fields & NULL Handling
 
 Nullable fields in Geode allow properties to contain NULL values, representing missing, unknown, or inapplicable data. Understanding NULL semantics is critical for correct graph queries, data modeling, and application logic. Geode implements three-valued logic according to the GQL standard, where expressions can evaluate to TRUE, FALSE, or NULL.

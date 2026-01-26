@@ -19,6 +19,8 @@ keywords:
 weight: 10
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 # Data Export
 
 Data export extracts graph data from Geode into external formats for backup, analysis, migration, or integration with other systems. Geode provides flexible export capabilities supporting multiple formats, streaming for large datasets, filtered extraction, schema export, and compression options.

@@ -19,6 +19,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 ## Overview
 
 This guide helps you diagnose and resolve common issues with Geode database installation, connectivity, queries, performance, and operations. Issues are organized by category with step-by-step solutions.
@@ -125,14 +127,14 @@ kill -9 <PID>
 **Solution**:
 ```bash
 # Option 1: Use a different port
-./zig-out/bin/geode serve --listen 0.0.0.0:8443
+geode serve --listen 0.0.0.0:8443
 
 # Option 2: Stop the conflicting process
 # If it's an old Geode server:
 pkill geode
 
 # Then start server
-./zig-out/bin/geode serve --listen 0.0.0.0:3141
+geode serve --listen 0.0.0.0:3141
 ```
 
 ### Data Directory Permission Denied
@@ -156,7 +158,7 @@ chmod -R 755 /var/geode/data
 
 # Option 2: Use a directory you own
 mkdir -p ~/geode-data
-./zig-out/bin/geode serve \
+geode serve \
     --listen 0.0.0.0:3141 \
     --data-dir ~/geode-data
 ```
@@ -190,7 +192,7 @@ openssl req -x509 -newkey rsa:4096 \
     -subj "/CN=localhost"
 
 # Start server with certificate
-./zig-out/bin/geode serve \
+geode serve \
     --listen 0.0.0.0:3141 \
     --tls-cert server.crt \
     --tls-key server.key
@@ -209,7 +211,7 @@ sudo certbot certonly --standalone -d yourdomain.com
 # /etc/letsencrypt/live/yourdomain.com/privkey.pem
 
 # Start server
-sudo ./zig-out/bin/geode serve \
+sudo geode serve \
     --listen 0.0.0.0:3141 \
     --tls-cert /etc/letsencrypt/live/yourdomain.com/fullchain.pem \
     --tls-key /etc/letsencrypt/live/yourdomain.com/privkey.pem
@@ -222,7 +224,7 @@ sudo ./zig-out/bin/geode serve \
 **Diagnosis**:
 ```bash
 # Run with debug logging
-./zig-out/bin/geode serve \
+geode serve \
     --listen 0.0.0.0:3141 \
     --log-level debug
 
@@ -237,7 +239,7 @@ coredumpctl info <ID>
 **Common Causes**:
 1. **Corrupted data directory**: Delete `data/` and restart
 2. **Insufficient file descriptors**: Increase limits with `ulimit -n 65536`
-3. **Missing shared libraries**: Check `ldd ./zig-out/bin/geode`
+3. **Missing shared libraries**: Check `ldd geode`
 
 ---
 
@@ -265,7 +267,7 @@ sudo iptables -L | grep 3141
 **Solution**:
 ```bash
 # If server isn't running, start it
-./zig-out/bin/geode serve --listen 0.0.0.0:3141
+geode serve --listen 0.0.0.0:3141
 
 # If firewall is blocking, open port
 sudo ufw allow 3141/tcp
@@ -273,7 +275,7 @@ sudo ufw allow 3141/udp  # QUIC uses UDP
 
 # For remote connections, ensure server binds to 0.0.0.0
 # NOT 127.0.0.1 (localhost only)
-./zig-out/bin/geode serve --listen 0.0.0.0:3141
+geode serve --listen 0.0.0.0:3141
 ```
 
 ### TLS Handshake Failures
@@ -320,7 +322,7 @@ let client = GeodeClient::builder()
 nc -zu <server-ip> 3141
 
 # Check server logs for QUIC errors
-./zig-out/bin/geode serve --log-level debug 2>&1 | grep QUIC
+geode serve --log-level debug 2>&1 | grep QUIC
 
 # Verify UDP is not blocked by firewall
 sudo tcpdump -i any udp port 3141
@@ -348,7 +350,7 @@ ping -M do -s 1400 <server-ip>
 **Solution**:
 ```bash
 # Increase max connections on server
-./zig-out/bin/geode serve \
+geode serve \
     --listen 0.0.0.0:3141 \
     --max-connections 10000
 
@@ -411,7 +413,7 @@ MATCH (n:Person {name: $name_param}) RETURN n
 **Debugging Tip**:
 ```bash
 # Use EXPLAIN to see where parser fails
-./zig-out/bin/geode query "EXPLAIN <your query here>"
+geode query "EXPLAIN <your query here>"
 ```
 
 ### Undefined Object Error
@@ -507,13 +509,13 @@ RETURN p.name, b.title
 **Step 1: Identify the Problem**
 ```bash
 # Use PROFILE to see execution metrics
-./zig-out/bin/geode query "PROFILE MATCH (n:Person) RETURN n"
+geode query "PROFILE MATCH (n:Person) RETURN n"
 ```
 
 **Step 2: Analyze Query Plan**
 ```bash
 # Use EXPLAIN to see query plan
-./zig-out/bin/geode query "EXPLAIN MATCH (n:Person WHERE n.age > 30) RETURN n"
+geode query "EXPLAIN MATCH (n:Person WHERE n.age > 30) RETURN n"
 
 # Look for:
 # - "Scan" without index (bad for large datasets)
@@ -565,7 +567,7 @@ MATCH (p:Person) WHERE p.age > 30 RETURN p
 ps aux | grep geode
 
 # Check page cache size
-./zig-out/bin/geode serve --page-cache-size 512  # MB
+geode serve --page-cache-size 512  # MB
 
 # Monitor with metrics
 curl http://localhost:9090/metrics | grep memory
@@ -576,7 +578,7 @@ curl http://localhost:9090/metrics | grep memory
 **1. Reduce Page Cache**:
 ```bash
 # Default is 1024MB, reduce if needed
-./zig-out/bin/geode serve \
+geode serve \
     --listen 0.0.0.0:3141 \
     --page-cache-size 256
 ```
@@ -606,10 +608,10 @@ async for row in client.query_stream("MATCH (n:Person) RETURN n"):
 **Diagnosis**:
 ```bash
 # Check if index exists
-./zig-out/bin/geode query "SHOW INDEXES"
+geode query "SHOW INDEXES"
 
 # Use EXPLAIN to see if index is used
-./zig-out/bin/geode query "
+geode query "
   EXPLAIN MATCH (p:Person WHERE p.email = 'alice@example.com')
   RETURN p
 "
@@ -729,7 +731,7 @@ COMMIT;
 **Solution 1: Increase Timeout**:
 ```bash
 # Server-side timeout configuration
-./zig-out/bin/geode serve \
+geode serve \
     --listen 0.0.0.0:3141 \
     --transaction-timeout 300  # seconds
 ```
@@ -966,7 +968,7 @@ journalctl -u geode -n 100 | grep ERROR
 journalctl -u geode -f
 
 # Filter by severity
-./zig-out/bin/geode serve --log-level debug 2>&1 | grep -E 'ERROR|WARN'
+geode serve --log-level debug 2>&1 | grep -E 'ERROR|WARN'
 
 # Search for specific error
 grep "GQLSTATUS 42000" /var/log/geode/server.log
@@ -978,11 +980,11 @@ grep "GQLSTATUS 42000" /var/log/geode/server.log
 nc -zu <server-ip> 3141
 
 # Test with client
-./zig-out/bin/geode query "RETURN 1"
+geode query "RETURN 1"
 
 # Verbose connection debug
 export GEODE_LOG_LEVEL=debug
-./zig-out/bin/geode query "RETURN 1"
+geode query "RETURN 1"
 ```
 
 ### Performance Profiling
@@ -1027,7 +1029,7 @@ CALL db.transactions();
 
 When reporting an issue, include:
 
-1. **Geode version**: `./zig-out/bin/geode --version`
+1. **Geode version**: `geode --version`
 2. **OS and version**: `uname -a`
 3. **Zig version**: `zig version`
 4. **Exact error message** with full stack trace

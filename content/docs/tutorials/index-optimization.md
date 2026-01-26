@@ -7,6 +7,8 @@ slug: "index-optimization"
 canonical: "https://geodedb.com/docs/tutorials/index-optimization"
 ---
 
+<!-- CANARY: REQ=REQ-GQL-016; FEATURE="MultiIndexOptimizer"; ASPECT=IndexTypeSelection; STATUS=TESTED; OWNER=engine; UPDATED=2025-10-03 -->
+
 # Index Optimization Tutorial
 
 Learn how to optimize query performance in Geode through strategic index design, EXPLAIN analysis, and performance tuning. This tutorial covers B-tree, HNSW vector, spatial, and full-text indexes with practical examples.

@@ -20,6 +20,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 The MATCH clause is the primary mechanism for finding patterns in your graph data with Geode. As the foundation of GQL queries, MATCH allows you to declaratively specify the graph structures you want to retrieve, from simple node lookups to complex multi-hop traversals.
 
 ## What is MATCH?

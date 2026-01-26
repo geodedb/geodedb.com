@@ -20,6 +20,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 Keeping your Geode database deployment current ensures you benefit from the latest features, performance improvements, security patches, and bug fixes. Geode follows semantic versioning and provides clear upgrade paths with comprehensive release documentation.
 
 ## Release Cycle and Versioning

@@ -2,7 +2,16 @@
 title: "Configuration Reference"
 description: "Complete configuration reference for Geode server and client settings"
 weight: 35
+
+keywords:
+  - Geode configuration
+  - server configuration
+  - graph database settings
+  - config files
+  - deployment config
 ---
+
+<!-- CANARY: REQ=REQ-SERVER-REFACTOR-015; FEATURE="ServerRefactoring"; ASPECT=ConfigManagement; STATUS=TESTED; OWNER=server; UPDATED=2026-01-15 -->
 
 # Configuration Reference
 

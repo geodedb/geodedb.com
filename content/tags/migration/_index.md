@@ -5,6 +5,8 @@ keywords: ["data migration", "database migration", "ETL", "data transfer", "migr
 weight: 10
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 # Data Migration
 
 Data migration is the process of transferring data from one system to another, often involving format transformation, schema mapping, and data quality validation. Geode provides comprehensive tools and strategies for smooth, reliable data migrations.

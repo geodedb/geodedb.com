@@ -7,6 +7,8 @@ slug: "vector-search-tutorial"
 canonical: "https://geodedb.com/docs/tutorials/vector-search-tutorial/"
 ---
 
+<!-- CANARY: REQ=REQ-HNSW-INDEX-OPTIMIZER-INTEGRATION-001; FEATURE="HNSW IndexOptimizer Integration"; ASPECT=ProductionIntegration; STATUS=TESTED; OWNER=vector; UPDATED=2025-10-05 -->
+
 # Vector Similarity Search Tutorial
 
 Learn to implement semantic search using vector embeddings and HNSW indexing in this hands-on 25-minute tutorial.

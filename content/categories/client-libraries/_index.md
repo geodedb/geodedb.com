@@ -13,6 +13,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 Geode's client libraries provide idiomatic, production-ready interfaces for connecting to and interacting with Geode graph database from multiple programming languages. Each client library is designed to feel native to its language ecosystem while providing consistent access to Geode's features including GQL query execution, transaction management, connection pooling, prepared statements, and streaming result sets.
 
 The client library ecosystem includes official support for Go, Python, Rust, and Zig, with each implementation optimized for its language's concurrency model and performance characteristics. All clients communicate via QUIC+TLS using the JSON line protocol, ensuring low latency, efficient multiplexing, and strong security. Whether you're building high-throughput microservices in Go, data science workflows in Python, performance-critical systems in Rust, or systems programming in Zig, there's a client library designed for your needs.

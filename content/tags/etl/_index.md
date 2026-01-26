@@ -5,6 +5,8 @@ keywords: ["ETL", "extract transform load", "data pipeline", "data integration",
 weight: 10
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 # ETL Pipelines & Data Integration
 
 ETL (Extract, Transform, Load) pipelines are critical for integrating data from diverse sources into your Geode graph database. Whether migrating from a relational database, aggregating data from multiple APIs, or streaming real-time events, well-designed ETL processes ensure data arrives in Geode accurately, efficiently, and reliably.

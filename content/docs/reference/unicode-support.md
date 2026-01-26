@@ -18,6 +18,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-GQL-UNICODE-012; FEATURE="UTF-8 -> UTF-16 Conversion"; ASPECT=ClientTestZig; STATUS=TESTED; OWNER=clients; UPDATED=2025-09-27 -->
+
 ## Overview
 
 Geode provides comprehensive Unicode support for international text processing with NFC normalization, case folding, UTF encoding conversions, and robust error handling. The implementation focuses on correctness, performance, and practical use cases for graph database operations.

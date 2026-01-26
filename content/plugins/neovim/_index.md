@@ -2,7 +2,16 @@
 title: "Neovim Plugin"
 description: "Geode plugin for Neovim with LSP integration"
 weight: 1
+
+keywords:
+  - Geode Neovim plugin
+  - GQL syntax highlighting
+  - Neovim integration
+  - Geode tooling
+  - Graph query editor
 ---
+
+<!-- CANARY: REQ=REQ-SYNTAX-VIM-002; FEATURE="VimSyntaxGeneration"; ASPECT=BuildTarget; STATUS=EXEMPT; OWNER=tooling; UPDATED=2026-01-03 -->
 
 # Geode Neovim Plugin
 

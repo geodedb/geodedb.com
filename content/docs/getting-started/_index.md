@@ -7,9 +7,17 @@ tags:
   - getting-started
   - quickstart
 categories:
+keywords:
+  - Geode getting started
+  - graph database quick start
+  - install Geode
+  - GQL basics
+  - setup guide
   - documentation
   - guides
 ---
+
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
 
 # Getting Started with Geode
 
@@ -20,29 +28,15 @@ This guide will help you get started with Geode in under 5 minutes.
 ### Using Nix (Recommended)
 
 ```bash
-nix run gitlab:devnw/codepros/geode/geode
-```
-
-### Download Binary
-
-```bash
-# Linux AMD64
-wget https://gitlab.com/devnw/codepros/geode/geode/releases/latest/download/geode-linux-amd64
-chmod +x geode-linux-amd64
-./geode-linux-amd64 --version
-
-# macOS ARM64
-wget https://gitlab.com/devnw/codepros/geode/geode/releases/latest/download/geode-darwin-arm64
-chmod +x geode-darwin-arm64
-./geode-darwin-arm64 --version
+nix run github:codeprosorg/geode -- serve
 ```
 
 ### Build from Source
 
 ```bash
 # Requires Zig 0.15.1+
-git clone https://gitlab.com/devnw/codepros/geode.git
-cd geode/geode
+git clone https://github.com/codeprosorg/geode
+cd geode
 make build
 ./zig-out/bin/geode --version
 ```

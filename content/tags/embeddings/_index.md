@@ -17,6 +17,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 Vector embeddings are dense numerical representations of data that enable semantic similarity search, recommendation systems, and machine learning applications in Geode. This tag covers storing, indexing, and querying high-dimensional vectors alongside your graph data.
 
 ## What Are Vector Embeddings?

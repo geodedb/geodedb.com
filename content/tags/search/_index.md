@@ -19,6 +19,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 Full-text search is a critical capability for modern applications, enabling users to find relevant information across massive graph datasets using natural language queries, keywords, and sophisticated matching algorithms. Geode provides enterprise-grade full-text search capabilities fully integrated with its GQL query language, allowing you to combine graph traversal with powerful text search in a single query.
 
 As an ISO/IEC 39075:2024 GQL-compliant graph database, Geode's search functionality goes beyond simple substring matching, offering advanced features like relevance ranking, fuzzy matching, phonetic search, and multilingual support. Whether you're building a content management system, e-commerce platform, knowledge graph, or social network, Geode's search capabilities enable fast, accurate, and scalable text retrieval.

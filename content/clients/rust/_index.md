@@ -4,7 +4,14 @@ description: "Official Rust client library for Geode"
 weight: 3
 tags: ["rust", "client", "tokio", "async"]
 categories: ["clients", "documentation"]
+keywords:
+  - Geode Rust client
+  - Rust SDK
+  - GQL driver
+  - graph database Rust
 ---
+
+<!-- CANARY: REQ=REQ-CLIENT-INTEGRATION-001; FEATURE="RustClientIntegration"; ASPECT=QUICTransport; STATUS=TESTED; OWNER=clients; UPDATED=2026-01-15 -->
 
 # Rust Client Library
 

@@ -19,6 +19,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 Effective database operations require a robust suite of tools for administration, monitoring, data management, and troubleshooting. Geode provides comprehensive database tools and utilities that enable database administrators, DevOps engineers, and developers to manage graph database instances efficiently at enterprise scale.
 
 From backup and recovery to performance monitoring, schema validation to data migration, Geode's database tools cover the full spectrum of operational needs. This guide explores the essential tools, their usage patterns, and best practices for maintaining healthy, high-performance graph database deployments.

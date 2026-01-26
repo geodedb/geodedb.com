@@ -18,6 +18,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-GQL-001; FEATURE="BasicQuery"; ASPECT=Testing; STATUS=TESTED; OWNER=test; UPDATED=2025-10-02 -->
+
 ## Overview
 
 This guide covers advanced GQL query patterns that enable sophisticated graph database operations beyond basic MATCH queries. Learn how to chain VALUES with MATCH, compose complex patterns, and build enterprise-grade graph queries.

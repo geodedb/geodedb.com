@@ -17,6 +17,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 The **Overview and Introduction** category provides high-level documentation about Geode, covering its architecture, key features, design philosophy, and how to get started. Whether you're evaluating Geode for a project, learning about graph databases, or planning a production deployment, this category offers the foundational knowledge you need.
 
 ## What is Geode?
@@ -150,7 +152,7 @@ Geode provides multiple installation options:
 
 ```bash
 # From source (requires Zig 0.15.1+)
-git clone https://gitlab.com/devnw/codepros/geode.git
+git clone https://github.com/codeprosorg/geode
 cd geode
 make build
 
@@ -169,10 +171,10 @@ After installation, start the server and connect with the interactive shell:
 
 ```bash
 # Start server
-./zig-out/bin/geode serve --listen 0.0.0.0:3141
+geode serve --listen 0.0.0.0:3141
 
 # In another terminal, connect with shell
-./zig-out/bin/geode shell
+geode shell
 
 # Create your first graph
 geode> CREATE (alice:Person {name: 'Alice', age: 30})
@@ -211,10 +213,10 @@ Geode excels in scenarios where relationships between entities are first-class c
 
 Geode's architecture delivers predictable performance:
 
-- **Query latency**: Sub-millisecond for indexed lookups, single-digit milliseconds for pattern matching
-- **Throughput**: 10,000+ queries/second on commodity hardware
+- **Query latency**: Point lookup <1ms (typically 100-500us); short path 1-5ms; multi-hop 10-100ms
+- **Throughput**: Read-only up to 100,000 txn/sec; read-write 10,000-50,000 txn/sec; write-heavy 5,000-20,000 txn/sec
 - **Concurrency**: SSI isolation with MVCC enables high read and write parallelism
-- **Scalability**: Tested with graphs exceeding 10 million nodes and 50 million relationships
+- **Scalability**: Load-test targets 100M+ nodes and 1B+ relationships
 - **Memory efficiency**: Zig's explicit allocators minimize overhead and fragmentation
 
 Performance tuning options include indexes, query optimization, connection pooling, and prepared statements.

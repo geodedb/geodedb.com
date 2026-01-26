@@ -19,7 +19,9 @@ params:
     noindex: false
 ---
 
-Geode powers production graph applications across industries, from social platforms to financial services. This guide explores real-world deployment patterns, operational experiences, and lessons learned from organizations running Geode at scale.
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
+Geode is designed for production graph applications across industries, from social platforms to financial services. This guide explores real-world deployment patterns, operational considerations, and lessons learned for running Geode at scale.
 
 ## Production Deployment Patterns
 
@@ -62,11 +64,10 @@ services:
       - ./haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg
 ```
 
-**Performance:**
-- Read throughput: 50,000+ queries/second across replicas
-- Write throughput: 10,000+ writes/second on primary
-- Query latency: p99 <100ms
-- Uptime: 99.95% availability
+**Performance considerations:**
+- Scale read throughput with replicas and shard count
+- Use EXPLAIN/PROFILE to tune hot query paths
+- Track p95/p99 latency and error budgets per service
 
 ### Microservices Data Layer
 
@@ -122,15 +123,14 @@ RETURN count(DISTINCT u) as dau,
        count(DISTINCT content) as unique_content
 ```
 
-**Performance:**
-- Process 100M+ events/day
-- Real-time dashboards (<1s refresh)
-- Historical analysis on billions of nodes
-- Time-series aggregations <500ms
+**Performance considerations:**
+- Use streaming and CDC for near-real-time dashboards
+- Plan for historical analysis with workload-specific indexing
+- Track aggregation latency targets in benchmark suites
 
 ## Industry Applications
 
-### Social Media Platform (10M+ Users)
+### Social Media Platform Use Case
 
 **Requirements:**
 - Friend network management
@@ -161,10 +161,9 @@ RETURN post, source.name, count(likes) as like_count, posted.timestamp
 ```
 
 **Results:**
-- Feed generation: <50ms p95
-- Friend suggestions: <100ms p99
-- Handled 500K+ concurrent users
-- 2M+ queries/minute during peak
+- Low-latency feed generation with ordering and pagination
+- Recommendation and suggestion queries tuned via indexes
+- Concurrency and throughput targets validated via load tests
 
 ### Financial Fraud Detection (Enterprise)
 
@@ -225,11 +224,10 @@ ORDER BY similarity_score DESC
 LIMIT 20
 ```
 
-**Performance:**
-- Recommendation generation: <200ms p99
-- 30% increase in click-through rate
-- 25% increase in average order value
-- Real-time inventory integration
+**Performance considerations:**
+- Use indexes on high-cardinality fields
+- Tune similarity thresholds and caching
+- Integrate inventory updates via CDC
 
 ## Performance Optimization in Production
 
@@ -288,10 +286,10 @@ client = GeodeClient(
 )
 ```
 
-**Metrics:**
-- Pool utilization: 60-80% during peak
-- Connection acquisition: <1ms p99
-- Reduced connection churn by 70%
+**Metrics to monitor:**
+- Pool utilization during peak load
+- Connection acquisition latency and timeouts
+- Connection churn and idle reclaim
 
 ## Operational Best Practices
 
@@ -353,27 +351,21 @@ find /backups -name "geode-*.db" -mtime +30 -delete
 aws s3 cp "${BACKUP_FILE}" "s3://backups/geode/${DATE}/"
 ```
 
-**Recovery Time Objective (RTO):** <15 minutes
-**Recovery Point Objective (RPO):** <1 hour
+**Recovery Time Objective (RTO):** Example target <15 minutes
+**Recovery Point Objective (RPO):** Example target <1 hour
 
 ### Capacity Planning
 
-**Growth Projections:**
-```
-Current: 100M nodes, 500M relationships
-Monthly Growth: +5M nodes, +25M relationships
-Query Load: 10K qps peak, 3K qps average
-
-Capacity Planning:
-- Memory: 4GB + (nodes * 50 bytes) + (relationships * 100 bytes)
-- Storage: 3x raw data size (indexes, WAL logs)
-- CPU: 0.5ms CPU per query × target qps
-```
+**Growth Projections (example inputs):**
+- Node/relationship growth rate by month
+- Peak and average query load targets
+- Memory and storage overhead for indexes and WAL
+- CPU per query from profiling and benchmark suites
 
 **Scaling Triggers:**
 - Memory utilization >70% → Add RAM or scale out
 - CPU utilization >60% sustained → Add replicas
-- Query latency p99 >500ms → Optimize or scale
+- Query latency p99 above SLO → Optimize or scale
 - Disk space >80% → Increase storage or archive
 
 ## Migration Strategies

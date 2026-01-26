@@ -13,6 +13,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 # Concurrency Control in Geode
 
 Concurrency control manages simultaneous access to database resources, ensuring data consistency while maximizing throughput. Geode implements sophisticated concurrency mechanisms based on Multi-Version Concurrency Control (MVCC) and Serializable Snapshot Isolation (SSI), enabling high-performance concurrent operations without compromising ACID guarantees.
@@ -800,40 +802,12 @@ async def main():
 
 ### Results Interpretation
 
-```
-Typical Results (16-core server, NVMe SSD):
+Use the benchmark output to identify scaling behavior:
 
-Concurrency: 10
-  QPS: 8,500
-  Avg Latency: 1.2ms
-  P99 Latency: 2.5ms
-
-Concurrency: 50
-  QPS: 35,000
-  Avg Latency: 1.4ms
-  P99 Latency: 3.8ms
-
-Concurrency: 100
-  QPS: 62,000
-  Avg Latency: 1.6ms
-  P99 Latency: 5.2ms
-
-Concurrency: 200
-  QPS: 95,000
-  Avg Latency: 2.1ms
-  P99 Latency: 8.7ms
-
-Concurrency: 500 (saturation point)
-  QPS: 102,000
-  Avg Latency: 4.9ms
-  P99 Latency: 24.5ms
-```
-
-Observations:
-- Linear scalability up to ~200 concurrent connections
-- Throughput plateaus around 100K QPS (CPU bound)
-- Latency remains low until saturation
-- Connection pooling critical for high concurrency
+- Look for near-linear scaling as concurrency increases until saturation.
+- Expect throughput to plateau once CPU or I/O becomes the bottleneck.
+- Track p95/p99 latency; rising tail latency signals saturation.
+- Tune pool sizes and worker counts based on your hardware and workload.
 
 ## Further Reading
 

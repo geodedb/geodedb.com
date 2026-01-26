@@ -27,6 +27,8 @@ params:
     description: "Complete guide to Geode's property graph data model covering nodes, relationships, properties, labels, and comprehensive type system"
 ---
 
+<!-- CANARY: REQ=REQ-GQL-001; FEATURE="BasicQuery"; ASPECT=Testing; STATUS=TESTED; OWNER=test; UPDATED=2025-10-02 -->
+
 # Data Model
 
 Understand Geode's property graph data model and how to effectively model your data using nodes, relationships, properties, and labels.

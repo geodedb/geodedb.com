@@ -7,6 +7,8 @@ slug: "advanced-patterns"
 canonical: "https://geodedb.com/docs/transactions/advanced-patterns/"
 ---
 
+<!-- CANARY: REQ=REQ-TXN-UNDO-001; FEATURE="TransactionUndoLog"; ASPECT=UndoEntry; STATUS=TESTED; OWNER=engine; UPDATED=2026-01-15 -->
+
 Geode provides enterprise-grade transaction management with comprehensive ACID compliance, advanced isolation levels, savepoint support, phantom read prevention, and sophisticated deadlock detection. This guide covers advanced transaction patterns for building robust, concurrent applications.
 
 ## Transaction Fundamentals

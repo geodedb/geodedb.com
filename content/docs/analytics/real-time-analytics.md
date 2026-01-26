@@ -7,6 +7,8 @@ slug: "real-time-analytics"
 canonical: "https://geodedb.com/docs/analytics/real-time-analytics/"
 ---
 
+<!-- CANARY: REQ=REQ-ANALYTICS-001; FEATURE="Real-time Analytics"; ASPECT=StreamingIntegration; STATUS=TESTED; OWNER=analytics; UPDATED=2025-10-05 -->
+
 Geode's real-time analytics system provides enterprise-grade streaming analytics capabilities with integrated machine learning, pattern detection, anomaly detection, and change data capture (CDC). This guide covers the complete analytics platform for building intelligent, responsive graph applications.
 
 ## Overview

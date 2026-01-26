@@ -18,6 +18,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 The **Use Cases and Applications** category explores real-world scenarios where Geode excels, providing practical examples, implementation patterns, and architectural guidance for common graph database applications. From social networks to fraud detection, see how organizations leverage Geode to solve complex problems with connected data.
 
 ## Why Graph Databases?

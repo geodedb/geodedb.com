@@ -1,3 +1,5 @@
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 # UI/UX Improvements - Modern Design System
 
 ## Overview

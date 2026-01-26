@@ -7,6 +7,8 @@ slug: "transaction-patterns-tutorial"
 canonical: "https://geodedb.com/docs/tutorials/transaction-patterns-tutorial/"
 ---
 
+<!-- CANARY: REQ=REQ-TXN-ISOLATION-003; FEATURE="Serializable Snapshot Isolation"; ASPECT=SerializableSSI; STATUS=TESTED; OWNER=txn; UPDATED=2025-10-05 -->
+
 # Transaction Patterns Tutorial
 
 Master ACID transactions and isolation levels in Geode in this hands-on 30-minute tutorial.

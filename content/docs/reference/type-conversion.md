@@ -18,6 +18,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-GQL-TYPE-CONV-001; FEATURE="TypeConversionFunctions"; ASPECT=Functionality; STATUS=TESTED; OWNER=eval; UPDATED=2025-01-05 -->
+
 ## Overview
 
 Geode implements comprehensive type conversion functions as specified in the ISO/IEC 39075:2024 GQL standard. These functions enable safe type casting, type introspection, and data transformation for robust query operations.

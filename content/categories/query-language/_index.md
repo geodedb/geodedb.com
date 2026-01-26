@@ -18,6 +18,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 The **Graph Query Language (GQL)** category provides comprehensive documentation on writing queries in Geode using the ISO/IEC 39075:2024 standard. From basic pattern matching to advanced analytical queries, this collection covers everything you need to effectively query graph data.
 
 ## Introduction to GQL

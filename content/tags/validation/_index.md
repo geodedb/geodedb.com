@@ -5,6 +5,8 @@ keywords: ["data validation", "input validation", "validation rules", "business 
 weight: 10
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 # Data Validation
 
 Data validation is the process of ensuring that data conforms to defined rules, formats, and business requirements before it enters or is updated in your Geode graph database. Effective validation prevents data quality issues, maintains referential integrity, and enforces domain-specific constraints across your graph. Geode supports multi-layer validation from database schema constraints to application-level validation logic.

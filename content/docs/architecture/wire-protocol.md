@@ -18,6 +18,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-ENGINE-005; FEATURE="Engine"; ASPECT=CostBasedOptimizer; STATUS=TESTED; OWNER=engine; UPDATED=2026-01-15 -->
+
 ## Overview
 
 Geode uses a QUIC-based binary protocol for client-server communication. This document specifies message formats, frame structures, pagination semantics, and federation protocols.

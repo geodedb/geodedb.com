@@ -5,6 +5,8 @@ keywords: ["constraints", "schema constraints", "integrity constraints", "NOT NU
 weight: 10
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 # Schema Constraints
 
 Schema constraints are declarative rules that enforce data integrity and consistency in your Geode graph database. By defining constraints at the schema level, you ensure that invalid data never enters the system, maintaining high quality across all nodes, edges, and properties. Geode implements constraints according to the ISO/IEC 39075:2024 GQL standard while optimizing enforcement at the graph storage layer.

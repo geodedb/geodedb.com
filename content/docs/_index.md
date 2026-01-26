@@ -2,7 +2,16 @@
 title: "Documentation"
 description: "Complete documentation for Geode graph database with 100% GQL compliance"
 weight: 1
+
+keywords:
+  - Geode documentation
+  - graph database docs
+  - GQL reference
+  - Geode guides
+  - API reference
 ---
+
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
 
 # Geode Documentation
 
@@ -55,10 +64,10 @@ Geode achieves **100% compliance** with ISO/IEC 39075:2024:
 
 ### High Performance
 
-- Query Performance: 10,000+ queries/second
+- Transaction throughput (workload-dependent): read-only up to 100,000 txn/sec; read-write 10,000-50,000 txn/sec; write-heavy 5,000-20,000 txn/sec
 - Vector Search: <50ns per distance calculation (8D L2)
 - Storage: 13.18x I/O improvement with memory-mapped I/O
-- Scalability: 100M+ nodes, 1B+ edges tested
+- Scalability targets: 100M+ nodes, 1B+ edges in load-test models
 
 ### Advanced Data Types
 
@@ -78,6 +87,6 @@ Over 50 specialized types including:
 ## Community and Support
 
 - **Documentation**: [https://geodedb.com/docs](https://geodedb.com/docs)
-- **GitHub**: [https://github.com/devnw/geode](https://github.com/devnw/geode)
+- **GitHub**: [https://github.com/codeprosorg/geode](https://github.com/codeprosorg/geode)
 - **Discord**: Community chat and support
 - **Email**: [email protected]

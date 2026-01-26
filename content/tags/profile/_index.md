@@ -24,6 +24,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 # Query Profiling with PROFILE Command
 
 Query profiling is essential for understanding and optimizing database performance. Geode's `PROFILE` command provides comprehensive execution metrics, timing information, and resource usage statistics to help you identify bottlenecks and optimize query performance.

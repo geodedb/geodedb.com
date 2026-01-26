@@ -18,6 +18,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCUMENTATION-STRUCTURE-001; FEATURE="DocStructure"; ASPECT=StructureTests; STATUS=TESTED; OWNER=claude; UPDATED=2026-01-16 -->
+
 ## Overview
 
 Geode's interactive REPL (Read-Eval-Print Loop) provides professional database shell features including syntax highlighting, fuzzy search, result pagination, session persistence, and advanced keybindings for maximum productivity.

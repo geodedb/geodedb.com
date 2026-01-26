@@ -19,6 +19,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-GQL-024; FEATURE="Conformance Flagger"; ASPECT=ImplDefinedCollationAndNullOrdering; STATUS=TESTED; OWNER=engine; UPDATED=2025-09-21 -->
+
 ## Overview
 
 This guide teaches you how to analyze and optimize query performance in Geode using EXPLAIN, PROFILE, indexes, and the cost-based optimizer. You'll learn to diagnose slow queries, understand execution plans, and apply optimization strategies.

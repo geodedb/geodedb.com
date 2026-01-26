@@ -23,6 +23,8 @@ params:
     description: "Track all database operations with Geode's comprehensive audit logging. Meet GDPR, HIPAA, and SOC2 requirements with detailed audit trails and security event tracking."
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 Audit logging in Geode provides comprehensive tracking of all database operations, creating an immutable record of who accessed what data, when they accessed it, and what changes they made. This capability is essential for security monitoring, compliance requirements, forensic analysis, and operational troubleshooting.
 
 ## Overview of Audit Logging

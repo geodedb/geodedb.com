@@ -18,6 +18,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 Observability is the ability to understand a system's internal state by examining its outputs. Unlike traditional monitoring that focuses on predefined metrics, observability enables you to ask arbitrary questions about your system's behavior, making it essential for debugging complex distributed systems and understanding emergent behaviors.
 
 Geode implements comprehensive observability through the three pillars: metrics for quantitative measurements, logs for detailed event records, and traces for request flow visualization. This multi-dimensional approach provides complete visibility into query execution, transaction behavior, resource utilization, and system health.

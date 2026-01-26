@@ -13,6 +13,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 Docker containerization provides a standardized, portable way to deploy Geode across development, testing, and production environments. Containers encapsulate Geode with its dependencies, ensuring consistent behavior regardless of the host system.
 
 Geode's official Docker images are optimized for production use, with carefully tuned defaults, comprehensive health checks, and support for orchestration platforms like Docker Compose and Kubernetes. Whether you're running a single-node development instance or a multi-region distributed cluster, Docker simplifies Geode deployment and management.

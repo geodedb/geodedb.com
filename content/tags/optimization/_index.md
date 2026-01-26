@@ -13,6 +13,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 # Query Optimization in Geode
 
 Query optimization is the process of analyzing and transforming database queries to execute them as efficiently as possible. In graph databases like Geode, optimization is particularly challenging due to the variable and unpredictable nature of graph traversals. Effective optimization can mean the difference between queries completing in milliseconds versus timing out after minutes.

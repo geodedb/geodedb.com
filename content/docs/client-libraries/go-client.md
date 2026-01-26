@@ -2,7 +2,16 @@
 title: "Go Client"
 description: "Complete guide to the Geode Go client library with database/sql integration"
 weight: 10
+
+keywords:
+  - Geode Go client
+  - Go SDK
+  - GQL driver
+  - graph database Go
+  - client library
 ---
+
+<!-- CANARY: REQ=REQ-CLIENT-INTEGRATION-001; FEATURE="RustClientIntegration"; ASPECT=QUICTransport; STATUS=TESTED; OWNER=clients; UPDATED=2026-01-15 -->
 
 # Geode Go Client Library
 

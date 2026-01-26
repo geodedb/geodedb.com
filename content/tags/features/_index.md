@@ -20,6 +20,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 Geode is an enterprise-ready graph database packed with production-grade features for reliability, performance, security, and scalability. This comprehensive guide covers all major database capabilities.
 
 ## Core Transaction Features

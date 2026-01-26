@@ -5,6 +5,8 @@ keywords: ["event-driven architecture", "EDA", "events", "event sourcing", "CQRS
 weight: 10
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 # Event-Driven Architecture
 
 Event-Driven Architecture (EDA) is a software design pattern where the flow of the program is determined by events. Geode's support for event-driven patterns enables building reactive, scalable, and loosely coupled systems that respond to changes as they occur.

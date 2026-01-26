@@ -28,6 +28,8 @@ params:
     description: "Hands-on tutorials for learning Geode with step-by-step guides covering queries, transactions, indexing, and graph algorithms"
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 # Tutorials
 
 Learn Geode through hands-on, step-by-step tutorials covering everything from basic queries to advanced graph algorithms. Each tutorial builds practical skills with real-world examples.

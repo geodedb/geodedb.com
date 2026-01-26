@@ -17,6 +17,8 @@ keywords:
 weight: 10
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 # Uniqueness Constraints
 
 Uniqueness constraints ensure that property values are unique across all nodes or edges of a given type, preventing duplicates and maintaining data integrity. They enable efficient lookups, support primary key semantics, and automatically create indexes for fast unique value checking.

@@ -7,6 +7,8 @@ slug: "query-execution"
 canonical: "https://geodedb.com/docs/architecture/query-execution"
 ---
 
+<!-- CANARY: REQ=REQ-ENGINE-005; FEATURE="Engine"; ASPECT=CostBasedOptimizer; STATUS=TESTED; OWNER=engine; UPDATED=2026-01-15 -->
+
 # Query Execution Architecture
 
 This document provides a comprehensive overview of Geode's query execution pipeline, from GQL parsing through distributed execution, covering the parser, planner, optimizer, and executor components.

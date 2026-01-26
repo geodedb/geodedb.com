@@ -19,6 +19,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 Modern database development requires sophisticated tooling to maintain productivity, ensure quality, and streamline deployment workflows. Geode provides a comprehensive ecosystem of development tools, from command-line interfaces and interactive shells to testing frameworks, profiling utilities, and CI/CD integrations. These tools enable developers to build, test, debug, and deploy graph database applications efficiently at scale.
 
 As an enterprise-ready graph database implementing the ISO/IEC 39075:2024 GQL standard, Geode's tooling focuses on developer experience, automation, and observability. Whether you're developing locally, running integration tests, or deploying to production clusters, Geode's tooling ecosystem provides the capabilities you need to ship reliable graph applications.

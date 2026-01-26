@@ -13,6 +13,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 Configuration management in Geode provides fine-grained control over database behavior, performance characteristics, security policies, and operational parameters. Proper configuration is essential for optimizing Geode for specific workloads, environments, and organizational requirements. Whether running a development instance on a laptop or managing a distributed production cluster, configuration determines how Geode utilizes resources, handles connections, manages transactions, and enforces security policies.
 
 Geode supports multiple configuration methods including YAML files, environment variables, command-line flags, and runtime configuration changes via GQL. Configuration is organized into logical sections covering server behavior, storage engine parameters, networking, security, monitoring, and feature flags. All configuration options are documented with their default values, acceptable ranges, and performance implications.

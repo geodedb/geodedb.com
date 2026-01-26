@@ -5,6 +5,8 @@ keywords: ["default values", "DEFAULT", "default constraint", "auto-populate", "
 weight: 10
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 # Default Values
 
 Default values in Geode automatically populate node and edge properties when they are not explicitly provided during INSERT operations. By leveraging defaults, you reduce boilerplate code in applications, enforce consistent initial states, and encode business logic directly in the schema. Geode supports static defaults, dynamic function-based defaults, and computed defaults that reference other properties.

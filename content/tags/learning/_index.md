@@ -17,6 +17,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 # Learning Resources
 
 Comprehensive learning resources for mastering Geode graph database, from beginner fundamentals to advanced production techniques. Whether you're new to graph databases or transitioning from other systems, these curated materials provide structured paths to expertise.
@@ -311,7 +313,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 The interactive REPL for immediate query testing:
 
 ```bash
-./zig-out/bin/geode shell
+geode shell
 
 geode> CREATE (p:Person {name: 'Alice'})
 geode> MATCH (p:Person) RETURN p.name
@@ -336,7 +338,7 @@ Pre-built datasets for learning:
 
 Load with:
 ```bash
-./zig-out/bin/geode load-dataset social-network
+geode load-dataset social-network
 ```
 
 ### Test Harness

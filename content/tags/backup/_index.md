@@ -16,6 +16,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 # Backup and Recovery
 
 Database backup and recovery are critical operations for protecting your Geode graph data against hardware failures, software bugs, human errors, and disaster scenarios. Geode provides enterprise-grade backup capabilities designed for production workloads with minimal performance impact and point-in-time recovery guarantees.

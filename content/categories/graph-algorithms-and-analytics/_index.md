@@ -18,6 +18,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 The **Graph Algorithms and Analytics** category provides comprehensive documentation for implementing advanced computational techniques on graph data using Geode. This collection covers everything from classical graph algorithms to modern machine learning approaches, enabling you to extract deep insights from connected data.
 
 ## Introduction to Graph Algorithms

@@ -21,6 +21,8 @@ keywords:
   - DeepWalk
 ---
 
+<!-- CANARY: REQ=REQ-ANALYTICS-001; FEATURE="Real-time Analytics"; ASPECT=StreamingIntegration; STATUS=TESTED; OWNER=analytics; UPDATED=2025-10-05 -->
+
 # Graph Algorithms and Analytics
 
 Execute graph algorithms, generate ML embeddings, and perform vector similarity search for analytics and data science workloads.

@@ -13,6 +13,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 Core concepts form the foundation of understanding Geode graph database, providing the essential knowledge needed to model data, write queries, manage transactions, and build robust applications. These fundamental principles underpin everything from simple graph traversals to complex analytical workloads, security policies, and distributed deployments. Mastering these concepts enables developers and architects to leverage Geode's full capabilities effectively.
 
 Geode's core concepts include graph data models (nodes, relationships, properties, labels), the ISO/IEC 39075:2024 Graph Query Language (GQL), ACID transactions with MVCC isolation, indexes for efficient lookups, and security primitives including authentication and Row-Level Security (RLS). Each concept builds on others to create a cohesive, powerful platform for managing connected data at scale.

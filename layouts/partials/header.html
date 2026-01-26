@@ -1,0 +1,169 @@
+<!doctype html>
+<html
+  lang="{{ .Lang | default site.Language.Lang | default "en" }}"
+  class="wa-theme-{{ .Site.Params.webawesome.theme | default "premium" }} wa-palette-{{ .Site.Params.webawesome.palette | default "anodized" }} wa-brand-{{ .Site.Params.webawesome.brand | default "cyan" }} wa-neutral-{{ .Site.Params.webawesome.neutral | default "gray" }} wa-success-{{ .Site.Params.webawesome.success | default "green" }} wa-warning-{{ .Site.Params.webawesome.warning | default "yellow" }} wa-danger-{{ .Site.Params.webawesome.danger | default "red" }}"
+>
+  <head>
+    <meta charset="utf-8" />
+
+    <!-- Responsive behaviour -->
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <!-- Page title & canonical URL -->
+    <title>{{ block "title" . }}{{ partial "head/title" . }}{{ end }}</title>
+    {{ $canonicalURL := .Permalink }}
+    {{ with .Params.canonicalURL }}
+      {{ $canonicalURL = . | absURL }}
+    {{ else }}
+      {{ with .Params.canonical }}
+        {{ $canonicalURL = . | absURL }}
+      {{ end }}
+    {{ end }}
+    <link rel="canonical" href="{{ $canonicalURL }}" />
+
+    <!-- Meta description (falls back to site description) -->
+    {{ partial "head" . }}
+
+
+    <!-- Social / SEO tags -->
+    {{ partial "seo/social.html"   . }}
+    {{ partial "seo/ogtags.html"   . }}
+    {{ partial "seo/keywords.html" . }}
+    {{ partial "seo/robots"        . }}
+    {{ partial "seo/schema.html"   . }}
+
+
+    <!-- Generator -->
+    {{ hugo.Generator }}
+
+
+    <!-- CSS: load vendor (Bootstrap) first -->
+    {{ partial "styles/stylesheets" (dict "files" .Site.Data.styles.files "includeMain" false) }}
+
+
+    <!-- Web Awesome (after Bootstrap) -->
+    <!-- Site SCSS (last, to take final precedence) -->
+    {{ partial "styles/stylesheets" (dict "files" (slice) "includeMain" true) }}
+    {{- $waVersion := .Site.Params.webawesome.version | default "3.0.0-beta.4" -}}
+    {{- $waTheme := .Site.Params.webawesome.theme | default "premium" -}}
+    {{- $waPalette := .Site.Params.webawesome.palette | default "anodized" -}}
+    <link
+      rel="stylesheet"
+      href="https://early.webawesome.com/webawesome@{{ $waVersion }}/dist/styles/webawesome.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://early.webawesome.com/webawesome@{{ $waVersion }}/dist/styles/themes/{{ $waTheme }}.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://early.webawesome.com/webawesome@{{ $waVersion }}/dist/styles/color/palettes/{{ $waPalette }}.css"
+    />
+    <style>
+      :root {
+        --wa-border-radius-scale: {{ .Site.Params.webawesome.borderRadiusScale | default 0.5 }};
+        --wa-border-width-scale: {{ .Site.Params.webawesome.borderWidthScale | default 1.5 }};
+        --wa-space-scale: {{ .Site.Params.webawesome.spaceScale | default 1 }};
+      }
+    </style>
+
+    <!-- hreflang alternates -->
+    {{ if .IsTranslated }}
+      {{ range .AllTranslations }}
+        <link
+          rel="alternate"
+          hreflang="{{ .Language.LanguageCode | default .Language.Lang }}"
+          href="{{ .Permalink }}"
+        />
+      {{ end }}
+    {{ end }}
+    {{ if hugo.IsMultilingual }}
+      <link rel="alternate" hreflang="x-default" href="{{ .Site.BaseURL }}" />
+    {{ end }}
+
+
+    <!-- Favicons & site-verification -->
+    {{ partial "seo/favicons"          . }}
+    {{ partial "head/site-verification" . }}
+
+
+    <!-- Sitemap ping (optional) -->
+    {{ partial "seo/sitemap" . }}
+
+
+    <!-- Hook for additional head tags (per-page) -->
+    {{ partial "hooks/head-end" . }}
+
+
+    <!-- Google Tag Manager -->
+    {{ partial "seo/google-tag-manager-head" . }}
+
+
+    <!-- Web Awesome Scripts -->
+    {{- $waVersion := .Site.Params.webawesome.version | default "3.0.0-beta.4" -}}
+    {{- $waKitCode := .Site.Params.webawesome.kitCode | default "54b6985a3e" -}}
+    {{- $waIconFamily := .Site.Params.webawesome.iconFamily | default "sharp-duotone" -}}
+    <script
+      type="module"
+      src="https://early.webawesome.com/webawesome@{{ $waVersion }}/dist/webawesome.loader.js"
+    ></script>
+    <script type="module" data-fa-kit-code="{{ $waKitCode }}">
+      import { setDefaultIconFamily } from "https://early.webawesome.com/webawesome@{{ $waVersion }}/dist/webawesome.js";
+      setDefaultIconFamily("{{ $waIconFamily }}");
+    </script>
+  </head>
+
+  {{/* -----------------------------------------------------------
+    Build dynamic body classes
+    ------------------------------------------------------------
+  */}}
+  {{- $bodyClasses := slice -}}
+  {{ $isTaxonomy := or (eq .Kind "taxonomy") (eq .Kind "term") }}
+  {{/* page-slug, only when File exists (home / list pages have none) */}}
+  {{ with .File }}
+    {{ $bodyClasses = $bodyClasses
+      | append (printf "page-%s" (.TranslationBaseName | urlize))
+    }}
+  {{ else }}
+    {{/* fall back to page type, e.g. page-home, page-section-blog */}}
+    {{ if .IsHome }}
+      {{ $bodyClasses = $bodyClasses | append "page-home" }}
+    {{ else if .IsSection }}
+      {{ $bodyClasses = $bodyClasses
+        | append (printf "page-section-%s" .Section)
+      }}
+    {{ else if $isTaxonomy }}
+      {{/* .Data.Term can be nil on taxonomy list pages; build a safe key */}}
+      {{ $taxKey := (.Data.Term | default .Data.Singular | default .Data.Plural | default "taxonomy") }}
+      {{ $bodyClasses = $bodyClasses | append (printf "page-taxonomy-%s" $taxKey) }}
+    {{ end }}
+  {{ end }}
+
+
+  <body
+    class="{{ delimit $bodyClasses " " }}"
+    style="min-height: 100vh; display: flex; flex-direction: column;"
+  >
+    <!-- Google Tag Manager (noscript) -->
+    {{ partial "seo/google-tag-manager-body" . }}
+
+
+    <div style="flex: 1; display: flex; flex-direction: column;">
+      <!-- ============================================================
+           HEADER / NAVBAR
+      ============================================================= -->
+      <header class="site-header" role="banner">
+        {{ partial "nav.html" . }}
+      </header>
+
+      <!-- ============================================================
+         MAIN PAGE CONTENT WRAPPER
+    ============================================================= -->
+      <div>
+        <main class="flex-grow-1">
+          {{/* Content will be inserted here by templates (DO NOT close here) */}}
+        </main>
+      </div>
+    </div>
+  </body>
+</html>

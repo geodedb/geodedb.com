@@ -14,6 +14,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 # Performance and Optimization in Geode
 
 Performance optimization is essential for production graph database deployments, especially as data volumes grow and query complexity increases. Geode achieves exceptional performance through a combination of modern systems programming (Zig), advanced networking (QUIC protocol), sophisticated query planning, and comprehensive indexing strategies.
@@ -64,8 +66,8 @@ Geode uses QUIC (Quick UDP Internet Connections) instead of traditional TCP:
 - **Better Loss Recovery**: Faster recovery from packet loss
 
 **Performance Impact**:
-- 30-50% lower latency for short queries
-- 2-3x higher throughput under packet loss
+- Lower latency for short queries (workload dependent)
+- Higher throughput under packet loss (workload dependent)
 - Connection pooling effectiveness improved
 
 ### Query Planning and Optimization
@@ -286,7 +288,7 @@ RETURN u.name, count(p) AS purchase_count;
 
 ### Connection Pooling
 
-Connection pooling dramatically improves client performance by reusing connections:
+Connection pooling improves client performance by reusing connections:
 
 **Python Client with Pooling**:
 ```python
@@ -307,7 +309,7 @@ async def query_with_pool():
         result = await client.execute("MATCH (n:User) RETURN count(n)")
         return result.bindings[0]['count']
 
-# Pool handles 1000+ QPS efficiently
+# Pool improves throughput; benchmark your workload
 for _ in range(10000):
     await query_with_pool()
 ```
@@ -435,14 +437,14 @@ start_http_server(8000)
 - Indexes: 30-100% of data size (varies by index type)
 
 **CPU**:
-- 2-4 cores: Development, <10 QPS
-- 8-16 cores: Production, 100-500 QPS
-- 32+ cores: High throughput, 1000+ QPS
+- 2-4 cores: Development and testing
+- 8-16 cores: Production workloads (benchmark dependent)
+- 32+ cores: High-throughput workloads (benchmark dependent)
 
 **Example calculation** (1M nodes, 5M relationships):
 - Memory: ~1.5GB graph + ~2GB indexes = 3.5GB minimum
 - Storage: ~2.5GB graph + ~2GB indexes = 5GB total
-- CPU: 8 cores for 200 QPS sustained
+- CPU: 8 cores for moderate workloads; benchmark for your workload
 
 ## Troubleshooting Performance Issues
 

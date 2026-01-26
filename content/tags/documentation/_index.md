@@ -16,6 +16,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 Documentation provides comprehensive written resources covering all aspects of Geode graph database, from introductory tutorials to detailed technical specifications. Well-organized documentation enables rapid learning, efficient problem-solving, and successful implementation of graph database solutions using Geode's ISO/IEC 39075:2024 GQL-compliant architecture.
 
 ## Documentation Philosophy

@@ -16,6 +16,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 Troubleshooting involves systematically diagnosing and resolving issues that prevent Geode from operating correctly. This comprehensive guide covers common problems, diagnostic techniques, resolution procedures, and preventive measures to maintain optimal database health and minimize downtime.
 
 ## Troubleshooting Methodology
@@ -82,7 +84,7 @@ netstat -tulpn | grep 3141
 ss -uln sport = :3141
 
 # Test local connectivity
-./zig-out/bin/geode shell
+geode shell
 ```
 
 **Common Causes and Solutions:**
@@ -598,7 +600,7 @@ Effective use of logging aids troubleshooting.
 
 ```bash
 # Temporary debug logging
-./zig-out/bin/geode serve --log-level debug
+geode serve --log-level debug
 
 # Permanent configuration
 # Edit /etc/systemd/system/geode.service
@@ -668,7 +670,7 @@ Proactive measures prevent many common issues.
 # health-check.sh
 
 # Check if server responds
-if ! echo "PING" | ./zig-out/bin/geode shell | grep -q "PONG"; then
+if ! echo "PING" | geode shell | grep -q "PONG"; then
   echo "Health check failed"
   systemctl restart geode
   # Send alert

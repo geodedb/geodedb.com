@@ -2,7 +2,16 @@
 title: "Python Client"
 description: "Complete guide to the Geode Python async client library with full type hints"
 weight: 20
+
+keywords:
+  - Geode Python client
+  - Python SDK
+  - GQL driver
+  - graph database Python
+  - client library
 ---
+
+<!-- CANARY: REQ=REQ-CLIENT-INTEGRATION-001; FEATURE="RustClientIntegration"; ASPECT=QUICTransport; STATUS=TESTED; OWNER=clients; UPDATED=2026-01-15 -->
 
 # Geode Python Client Library
 
@@ -476,7 +485,7 @@ async with client.connection() as conn:
 The QUIC client provides:
 
 - **Low latency**: ~2-3ms per query (localhost)
-- **High throughput**: 1000+ queries/second with connection pooling
+- **High throughput**: Depends on workload and pool sizing
 - **Efficient**: Zero-copy where possible, minimal allocations
 - **Concurrent**: Full async support for parallel queries
 

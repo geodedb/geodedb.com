@@ -24,6 +24,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 # Geode on Google Cloud Platform (GCP)
 
 Google Cloud Platform offers powerful infrastructure for deploying Geode graph database with excellent performance, managed services, global network capabilities, and deep integration with Google's ecosystem. This comprehensive guide covers production-ready deployment patterns, best practices, and GCP-specific optimizations.

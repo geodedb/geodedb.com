@@ -20,6 +20,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 Comprehensive telemetry and observability are essential for operating Geode in production. Geode provides built-in instrumentation, metrics export, structured logging, and distributed tracing support for understanding system behavior, identifying performance bottlenecks, and troubleshooting issues efficiently.
 
 ## Metrics Collection

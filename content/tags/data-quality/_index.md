@@ -5,6 +5,8 @@ keywords: ["data quality", "data validation", "data cleansing", "data accuracy",
 weight: 10
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 # Data Quality Management
 
 Data quality management in Geode encompasses the processes, techniques, and tools that ensure your graph database contains accurate, complete, consistent, and timely data. High-quality data is essential for reliable analytics, trustworthy decision-making, and operational efficiency. Poor data quality leads to incorrect insights, failed transactions, and loss of user trust.

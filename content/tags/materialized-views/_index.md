@@ -21,6 +21,8 @@ keywords:
 weight: 10
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 # Materialized Views
 
 Materialized views are pre-computed query results stored as physical data, providing orders-of-magnitude performance improvements for complex analytical queries. Unlike regular views that execute queries on-demand, materialized views cache results persistently, trading storage space and update complexity for dramatically faster read access. Essential for OLAP workloads, reporting dashboards, and data warehousing scenarios.

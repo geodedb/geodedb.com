@@ -19,6 +19,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 Application Performance Monitoring (APM) provides end-to-end visibility into application behavior, tracking requests from user interactions through application layers down to database queries. APM solutions combine distributed tracing, metrics collection, error tracking, and business analytics to give comprehensive insight into application health and user experience.
 
 Geode integrates with popular APM platforms including Datadog, New Relic, Elastic APM, and AppDynamics, enabling you to monitor database performance in the context of full application request flows. This holistic view helps identify bottlenecks, understand user impact, and optimize both application and database performance.

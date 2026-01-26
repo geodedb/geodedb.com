@@ -19,6 +19,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 # Fraud Detection with Geode
 
 Fraud detection leverages graph relationships to uncover hidden connections between accounts, devices, transactions, and identities that traditional systems miss. Geode's native graph processing excels at identifying fraud rings, money laundering networks, identity theft patterns, and coordinated attacks in real-time.

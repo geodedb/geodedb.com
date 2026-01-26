@@ -1,6 +1,6 @@
 ---
 title: "Zig Client"
-description: "Production-ready Geode Zig client with compile-time memory safety, 8,000+ qps performance, comptime query validation, vendored QUIC implementation, and zero external dependencies for systems programming and embedded applications."
+description: "Production-ready Geode Zig client with compile-time memory safety, high-throughput performance, comptime query validation, vendored QUIC implementation, and zero external dependencies for systems programming and embedded applications."
 keywords:
   - Zig
   - Zig client
@@ -21,9 +21,11 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 # Zig Client
 
-The Geode Zig client provides compile-time memory safety, exceptional performance (8,000+ queries/second), and low-level control for systems programming, embedded applications, and performance-critical use cases. With comptime features for query validation and a vendored QUIC implementation, it requires zero external dependencies while delivering production-ready reliability.
+The Geode Zig client provides compile-time memory safety, high-throughput performance (workload dependent), and low-level control for systems programming, embedded applications, and performance-critical use cases. With comptime features for query validation and a vendored QUIC implementation, it requires zero external dependencies while delivering production-ready reliability.
 
 ## Overview
 
@@ -34,7 +36,7 @@ The Zig client is designed for developers who need:
 - **Maximum Control**: Fine-grained control over memory allocation and resource lifecycle
 - **Cross-Platform**: Native support for Linux, macOS, and Windows without platform-specific code
 - **Embedded Systems**: Small binary size and predictable resource usage for embedded applications
-- **High Performance**: Zero-cost abstractions with 8,000+ queries/second throughput
+- **High Performance**: Zero-cost abstractions with workload-dependent throughput
 
 ## Installation
 
@@ -483,18 +485,17 @@ pub fn streamUsers(
 }
 ```
 
-## Performance: 8,000+ queries/second
+## Performance and Throughput
 
-Benchmarks on commodity hardware (4-core CPU, 16GB RAM):
+Performance is workload-dependent and influenced by query patterns, indexes, and network conditions.
 
-- **Simple Queries**: 10,000+ qps
-- **Complex Traversals**: 8,000+ qps
-- **Bulk Inserts**: 15,000+ rows/second
-- **Transaction Throughput**: 5,000+ transactions/second
+- **Throughput**: Workload-dependent; connection pooling reduces overhead
+- **Latency**: Depends on query complexity and index usage
+- **Server baselines**: Read-only up to 100,000 txn/sec; read-write 10,000-50,000 txn/sec; write-heavy 5,000-20,000 txn/sec
 
 ### Performance Optimization Tips
 
-1. **Use Prepared Statements**: 2-3x faster for repeated queries
+1. **Use Prepared Statements**: Reduce overhead for repeated queries
 2. **Batch Operations**: Group multiple operations in transactions
 3. **Stream Large Results**: Avoid loading entire result sets into memory
 4. **Connection Pooling**: Reuse connections for better throughput

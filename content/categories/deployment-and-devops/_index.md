@@ -13,28 +13,27 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 Deployment and DevOps practices for Geode encompass everything needed to run the database reliably in production, from initial installation and configuration through monitoring, scaling, backup, disaster recovery, and continuous operation. This category provides comprehensive guidance for deploying Geode across various environments including bare metal, virtual machines, containers, Kubernetes, and cloud platforms, while maintaining high availability, security, and performance.
 
-Modern DevOps practices for Geode include infrastructure as code using tools like Terraform and Ansible, container orchestration with Docker and Kubernetes, automated monitoring with Prometheus and Grafana, continuous deployment pipelines, and comprehensive backup strategies. Whether running a single-node development instance or a globally distributed production cluster with thousands of queries per second, proper deployment and operational practices ensure reliability and scalability.
+Modern DevOps practices for Geode include infrastructure as code using tools like Terraform and Ansible, container orchestration with Docker and Kubernetes, automated monitoring with Prometheus and Grafana, continuous deployment pipelines, and comprehensive backup strategies. Whether running a single-node development instance or a globally distributed production cluster with high-throughput workloads (read-only up to 100,000 txn/sec; read-write 10,000-50,000 txn/sec), proper deployment and operational practices ensure reliability and scalability.
 
 This category explores deployment architectures, provides step-by-step setup guides for various platforms, explains monitoring and alerting strategies, covers backup and recovery procedures, and shares best practices learned from production deployments. Understanding these operational aspects is essential for maintaining a healthy, performant Geode deployment.
 
 ## Deployment Options
 
-### Binary Installation
+### Build From Source
 
-Direct installation from compiled binaries:
+Compile and install the Geode binary locally:
 
 ```bash
-# Download latest release
-wget https://releases.geodedb.com/geode-0.18.0-linux-x86_64.tar.gz
-
-# Extract
-tar -xzf geode-0.18.0-linux-x86_64.tar.gz
-cd geode-0.18.0
+git clone https://github.com/codeprosorg/geode
+cd geode
+make build
 
 # Run server
-./geode serve --listen 0.0.0.0:3141 --data-dir /var/lib/geode
+./zig-out/bin/geode serve --listen 0.0.0.0:3141 --data-dir /var/lib/geode
 ```
 
 ### Docker Deployment
@@ -329,10 +328,23 @@ resource "aws_security_group" "geode" {
     geode_data_dir: "/var/lib/geode"
 
   tasks:
-    - name: Install Geode
-      apt:
-        deb: "https://releases.geodedb.com/geode_{{ geode_version }}_amd64.deb"
-        state: present
+    - name: Clone Geode
+      git:
+        repo: "https://github.com/codeprosorg/geode"
+        dest: "/opt/geode"
+        version: "v{{ geode_version }}"
+
+    - name: Build Geode
+      command: make build
+      args:
+        chdir: "/opt/geode"
+
+    - name: Install Geode binary
+      copy:
+        src: "/opt/geode/zig-out/bin/geode"
+        dest: "/usr/local/bin/geode"
+        mode: "0755"
+        remote_src: true
 
     - name: Create data directory
       file:

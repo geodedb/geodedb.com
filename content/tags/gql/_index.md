@@ -14,6 +14,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 Geode documentation tagged with **Graph Query Language (GQL)**. GQL is the ISO/IEC 39075:2024 international standard for querying property graph databases, providing a declarative, composable language designed specifically for graph data structures.
 
 ## Introduction to GQL

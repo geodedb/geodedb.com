@@ -19,6 +19,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 Text processing is fundamental to database applications, from simple string manipulation to complex pattern matching and natural language operations. Geode provides comprehensive text processing capabilities through its GQL implementation, offering a rich set of string functions, pattern matching operators, Unicode support, and text normalization features that enable sophisticated text manipulation in graph queries.
 
 As an ISO/IEC 39075:2024 GQL-compliant graph database, Geode treats text as a first-class data type with full Unicode support, locale-aware collation, and efficient string operations. Whether you're building search interfaces, data cleaning pipelines, or natural language processing workflows, Geode's text processing capabilities provide the tools you need.

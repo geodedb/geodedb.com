@@ -14,6 +14,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 # Unit Testing in Geode
 
 Unit testing is fundamental to Geode's development methodology, ensuring code correctness, preventing regressions, and enabling confident refactoring. Geode maintains 97.4% test coverage with 1,644 passing tests out of 1,688 total tests.
@@ -572,7 +574,8 @@ test "query execution performance benchmark" {
     std.debug.print("Query performance: {} QPS\n", .{qps});
 
     // Assert minimum performance
-    try testing.expect(qps >= 100);  // At least 100 QPS
+    const baseline_qps: u64 = 0; // Set based on your benchmark baseline
+    try testing.expect(qps >= baseline_qps);
 }
 ```
 

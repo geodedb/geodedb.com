@@ -16,6 +16,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 Performance tuning involves systematically adjusting database configuration, resource allocation, and query patterns to achieve optimal throughput, latency, and resource utilization. For Geode, tuning encompasses server configuration, memory management, connection pooling, and query optimization specific to graph database workloads.
 
 ## Understanding Performance Tuning
@@ -41,7 +43,7 @@ Server-level configuration establishes the foundation for performance.
 The maximum concurrent connection limit affects both resource consumption and request handling capacity:
 
 ```bash
-./zig-out/bin/geode serve \
+geode serve \
   --listen 0.0.0.0:3141 \
   --max-connections 1000
 ```
@@ -63,13 +65,13 @@ Binding to specific interfaces controls accessibility and security:
 
 ```bash
 # Development: listen on localhost only
-./zig-out/bin/geode serve --listen 127.0.0.1:3141
+geode serve --listen 127.0.0.1:3141
 
 # Production: listen on all interfaces
-./zig-out/bin/geode serve --listen 0.0.0.0:3141
+geode serve --listen 0.0.0.0:3141
 
 # Specific interface
-./zig-out/bin/geode serve --listen 10.0.1.50:3141
+geode serve --listen 10.0.1.50:3141
 ```
 
 For production deployments behind load balancers, listening on all interfaces (0.0.0.0) ensures accessibility while firewall rules control external access.
@@ -80,13 +82,13 @@ Log verbosity affects performance through I/O overhead:
 
 ```bash
 # Production: minimal logging
-./zig-out/bin/geode serve --log-level warn
+geode serve --log-level warn
 
 # Development: detailed logging
-./zig-out/bin/geode serve --log-level debug
+geode serve --log-level debug
 
 # Normal operations
-./zig-out/bin/geode serve --log-level info
+geode serve --log-level info
 ```
 
 Verbose logging (debug level) provides rich diagnostic information but consumes CPU cycles and disk I/O. Production systems typically use info or warn levels, enabling debug logging only during troubleshooting.
@@ -586,7 +588,7 @@ For read-heavy workloads, read replicas distribute load:
 
 ```bash
 # Configure read replica
-./zig-out/bin/geode serve \
+geode serve \
   --replica-of primary:3141 \
   --listen 0.0.0.0:3142
 ```

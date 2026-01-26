@@ -19,6 +19,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 # Data Replication
 
 Data replication is the process of maintaining multiple copies of data across different nodes in a distributed graph database system. Geode provides enterprise-grade replication capabilities that ensure data availability, fault tolerance, and geographic distribution while maintaining consistency guarantees. This comprehensive guide explores replication architectures, synchronization strategies, configuration options, and operational best practices for production deployments.

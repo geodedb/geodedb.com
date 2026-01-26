@@ -7,6 +7,8 @@ slug: "changelog"
 canonical: "https://geodedb.com/docs/reference/changelog/"
 ---
 
+<!-- CANARY: REQ=REQ-API-DOCS-002; FEATURE="APIDocumentation"; ASPECT=BuildTarget; STATUS=EXEMPT; OWNER=tooling; UPDATED=2026-01-03 -->
+
 # Changelog
 
 Complete version history and release notes for Geode graph database.
@@ -150,7 +152,7 @@ All 7 TODO.md phases completed (~13,554+ lines of production code):
 - **Graph Algorithms**: 20-90% performance gains across major algorithms
 - **Index Lookups**: Logarithmic scaling with cost-based selection
 - **Cache Hit Rate**: Optimized page cache for read-heavy workloads
-- **Connection Pooling**: 10,000+ queries/second (Rust client)
+- **Connection Pooling**: Workload-dependent throughput (varies by runtime and server limits)
 
 #### Bug Fixes
 
@@ -324,7 +326,7 @@ Typical release cadence:
 
 ```bash
 # Download pre-release builds
-git clone https://gitlab.com/devnw/codepros/geode.git
+git clone https://github.com/codeprosorg/geode
 cd geode
 git checkout develop
 
@@ -397,8 +399,8 @@ Most failures are non-critical edge cases or known limitations documented in iss
 ## Version Archive
 
 Full version history available at:
-- **GitLab Tags**: https://gitlab.com/devnw/codepros/geode/-/tags
-- **GitHub Mirror**: https://github.com/devnw/geode/releases
+- **GitHub Tags**: https://github.com/codeprosorg/geode/tags
+- **GitHub Releases**: https://github.com/codeprosorg/geode/releases
 - **Documentation Archive**: https://geodedb.com/docs/archive/
 
 ## Feedback

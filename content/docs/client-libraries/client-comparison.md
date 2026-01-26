@@ -7,6 +7,8 @@ slug: "client-comparison"
 canonical: "https://geodedb.com/docs/client-libraries/client-comparison"
 ---
 
+<!-- CANARY: REQ=REQ-CLIENT-INTEGRATION-001; FEATURE="RustClientIntegration"; ASPECT=QUICTransport; STATUS=TESTED; OWNER=clients; UPDATED=2026-01-15 -->
+
 # Client Library Comparison
 
 Geode provides official client libraries in four languages: Go, Python, Rust, and Zig. This comprehensive guide compares features, performance, and use cases to help you choose the right client for your application.
@@ -64,44 +66,19 @@ All Geode clients implement the same core protocol and support ISO/IEC 39075:202
 | Isolation Levels | ✅ All 6 | ✅ All 6 | ⚠️ Basic | ⚠️ Basic |
 
 ### Legend:
-- ✅ Full Support - Feature is production-ready
+- ✅ Full Support - Feature is available
 - ⚠️ Partial/Basic - Feature works but limited or in development
 - ❌ Not Supported - Feature not available
 - 🔄 Planned - Feature on roadmap
 
-## Performance Benchmarks
+## Performance Notes
 
-### Throughput Comparison
+Client performance depends on workload, QUIC implementation, and pooling configuration. Use the Geode benchmark suite and client-specific docs to validate throughput and latency for your deployment.
 
-Benchmark environment:
-- Hardware: Intel Core i7-9700K, 32GB RAM, NVMe SSD
-- Network: Localhost (QUIC over lo interface)
-- Dataset: 1M nodes, 5M relationships
-- Test: Simple MATCH query returning 1000 rows
-
-| Client | Queries/Second | Latency (P50) | Latency (P99) | Memory Usage |
-|--------|----------------|---------------|---------------|--------------|
-| **Go** | 85,000 | 0.8ms | 2.1ms | 45MB |
-| **Rust** | 92,000 | 0.7ms | 1.9ms | 38MB |
-| **Python** | 12,000 | 5.2ms | 12.5ms | 95MB |
-| **Zig** | 88,000 | 0.7ms | 2.0ms | 35MB |
-
-**Analysis**:
-- **Rust**: Highest throughput, lowest memory (zero-cost abstractions)
-- **Go**: Excellent balance, production-proven
-- **Zig**: Similar to Rust, minimal runtime overhead
-- **Python**: Lower throughput but acceptable for most use cases
-
-### Connection Overhead
-
-Time to establish connection and execute first query:
-
-| Client | Cold Start | Warm Start | Connection Pool |
-|--------|------------|------------|-----------------|
-| **Go** | 45ms | 1.2ms | ✅ Excellent (max 1000) |
-| **Rust** | 38ms | 0.9ms | ⚠️ Good (max 100) |
-| **Python** | 125ms | 8.5ms | ✅ Excellent (max 1000) |
-| **Zig** | 35ms | 0.8ms | ⚠️ Basic (max 10) |
+Key considerations:
+- Connection pooling and batching improve throughput
+- QUIC interoperability can vary across client libraries
+- Use EXPLAIN/PROFILE to tune query bottlenecks
 
 ## Language-Specific Features
 
@@ -1082,7 +1059,7 @@ db = open_database(
 
 ### Choose Go Client If:
 - ✅ Building production web services or APIs
-- ✅ Need excellent performance (85k+ qps)
+- ✅ Need excellent performance with strong tooling
 - ✅ Want database/sql compatibility
 - ✅ Prefer static typing with good ergonomics
 - ✅ Need comprehensive connection pooling
@@ -1099,7 +1076,7 @@ db = open_database(
 - ✅ Prototyping or research projects
 
 ### Choose Rust Client If:
-- ✅ Need maximum performance (92k+ qps)
+- ✅ Need maximum performance with zero-cost abstractions
 - ✅ Want compile-time memory safety
 - ✅ Building systems-level applications
 - ✅ Prefer zero-cost abstractions
@@ -1108,7 +1085,7 @@ db = open_database(
 - ✅ Team familiar with Rust ecosystem
 
 ### Choose Zig Client If:
-- ✅ Need lowest memory footprint (35MB)
+- ✅ Need low memory footprint and explicit control
 - ✅ Want complete control over allocations
 - ✅ Building embedded systems
 - ✅ Prefer explicit memory management

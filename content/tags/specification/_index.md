@@ -19,6 +19,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 # ISO/IEC 39075:2024 Specification
 
 The ISO/IEC 39075:2024 standard, also known as GQL (Graph Query Language), is the international standard for querying property graph databases. Like SQL for relational databases, GQL provides a vendor-neutral, standardized language for graph data manipulation and querying. Geode achieves 100% compliance with this specification (70/70 ISO tests passing).

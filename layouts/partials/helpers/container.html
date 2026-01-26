@@ -1,0 +1,59 @@
+{{/* ──────────────────────────────────────────────────────────────
+  Bootstrap-5 container resolver  –  safe for ANY context
+  Priority
+  1) Page-param  .Params.container      (or  .Page.Params.container
+  when called from shortcode)
+  2) Site-param  site.Params.container
+  3) Legacy      site.Params.pages.default_container
+  4) Fallback    "container"
+  Short-cuts:
+  sm md lg xl xxl  → container-{size}
+  fluid            → container-fluid
+  "none" / false   → prints nothing
+  ─────────────────────────────────────────────────────────────────
+*/}}
+
+{{/* 0 │ locate page parameters no matter the calling context */}}
+{{- $pageParams := dict -}}
+{{- with .Page -}}
+  {{- with .Params }}{{ $pageParams = . }}{{ end -}}
+{{- else -}}
+  {{- with .Params }}{{ $pageParams = . }}{{ end -}}
+{{- end -}}
+
+{{/* 1 │ determine raw value */}}
+{{- $val := "" -}}
+
+{{ with index $pageParams "container" }}
+  {{ $val = . }}
+{{ else }}
+  {{ with site.Params.container }}
+    {{ $val = . }}
+  {{ else }}
+    {{ with index site.Params "pages" }}
+      {{ with .default_container }}
+        {{ $val = . }}
+      {{ end }}
+    {{ end }}
+  {{ end }}
+{{ end }}
+
+{{ if eq $val "" }}{{ $val = "container" }}{{ end }}
+
+{{/* 2 │ interpret shortcuts & special values */}}
+{{- $sizes := slice "sm" "md" "lg" "xl" "xxl" -}}
+
+{{- $skip := or (eq $val false)
+  (eq (lower $val) "none")
+  (eq (lower $val) "false")
+-}}
+
+{{- if not $skip }}
+  {{- if in $sizes $val }}
+    container-{{ $val }}
+  {{- else if eq (lower $val) "fluid" }}
+    container-fluid
+  {{- else }}
+    {{ $val }}
+  {{- end }}
+{{- end }}

@@ -1,6 +1,6 @@
 ---
 title: "API Reference and CLI Manual"
-description: "Command-line reference for geoded/geodec and the full Geode GQL surface: keywords, functions, types, procedures, and operational commands"
+description: "Command-line reference for `geode` (with geoded/geodec compatibility) and the full Geode GQL surface: keywords, functions, types, procedures, and operational commands"
 weight: 10
 tags:
   - api-reference
@@ -17,41 +17,43 @@ keywords:
   - procedures
 ---
 
+<!-- CANARY: REQ=REQ-CLI-SUBPROCESS-ELIMINATION-001; FEATURE="CLI Subprocess Elimination"; ASPECT=UnifiedBinary; STATUS=TESTED; OWNER=cli; UPDATED=2026-01-15 -->
+
 # API Reference and CLI Manual
 
 Complete reference for Geode CLI commands and GQL language surface.
 
 ## CLI Overview
 
-Geode provides three primary command-line tools:
+Geode ships a unified `geode` binary. Compatibility symlinks (`geoded`, `geodec`) are provided for legacy workflows.
 
 | Command | Purpose | Usage |
 |---------|---------|-------|
-| `geoded` | Server daemon | `geoded serve` |
-| `geodec` | Client CLI | `geodec "MATCH (n) RETURN n"` |
+| `geode serve` | Server daemon | `geode serve --listen 0.0.0.0:3141` |
+| `geode query` | Client CLI | `geode query "MATCH (n) RETURN n" --server 127.0.0.1:3141` |
 | `geode shell` / `gql` | Interactive REPL | `geode shell` |
 
-## Server Commands (`geoded`)
+## Server Commands (`geode serve`)
 
 ### Start Server
 
 ```bash
 # Default (localhost:3141)
-geoded serve
+geode serve
 
 # Custom listen address
-geoded serve --listen 0.0.0.0:3141
+geode serve --listen 0.0.0.0:3141
 
 # With configuration file
-geoded serve --config /etc/geode/geode.yaml
+geode serve --config /etc/geode/geode.yaml
 
 # With TLS certificates
-geoded serve \
+geode serve \
   --cert /etc/geode/certs/server-cert.pem \
   --key /etc/geode/certs/server-key.pem
 
 # With data directory
-geoded serve --data-dir /var/lib/geode
+geode serve --data-dir /var/lib/geode
 ```
 
 ### Server Flags
@@ -66,26 +68,26 @@ geoded serve --data-dir /var/lib/geode
 | `--version` | Show version | - |
 | `--help` | Show help | - |
 
-## Client Commands (`geodec`)
+## Client Commands (`geode query`)
 
 ### Execute Query
 
 ```bash
 # Single query
-geodec "RETURN 1 AS x"
+geode query "RETURN 1 AS x" --server 127.0.0.1:3141
 
 # Query from file
-geodec -f query.gql
+geode query -f query.gql --server 127.0.0.1:3141
 
 # With output format
-geodec --format json "MATCH (n) RETURN n LIMIT 10"
-geodec --format txt "MATCH (n) RETURN n LIMIT 10"
+geode query --format json "MATCH (n) RETURN n LIMIT 10" --server 127.0.0.1:3141
+geode query --format txt "MATCH (n) RETURN n LIMIT 10" --server 127.0.0.1:3141
 
 # Show execution time
-geodec --timing "MATCH (p:Person) RETURN p.name"
+geode query --timing "MATCH (p:Person) RETURN p.name" --server 127.0.0.1:3141
 
 # Connect to remote server
-geodec --host geode.example.com --port 3141 "MATCH (n) RETURN n"
+geode query "MATCH (n) RETURN n" --server geode.example.com:3141
 ```
 
 ### Client Flags
@@ -95,8 +97,7 @@ geodec --host geode.example.com --port 3141 "MATCH (n) RETURN n"
 | `-f, --file <path>` | Read query from file | - |
 | `--format <fmt>` | Output format (txt\|json) | `txt` |
 | `--timing` | Show execution time | `false` |
-| `--host <addr>` | Server host | `localhost` |
-| `--port <num>` | Server port | `3141` |
+| `--server <addr:port>` | Server address | `127.0.0.1:3141` |
 | `--help` | Show help | - |
 
 ## Interactive Shell (`geode shell`)

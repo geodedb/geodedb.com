@@ -2,7 +2,16 @@
 title: "Install from Source"
 description: "Build Geode from source with Zig compiler"
 weight: 20
+
+keywords:
+  - build Geode from source
+  - Zig build
+  - compile Geode
+  - installation
+  - developer setup
 ---
+
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
 
 # Installing Geode from Source
 
@@ -40,12 +49,7 @@ This guide covers building Geode from source using the Zig compiler.
 ### Clone the Repository
 
 ```bash
-# Clone from GitLab
-git clone https://gitlab.com/devnw/codepros/geode/geode.git
-cd geode
-
-# Or clone from GitHub mirror
-git clone https://github.com/devnw/geode.git
+git clone https://github.com/codeprosorg/geode
 cd geode
 ```
 

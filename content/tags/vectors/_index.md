@@ -20,6 +20,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 Vector embeddings enable powerful semantic search and similarity matching capabilities in graph databases. Geode supports storing and querying high-dimensional vector embeddings alongside graph data, enabling AI-powered applications that combine relationship traversal with semantic similarity.
 
 ## Vector Embedding Fundamentals

@@ -17,6 +17,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 The **Query Optimization** category provides in-depth guidance on understanding, analyzing, and improving the performance of GQL queries in Geode. From query planner internals to practical optimization techniques, this collection helps you write efficient queries and troubleshoot performance issues.
 
 ## Understanding Query Optimization

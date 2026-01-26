@@ -7,6 +7,8 @@ slug: "migration-guide"
 canonical: "https://geodedb.com/docs/guides/migration-guide/"
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 This comprehensive guide covers all aspects of migrating to and within Geode: version upgrades, data migration from other databases, backup and restore procedures, zero-downtime strategies, and best practices for production environments.
 
 ## Overview
@@ -34,7 +36,7 @@ Before upgrading any Geode instance, complete this checklist:
 
 ```bash
 # 1. Check current version
-./zig-out/bin/geode --version
+geode --version
 
 # 2. Create full backup
 geode backup --dest s3://my-bucket/backups --mode full
@@ -47,7 +49,7 @@ cp /etc/geode/geode.yaml /etc/geode/geode.yaml.backup
 env | grep GEODE_ > geode-env.backup
 
 # 5. Test queries in new version (staging environment first)
-./zig-out/bin/geode query "MATCH (n) RETURN count(n)"
+geode query "MATCH (n) RETURN count(n)"
 
 # 6. Review release notes for breaking changes
 # Check: https://geodedb.com/docs/release-notes/
@@ -60,14 +62,16 @@ Upgrade existing Geode installation without data migration:
 ```bash
 # 1. Stop current server gracefully
 systemctl stop geode
-# Or: pkill -TERM geoded
+# Or: pkill -TERM geode
 
 # 2. Backup data directory
 tar -czf /backup/geode-data-$(date +%Y%m%d).tar.gz /var/lib/geode/data
 
-# 3. Install new version
-wget https://releases.geodedb.com/v0.18.0/geode-linux-amd64.tar.gz
-tar -xzf geode-linux-amd64.tar.gz -C /usr/local/bin/
+# 3. Install new version (build from source)
+git clone https://github.com/codeprosorg/geode /tmp/geode-upgrade
+cd /tmp/geode-upgrade
+make build
+install -m 0755 ./zig-out/bin/geode /usr/local/bin/geode
 
 # 4. Verify new version
 geode --version
@@ -87,6 +91,12 @@ journalctl -u geode -f
 Upgrade cluster nodes with zero downtime:
 
 ```bash
+# Build new version locally (run once)
+git clone https://github.com/codeprosorg/geode /tmp/geode-upgrade
+cd /tmp/geode-upgrade
+make build
+GEODE_BIN=/tmp/geode-upgrade/zig-out/bin/geode
+
 # 1. Upgrade secondary nodes first (one at a time)
 for node in node2 node3 node4; do
     echo "Upgrading $node..."
@@ -95,8 +105,7 @@ for node in node2 node3 node4; do
     ssh $node "systemctl stop geode"
 
     # Install new version
-    ssh $node "wget https://releases.geodedb.com/v0.18.0/geode-linux-amd64.tar.gz"
-    ssh $node "tar -xzf geode-linux-amd64.tar.gz -C /usr/local/bin/"
+    scp "$GEODE_BIN" "$node:/usr/local/bin/geode"
 
     # Start node
     ssh $node "systemctl start geode"
@@ -110,8 +119,7 @@ done
 
 # 2. Upgrade primary node last
 ssh node1 "systemctl stop geode"
-ssh node1 "wget https://releases.geodedb.com/v0.18.0/geode-linux-amd64.tar.gz"
-ssh node1 "tar -xzf geode-linux-amd64.tar.gz -C /usr/local/bin/"
+scp "$GEODE_BIN" "node1:/usr/local/bin/geode"
 ssh node1 "systemctl start geode"
 
 # 3. Verify cluster health
@@ -430,6 +438,12 @@ aws route53 change-resource-record-sets \
 Use read replicas to minimize downtime:
 
 ```bash
+# Build new version locally (run once)
+git clone https://github.com/codeprosorg/geode /tmp/geode-upgrade
+cd /tmp/geode-upgrade
+make build
+GEODE_BIN=/tmp/geode-upgrade/zig-out/bin/geode
+
 # Step 1: Create read replica
 geode replica create \
   --primary geode-primary.example.com:3141 \
@@ -437,8 +451,7 @@ geode replica create \
 
 # Step 2: Upgrade replica to new version
 ssh geode-replica "systemctl stop geode"
-ssh geode-replica "wget https://releases.geodedb.com/v0.18.0/geode-linux-amd64.tar.gz"
-ssh geode-replica "tar -xzf geode-linux-amd64.tar.gz -C /usr/local/bin/"
+scp "$GEODE_BIN" "geode-replica:/usr/local/bin/geode"
 ssh geode-replica "systemctl start geode"
 
 # Step 3: Test read queries on replica
@@ -449,8 +462,7 @@ geode replica promote --host geode-replica.example.com:3141
 
 # Step 5: Upgrade old primary (now secondary)
 ssh geode-primary "systemctl stop geode"
-ssh geode-primary "wget https://releases.geodedb.com/v0.18.0/geode-linux-amd64.tar.gz"
-ssh geode-primary "tar -xzf geode-linux-amd64.tar.gz -C /usr/local/bin/"
+scp "$GEODE_BIN" "geode-primary:/usr/local/bin/geode"
 ssh geode-primary "systemctl start geode"
 ```
 

@@ -1,7 +1,18 @@
----
-title: "Geode - Enterprise Graph Database"
-description: "Production-ready graph database implementing ISO/IEC 39075:2024 GQL standard"
----
++++
+title = "Geode - Enterprise Graph Database"
+description = "Production-ready graph database implementing ISO/IEC 39075:2024 GQL standard"
+keywords = [
+  "Geode",
+  "graph database",
+  "GQL",
+  "ISO 39075",
+  "vector search",
+  "full-text search",
+  "graph analytics",
+]
++++
+
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
 
 ## 100% ISO GQL Compliance
 
@@ -20,10 +31,10 @@ Geode achieves **100% compliance** with ISO/IEC 39075:2024 GQL standard:
 
 ## High Performance
 
-- **Query Performance**: 10,000+ queries/second
+- **Query Performance**: 10,000-50,000 read-write transactions/sec
 - **Vector Search**: <50ns per distance calculation (8D L2)
 - **Storage**: 13.18x I/O improvement
-- **Scalability**: 100M+ nodes, 1B+ edges tested
+- **Scalability Targets**: 100M+ nodes, 1B+ edges in load-test models
 
 ## Client Libraries
 
@@ -40,12 +51,13 @@ All clients communicate via QUIC+TLS using the JSON line protocol.
 
 ```bash
 # Install via Nix
-nix run gitlab:devnw/codepros/geode/geode
+nix run github:codeprosorg/geode -- serve
 
-# Or download binary
-wget https://gitlab.com/devnw/codepros/geode/geode/releases/latest/download/geode-linux-amd64
-chmod +x geode-linux-amd64
-./geode-linux-amd64 serve
+# Or build from source
+git clone https://github.com/codeprosorg/geode
+cd geode
+make build
+./zig-out/bin/geode serve
 ```
 
 See the [Getting Started Guide](/docs/getting-started/) for full installation instructions.

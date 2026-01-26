@@ -2,7 +2,16 @@
 title: "API Reference"
 description: "Complete API reference for Geode functions, operators, and system procedures"
 weight: 45
+
+keywords:
+  - Geode API reference
+  - GQL API
+  - protocol reference
+  - CLI reference
+  - developer docs
 ---
+
+<!-- CANARY: REQ=REQ-API-DOCS-002; FEATURE="APIDocumentation"; ASPECT=BuildTarget; STATUS=EXEMPT; OWNER=tooling; UPDATED=2026-01-03 -->
 
 # API Reference
 

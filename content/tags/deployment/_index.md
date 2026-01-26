@@ -17,6 +17,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 Deployment documentation for Geode covers production setup, containerization, orchestration, cloud deployments, and operational best practices. From single-node installations to distributed multi-region deployments, this guide helps you deploy Geode reliably and securely.
 
 ## Deployment Options
@@ -34,10 +36,10 @@ Traditional deployment on dedicated hardware or VMs:
 **Installation**:
 
 ```bash
-# Download Geode binary
-wget https://releases.geodedb.com/v0.18.0/geode-linux-x86_64.tar.gz
-tar -xzf geode-linux-x86_64.tar.gz
+# Build from source
+git clone https://github.com/codeprosorg/geode
 cd geode
+make build
 
 # Create data directory
 sudo mkdir -p /var/lib/geode
@@ -320,10 +322,11 @@ kubectl -n geode logs geode-0 -f
 
 ```bash
 # Launch EC2 instance (Ubuntu 22.04, t3.xlarge)
-# Install Geode
-wget https://releases.geodedb.com/v0.18.0/geode-linux-x86_64.tar.gz
-tar -xzf geode-linux-x86_64.tar.gz
-sudo cp geode /usr/local/bin/
+# Install Geode (build from source)
+git clone https://github.com/codeprosorg/geode
+cd geode
+make build
+sudo cp ./zig-out/bin/geode /usr/local/bin/geode
 
 # Use EBS for data persistence
 sudo mkfs.ext4 /dev/nvme1n1

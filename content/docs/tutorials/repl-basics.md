@@ -18,6 +18,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-REPL-ADVANCED-001; FEATURE="REPL Advanced Features"; ASPECT=Testing; STATUS=TESTED; OWNER=repl; UPDATED=2025-11-17 -->
+
 ## Overview
 
 The Geode REPL (Read-Eval-Print Loop) provides an interactive shell for query development, data exploration, and administration. This tutorial covers essential REPL features for productive database interaction.
@@ -37,13 +39,13 @@ The Geode REPL (Read-Eval-Print Loop) provides an interactive shell for query de
 
 ```bash
 # Start REPL connected to local server
-./zig-out/bin/geode shell
+geode shell
 
 # Connect to remote server
-./zig-out/bin/geode shell --host db.example.com --port 3141
+geode shell --host db.example.com --port 3141
 
 # With authentication
-./zig-out/bin/geode shell --user alice --password secretpass
+geode shell --user alice --password secretpass
 ```
 
 **Welcome Screen**:
@@ -371,7 +373,7 @@ geode> \set keymap vi
 **Custom Location**:
 ```bash
 export GEODE_HISTORY=/path/to/custom/history
-./zig-out/bin/geode shell
+geode shell
 ```
 
 ## Advanced Features

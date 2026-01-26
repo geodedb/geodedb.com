@@ -7,6 +7,8 @@ slug: "match-basics"
 canonical: "https://geodedb.com/docs/tutorials/match-basics/"
 ---
 
+<!-- CANARY: REQ=REQ-GQL-017-TUTORIAL; FEATURE="Docs"; ASPECT=Tutorial; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-16 -->
+
 # MATCH Basics Tutorial
 
 Learn fundamental pattern matching with GQL in this hands-on 10-minute tutorial.

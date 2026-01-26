@@ -15,6 +15,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 # Security Features and Architecture in Geode
 
 Security is foundational to Geode's design, not an afterthought. Geode implements defense-in-depth security with multiple layers of protection, from mandatory network encryption to fine-grained data access controls. This zero-trust architecture makes Geode suitable for regulated industries including healthcare, finance, and government.

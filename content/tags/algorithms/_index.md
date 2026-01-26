@@ -38,6 +38,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 Graph algorithms are specialized computational methods designed to analyze and extract insights from graph-structured data. Geode provides both built-in GQL capabilities and extensibility for implementing advanced graph algorithms on your connected data.
 
 ## What are Graph Algorithms?

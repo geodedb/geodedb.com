@@ -20,6 +20,8 @@ keywords:
   - vector embeddings
 ---
 
+<!-- CANARY: REQ=REQ-GQL-001; FEATURE="BasicQuery"; ASPECT=Testing; STATUS=TESTED; OWNER=test; UPDATED=2025-10-02 -->
+
 # Data Model and Types
 
 Understand Geode's property graph model and comprehensive type system with practical guidance for schema design and indexing.

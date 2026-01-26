@@ -15,6 +15,8 @@ params:
     noindex: false
 ---
 
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+
 The **Examples** category provides practical, production-ready code samples and complete applications demonstrating how to use Geode graph database effectively. From simple queries to complex distributed systems, these examples show you how to leverage Geode's capabilities in real-world scenarios.
 
 ## Introduction to Geode Examples
