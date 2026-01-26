@@ -61,7 +61,7 @@ defaultDescription: |
   Geode is an enterprise-ready graph database implementing the ISO/IEC 39075:2024 GQL standard.
   Built in Zig for maximum performance and reliability. Features include full GQL compliance,
   high test coverage, ACID transactions, vector search, ML graph embeddings, and real-time analytics.
-  Production-ready with comprehensive client libraries for Go, Python, Rust, and Zig.
+  Production-ready with comprehensive client libraries for Go, Python, Rust, Node.js, and Zig.
 
 sitename: Geode Database
 author: Geode Contributors
