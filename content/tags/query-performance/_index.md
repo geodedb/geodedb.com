@@ -354,15 +354,13 @@ Reuse connections for better throughput:
 **Go Client**:
 
 ```go
-// Configure connection pool
-config := &geode.Config{
-    MaxConnections:     100,
-    MinIdleConnections: 10,
-    MaxIdleTime:        5 * time.Minute,
-    ConnectionTimeout:  30 * time.Second,
+db, err := sql.Open("geode", "localhost:3141")
+if err != nil {
+    log.Fatal(err)
 }
-
-db, err := geode.Connect("localhost:3141", config)
+db.SetMaxOpenConns(100)
+db.SetMaxIdleConns(10)
+db.SetConnMaxIdleTime(5 * time.Minute)
 // Pool handles connection reuse automatically
 ```
 
@@ -370,32 +368,23 @@ db, err := geode.Connect("localhost:3141", config)
 
 ```python
 # Async connection pool
-from geode_client import GeodeClient
+from geode_client import ConnectionPool
 
-async with GeodeClient(
-    host="localhost",
-    port=3141,
-    max_connections=100,
-    min_connections=10
-) as client:
-    # Connections automatically pooled
-    result = await client.query("MATCH (n:User) RETURN n LIMIT 10")
+pool = ConnectionPool(host="localhost", port=3141, min_size=10, max_size=100)
+async with pool:
+    async with pool.acquire() as conn:
+        result, _ = await conn.query("MATCH (n:User) RETURN n LIMIT 10")
 ```
 
 **Rust Client**:
 
 ```rust
 // High-performance pool with tokio
-use geode_client::{GeodeClient, PoolConfig};
+use geode_client::ConnectionPool;
 
-let config = PoolConfig {
-    max_connections: 100,
-    min_idle: 10,
-    connection_timeout: Duration::from_secs(30),
-};
-
-let client = GeodeClient::with_pool("localhost:3141", config).await?;
-// Connection reuse handled transparently
+let pool = ConnectionPool::new("localhost", 3141, 100);
+let conn = pool.acquire().await?;
+// Connection reuse handled by the pool
 ```
 
 ### Caching Strategy

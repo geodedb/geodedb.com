@@ -25,21 +25,22 @@ Geode provides official client libraries for multiple programming languages. All
 
 ## Available Clients
 
-- [**Go**](/clients/go/) - `database/sql` driver with full prepared statement support
-- [**Python**](/clients/python/) - Async client with connection pooling (aioquic)
-- [**Rust**](/clients/rust/) - High-performance tokio-based client
-- [**Zig**](/clients/zig/) - Native Zig implementation
+- [**Go**](/clients/go/) - `database/sql` driver with QUIC + TLS
+- [**Python**](/clients/python/) - Async QUIC client with pooling helpers
+- [**Rust**](/clients/rust/) - tokio + Quinn client for high-throughput workloads
+- [**Node.js**](/clients/nodejs/) - TypeScript-first client with pooling
+- [**Zig**](/clients/zig/) - Low-level QUIC client for native integration
 
 ## Common Features
 
-All client libraries provide:
+All client libraries share the same wire protocol but expose different levels of convenience. Core protocol features are consistent; higher-level helpers vary by language.
 
-- **Connection Pooling** - Efficient connection management
-- **Transaction Support** - Full ACID transaction support with savepoints
-- **Prepared Statements** - Parameterized query execution
-- **Type Safety** - Language-specific type mappings
-- **Error Handling** - Rich error types with ISO GQL status codes
-- **Async Support** - Non-blocking operations (where applicable)
+Common capabilities:
+
+- **QUIC + TLS 1.3 transport** for secure low-latency sessions
+- **GQL execution** via `RUN_GQL` + `PULL`
+- **Transaction messages** via `BEGIN`, `COMMIT`, `ROLLBACK`
+- **Error codes** aligned with ISO/IEC 39075 status classes
 
 ## Protocol
 
@@ -47,7 +48,7 @@ All clients use:
 
 - **Transport**: QUIC + TLS 1.3 (no TCP fallback)
 - **Wire Format**: JSON line protocol
-- **Default Port**: 3141 (or 8443)
+- **Default Port**: 3141 (configurable per deployment)
 
 ### Message Types
 
@@ -71,10 +72,11 @@ Client-side latency and throughput are workload-dependent and vary by runtime, n
 
 | Client | Latency | Throughput | Features |
 |--------|---------|------------|----------|
-| Go | Workload-dependent | Workload-dependent | connection pooling, stdlib integration |
-| Python | Workload-dependent | Workload-dependent | async/await, type hints |
-| Rust | Workload-dependent | Workload-dependent | zero-cost abstractions, tokio |
-| Zig | Workload-dependent | Workload-dependent | native performance |
+| Go | Workload-dependent | Workload-dependent | database/sql integration |
+| Python | Workload-dependent | Workload-dependent | async/await, pooling |
+| Rust | Workload-dependent | Workload-dependent | tokio + Quinn |
+| Node.js | Workload-dependent | Workload-dependent | TypeScript, pooling |
+| Zig | Workload-dependent | Workload-dependent | low-level protocol access |
 
 ## Quick Start
 
@@ -85,10 +87,13 @@ go get go.codepros.org/geode
 ```
 
 ```go
-import "database/sql"
-import _ "go.codepros.org/geode"
+import (
+    "database/sql"
 
-db, err := sql.Open("geode", "geode://localhost:3141")
+    _ "go.codepros.org/geode"
+)
+
+db, err := sql.Open("geode", "localhost:3141")
 ```
 
 ### Python
@@ -98,10 +103,11 @@ pip install geode-client
 ```
 
 ```python
-from geode_client import GeodeClient
+from geode_client import Client
 
-async with GeodeClient("localhost", 3141) as client:
-    result = await client.query("MATCH (n) RETURN n")
+client = Client(host="localhost", port=3141)
+async with client.connection() as conn:
+    page, _ = await conn.query("MATCH (n) RETURN n")
 ```
 
 ### Rust
@@ -113,7 +119,8 @@ cargo add geode-client
 ```rust
 use geode_client::Client;
 
-let client = Client::connect("localhost:3141").await?;
+let client = Client::new("localhost", 3141);
+let mut conn = client.connect().await?;
 ```
 
 ### Zig
@@ -121,8 +128,21 @@ let client = Client::connect("localhost:3141").await?;
 ```zig
 const geode = @import("geode_client");
 
-var client = try geode.Client.init(allocator, "localhost", 3141);
+var client = geode.GeodeClient.init(allocator, "localhost", 3141, true);
 defer client.deinit();
+```
+
+### Node.js
+
+```bash
+npm install @geode/client
+```
+
+```ts
+import { createClient } from '@geode/client';
+
+const client = await createClient('geode://localhost:3141');
+const rows = await client.queryAll('RETURN 1 AS ok');
 ```
 
 ## Next Steps

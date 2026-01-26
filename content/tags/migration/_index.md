@@ -191,7 +191,7 @@ geode validate \
 Custom migration logic:
 
 ```python
-from geode_client import GeodeClient
+from geode_client import Client
 import asyncio
 
 async def migrate_users(source_conn, geode_client):
@@ -225,7 +225,7 @@ async def migrate_users(source_conn, geode_client):
 
 async def main():
     source = await connect_source()
-    geode = GeodeClient("localhost", 3141)
+    geode = Client("localhost", 3141)
     
     await migrate_users(source, geode)
     await migrate_relationships(source, geode)
@@ -309,7 +309,7 @@ OR NOT EXISTS (
 Deploy changes without service interruption:
 
 ```python
-from geode_client import GeodeClient
+from geode_client import Client
 import asyncio
 
 class ZeroDowntimeMigration:
@@ -382,7 +382,7 @@ class ZeroDowntimeMigration:
         # Count records
         old_count = await self.old_db.fetch_val("SELECT COUNT(*) FROM users_table")
         new_count = await self.new_db.execute("MATCH (u:User) RETURN count(u) AS count")
-        new_count = (await new_count.fetch_one())['count']
+        new_count = (new_count.rows[0] if new_count.rows else None)['count']
 
         if old_count != new_count:
             raise MigrationError(f"Count mismatch: {old_count} vs {new_count}")
@@ -393,7 +393,7 @@ class ZeroDowntimeMigration:
         for sample in sample_ids:
             old_user = await self.old_db.fetch_one(f"SELECT * FROM users_table WHERE id = {sample['id']}")
             new_user = await self.new_db.execute("MATCH (u:User {id: $id}) RETURN u", {'id': sample['id']})
-            new_user = await new_user.fetch_one()
+            new_user = new_user.rows[0] if new_user.rows else None
 
             if not new_user or old_user['name'] != new_user['u']['name']:
                 raise MigrationError(f"Data mismatch for user {sample['id']}")
@@ -408,7 +408,7 @@ class ZeroDowntimeMigration:
 # Usage
 async def run_zero_downtime_migration():
     old_postgres = PostgresClient("old-db:5432")
-    new_geode = GeodeClient("new-geode:3141")
+    new_geode = Client("new-geode:3141")
 
     migration = ZeroDowntimeMigration(old_postgres, new_geode)
 
@@ -565,7 +565,7 @@ class MigrationValidator:
         source_count = await self.source.fetch_val(f"SELECT COUNT(*) FROM {table_name}")
 
         result = await self.target.execute(f"MATCH (n:{label}) RETURN count(n) AS count")
-        target_count = (await result.fetch_one())['count']
+        target_count = (result.rows[0] if result.rows else None)['count']
 
         if source_count != target_count:
             self.issues.append({
@@ -588,7 +588,7 @@ class MigrationValidator:
             RETURN count(r) AS orphaned_relationships
         """)
 
-        orphaned = (await result.fetch_one())['orphaned_relationships']
+        orphaned = (result.rows[0] if result.rows else None)['orphaned_relationships']
 
         if orphaned > 0:
             self.issues.append({
@@ -608,7 +608,7 @@ class MigrationValidator:
             RETURN count(*) AS type_mismatches
         """, {'expected_type': expected_type})
 
-        mismatches = (await result.fetch_one())['type_mismatches']
+        mismatches = (result.rows[0] if result.rows else None)['type_mismatches']
 
         if mismatches > 0:
             self.issues.append({
@@ -629,7 +629,7 @@ class MigrationValidator:
             RETURN count(*) AS duplicates
         """)
 
-        duplicates = (await result.fetch_one())['duplicates']
+        duplicates = (result.rows[0] if result.rows else None)['duplicates']
 
         if duplicates > 0:
             self.issues.append({
@@ -749,12 +749,12 @@ class MigrationRollback:
     async def get_node_count(self):
         """Get current node count."""
         result = await self.target.execute("MATCH (n) RETURN count(n) AS count")
-        return (await result.fetch_one())['count']
+        return (result.rows[0] if result.rows else None)['count']
 
     async def get_relationship_count(self):
         """Get current relationship count."""
         result = await self.target.execute("MATCH ()-[r]->() RETURN count(r) AS count")
-        return (await result.fetch_one())['count']
+        return (result.rows[0] if result.rows else None)['count']
 
     async def rollback_to_checkpoint(self, checkpoint_name):
         """Rollback to a specific checkpoint."""
@@ -819,21 +819,21 @@ class ParallelMigrator:
             return 0
 
         # Create connection for this worker
-        worker_client = GeodeClient("localhost", 3141)
-
-        try:
-            async with worker_client.transaction():
-                await worker_client.execute(f"""
+        worker_client = Client(host="localhost", port=3141)
+        async with worker_client.connection() as conn:
+            await conn.begin()
+            try:
+                await conn.execute(f"""
                     UNWIND $rows AS row
                     CREATE (n:{label})
                     SET n = row
                 """, {'rows': rows})
-
-            print(f"Worker {worker_id}: Migrated {len(rows)} rows")
-            return len(rows)
-
-        finally:
-            await worker_client.close()
+                await conn.commit()
+                print(f"Worker {worker_id}: Migrated {len(rows)} rows")
+                return len(rows)
+            except Exception:
+                await conn.rollback()
+                raise
 ```
 
 ## Learn More

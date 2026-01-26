@@ -160,9 +160,11 @@ async def get_user_friends(user_name: str):
         ORDER BY friend.name
     """
 
-    async with geode_client.connect('geode://localhost:3141') as conn:
-        result = await conn.execute(query, {'name': user_name})
-        return [row async for row in result]
+    client = geode_client.open_database('geode://localhost:3141')
+
+    async with client.connection() as conn:
+        result, _ = await conn.query(query, {'name': user_name})
+        return [row for row in result.rows]
 ```
 
 ### Standards-Based Tooling
@@ -198,12 +200,12 @@ async def test_aggregation_semantics():
         """)
 
         # ISO specifies that aggregate functions ignore NULL
-        result = await conn.execute("""
+        result, _ = await conn.query("""
             MATCH (p:Product)
             RETURN AVG(p.price) AS avg_price, COUNT(p.price) AS count
         """)
 
-        row = await result.fetch_one()
+        row = result.rows[0] if result.rows else None
         assert row['avg_price'] == 15.0  # (10 + 20) / 2
         assert row['count'] == 2  # NULL excluded
 ```
@@ -338,7 +340,7 @@ Write once, run anywhere with ISO-compliant GQL:
 ```python
 # Portable query testing across multiple databases
 import asyncio
-from geode_client import GeodeClient
+from geode_client import Client
 from neo4j import GraphDatabase
 from tigergraph import TigerGraphConnection
 
@@ -354,9 +356,10 @@ async def test_query_portability():
     """
 
     # Test on Geode
-    async with GeodeClient("geode-server", 3141) as geode:
+    client = Client("geode-server", 3141)
+    async with client.connection() as geode:
         geode_result = await geode.execute(portable_query)
-        geode_rows = [row async for row in geode_result]
+        geode_rows = [row for row in geode_result.rows]
 
     # Test on other ISO-compliant database
     # (pseudo-code - actual API may differ)
@@ -449,8 +452,8 @@ class ISOComplianceValidator:
         ]
 
         for test in tests:
-            result = await self.client.execute(test['query'])
-            row = await result.fetch_one()
+            result, _ = await self.client.query(test['query'])
+            row = result.rows[0] if result.rows else None
             actual = row['result']
 
             status = 'PASS' if actual == test['expected'] else 'FAIL'
@@ -479,10 +482,10 @@ Failed: {failed} ({100*failed/total:.1f}%)
         if failed > 0:
             report += "Failed Tests:\n"
             for result in self.test_results:
-                if result['status'] == 'FAIL':
-                    report += f"  • §{result['section']}: {result['name']}\n"
+                if result.rows['status'] == 'FAIL':
+                    report += f"  • §{result.rows['section']}: {result.rows['name']}\n"
                     if 'error' in result:
-                        report += f"    Error: {result['error']}\n"
+                        report += f"    Error: {result.rows['error']}\n"
 
         return report
 ```

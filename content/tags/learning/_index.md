@@ -215,12 +215,14 @@ RETURN path, SUM([r IN relationships(path) | r.amount]) as total
 
 **Example Code**:
 ```python
-from geode_client import GeodeClient
+from geode_client import Client
 import asyncio
 
 async def main():
-    async with GeodeClient("localhost:3141") as client:
-        async with client.transaction() as tx:
+    client = Client(host="localhost", port=3141)
+    async with client.connection() as conn:
+        async with client.connection() as tx:
+            await tx.begin()
             await tx.execute("CREATE (p:Person {name: $name})", name="Alice")
 
 asyncio.run(main())

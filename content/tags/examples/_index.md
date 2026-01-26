@@ -40,8 +40,9 @@ Code examples provide immediate, practical demonstrations of Geode features thro
 **Creating Nodes**:
 ```python
 # Python: Create a user node
-async with GeodeClient("localhost:3141") as client:
-    result = await client.execute("""
+client = Client(host="localhost", port=3141)
+async with client.connection() as conn:
+    result, _ = await conn.query("""
         CREATE (u:User {
             id: $id,
             name: $name,
@@ -85,7 +86,7 @@ client.execute(
 **Reading Nodes**:
 ```python
 # Python: Find user by email
-result = await client.execute(
+result, _ = await client.query(
     "MATCH (u:User {email: $email}) RETURN u",
     email="alice@example.com"
 )
@@ -144,13 +145,13 @@ db.Exec(`
 **Querying Relationships**:
 ```python
 # Python: Find all products a user purchased
-result = await client.execute("""
+result, _ = await client.query("""
     MATCH (u:User {id: $user_id})-[r:PURCHASED]->(p:Product)
     RETURN p.name, r.quantity, r.total, r.at
     ORDER BY r.at DESC
 """, user_id="user123")
 
-async for row in result:
+for row in result.rows:
     print(f"{row['p.name']}: {row['r.quantity']} @ ${row['r.total']}")
 ```
 
@@ -159,7 +160,7 @@ async for row in result:
 **Multi-Hop Traversals**:
 ```python
 # Python: Friends of friends (2 degrees of separation)
-result = await client.execute("""
+result, _ = await client.query("""
     MATCH (me:User {id: $my_id})-[:FRIENDS*2]->(friend_of_friend)
     WHERE NOT EXISTS {
         MATCH (me)-[:FRIENDS]->(friend_of_friend)
@@ -189,13 +190,13 @@ let results = client.execute(
 **Optional Patterns**:
 ```python
 # Python: Users with optional profile pictures
-result = await client.execute("""
+result, _ = await client.query("""
     MATCH (u:User)
     OPTIONAL MATCH (u)-[:HAS_AVATAR]->(img:Image)
     RETURN u.name, u.email, img.url
 """)
 
-async for row in result:
+for row in result.rows:
     avatar = row['img.url'] if row['img.url'] else "default.png"
     print(f"{row['u.name']}: {avatar}")
 ```
@@ -205,7 +206,8 @@ async for row in result:
 **Basic Transaction**:
 ```python
 # Python: Transfer credits between users atomically
-async with client.transaction() as tx:
+async with client.connection() as tx:
+    await tx.begin()
     # Deduct from sender
     await tx.execute("""
         MATCH (sender:User {id: $sender_id})
@@ -253,7 +255,8 @@ tx.Commit()
 **Savepoints**:
 ```python
 # Python: Complex operation with partial rollback
-async with client.transaction() as tx:
+async with client.connection() as tx:
+    await tx.begin()
     await tx.execute("CREATE (u:User {id: 'temp1', name: 'Test'})")
 
     savepoint = await tx.savepoint("before_optional")
@@ -273,7 +276,7 @@ async with client.transaction() as tx:
 
 ```python
 # Python: Count users by country
-result = await client.execute("""
+result, _ = await client.query("""
     MATCH (u:User)
     RETURN u.country, COUNT(*) as user_count
     ORDER BY user_count DESC
@@ -314,7 +317,7 @@ let results = client.execute(
 **Subqueries**:
 ```python
 # Python: Users who purchased all items in a category
-result = await client.execute("""
+result, _ = await client.query("""
     MATCH (category:Category {name: $category_name})<-[:IN_CATEGORY]-(p:Product)
     WITH category, COUNT(p) as total_products
     MATCH (u:User)
@@ -330,7 +333,7 @@ result = await client.execute("""
 **Shortest Path**:
 ```python
 # Python: Find shortest connection between two users
-result = await client.execute("""
+result, _ = await client.query("""
     MATCH path = shortestPath(
         (a:User {id: $user_a})-[:KNOWS*]-(b:User {id: $user_b})
     )
@@ -347,11 +350,12 @@ result = await client.execute("""
 import asyncio
 
 async def fetch_user_data(user_id):
-    async with GeodeClient("localhost:3141") as client:
+    client = Client(host="localhost", port=3141)
+    async with client.connection() as conn:
         user, posts, friends = await asyncio.gather(
-            client.execute("MATCH (u:User {id: $id}) RETURN u", id=user_id),
-            client.execute("MATCH (u:User {id: $id})-[:WROTE]->(p) RETURN p", id=user_id),
-            client.execute("MATCH (u:User {id: $id})-[:FRIENDS]->(f) RETURN f", id=user_id)
+            conn.execute("MATCH (u:User {id: $id}) RETURN u", id=user_id),
+            conn.execute("MATCH (u:User {id: $id})-[:WROTE]->(p) RETURN p", id=user_id),
+            conn.execute("MATCH (u:User {id: $id})-[:FRIENDS]->(f) RETURN f", id=user_id)
         )
         return user, posts, friends
 ```
@@ -394,21 +398,22 @@ while let Some(row) = stream.next().await {
 ```python
 # Python: Retry logic for transient failures
 from tenacity import retry, stop_after_attempt, wait_exponential
+from geode_client import QueryError
 
 @retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=1, max=10))
 async def execute_with_retry(client, query, **params):
     try:
-        return await client.execute(query, **params)
-    except TransactionConflictError:
-        # Let retry decorator handle it
+        result, _ = await client.query(query, params)
+        return result
+    except QueryError as exc:
+        message = str(exc).lower()
+        if "40502" in message:
+            # Let retry decorator handle conflicts
+            raise
+        if "syntax" in message:
+            logger.error(f"Non-retryable error: {exc}")
+            raise
         raise
-    except QueryError as e:
-        # Don't retry syntax errors
-        if e.is_retryable:
-            raise
-        else:
-            logger.error(f"Non-retryable error: {e}")
-            raise
 ```
 
 ```go
@@ -443,14 +448,14 @@ Complete application with Geode backend:
 ```python
 # FastAPI application with Geode
 from fastapi import FastAPI, HTTPException, Depends, Header
-from geode_client import GeodeClient
+from geode_client import Client
 from pydantic import BaseModel, EmailStr
 import asyncio
 
 app = FastAPI()
 
 # Connection pool (reused across requests)
-geode_pool = GeodeClient(
+geode_pool = Client(
     "localhost:3141",
     pool_size=20,
     pool_timeout=30.0
@@ -476,7 +481,7 @@ async def get_current_user(authorization: str = Header(...)):
     token = authorization.replace("Bearer ", "")
     user_id = decode_jwt(token)
     
-    result = await geode_pool.execute("""
+    result, _ = await geode_pool.query("""
         MATCH (u:User {id: $id})
         RETURN u
     """, {"id": user_id})
@@ -484,7 +489,7 @@ async def get_current_user(authorization: str = Header(...)):
     if not result:
         raise HTTPException(401, "Invalid token")
     
-    return result[0]['u']
+    return result.rows[0]['u']
 
 @app.post("/api/register")
 async def register(user: UserRegistration):
@@ -493,7 +498,7 @@ async def register(user: UserRegistration):
     password_hash = hash_password(user.password)
     
     try:
-        result = await geode_pool.execute("""
+        result, _ = await geode_pool.query("""
             CREATE (u:User {
                 id: randomUUID(),
                 name: $name,
@@ -509,7 +514,7 @@ async def register(user: UserRegistration):
             "password_hash": password_hash
         })
         
-        user_id = result[0]['user_id']
+        user_id = result.rows[0]['user_id']
         
         # Send verification email
         await send_verification_email(user.email, user_id)
@@ -522,7 +527,7 @@ async def register(user: UserRegistration):
 @app.get("/api/users/{user_id}/profile")
 async def get_profile(user_id: str, current_user=Depends(get_current_user)):
     """Get user profile"""
-    result = await geode_pool.execute("""
+    result, _ = await geode_pool.query("""
         MATCH (u:User {id: $id})
         OPTIONAL MATCH (u)-[:FRIENDS_WITH]-(friend:User)
         OPTIONAL MATCH (u)-[:POSTED]->(post:Post)
@@ -538,7 +543,7 @@ async def get_profile(user_id: str, current_user=Depends(get_current_user)):
     if not result:
         raise HTTPException(404, "User not found")
     
-    return result[0]
+    return result.rows[0]
 
 @app.post("/api/posts")
 async def create_post(
@@ -546,7 +551,7 @@ async def create_post(
     current_user=Depends(get_current_user)
 ):
     """Create new post"""
-    result = await geode_pool.execute("""
+    result, _ = await geode_pool.query("""
         MATCH (u:User {id: $user_id})
         CREATE (p:Post {
             id: randomUUID(),
@@ -562,7 +567,7 @@ async def create_post(
         "content": content
     })
     
-    return {"post_id": result[0]['post_id']}
+    return {"post_id": result.rows[0]['post_id']}
 
 @app.get("/api/feed")
 async def get_feed(
@@ -571,7 +576,7 @@ async def get_feed(
     current_user=Depends(get_current_user)
 ):
     """Get personalized feed"""
-    result = await geode_pool.execute("""
+    result, _ = await geode_pool.query("""
         MATCH (me:User {id: $user_id})-[:FRIENDS_WITH]-(friend:User)-[:POSTED]->(post:Post)
         WITH post, friend
         ORDER BY post.created_at DESC
@@ -605,7 +610,7 @@ class RecommendationEngine:
     async def get_product_recommendations(self, user_id, limit=10):
         """Generate product recommendations using collaborative filtering"""
         # Find similar users based on purchase history
-        similar_users = await self.client.execute("""
+        similar_users, _ = await self.client.query("""
             MATCH (me:User {id: $user_id})-[:PURCHASED]->(p:Product)
                 <-[:PURCHASED]-(other:User)
             WHERE other.id <> $user_id
@@ -630,7 +635,7 @@ class RecommendationEngine:
     
     async def get_content_based_recommendations(self, user_id, limit=10):
         """Content-based recommendations using product attributes"""
-        recommendations = await self.client.execute("""
+        recommendations, _ = await self.client.query("""
             MATCH (u:User {id: $user_id})-[:PURCHASED]->(liked:Product)
             WITH u, COLLECT(liked.category) as liked_categories,
                  AVG(liked.price) as avg_price
@@ -662,7 +667,7 @@ class SocialAnalytics:
     
     async def calculate_user_influence(self, user_id):
         """Calculate user influence score"""
-        metrics = await self.client.execute("""
+        metrics, _ = await self.client.query("""
             MATCH (u:User {id: $user_id})
             OPTIONAL MATCH (u)<-[:FOLLOWS]-(follower:User)
             WITH u, COUNT(DISTINCT follower) as followers
@@ -689,7 +694,7 @@ class SocialAnalytics:
         
         # Iterate label propagation
         for iteration in range(10):
-            changes = await self.client.execute("""
+            changes, _ = await self.client.query("""
                 MATCH (u:User)-[:FRIENDS_WITH]-(neighbor:User)
                 WITH u, neighbor.community as label, COUNT(*) as freq
                 ORDER BY u, freq DESC
@@ -703,7 +708,7 @@ class SocialAnalytics:
                 break
         
         # Return communities
-        communities = await self.client.execute("""
+        communities, _ = await self.client.query("""
             MATCH (u:User)
             RETURN u.community as community_id, COUNT(u) as size
             ORDER BY size DESC
@@ -713,7 +718,7 @@ class SocialAnalytics:
     
     async def find_influencers(self, limit=20):
         """Find top influencers"""
-        influencers = await self.client.execute("""
+        influencers, _ = await self.client.query("""
             MATCH (u:User)
             OPTIONAL MATCH (u)<-[:FOLLOWS]-(follower:User)
             WITH u, COUNT(DISTINCT follower) as followers
@@ -744,82 +749,104 @@ class OrderProcessor:
     
     async def process_order(self, customer_id, items):
         """Process order with inventory check"""
-        async with self.client.transaction(isolation='SERIALIZABLE') as tx:
-            # Create order
-            order_result = await tx.execute("""
-                MATCH (c:Customer {id: $customer_id})
-                CREATE (o:Order {
-                    id: randomUUID(),
-                    status: 'pending',
-                    created_at: datetime(),
-                    subtotal: 0.0,
-                    tax: 0.0,
-                    total: 0.0
-                })
-                CREATE (c)-[:PLACED]->(o)
-                RETURN o.id as order_id
-            """, {"customer_id": customer_id})
-            
-            order_id = order_result[0]['order_id']
-            subtotal = 0.0
-            
-            # Process each item
-            for item in items:
-                # Check and reserve inventory
-                inventory = await tx.execute("""
-                    MATCH (p:Product {id: $product_id})
-                    WHERE p.stock >= $quantity
-                    SET p.stock = p.stock - $quantity
-                    RETURN p.id, p.name, p.price
-                """, {
-                    "product_id": item['product_id'],
-                    "quantity": item['quantity']
-                })
-                
-                if not inventory:
-                    raise InsufficientInventoryError(f"Product {item['product_id']} out of stock")
-                
-                product = inventory[0]
-                line_total = product['price'] * item['quantity']
-                subtotal += line_total
-                
-                # Create order line item
-                await tx.execute("""
-                    MATCH (o:Order {id: $order_id}), (p:Product {id: $product_id})
-                    CREATE (li:LineItem {
-                        quantity: $quantity,
-                        unit_price: $unit_price,
-                        total: $total
+        async with self.client.connection() as conn:
+            # Isolation is configured server-side
+            await conn.begin()
+            try:
+                # Create order
+                order_result, _ = await conn.query(
+                    """
+                    MATCH (c:Customer {id: $customer_id})
+                    CREATE (o:Order {
+                        id: randomUUID(),
+                        status: 'pending',
+                        created_at: datetime(),
+                        subtotal: 0.0,
+                        tax: 0.0,
+                        total: 0.0
                     })
-                    CREATE (o)-[:CONTAINS]->(li)
-                    CREATE (li)-[:FOR_PRODUCT]->(p)
-                """, {
-                    "order_id": order_id,
-                    "product_id": item['product_id'],
-                    "quantity": item['quantity'],
-                    "unit_price": product['price'],
-                    "total": line_total
-                })
-            
-            # Calculate totals
-            tax = subtotal * 0.08  # 8% tax
-            total = subtotal + tax
-            
-            # Update order totals
-            await tx.execute("""
-                MATCH (o:Order {id: $order_id})
-                SET o.subtotal = $subtotal,
-                    o.tax = $tax,
-                    o.total = $total,
-                    o.status = 'confirmed'
-            """, {
-                "order_id": order_id,
-                "subtotal": subtotal,
-                "tax": tax,
-                "total": total
-            })
-            
-            return {"order_id": order_id, "total": total}
+                    CREATE (c)-[:PLACED]->(o)
+                    RETURN o.id as order_id
+                    """,
+                    {"customer_id": customer_id},
+                )
+
+                order_id = order_result.rows[0]["order_id"].as_string
+                subtotal = 0.0
+
+                # Process each item
+                for item in items:
+                    # Check and reserve inventory
+                    inventory, _ = await conn.query(
+                        """
+                        MATCH (p:Product {id: $product_id})
+                        WHERE p.stock >= $quantity
+                        SET p.stock = p.stock - $quantity
+                        RETURN p.id AS id, p.name AS name, p.price AS price
+                        """,
+                        {
+                            "product_id": item["product_id"],
+                            "quantity": item["quantity"],
+                        },
+                    )
+
+                    if not inventory.rows:
+                        raise InsufficientInventoryError(
+                            f"Product {item['product_id']} out of stock"
+                        )
+
+                    product = inventory.rows[0]
+                    unit_price = float(product["price"].as_decimal)
+                    line_total = unit_price * item["quantity"]
+                    subtotal += line_total
+
+                    # Create order line item
+                    await conn.execute(
+                        """
+                        MATCH (o:Order {id: $order_id}), (p:Product {id: $product_id})
+                        CREATE (li:LineItem {
+                            quantity: $quantity,
+                            unit_price: $unit_price,
+                            total: $total
+                        })
+                        CREATE (o)-[:CONTAINS]->(li)
+                        CREATE (li)-[:FOR_PRODUCT]->(p)
+                        """,
+                        {
+                            "order_id": order_id,
+                            "product_id": item["product_id"],
+                            "quantity": item["quantity"],
+                            "unit_price": unit_price,
+                            "total": line_total,
+                        },
+                    )
+
+                # Calculate totals
+                tax = subtotal * 0.08  # 8% tax
+                total = subtotal + tax
+
+                # Update order totals
+                await conn.execute(
+                    """
+                    MATCH (o:Order {id: $order_id})
+                    SET o.subtotal = $subtotal,
+                        o.tax = $tax,
+                        o.total = $total,
+                        o.status = 'confirmed'
+                    """,
+                    {
+                        "order_id": order_id,
+                        "subtotal": subtotal,
+                        "tax": tax,
+                        "total": total,
+                    },
+                )
+
+                await conn.commit()
+                return {"order_id": order_id, "total": total}
+            except Exception:
+                await conn.rollback()
+                raise
 ```
 
 Browse the tagged content below to discover comprehensive code examples and integration patterns for Geode applications.

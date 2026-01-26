@@ -151,14 +151,14 @@ import (
 )
 
 func main() {
-    db, err := sql.Open("geode", "geode://localhost:3141")
+    db, err := sql.Open("geode", "localhost:3141")
     if err != nil {
         log.Fatal(err)
     }
     defer db.Close()
 
     _, err = db.Exec(`
-        CREATE (:Person {name: $1, age: $2})
+        CREATE (:Person {name: ?, age: ?})
     `, "Alice", 30)
     if err != nil {
         log.Fatal(err)
@@ -172,11 +172,12 @@ func main() {
 
 ```python
 import asyncio
-from geode_client import GeodeClient
+from geode_client import Client
 
 async def main():
-    async with GeodeClient("localhost", 3141) as client:
-        await client.query(
+    client = Client(host="localhost", port=3141)
+    async with client.connection() as conn:
+        await conn.execute(
             "CREATE (:Person {name: $name, age: $age})",
             params={"name": "Alice", "age": 30}
         )

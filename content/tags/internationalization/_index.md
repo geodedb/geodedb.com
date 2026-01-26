@@ -559,8 +559,10 @@ async def get_localized_content(accept_language: str, content_id: str):
     # Parse Accept-Language: "en-US,en;q=0.9,es;q=0.8"
     locales = parse_accept_language(accept_language)
 
-    async with geode_client.connect() as conn:
-        result = await conn.execute("""
+    client = geode_client.open_database()
+
+    async with client.connection() as conn:
+        result, _ = await conn.query("""
             MATCH (content:Content {id: $content_id})
             OPTIONAL MATCH (content)-[:TRANSLATION]->(trans:Content)
             WHERE trans.locale IN $locales
@@ -611,8 +613,9 @@ from functools import lru_cache
 
 @lru_cache(maxsize=1000)
 async def get_translation(content_id: str, locale: str):
-    async with geode_client.connect() as conn:
-        result = await conn.execute("""
+    client = geode_client.open_database()
+    async with client.connection() as conn:
+        result, _ = await conn.query("""
             MATCH (content:Content {id: $content_id})
             OPTIONAL MATCH (content)-[:TRANSLATION]->(trans {locale: $locale})
             RETURN COALESCE(trans, content) AS localized

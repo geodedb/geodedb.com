@@ -1,6 +1,10 @@
 {{/* LOCAL OVERRIDE: Fixed date_format variable */}}
 {{/* Check if this is an event based on section or params */}}
-{{ if or (eq .Section "events") (isset .Params "startDate") }}
+{{ $is_event := eq .Section "events" }}
+{{ with .Params.startDate }}
+  {{ $is_event = true }}
+{{ end }}
+{{ if $is_event }}
   {{/* Use the enhanced event template for events */}}
   {{ partial "summary/event.html" . }}
 {{ else }}
@@ -8,8 +12,8 @@
 
   {{ $text_style := "stretched-link text-decoration-none text-tertiary" }}
 
-  {{ if isset .Page.Params "text_style" }}
-    {{ $text_style = .Params.text_style }}
+  {{ with .Params.text_style }}
+    {{ $text_style = . }}
   {{ end }}
 
   {{ $date_format := "January 2, 2006" }}
@@ -20,11 +24,9 @@
     {{ $date_format = . }}
   {{ end }}
 
-  {{ $summary := "" }}
-  {{ if isset .Page.Params "description" }}
-    {{ $summary = .Page.Params.description }}
-  {{ else }}
-    {{ $summary = .Content }}
+  {{ $summary := .Content }}
+  {{ with .Params.description }}
+    {{ $summary = . }}
   {{ end }}
 
 

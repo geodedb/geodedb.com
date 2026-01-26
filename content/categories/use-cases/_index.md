@@ -205,9 +205,10 @@ Combine collaborative and content-based approaches:
 import geode_client
 
 async def hybrid_recommendations(user_id: int, limit: int = 10):
-    async with geode_client.connect("localhost:3141") as client:
+    client = geode_client.open_database("localhost:3141")
+    async with client.connection() as client:
         # Collaborative filtering score
-        collab_result = await client.execute("""
+        collab_result, _ = await client.query("""
             MATCH (me:User {id: $userId})-[:LIKED]->(item)<-[:LIKED]-(similar:User)
                   -[:LIKED]->(recommendation)
             WHERE NOT EXISTS {MATCH (me)-[:LIKED]->(recommendation)}
@@ -215,7 +216,7 @@ async def hybrid_recommendations(user_id: int, limit: int = 10):
         """, {"userId": user_id})
 
         # Content-based score
-        content_result = await client.execute("""
+        content_result, _ = await client.query("""
             MATCH (me:User {id: $userId})-[:LIKED]->(item)
             WITH me, AVG(item.embedding) AS user_profile
             MATCH (candidate:Product)
@@ -857,7 +858,7 @@ class QueryCache:
                 return cached_result
 
         # Execute and cache
-        result = await client.execute(query, params)
+        result, _ = await client.query(query, params)
         self.cache[key] = (result, time.time())
         return result
 ```

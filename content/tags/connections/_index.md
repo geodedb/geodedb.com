@@ -132,9 +132,9 @@ Client connection with certificate:
 
 ```python
 # Python client with mTLS
-from geode_client import GeodeClient
+from geode_client import Client
 
-client = GeodeClient(
+client = Client(
     host='geode.example.com',
     port=3141,
     tls_cert='/etc/client/client.crt',
@@ -162,60 +162,60 @@ geode serve --max-connections=10000 \
 **Go Client**
 
 ```go
-import "go.codepros.org/geode"
+import (
+    "context"
+    "database/sql"
+    "log"
+    "time"
 
-// Create connection pool
-pool, err := geode.NewConnectionPool(&geode.PoolConfig{
-    Host:            "geode.example.com",
-    Port:            3141,
-    MinConnections:  10,
-    MaxConnections:  100,
-    MaxIdleTime:     300 * time.Second,
-    HealthCheckInterval: 30 * time.Second,
-})
+    _ "go.codepros.org/geode"
+)
 
-// Pool automatically manages connections
-result, err := pool.Query("MATCH (p:Person) RETURN p")
+db, err := sql.Open("geode", "geode://geode.example.com:3141")
+if err != nil {
+    log.Fatal(err)
+}
+defer db.Close()
+
+// Pooling via database/sql
+db.SetMaxOpenConns(100)
+db.SetMaxIdleConns(10)
+db.SetConnMaxIdleTime(300 * time.Second)
+
+rows, err := db.QueryContext(context.Background(), "MATCH (p:Person) RETURN p")
 ```
 
 **Python Client**
 
 ```python
-from geode_client import GeodeClient
+from geode_client import ConnectionPool
 
-# Create connection pool
-client = GeodeClient(
-    host='geode.example.com',
+pool = ConnectionPool(
+    host="geode.example.com",
     port=3141,
-    pool_size=50,
-    pool_max_overflow=20,
-    pool_timeout=30,
-    pool_recycle=3600
+    min_size=10,
+    max_size=100,
+    skip_verify=True,
 )
 
-# Pool handles connection management
-async with client.session() as session:
-    result = await session.run("MATCH (p:Person) RETURN p")
+async with pool:
+    async with pool.acquire() as conn:
+        page, _ = await conn.query("MATCH (p:Person) RETURN p")
+        for row in page.rows:
+            print(row["p"])
 ```
 
 **Rust Client**
 
 ```rust
-use geode_client::{Client, PoolConfig};
+use geode_client::ConnectionPool;
 
-// Create connection pool
-let config = PoolConfig {
-    min_connections: 10,
-    max_connections: 100,
-    acquire_timeout: Duration::from_secs(30),
-    idle_timeout: Some(Duration::from_secs(300)),
-    ..Default::default()
-};
+let pool = ConnectionPool::new("geode.example.com", 3141, 100)
+    .skip_verify(true)
+    .page_size(1000);
 
-let client = Client::with_pool("geode.example.com:3141", config).await?;
-
-// Acquire connection from pool
-let result = client.query("MATCH (p:Person) RETURN p").await?;
+let mut conn = pool.acquire().await?;
+let (page, _) = conn.query("MATCH (p:Person) RETURN p").await?;
 ```
 
 ### Connection Pool Best Practices
@@ -241,7 +241,7 @@ geode serve --auth-method=password \
 Client connection:
 
 ```python
-client = GeodeClient(
+client = Client(
     host='geode.example.com',
     port=3141,
     username='alice@example.com',
@@ -262,7 +262,7 @@ geode serve --auth-method=jwt \
 Client with token:
 
 ```python
-client = GeodeClient(
+client = Client(
     host='geode.example.com',
     port=3141,
     auth_token='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...'
@@ -465,14 +465,29 @@ geode cert-verify --cert=/etc/geode/certs/server.crt
 
 ### Connection Timeouts
 
-```bash
-# Increase client timeout
-client = GeodeClient(
-    host='geode.example.com',
-    connection_timeout=60,  # 60 seconds
-    query_timeout=300       # 5 minutes
-)
+```ts
+// Node.js: configure connect/request timeouts via DSN options
+import { createClient } from '@geode/client';
 
+const client = await createClient(
+  'geode://geode.example.com:3141?connect_timeout=60000&request_timeout=300000'
+);
+```
+
+```python
+# Python: wrap operations with asyncio timeouts
+import asyncio
+from geode_client import Client
+
+client = Client(host="geode.example.com", port=3141, skip_verify=True)
+async with client.connection() as conn:
+    result, _ = await asyncio.wait_for(
+        conn.query("MATCH (p:Person) RETURN p LIMIT 1"),
+        timeout=30,
+    )
+```
+
+```bash
 # Increase server timeout
 geode serve --connection-timeout=60s \
   --query-timeout=300s
@@ -500,23 +515,31 @@ geode stats --component=connection-pool \
 
 ```python
 # Reuse connections efficiently
-async with client.session() as session:
-    # Reuse same connection for multiple queries
-    await session.run("MATCH (p:Person {id: $id}) RETURN p", id=1)
-    await session.run("MATCH (c:Company {id: $id}) RETURN c", id=2)
-    await session.run("MATCH (p:Product {id: $id}) RETURN p", id=3)
+async with client.connection() as conn:
+    await conn.begin()
+    try:
+        await conn.query("MATCH (p:Person {id: $id}) RETURN p", {"id": 1})
+        await conn.query("MATCH (c:Company {id: $id}) RETURN c", {"id": 2})
+        await conn.query("MATCH (p:Product {id: $id}) RETURN p", {"id": 3})
+        await conn.commit()
+    except Exception:
+        await conn.rollback()
+        raise
 ```
 
 ### Batching
 
 ```python
 # Batch multiple queries in single round-trip
-async with client.session() as session:
-    batch = session.batch()
-    batch.add("MATCH (p:Person {id: $id}) RETURN p", id=1)
-    batch.add("MATCH (c:Company {id: $id}) RETURN c", id=2)
-    batch.add("MATCH (p:Product {id: $id}) RETURN p", id=3)
-    results = await batch.execute()
+async with client.connection() as conn:
+    results = await conn.batch([
+        ("MATCH (p:Person {id: $id}) RETURN p", {"id": 1}),
+        ("MATCH (c:Company {id: $id}) RETURN c", {"id": 2}),
+        ("MATCH (p:Product {id: $id}) RETURN p", {"id": 3}),
+    ])
+    for result in results:
+        if result.success:
+            print(result.page.rows)
 ```
 
 ### Connection Warmup

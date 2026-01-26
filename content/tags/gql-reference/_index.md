@@ -824,13 +824,14 @@ RETURN user.name,
 ```python
 # REST API integration
 from fastapi import FastAPI, HTTPException
-from geode_client import GeodeClient
+from geode_client import Client
 
 app = FastAPI()
 
 @app.get("/api/users/{user_id}/recommendations")
 async def get_recommendations(user_id: int, limit: int = 10):
-    async with GeodeClient("localhost", 3141) as client:
+    client = Client(host="localhost", port=3141)
+    async with client.connection() as conn:
         query = """
             MATCH (u:User {id: $user_id})-[:PURCHASED]->(p:Product)
                   <-[:PURCHASED]-(similar:User)-[:PURCHASED]->(rec:Product)
@@ -845,7 +846,7 @@ async def get_recommendations(user_id: int, limit: int = 10):
             LIMIT $limit
         """
 
-        result = await client.execute(query, {
+        result, _ = await conn.query(query, {
             'user_id': user_id,
             'limit': limit
         })
@@ -859,7 +860,7 @@ async def get_recommendations(user_id: int, limit: int = 10):
                     'price': row['rec.price'],
                     'score': row['score']
                 }
-                async for row in result
+                for row in result.rows
             ]
         }
 ```
@@ -882,8 +883,9 @@ class User:
 class Query:
     @strawberry.field
     async def user(self, id: int) -> User:
-        async with GeodeClient("localhost", 3141) as client:
-            result = await client.execute("""
+        client = Client(host="localhost", port=3141)
+        async with client.connection() as conn:
+            result, _ = await conn.query("""
                 MATCH (u:User {id: $id})
                 OPTIONAL MATCH (u)-[:FRIEND]->(f:User)
                 RETURN u.id AS id,
@@ -896,7 +898,7 @@ class Query:
                        }) AS friends
             """, {'id': id})
 
-            row = await result.fetch_one()
+            row = result.rows[0] if result.rows else None
             if not row:
                 raise ValueError(f"User {id} not found")
 

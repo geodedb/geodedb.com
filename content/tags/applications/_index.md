@@ -123,7 +123,7 @@ class RecommendationService:
         preferences = await self.user_service.get_preferences(user_id)
 
         # Query Geode for recommendations
-        results = await self.geode.execute_gql("""
+        result, _ = await self.geode.query("""
             MATCH (u:User {id: $user_id})-[:PURCHASED]->(p:Product)
                   <-[:PURCHASED]-(similar:User)
                   -[:PURCHASED]->(rec:Product)
@@ -137,7 +137,7 @@ class RecommendationService:
             "preferred_categories": preferences["categories"]
         })
 
-        return results
+        return result.rows
 ```
 
 ### CQRS Pattern
@@ -146,16 +146,24 @@ Separate read and write models for optimal performance.
 
 **Command (Write) Model:**
 ```rust
-use geode_client::GeodeClient;
+use geode_client::{Client, Value};
+use std::collections::HashMap;
 
 pub struct WriteModel {
-    client: GeodeClient,
+    client: Client,
 }
 
 impl WriteModel {
     pub async fn create_user(&self, user: NewUser) -> Result<UserId> {
-        let result = self.client
-            .query(r#"
+        let mut conn = self.client.connect().await?;
+        let mut params = HashMap::new();
+        params.insert("id".to_string(), Value::int(user.id as i64));
+        params.insert("name".to_string(), Value::string(user.name));
+        params.insert("email".to_string(), Value::string(user.email));
+
+        let (page, _) = conn
+            .query_with_params(
+                r#"
                 CREATE (u:User {
                     id: $id,
                     name: $name,
@@ -163,28 +171,32 @@ impl WriteModel {
                     created_at: current_timestamp()
                 })
                 RETURN u.id
-            "#)
-            .bind("id", user.id)
-            .bind("name", user.name)
-            .bind("email", user.email)
-            .execute()
+            "#,
+                &params,
+            )
             .await?;
 
-        Ok(result[0].get("u.id")?)
+        let id = page.rows[0].get("u.id").unwrap().as_int()? as UserId;
+        Ok(id)
     }
 
     pub async fn add_friendship(&self, user_id: UserId, friend_id: UserId) -> Result<()> {
-        self.client
-            .transaction()
-            .await?
-            .execute(r#"
+        let mut conn = self.client.connect().await?;
+        conn.begin().await?;
+        let mut params = HashMap::new();
+        params.insert("user_id".to_string(), Value::int(user_id as i64));
+        params.insert("friend_id".to_string(), Value::int(friend_id as i64));
+        let _ = conn
+            .query_with_params(
+                r#"
                 MATCH (u:User {id: $user_id}), (f:User {id: $friend_id})
                 CREATE (u)-[:FRIENDS_WITH {since: current_timestamp()}]->(f)
                 CREATE (f)-[:FRIENDS_WITH {since: current_timestamp()}]->(u)
-            "#, &[("user_id", user_id), ("friend_id", friend_id)])
-            .await?
-            .commit()
+            "#,
+                &params,
+            )
             .await?;
+        conn.commit().await?;
 
         Ok(())
     }
@@ -193,41 +205,52 @@ impl WriteModel {
 
 **Query (Read) Model:**
 ```rust
+use geode_client::{Client, Value};
+use std::collections::HashMap;
+
 pub struct ReadModel {
-    client: GeodeClient,
+    client: Client,
 }
 
 impl ReadModel {
     pub async fn get_user_network(&self, user_id: UserId) -> Result<UserNetwork> {
-        let results = self.client
-            .query(r#"
+        let mut conn = self.client.connect().await?;
+        let mut params = HashMap::new();
+        params.insert("user_id".to_string(), Value::int(user_id as i64));
+        let (page, _) = conn
+            .query_with_params(
+                r#"
                 MATCH (u:User {id: $user_id})
                 OPTIONAL MATCH (u)-[:FRIENDS_WITH]->(f:User)
                 RETURN u, collect(f) as friends
-            "#)
-            .bind("user_id", user_id)
-            .execute()
+            "#,
+                &params,
+            )
             .await?;
 
-        Ok(UserNetwork::from(results))
+        Ok(UserNetwork::from_rows(&page.rows))
     }
 
     pub async fn get_friend_suggestions(&self, user_id: UserId, limit: usize) -> Result<Vec<User>> {
-        let results = self.client
-            .query(r#"
+        let mut conn = self.client.connect().await?;
+        let mut params = HashMap::new();
+        params.insert("user_id".to_string(), Value::int(user_id as i64));
+        params.insert("limit".to_string(), Value::int(limit as i64));
+        let (page, _) = conn
+            .query_with_params(
+                r#"
                 MATCH (u:User {id: $user_id})-[:FRIENDS_WITH]->(f:User)
                       -[:FRIENDS_WITH]->(fof:User)
                 WHERE NOT (u)-[:FRIENDS_WITH]->(fof) AND u <> fof
                 RETURN fof, count(f) as mutual_friends
                 ORDER BY mutual_friends DESC
                 LIMIT $limit
-            "#)
-            .bind("user_id", user_id)
-            .bind("limit", limit as i64)
-            .execute()
+            "#,
+                &params,
+            )
             .await?;
 
-        Ok(results.into_iter().map(User::from).collect())
+        Ok(page.rows.iter().map(User::from_row).collect())
     }
 }
 ```
@@ -251,54 +274,76 @@ GET    /users/:id/recommendations    # Get recommendations
 **Implementation (Python/FastAPI):**
 ```python
 from fastapi import FastAPI, HTTPException
-from geode_client import GeodeClient
+from geode_client import Client
 
 app = FastAPI()
-geode = GeodeClient("localhost", 3141)
+geode = Client(host="localhost", port=3141)
 
 @app.get("/users/{user_id}")
 async def get_user(user_id: str):
-    results = await geode.execute_gql(
-        "MATCH (u:User {id: $id}) RETURN u",
-        {"id": user_id}
-    )
+    async with geode.connection() as conn:
+        result, _ = await conn.query(
+            "MATCH (u:User {id: $id}) RETURN u",
+            {"id": user_id},
+        )
 
-    if not results:
-        raise HTTPException(status_code=404, detail="User not found")
+        if not result.rows:
+            raise HTTPException(status_code=404, detail="User not found")
 
-    return results[0]["u"]
+        return result.rows[0]["u"].raw_value
 
 @app.get("/users/{user_id}/friends")
 async def get_friends(user_id: str):
-    results = await geode.execute_gql("""
-        MATCH (u:User {id: $id})-[:FRIENDS_WITH]->(f:User)
-        RETURN f.id, f.name, f.email
-    """, {"id": user_id})
+    async with geode.connection() as conn:
+        result, _ = await conn.query(
+            """
+            MATCH (u:User {id: $id})-[:FRIENDS_WITH]->(f:User)
+            RETURN f.id AS id, f.name AS name, f.email AS email
+            """,
+            {"id": user_id},
+        )
 
-    return [{"id": r["f.id"], "name": r["f.name"], "email": r["f.email"]}
-            for r in results]
+        return [
+            {
+                "id": row["id"].raw_value,
+                "name": row["name"].raw_value,
+                "email": row["email"].raw_value,
+            }
+            for row in result.rows
+        ]
 
 @app.post("/users/{user_id}/friends/{friend_id}")
 async def add_friend(user_id: str, friend_id: str):
-    async with geode.transaction() as tx:
-        # Verify both users exist
-        users = await tx.execute("""
-            MATCH (u:User {id: $user_id})
-            MATCH (f:User {id: $friend_id})
-            RETURN u, f
-        """, {"user_id": user_id, "friend_id": friend_id})
+    async with geode.connection() as conn:
+        await conn.begin()
+        try:
+            # Verify both users exist
+            result, _ = await conn.query(
+                """
+                MATCH (u:User {id: $user_id})
+                MATCH (f:User {id: $friend_id})
+                RETURN u, f
+                """,
+                {"user_id": user_id, "friend_id": friend_id},
+            )
 
-        if not users:
-            raise HTTPException(status_code=404, detail="User not found")
+            if not result.rows:
+                raise HTTPException(status_code=404, detail="User not found")
 
-        # Create bidirectional friendship
-        await tx.execute("""
-            MATCH (u:User {id: $user_id}), (f:User {id: $friend_id})
-            CREATE (u)-[:FRIENDS_WITH {since: current_timestamp()}]->(f)
-            CREATE (f)-[:FRIENDS_WITH {since: current_timestamp()}]->(u)
-        """, {"user_id": user_id, "friend_id": friend_id})
+            # Create bidirectional friendship
+            await conn.execute(
+                """
+                MATCH (u:User {id: $user_id}), (f:User {id: $friend_id})
+                CREATE (u)-[:FRIENDS_WITH {since: current_timestamp()}]->(f)
+                CREATE (f)-[:FRIENDS_WITH {since: current_timestamp()}]->(u)
+                """,
+                {"user_id": user_id, "friend_id": friend_id},
+            )
 
-        await tx.commit()
+            await conn.commit()
+        except Exception:
+            await conn.rollback()
+            raise
 
     return {"status": "success"}
 ```
@@ -349,54 +394,74 @@ user_type = ObjectType("User")
 
 @query.field("user")
 async def resolve_user(_, info, id):
-    results = await geode.execute_gql(
-        "MATCH (u:User {id: $id}) RETURN u",
-        {"id": id}
-    )
-    return results[0]["u"] if results else None
+    async with geode.connection() as conn:
+        result, _ = await conn.query(
+            "MATCH (u:User {id: $id}) RETURN u",
+            {"id": id},
+        )
+        return result.rows[0]["u"].raw_value if result.rows else None
 
 @user_type.field("friends")
 async def resolve_friends(user, info):
-    results = await geode.execute_gql("""
-        MATCH (u:User {id: $id})-[:FRIENDS_WITH]->(f:User)
-        RETURN f
-    """, {"id": user["id"]})
+    async with geode.connection() as conn:
+        result, _ = await conn.query(
+            """
+            MATCH (u:User {id: $id})-[:FRIENDS_WITH]->(f:User)
+            RETURN f
+            """,
+            {"id": user["id"]},
+        )
 
-    return [r["f"] for r in results]
+        return [row["f"].raw_value for row in result.rows]
 
 @user_type.field("friendCount")
 async def resolve_friend_count(user, info):
-    results = await geode.execute_gql("""
-        MATCH (u:User {id: $id})-[:FRIENDS_WITH]->(:User)
-        RETURN count(*) as count
-    """, {"id": user["id"]})
+    async with geode.connection() as conn:
+        result, _ = await conn.query(
+            """
+            MATCH (u:User {id: $id})-[:FRIENDS_WITH]->(:User)
+            RETURN count(*) as count
+            """,
+            {"id": user["id"]},
+        )
 
-    return results[0]["count"]
+        return result.rows[0]["count"].raw_value if result.rows else 0
 
 @user_type.field("recommendations")
 async def resolve_recommendations(user, info):
-    results = await geode.execute_gql("""
-        MATCH (u:User {id: $id})-[:PURCHASED]->(p:Product)
-              <-[:PURCHASED]-(similar:User)
-              -[:PURCHASED]->(rec:Product)
-        WHERE NOT (u)-[:PURCHASED]->(rec)
-        RETURN DISTINCT rec, count(similar) as score
-        ORDER BY score DESC
-        LIMIT 10
-    """, {"id": user["id"]})
+    async with geode.connection() as conn:
+        result, _ = await conn.query(
+            """
+            MATCH (u:User {id: $id})-[:PURCHASED]->(p:Product)
+                  <-[:PURCHASED]-(similar:User)
+                  -[:PURCHASED]->(rec:Product)
+            WHERE NOT (u)-[:PURCHASED]->(rec)
+            RETURN DISTINCT rec, count(similar) as score
+            ORDER BY score DESC
+            LIMIT 10
+            """,
+            {"id": user["id"]},
+        )
 
-    return [r["rec"] for r in results]
+        return [row["rec"].raw_value for row in result.rows]
 
 @mutation.field("addFriend")
 async def resolve_add_friend(_, info, userId, friendId):
-    async with geode.transaction() as tx:
-        await tx.execute("""
-            MATCH (u:User {id: $user_id}), (f:User {id: $friend_id})
-            CREATE (u)-[:FRIENDS_WITH]->(f)
-            CREATE (f)-[:FRIENDS_WITH]->(u)
-        """, {"user_id": userId, "friend_id": friendId})
-
-        await tx.commit()
+    async with geode.connection() as conn:
+        await conn.begin()
+        try:
+            await conn.execute(
+                """
+                MATCH (u:User {id: $user_id}), (f:User {id: $friend_id})
+                CREATE (u)-[:FRIENDS_WITH]->(f)
+                CREATE (f)-[:FRIENDS_WITH]->(u)
+                """,
+                {"user_id": userId, "friend_id": friendId},
+            )
+            await conn.commit()
+        except Exception:
+            await conn.rollback()
+            raise
 
     return True
 ```
@@ -431,7 +496,9 @@ Implement schema validation in application layer.
 
 **Example (Rust with serde):**
 ```rust
+use geode_client::{Client, Value};
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 use validator::Validate;
 
 #[derive(Debug, Serialize, Deserialize, Validate)]
@@ -446,7 +513,7 @@ pub struct NewUser {
     pub password: String,
 }
 
-pub async fn create_user(client: &GeodeClient, user: NewUser) -> Result<UserId> {
+pub async fn create_user(client: &Client, user: NewUser) -> Result<UserId> {
     // Validate input
     user.validate()?;
 
@@ -454,8 +521,15 @@ pub async fn create_user(client: &GeodeClient, user: NewUser) -> Result<UserId> 
     let password_hash = hash_password(&user.password)?;
 
     // Create in Geode
-    let result = client
-        .query(r#"
+    let mut conn = client.connect().await?;
+    let mut params = HashMap::new();
+    params.insert("id".to_string(), Value::string(Uuid::new_v4().to_string()));
+    params.insert("name".to_string(), Value::string(user.name));
+    params.insert("email".to_string(), Value::string(user.email));
+    params.insert("password_hash".to_string(), Value::string(password_hash));
+    let (page, _) = conn
+        .query_with_params(
+            r#"
             CREATE (u:User {
                 id: $id,
                 name: $name,
@@ -464,15 +538,12 @@ pub async fn create_user(client: &GeodeClient, user: NewUser) -> Result<UserId> 
                 created_at: current_timestamp()
             })
             RETURN u.id
-        "#)
-        .bind("id", Uuid::new_v4().to_string())
-        .bind("name", user.name)
-        .bind("email", user.email)
-        .bind("password_hash", password_hash)
-        .execute()
+        "#,
+            &params,
+        )
         .await?;
 
-    Ok(result[0].get("u.id")?)
+    Ok(page.rows[0].get("u.id").unwrap().as_string()?)
 }
 ```
 
@@ -518,55 +589,59 @@ Test against real Geode instance.
 **Example (Python with pytest):**
 ```python
 import pytest
-from geode_client import GeodeClient
+from geode_client import Client
 
 @pytest.fixture
 async def geode_client():
-    client = GeodeClient("localhost", 3141)
+    client = Client(host="localhost", port=3141)
     yield client
     # Cleanup
-    await client.execute_gql("MATCH (n) DETACH DELETE n")
-    await client.close()
+    async with client.connection() as conn:
+        await conn.execute("MATCH (n) DETACH DELETE n")
 
 @pytest.mark.asyncio
 async def test_create_and_find_user(geode_client):
     # Create user
-    await geode_client.execute_gql("""
-        CREATE (:User {id: 'test1', name: 'Test User', email: 'test@example.com'})
-    """)
+    async with geode_client.connection() as conn:
+        await conn.execute("""
+            CREATE (:User {id: 'test1', name: 'Test User', email: 'test@example.com'})
+        """)
 
     # Find user
-    results = await geode_client.execute_gql("""
-        MATCH (u:User {email: 'test@example.com'})
-        RETURN u.id, u.name
-    """)
+    async with geode_client.connection() as conn:
+        results, _ = await conn.query("""
+            MATCH (u:User {email: 'test@example.com'})
+            RETURN u.id, u.name
+        """)
 
-    assert len(results) == 1
-    assert results[0]["u.name"] == "Test User"
+    assert len(results.rows) == 1
+    assert results.rows[0]["u.name"].raw_value == "Test User"
 
 @pytest.mark.asyncio
 async def test_friend_recommendations(geode_client):
     # Setup test data
-    await geode_client.execute_gql("""
-        CREATE (alice:User {id: 'alice', name: 'Alice'})
-        CREATE (bob:User {id: 'bob', name: 'Bob'})
-        CREATE (carol:User {id: 'carol', name: 'Carol'})
-        CREATE (alice)-[:FRIENDS_WITH]->(bob)
-        CREATE (bob)-[:FRIENDS_WITH]->(alice)
-        CREATE (bob)-[:FRIENDS_WITH]->(carol)
-        CREATE (carol)-[:FRIENDS_WITH]->(bob)
-    """)
+    async with geode_client.connection() as conn:
+        await conn.execute("""
+            CREATE (alice:User {id: 'alice', name: 'Alice'})
+            CREATE (bob:User {id: 'bob', name: 'Bob'})
+            CREATE (carol:User {id: 'carol', name: 'Carol'})
+            CREATE (alice)-[:FRIENDS_WITH]->(bob)
+            CREATE (bob)-[:FRIENDS_WITH]->(alice)
+            CREATE (bob)-[:FRIENDS_WITH]->(carol)
+            CREATE (carol)-[:FRIENDS_WITH]->(bob)
+        """)
 
     # Test recommendations
-    results = await geode_client.execute_gql("""
-        MATCH (u:User {id: 'alice'})-[:FRIENDS_WITH]->(f)
-              -[:FRIENDS_WITH]->(fof:User)
-        WHERE NOT (u)-[:FRIENDS_WITH]->(fof) AND u <> fof
-        RETURN fof.name
-    """)
+    async with geode_client.connection() as conn:
+        results, _ = await conn.query("""
+            MATCH (u:User {id: 'alice'})-[:FRIENDS_WITH]->(f)
+                  -[:FRIENDS_WITH]->(fof:User)
+            WHERE NOT (u)-[:FRIENDS_WITH]->(fof) AND u <> fof
+            RETURN fof.name
+        """)
 
-    assert len(results) == 1
-    assert results[0]["fof.name"] == "Carol"
+    assert len(results.rows) == 1
+    assert results.rows[0]["fof.name"].raw_value == "Carol"
 ```
 
 ## Performance Optimization
@@ -607,10 +682,15 @@ def cache_result(ttl=300):
 
 @cache_result(ttl=600)
 async def get_user_network(user_id):
-    return await geode.execute_gql("""
-        MATCH (u:User {id: $id})-[:FRIENDS_WITH]->(f)
-        RETURN f.id, f.name
-    """, {"id": user_id})
+    async with geode.connection() as conn:
+        result, _ = await conn.query("""
+            MATCH (u:User {id: $id})-[:FRIENDS_WITH]->(f)
+            RETURN f.id AS id, f.name AS name
+        """, {"id": user_id})
+    return [
+        {"id": row["id"].raw_value, "name": row["name"].raw_value}
+        for row in result.rows
+    ]
 ```
 
 ### Batch Operations
@@ -620,13 +700,17 @@ Batch related operations to reduce roundtrips.
 **Example:**
 ```python
 async def create_users_batch(users):
-    async with geode.transaction() as tx:
-        for user in users:
-            await tx.execute("""
-                CREATE (:User {id: $id, name: $name, email: $email})
-            """, user)
-
-        await tx.commit()
+    async with geode.connection() as conn:
+        await conn.begin()
+        try:
+            for user in users:
+                await conn.execute("""
+                    CREATE (:User {id: $id, name: $name, email: $email})
+                """, user)
+            await conn.commit()
+        except Exception:
+            await conn.rollback()
+            raise
 ```
 
 ## Deployment
@@ -670,7 +754,8 @@ Implement health checks for monitoring.
 async def health_check():
     try:
         # Ping Geode
-        await geode.execute_gql("RETURN 1")
+        async with geode.connection() as conn:
+            await conn.query("RETURN 1 AS ok")
         return {"status": "healthy", "database": "connected"}
     except Exception as e:
         return {"status": "unhealthy", "error": str(e)}, 503

@@ -54,8 +54,10 @@ Geode implements Serializable Snapshot Isolation (SSI) by default, the strongest
 
 ```python
 # Python client with explicit isolation
-async with client.transaction(isolation='SERIALIZABLE') as tx:
-    result = await tx.query("MATCH (u:User {id: $id}) RETURN u", {"id": 123})
+async with client.connection() as tx:
+    # Isolation is configured server-side
+    await tx.begin()
+    result, _ = await tx.query("MATCH (u:User {id: $id}) RETURN u", {"id": 123})
     await tx.query("CREATE (:AuditLog {user_id: $id, action: 'login'})", {"id": 123})
     await tx.commit()
 ```
@@ -165,7 +167,7 @@ RETURN u.name, DECRYPT(u.ssn, 'user-key') AS ssn;
 
 ```python
 # Client authentication
-client = GeodeClient(
+client = Client(
     'localhost:3141',
     username='admin',
     password='secure-password',
@@ -199,12 +201,26 @@ geode serve --listen 0.0.0.0:3142 --replication-mode replica --primary-host prim
 Stream database changes to external systems:
 
 ```python
-# Subscribe to CDC stream
-async for change in client.cdc_stream(labels=['User', 'Product']):
-    print(f"Operation: {change.operation}")  # INSERT, UPDATE, DELETE
-    print(f"Label: {change.label}")
-    print(f"Data: {change.data}")
-    print(f"Timestamp: {change.timestamp}")
+# Poll application ChangeLog
+last_seen = "1970-01-01T00:00:00Z"
+async with client.connection() as conn:
+    result, _ = await conn.query(
+        """
+        MATCH (e:ChangeLog)
+        WHERE e.emitted_at > $since AND e.label IN $labels
+        RETURN e.operation AS operation,
+               e.label AS label,
+               e.after AS after,
+               e.emitted_at AS emitted_at
+        ORDER BY emitted_at
+        """,
+        {"since": last_seen, "labels": ["User", "Product"]},
+    )
+    for row in result.rows:
+        print(f"Operation: {row['operation'].raw_value}")  # INSERT, UPDATE, DELETE
+        print(f"Label: {row['label'].raw_value}")
+        print(f"Data: {row['after'].raw_value}")
+        print(f"Timestamp: {row['emitted_at'].raw_value}")
 ```
 
 ## Backup and Recovery
@@ -247,9 +263,9 @@ stmt = await client.prepare("""
 """)
 
 # Execute multiple times with different parameters
-result1 = await stmt.execute({"id": 1})
-result2 = await stmt.execute({"id": 2})
-result3 = await stmt.execute({"id": 3})
+result1, _ = await stmt.execute({"id": 1})
+result2, _ = await stmt.execute({"id": 2})
+result3, _ = await stmt.execute({"id": 3})
 ```
 
 ### Stored Procedures
@@ -280,7 +296,7 @@ Automatic result caching for repeated queries:
 
 ```python
 # Enable query cache
-client = GeodeClient('localhost:3141', enable_cache=True, cache_ttl=300)
+client = Client('localhost:3141', enable_cache=True, cache_ttl=300)
 
 # First execution hits database
 result1 = await client.query("MATCH (u:User) WHERE u.active = true RETURN COUNT(u)")
@@ -422,9 +438,10 @@ Polyglot client support for multiple languages:
 
 ```python
 # Python (async)
-from geode_client import GeodeClient
-async with GeodeClient('localhost:3141') as client:
-    result = await client.query("MATCH (u:User) RETURN u")
+from geode_client import Client
+client = Client(host="localhost", port=3141)
+async with client.connection() as conn:
+    result, _ = await conn.query("MATCH (u:User) RETURN u")
 ```
 
 ```go
@@ -438,10 +455,11 @@ rows, _ := db.Query("MATCH (u:User) RETURN u.name")
 
 ```rust
 // Rust (async)
-use geode_client::GeodeClient;
+use geode_client::Client;
 
-let client = GeodeClient::connect("localhost:3141").await?;
-let result = client.query("MATCH (u:User) RETURN u").await?;
+let client = Client::from_dsn("localhost:3141")?;
+let mut conn = client.connect().await?;
+let (page, _) = conn.query("MATCH (u:User) RETURN u").await?;
 ```
 
 ## Standards Compliance
@@ -489,7 +507,7 @@ Geode's comprehensive feature set provides everything needed for production-grad
 Isolate tenant data with Row-Level Security:
 
 ```python
-class MultiTenantGeodeClient:
+class MultiTenantClient:
     def __init__(self, base_client):
         self.client = base_client
     
@@ -511,19 +529,24 @@ class MultiTenantGeodeClient:
     
     async def execute_for_tenant(self, tenant_id, query, params=None):
         """Execute query in tenant context"""
-        async with self.client.transaction() as tx:
-            # Set tenant context
-            await tx.execute("""
-                SET app.tenant_id = $tenant_id
-            """, {"tenant_id": tenant_id})
-            
-            # Execute query (RLS auto-applied)
-            result = await tx.execute(query, params)
-            
-            return result
+        async with self.client.connection() as conn:
+            await conn.begin()
+            try:
+                # Set tenant context
+                await conn.execute("""
+                    SET app.tenant_id = $tenant_id
+                """, {"tenant_id": tenant_id})
+
+                # Execute query (RLS auto-applied)
+                result, _ = await conn.query(query, params)
+                await conn.commit()
+                return result
+            except Exception:
+                await conn.rollback()
+                raise
 
 # Usage
-client = MultiTenantGeodeClient(base_client)
+client = MultiTenantClient(base_client)
 await client.setup_tenant_isolation()
 
 # Queries automatically filtered by tenant
@@ -602,7 +625,7 @@ async def semantic_search(client, query_text, limit=10):
     query_embedding = await generate_embedding(query_text)
     
     # Vector similarity search
-    results = await client.execute("""
+    results, _ = await client.query("""
         MATCH (d:Document)
         WITH d, vector_similarity(d.embedding, $query_embedding, 'cosine') as similarity
         WHERE similarity > 0.7
@@ -742,7 +765,7 @@ Intelligent result caching:
 from functools import lru_cache
 import hashlib
 
-class CachedGeodeClient:
+class CachedClient:
     def __init__(self, client, cache_backend):
         self.client = client
         self.cache = cache_backend
@@ -762,7 +785,7 @@ class CachedGeodeClient:
             return json.loads(cached)
         
         # Execute query
-        result = await self.client.execute(query, params)
+        result, _ = await self.client.query(query, params)
         
         # Store in cache
         await self.cache.set(key, json.dumps(result), ex=ttl)

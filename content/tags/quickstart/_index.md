@@ -42,13 +42,14 @@ pip install geode-client
 # Run first query
 python3 << 'PY'
 import asyncio
-from geode_client import GeodeClient
+from geode_client import Client
 
 async def quick():
-    async with GeodeClient("localhost:3141") as client:
-        await client.execute("CREATE (p:Person {name: 'Alice'})")
-        result = await client.execute("MATCH (p:Person) RETURN p.name")
-        print([row async for row in result])
+    client = Client(host="localhost", port=3141)
+    async with client.connection() as conn:
+        await conn.execute("CREATE (p:Person {name: 'Alice'})")
+        page, _ = await conn.query("MATCH (p:Person) RETURN p.name AS name")
+        print([row["name"].as_string for row in page.rows])
 
 asyncio.run(quick())
 PY
@@ -113,24 +114,30 @@ RETURN u.name, img.url
 ### Python Quickstart
 
 ```python
-from geode_client import GeodeClient
+from geode_client import Client
 import asyncio
 
 async def main():
-    async with GeodeClient("localhost:3141") as client:
+    client = Client(host="localhost", port=3141)
+    async with client.connection() as conn:
         # Transaction
-        async with client.transaction() as tx:
-            await tx.execute("CREATE (p:Person {name: $n})", n="Alice")
+        await conn.begin()
+        try:
+            await conn.execute("CREATE (p:Person {name: $n})", {"n": "Alice"})
+            await conn.commit()
+        except Exception:
+            await conn.rollback()
+            raise
 
         # Query with parameters
-        result = await client.execute(
+        result, _ = await conn.query(
             "MATCH (p:Person {name: $name}) RETURN p",
-            name="Alice"
+            {"name": "Alice"}
         )
 
         # Stream results
-        async for row in result:
-            print(row['p'])
+        for row in result.rows:
+            print(row["p"])
 
 asyncio.run(main())
 ```
@@ -170,33 +177,35 @@ func main() {
 ### Rust Quickstart
 
 ```rust
-use geode_client::{Client, params};
+use geode_client::{Client, Result, Value};
+use std::collections::HashMap;
 
 #[tokio::main]
-async fn main() {
-    let client = Client::connect("localhost:3141").await.unwrap();
+async fn main() -> Result<()> {
+    let client = Client::new("localhost", 3141).skip_verify(true);
+    let mut conn = client.connect().await?;
 
     // Execute with params
-    client.execute(
+    let mut params = HashMap::new();
+    params.insert("name".to_string(), Value::string("Alice"));
+    conn.query_with_params(
         "CREATE (p:Person {name: $name})",
-        params! { "name" => "Alice" }
-    ).await.unwrap();
+        &params
+    ).await?;
 
-    // Stream results
-    let mut stream = client.execute(
-        "MATCH (p:Person) RETURN p.name",
-        params! {}
-    ).stream().await.unwrap();
-
-    while let Some(row) = stream.next().await {
-        let name: String = row.get("p.name").unwrap();
+    // Read results
+    let (page, _) = conn.query("MATCH (p:Person) RETURN p.name AS name").await?;
+    for row in &page.rows {
+        let name = row.get("name").unwrap().as_string()?;
         println!("{}", name);
     }
 
     // Transaction
-    let tx = client.begin().await.unwrap();
-    tx.execute("CREATE (p:Person {name: 'Bob'})", params! {}).await.unwrap();
-    tx.commit().await.unwrap();
+    conn.begin().await?;
+    conn.query("CREATE (p:Person {name: 'Bob'})").await?;
+    conn.commit().await?;
+
+    Ok(())
 }
 ```
 
@@ -254,7 +263,9 @@ ORDER BY depth, child.name
 
 ```python
 # Python - automatic pooling
-client = GeodeClient("localhost:3141", pool_size=100)
+from geode_client import ConnectionPool
+
+pool = ConnectionPool(host="localhost", port=3141, min_size=10, max_size=100)
 ```
 
 ```go
@@ -266,11 +277,9 @@ db.SetConnMaxLifetime(time.Hour)
 
 ```rust
 // Rust - builder pattern
-let client = Client::builder()
-    .address("localhost:3141")
-    .pool_size(100)
-    .connect()
-    .await?;
+use geode_client::ConnectionPool;
+
+let pool = ConnectionPool::new("localhost", 3141, 100);
 ```
 
 ### Error Handling
@@ -278,9 +287,10 @@ let client = Client::builder()
 ```python
 # Python
 try:
-    await client.execute(query)
-except QueryError as e:
-    if e.is_retryable:
+    async with client.connection() as conn:
+        await conn.query(query)
+except QueryError as exc:
+    if "SERIALIZATION" in str(exc):
         # Retry logic
     else:
         # Log and fail
@@ -299,9 +309,9 @@ if err == sql.ErrNoRows {
 
 ```rust
 // Rust
-match client.execute(query, params).await {
-    Ok(result) => { /* success */ }
-    Err(geode_client::Error::TransactionConflict) => { /* retry */ }
+match conn.query_with_params(query, &params).await {
+    Ok((_page, _)) => { /* success */ }
+    Err(err) if err.is_retryable() => { /* retry */ }
     Err(e) => { /* other error */ }
 }
 ```
@@ -331,24 +341,38 @@ EXPLAIN MATCH (a:Person)-[:KNOWS*3]->(b) RETURN count(*)
 
 ```python
 # Insert multiple nodes in one query
-await client.execute("""
-    UNWIND $users AS user
-    CREATE (p:Person {name: user.name, email: user.email})
-""", users=[
-    {"name": "Alice", "email": "alice@example.com"},
-    {"name": "Bob", "email": "bob@example.com"},
-])
+async with client.connection() as conn:
+    await conn.execute(
+        """
+        UNWIND $users AS user
+        CREATE (p:Person {name: user.name, email: user.email})
+        """,
+        {
+            "users": [
+                {"name": "Alice", "email": "alice@example.com"},
+                {"name": "Bob", "email": "bob@example.com"},
+            ]
+        },
+    )
 ```
 
 ### 4. Use Transactions
 
 ```python
 # Group related operations
-async with client.transaction() as tx:
-    await tx.execute("CREATE (o:Order {id: $id})", id=order_id)
-    for item in items:
-        await tx.execute("CREATE (o)-[:CONTAINS]->(p:Product {id: $pid})",
-                        pid=item.product_id)
+async with client.connection() as conn:
+    await conn.begin()
+    try:
+        await conn.execute("CREATE (o:Order {id: $id})", {"id": order_id})
+        for item in items:
+            await conn.execute(
+                "CREATE (o)-[:CONTAINS]->(p:Product {id: $pid})",
+                {"pid": item.product_id},
+            )
+        await conn.commit()
+    except Exception:
+        await conn.rollback()
+        raise
 ```
 
 ## Production Quickstart
@@ -411,7 +435,8 @@ spec:
 @app.get("/health")
 async def health():
     try:
-        await client.execute("MATCH (n) RETURN count(n) LIMIT 1")
+        async with client.connection() as conn:
+            await conn.query("RETURN 1 AS ok")
         return {"status": "healthy"}
     except:
         return {"status": "unhealthy"}, 503

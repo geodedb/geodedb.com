@@ -297,19 +297,21 @@ func TestTransaction(t *testing.T) {
 ```python
 # geode-client-python/tests/test_client.py
 import pytest
-from geode_client import GeodeClient
+from geode_client import Client
 
 @pytest.mark.asyncio
 async def test_basic_query():
-    async with GeodeClient("localhost", 3141) as client:
-        result = await client.execute("MATCH (n) RETURN count(n) AS cnt")
+    client = Client(host="localhost", port=3141)
+    async with client.connection() as conn:
+        result, _ = await conn.query("MATCH (n) RETURN count(n) AS cnt")
         assert len(result.bindings) == 1
         assert result.bindings[0]['cnt'] >= 0
 
 @pytest.mark.asyncio
 async def test_parameterized_query():
-    async with GeodeClient("localhost", 3141) as client:
-        result = await client.execute(
+    client = Client(host="localhost", port=3141)
+    async with client.connection() as conn:
+        result, _ = await conn.query(
             "MATCH (u:User {email: $email}) RETURN u.name",
             {"email": "alice@example.com"}
         )
@@ -317,30 +319,34 @@ async def test_parameterized_query():
 
 @pytest.mark.asyncio
 async def test_transaction():
-    async with GeodeClient("localhost", 3141) as client:
-        async with client.transaction() as tx:
+    client = Client(host="localhost", port=3141)
+    async with client.connection() as conn:
+        async with client.connection() as tx:
+            await tx.begin()
             await tx.execute("CREATE (u:User {name: 'Test'})")
             await tx.execute("CREATE (u:User {name: 'Test2'})")
             # Auto-commits on exit
         
         # Verify committed
-        result = await client.execute(
+        result, _ = await conn.query(
             "MATCH (u:User) WHERE u.name STARTS WITH 'Test' RETURN count(u)"
         )
         assert result.bindings[0]['count(u)'] == 2
 
 @pytest.mark.asyncio
 async def test_transaction_rollback():
-    async with GeodeClient("localhost", 3141) as client:
+    client = Client(host="localhost", port=3141)
+    async with client.connection() as conn:
         try:
-            async with client.transaction() as tx:
+            async with client.connection() as tx:
+                await tx.begin()
                 await tx.execute("CREATE (u:User {name: 'Rollback Test'})")
                 raise Exception("Simulated error")
         except:
             pass
         
         # Verify rolled back
-        result = await client.execute(
+        result, _ = await conn.query(
             "MATCH (u:User {name: 'Rollback Test'}) RETURN count(u)"
         )
         assert result.bindings[0]['count(u)'] == 0
@@ -515,7 +521,7 @@ import pytest
 ])
 async def test_data_type_handling(client, value, expected_type):
     """Test all data types are handled correctly"""
-    result = await client.execute(
+    result, _ = await client.query(
         "CREATE (n:Test {value: $value}) RETURN n.value, type(n.value)",
         {"value": value}
     )
@@ -534,7 +540,7 @@ async def test_query_validation(client, query, should_error):
         with pytest.raises(Exception):
             await client.execute(query)
     else:
-        result = await client.execute(query)
+        result, _ = await client.query(query)
         assert result is not None
 ```
 
@@ -628,24 +634,26 @@ def run_mutation_tests():
 ```rust
 // geode-client-rust/tests/snapshot_tests.rs
 use insta::assert_snapshot;
+use geode_client::Client;
 
-#[test]
-fn test_query_plan_snapshot() {
-    let client = GeodeClient::new("localhost:3141").unwrap();
-
-    let plan = client.explain(
-        "MATCH (u:User)-[:KNOWS]->(friend) WHERE u.country = 'USA' RETURN friend.name"
-    ).unwrap();
+#[tokio::test]
+async fn test_query_plan_snapshot() -> geode_client::Result<()> {
+    let client = Client::from_dsn("localhost:3141")?;
+    let mut conn = client.connect().await?;
+    let plan = conn
+        .explain("MATCH (u:User)-[:KNOWS]->(friend) WHERE u.country = 'USA' RETURN friend.name")
+        .await?;
 
     // Compare against saved snapshot
     assert_snapshot!(format!("{:#?}", plan));
+    Ok(())
 }
 
-#[test]
-fn test_error_message_snapshot() {
-    let client = GeodeClient::new("localhost:3141").unwrap();
-
-    let error = client.execute("INVALID SYNTAX").unwrap_err();
+#[tokio::test]
+async fn test_error_message_snapshot() {
+    let client = Client::from_dsn("localhost:3141").unwrap();
+    let mut conn = client.connect().await.unwrap();
+    let error = conn.query("INVALID SYNTAX").await.unwrap_err();
 
     // Ensure error messages stay consistent
     assert_snapshot!(error.to_string());
@@ -730,7 +738,7 @@ jobs:
 # conftest.py - Shared test fixtures
 import pytest
 import asyncio
-from geode_client import GeodeClient
+from geode_client import Client
 
 @pytest.fixture(scope="session")
 def event_loop():
@@ -761,15 +769,16 @@ async def geode_server():
 @pytest.fixture
 async def client(geode_server):
     """Provide test client"""
-    async with GeodeClient("localhost", 3141) as c:
+    client = Client("localhost", 3141)
+    async with client.connection() as c:
         yield c
 
 @pytest.fixture
 async def clean_db(client):
     """Clean database before each test"""
-    await client.execute("MATCH (n) DETACH DELETE n")
+    await c.execute("MATCH (n) DETACH DELETE n")
     yield
-    await client.execute("MATCH (n) DETACH DELETE n")
+    await c.execute("MATCH (n) DETACH DELETE n")
 
 @pytest.fixture
 def sample_graph():

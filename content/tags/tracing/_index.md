@@ -226,13 +226,13 @@ Span: transaction
     db.rows_modified: 125
 
   Child Spans:
-    ├─ begin_transaction (2ms)
+    ├─ begin (2ms)
     ├─ execute_query_1 (145ms)
     ├─ execute_query_2 (234ms)
     ├─ execute_query_3 (87ms)
     ├─ execute_query_4 (156ms)
     ├─ execute_query_5 (98ms)
-    └─ commit_transaction (15ms)
+    └─ commit (15ms)
        Attributes:
          commit.wal_position: 00000001000000CD
          commit.fsync_duration_ms: 8
@@ -288,8 +288,8 @@ async def recommend_products(user_id):
         try:
             # Fetch user preferences (creates child span automatically)
             with tracer.start_as_current_span("fetch_user_preferences"):
-                client = await geode_client.connect("localhost:3141")
-                preferences = await client.execute(
+                client = geode_client.open_database("localhost:3141")
+                preferences, _ = await client.query(
                     "MATCH (u:User {id: $id})-[:LIKES]->(p:Product) RETURN p",
                     {"id": user_id}
                 )
@@ -297,7 +297,7 @@ async def recommend_products(user_id):
 
             # Find similar users
             with tracer.start_as_current_span("find_similar_users") as sim_span:
-                similar_users = await client.execute("""
+                similar_users, _ = await client.query("""
                     MATCH (u1:User {id: $id})-[:LIKES]->(p:Product)<-[:LIKES]-(u2:User)
                     WHERE u1 <> u2
                     RETURN u2, count(p) as common_likes

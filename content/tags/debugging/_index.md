@@ -71,24 +71,24 @@ async def debug_slow_query(client, query, params=None):
     """Debug slow query execution."""
 
     # Step 1: Profile the query
-    profiled = await client.execute(f"PROFILE {query}", params)
+    profiled, _ = await client.query(f"PROFILE {query}", params)
     print("=== Profile Results ===")
     print_profile(profiled)
 
     # Step 2: Check for full table scans
-    explained = await client.execute(f"EXPLAIN {query}", params)
+    explained, _ = await client.query(f"EXPLAIN {query}", params)
     if has_full_scan(explained):
         print("WARNING: Query contains full table scan")
         print("Consider adding index on scanned properties")
 
     # Step 3: Verify index usage
-    indexes = await client.execute("SHOW INDEXES")
+    indexes, _ = await client.query("SHOW INDEXES")
     print("=== Available Indexes ===")
     for idx in indexes:
         print(f"  {idx['name']}: {idx['columns']}")
 
     # Step 4: Check statistics freshness
-    stats = await client.execute("SELECT * FROM system.statistics")
+    stats, _ = await client.query("SELECT * FROM system.statistics")
     if is_stale(stats):
         print("WARNING: Statistics may be outdated")
         print("Run: ANALYZE")
@@ -100,16 +100,16 @@ async def debug_slow_query(client, query, params=None):
 
 ```python
 # Check what's actually matching
-result = await client.execute("""
+result, _ = await client.query("""
     MATCH (u:User)
     WHERE u.email = $email
     RETURN COUNT(*) AS user_count
 """, {"email": "alice@example.com"})
 
-print(f"Found {result[0]['user_count']} users")  # Expected 1, got 0
+print(f"Found {result.rows[0]['user_count']} users")  # Expected 1, got 0
 
 # Debug: Check exact data
-all_users = await client.execute("MATCH (u:User) RETURN u.email")
+all_users, _ = await client.query("MATCH (u:User) RETURN u.email")
 print("All emails:", [u["u.email"] for u in all_users])
 
 # Common issues:
@@ -148,38 +148,40 @@ RETURN b.name  -- Try reverse direction
 ```python
 import geode_client
 import logging
+import asyncio
 
 logging.basicConfig(level=logging.DEBUG)
 
-try:
-    client = await geode_client.connect(
-        "localhost:3141",
-        timeout=5.0
-    )
-except ConnectionError as e:
-    print(f"Connection failed: {e}")
+async def check_connection():
+    try:
+        client = geode_client.open_database("geode://localhost:3141")
+        async with client.connection() as conn:
+            await asyncio.wait_for(conn.query("RETURN 1 AS ok"), timeout=5.0)
+        return "success"
+    except geode_client.GeodeConnectionError as e:
+        return f"failed: {e}"
 
-    # Check:
-    # 1. Is server running? `ps aux | grep geode`
-    # 2. Is port correct? Default is 3141
-    # 3. Firewall blocking? `telnet localhost 3141`
-    # 4. TLS certificate issues?
+# Check:
+# 1. Is server running? `ps aux | grep geode`
+# 2. Is port correct? Default is 3141
+# 3. Firewall blocking? `telnet localhost 3141`
+# 4. TLS certificate issues?
 ```
 
 **TLS/Certificate errors**:
 
 ```python
 # Disable certificate verification (dev only!)
-client = await geode_client.connect(
-    "localhost:3141",
-    tls=True,
-    verify_cert=False  # NEVER use in production
+client = geode_client.Client(
+    host="localhost",
+    port=3141,
+    skip_verify=True  # NEVER use in production
 )
 
-# Or provide correct certificate
-client = await geode_client.connect(
-    "localhost:3141",
-    tls=True,
+# Or provide a trusted CA certificate
+client = geode_client.Client(
+    host="localhost",
+    port=3141,
     ca_cert="/path/to/ca.pem"
 )
 ```
@@ -187,30 +189,21 @@ client = await geode_client.connect(
 **Connection timeouts**:
 
 ```python
-# Increase timeout
-client = await geode_client.connect(
-    "localhost:3141",
-    timeout=60.0  # 60 seconds
-)
-
-# Enable keep-alive
-client = await geode_client.connect(
-    "localhost:3141",
-    keep_alive=True,
-    keep_alive_interval=30.0
-)
+# Increase timeout with asyncio wait_for
+client = geode_client.open_database("geode://localhost:3141")
+async with client.connection() as conn:
+    await asyncio.wait_for(conn.query("RETURN 1 AS ok"), timeout=60.0)
 ```
 
 ### Authentication Issues
 
 ```python
 try:
-    client = await geode_client.connect(
-        "localhost:3141",
-        username="alice",
-        password="wrong_password"
-    )
-except AuthenticationError as e:
+    client = geode_client.open_database("geode://localhost:3141")
+    async with client.connection() as conn:
+        auth = geode_client.AuthClient(conn)
+        await auth.login("alice", "wrong_password")
+except geode_client.AuthError as e:
     print(f"Authentication failed: {e}")
 
     # Check:
@@ -258,7 +251,7 @@ SELECT * FROM system.locks WHERE waiting = true
 
 ```python
 # Reduce result set size
-result = await client.execute("""
+result, _ = await client.query("""
     MATCH (n:Node)
     RETURN n
     LIMIT 10000  -- Add limit
@@ -268,7 +261,7 @@ result = await client.execute("""
 offset = 0
 page_size = 1000
 while True:
-    page = await client.execute("""
+    page, _ = await client.query("""
         MATCH (n:Node)
         RETURN n
         ORDER BY n.id
@@ -337,29 +330,25 @@ Fix: Implement retry logic with exponential backoff
 **Python error handling**:
 
 ```python
-from geode_client import (
-    GeodeError,
-    SyntaxError,
-    ConstraintViolationError,
-    TransactionConflictError
-)
+from geode_client import GeodeError, QueryError
 
 async def execute_with_retry(client, query, params=None, max_retries=3):
     """Execute query with automatic retry on conflicts."""
     for attempt in range(max_retries):
         try:
-            return await client.execute(query, params)
-        except TransactionConflictError:
-            if attempt == max_retries - 1:
+            page, _ = await client.query(query, params)
+            return page
+        except QueryError as exc:
+            message = str(exc).lower()
+            if "40502" in message:
+                if attempt == max_retries - 1:
+                    raise
+                await asyncio.sleep(2 ** attempt)  # Exponential backoff
+                continue
+            if "syntax" in message:
+                logging.error(f"Syntax error: {exc}")
                 raise
-            await asyncio.sleep(2 ** attempt)  # Exponential backoff
-        except SyntaxError as e:
-            # Don't retry syntax errors
-            logging.error(f"Syntax error: {e}")
-            raise
-        except ConstraintViolationError as e:
-            # Handle constraint violations
-            logging.warning(f"Constraint violation: {e}")
+            logging.warning(f"Query failed: {exc}")
             raise
 ```
 
@@ -379,13 +368,12 @@ logging.basicConfig(
 )
 
 # Geode client logs all operations
-client = await geode_client.connect("localhost:3141")
-
+client = geode_client.open_database("localhost:3141")
 # Custom logging
 logger = logging.getLogger("myapp")
 logger.info("Executing user query")
-result = await client.execute("MATCH (u:User) RETURN count(u)")
-logger.info(f"Found {result[0]['count(u)']} users")
+result, _ = await client.query("MATCH (u:User) RETURN count(u)")
+logger.info(f"Found {result.rows[0]['count(u)']} users")
 ```
 
 **Go logging**:
@@ -449,7 +437,7 @@ GeodeInstrumentor().instrument()
 
 # Queries automatically traced
 async with tracer.start_as_current_span("user_query"):
-    result = await client.execute("MATCH (u:User) RETURN u")
+    result, _ = await client.query("MATCH (u:User) RETURN u")
 ```
 
 ## Troubleshooting Checklist
@@ -505,15 +493,15 @@ class QueryDebugger:
         report = {}
         
         # 1. Get explain plan
-        explain = await self.client.execute(f"EXPLAIN {query}", params)
+        explain, _ = await self.client.query(f"EXPLAIN {query}", params)
         report['explain'] = self.parse_explain(explain)
         
         # 2. Profile execution
-        profile = await self.client.execute(f"PROFILE {query}", params)
+        profile, _ = await self.client.query(f"PROFILE {query}", params)
         report['profile'] = self.parse_profile(profile)
         
         # 3. Check index usage
-        indexes = await self.client.execute("SHOW INDEXES")
+        indexes, _ = await self.client.query("SHOW INDEXES")
         report['indexes_used'] = self.find_used_indexes(explain, indexes)
         report['indexes_missing'] = self.suggest_indexes(explain, indexes)
         
@@ -561,7 +549,7 @@ class QueryDebugger:
         pattern = self.extract_pattern(query)
         
         # Estimate cardinality
-        estimate = await self.client.execute(f"""
+        estimate, _ = await self.client.query(f"""
             EXPLAIN {query}
         """, params)
         
@@ -578,19 +566,19 @@ Diagnose connection issues:
 ```python
 import asyncio
 import logging
+import time
+import geode_client
 
 async def debug_connection(url, timeout=10):
-    """Debug connection issues"""
+    """Debug connection issues."""
     results = {}
-    
+    client = geode_client.open_database(url)
+
     # 1. Test basic connectivity
     try:
-        client = await asyncio.wait_for(
-            GeodeClient(url).connect(),
-            timeout=timeout
-        )
+        async with client.connection() as conn:
+            await asyncio.wait_for(conn.query("RETURN 1 AS ok"), timeout=timeout)
         results['connectivity'] = 'success'
-        await client.close()
     except asyncio.TimeoutError:
         results['connectivity'] = 'timeout'
         results['error'] = f'Connection timeout after {timeout}s'
@@ -599,43 +587,31 @@ async def debug_connection(url, timeout=10):
         results['connectivity'] = 'failed'
         results['error'] = str(e)
         return results
-    
+
     # 2. Test query execution
     try:
-        client = await GeodeClient(url).connect()
-        await client.execute("MATCH (n) RETURN n LIMIT 1")
+        async with client.connection() as conn:
+            await conn.query("MATCH (n) RETURN n LIMIT 1")
         results['query_execution'] = 'success'
     except Exception as e:
         results['query_execution'] = 'failed'
         results['query_error'] = str(e)
-    finally:
-        await client.close()
-    
-    # 3. Test TLS
-    try:
-        client = await GeodeClient(url, tls=True, verify_cert=True).connect()
-        results['tls'] = 'success'
-        await client.close()
-    except Exception as e:
-        results['tls'] = 'failed'
-        results['tls_error'] = str(e)
-    
-    # 4. Measure latency
-    client = await GeodeClient(url).connect()
+
+    # 3. Measure latency
     latencies = []
-    for _ in range(10):
-        start = time.time()
-        await client.execute("MATCH (n) RETURN n LIMIT 1")
-        latencies.append((time.time() - start) * 1000)
-    await client.close()
-    
+    async with client.connection() as conn:
+        for _ in range(10):
+            start = time.time()
+            await conn.query("RETURN 1 AS ok")
+            latencies.append((time.time() - start) * 1000)
+
     results['latency'] = {
         'min': min(latencies),
         'max': max(latencies),
         'avg': sum(latencies) / len(latencies),
         'p95': sorted(latencies)[int(len(latencies) * 0.95)]
     }
-    
+
     return results
 ```
 
@@ -650,60 +626,19 @@ class TransactionDebugger:
         self.logger = logging.getLogger(__name__)
     
     async def debug_transaction(self, operation):
-        """Debug transaction execution with detailed logging"""
-        tx_id = None
-        
-        try:
-            async with self.client.transaction() as tx:
-                tx_id = tx.transaction_id
-                self.logger.info(f"Started transaction {tx_id}")
-                
-                # Monitor locks
-                locks_before = await self.get_locks(tx_id)
-                self.logger.debug(f"Locks acquired: {locks_before}")
-                
-                # Execute operation
-                result = await operation(tx)
-                
-                # Monitor locks after
-                locks_after = await self.get_locks(tx_id)
-                new_locks = set(locks_after) - set(locks_before)
-                self.logger.debug(f"New locks: {new_locks}")
-                
-                await tx.commit()
-                self.logger.info(f"Committed transaction {tx_id}")
-                
+        """Debug transaction execution with detailed logging."""
+        async with self.client.connection() as conn:
+            await conn.begin()
+            try:
+                self.logger.info("Transaction started")
+                result = await operation(conn)
+                await conn.commit()
+                self.logger.info("Transaction committed")
                 return result
-                
-        except SerializationFailure as e:
-            self.logger.warning(f"Transaction {tx_id} aborted: serialization failure")
-            
-            # Get conflicting transactions
-            conflicts = await self.get_conflicts(tx_id)
-            self.logger.warning(f"Conflicting with: {conflicts}")
-            
-            raise
-            
-        except Exception as e:
-            self.logger.error(f"Transaction {tx_id} failed: {e}")
-            raise
-    
-    async def get_locks(self, tx_id):
-        """Get locks held by transaction"""
-        result = await self.client.execute("""
-            SELECT * FROM system.locks
-            WHERE transaction_id = $tx_id
-        """, {"tx_id": tx_id})
-        return result
-    
-    async def get_conflicts(self, tx_id):
-        """Get conflicting transactions"""
-        result = await self.client.execute("""
-            SELECT conflicting_transaction_id
-            FROM system.transaction_conflicts
-            WHERE transaction_id = $tx_id
-        """, {"tx_id": tx_id})
-        return [r['conflicting_transaction_id'] for r in result]
+            except Exception as exc:
+                self.logger.error(f"Transaction failed: {exc}")
+                await conn.rollback()
+                raise
 ```
 
 ### Memory Profiling
@@ -729,7 +664,7 @@ class MemoryProfiler:
         snapshot_before = tracemalloc.take_snapshot()
         
         # Execute query
-        result = await client.execute(query, params)
+        result, _ = await client.query(query, params)
         
         # Final snapshot
         mem_after = process.memory_info().rss / 1024 / 1024  # MB
@@ -750,7 +685,7 @@ class MemoryProfiler:
                 }
                 for stat in top_stats[:10]
             ],
-            'result_size': len(result)
+            'result_size': len(result.rows)
         }
 ```
 
@@ -772,7 +707,7 @@ async def traced_operation(client):
         span.set_attribute("user.email", "alice@example.com")
         
         # Database operation is automatically traced
-        result = await client.execute("""
+        result, _ = await client.query("""
             CREATE (u:User {
                 name: $name,
                 email: $email
@@ -780,11 +715,11 @@ async def traced_operation(client):
             RETURN u.id
         """, {"name": "Alice", "email": "alice@example.com"})
         
-        span.set_attribute("user.id", result[0]['u.id'])
+        span.set_attribute("user.id", result.rows[0]['u.id'])
         
         # Additional span for email sending
         with tracer.start_as_current_span("send_welcome_email"):
-            await send_email(result[0]['u.id'])
+            await send_email(result.rows[0]['u.id'])
         
         return result
 ```
@@ -839,7 +774,8 @@ class ErrorAnalyzer:
             'code_example': '''
 @retry(stop=stop_after_attempt(5), wait=wait_exponential(multiplier=1))
 async def operation():
-    async with client.transaction() as tx:
+    async with client.connection() as tx:
+        await tx.begin()
         # Your operation here
         pass
             '''

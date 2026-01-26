@@ -234,11 +234,12 @@ Export large graphs without loading all data into memory:
 ```python
 # Python streaming export
 import asyncio
-from geode_client import GeodeClient
+from geode_client import Client
 import csv
 
 async def streaming_export():
-    async with GeodeClient("localhost:3141") as client:
+    client = Client(host="localhost", port=3141)
+    async with client.connection() as conn:
         # Open output file
         with open('large_export.csv', 'w', newline='') as csvfile:
             writer = csv.writer(csvfile)
@@ -246,7 +247,7 @@ async def streaming_export():
 
             # Stream query results
             processed = 0
-            async for row in client.stream_query(
+            for row in client.rows.stream_query(
                 "MATCH (p:Person) RETURN p.id, p.name, p.email, p.age"
             ):
                 writer.writerow([
@@ -352,11 +353,12 @@ geode export --output backup.json.lz4 --compress lz4
 # Python with compression
 import gzip
 import json
-from geode_client import GeodeClient
+from geode_client import Client
 
 async def compressed_export():
-    async with GeodeClient("localhost:3141") as client:
-        result = await client.execute("MATCH (n) RETURN n")
+    client = Client(host="localhost", port=3141)
+    async with client.connection() as conn:
+        result, _ = await conn.query("MATCH (n) RETURN n")
 
         # Write compressed JSON
         with gzip.open('export.json.gz', 'wt', encoding='utf-8') as f:
@@ -427,12 +429,12 @@ geode export \
 from airflow import DAG
 from airflow.operators.python import PythonOperator
 from datetime import datetime, timedelta
-from geode_client import GeodeClient
+from geode_client import Client
 import pandas as pd
 
 def export_to_data_warehouse():
     """Export Geode data to data warehouse"""
-    client = GeodeClient("localhost:3141")
+    client = Client("localhost:3141")
     
     # Extract from Geode
     result = client.execute("""
@@ -489,12 +491,13 @@ cat export_part_*.csv > complete_export.csv
 ```python
 # Export in manageable batches
 async def batch_export(batch_size=10000):
-    async with GeodeClient("localhost:3141") as client:
+    client = Client(host="localhost", port=3141)
+    async with client.connection() as conn:
         offset = 0
         batch_num = 0
         
         while True:
-            result = await client.execute(f"""
+            result, _ = await conn.query(f"""
                 MATCH (p:Person)
                 RETURN p
                 ORDER BY p.id
@@ -512,7 +515,7 @@ async def batch_export(batch_size=10000):
             
             offset += batch_size
             batch_num += 1
-            print(f"Exported batch {batch_num}: {len(result)} records")
+            print(f"Exported batch {batch_num}: {len(result.rows)} records")
 ```
 
 ## Best Practices

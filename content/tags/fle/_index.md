@@ -126,7 +126,7 @@ This metadata enables:
 FLE encryption happens in the client library before data reaches the database:
 
 ```python
-from geode_client import GeodeClient
+from geode_client import Client
 from geode_client.encryption import EncryptionConfig
 
 # Configure encryption
@@ -150,7 +150,7 @@ encryption_config = EncryptionConfig(
 )
 
 # Initialize client with encryption
-client = GeodeClient('localhost:3141', encryption=encryption_config)
+client = Client('localhost:3141', encryption=encryption_config)
 
 # Insert with automatic encryption
 client.execute("""
@@ -324,11 +324,11 @@ class TenantEncryptionConfig:
         )
 
 # Tenant A's client
-tenant_a_client = GeodeClient('localhost:3141',
+tenant_a_client = Client('localhost:3141',
     encryption=TenantEncryptionConfig('tenant-a', kms_key_a).config)
 
 # Tenant B's client (different keys)
-tenant_b_client = GeodeClient('localhost:3141',
+tenant_b_client = Client('localhost:3141',
     encryption=TenantEncryptionConfig('tenant-b', kms_key_b).config)
 
 # Even if Tenant A compromises database, can't decrypt Tenant B's data
@@ -463,7 +463,15 @@ Typical performance impact:
    ```python
    # Encrypt batch before inserting
    encrypted_users = client.encrypt_batch(users)
-   client.execute_batch(insert_queries, encrypted_users)
+   async with client.connection() as conn:
+       await conn.begin()
+       try:
+           for query, params in insert_queries:
+               await conn.execute(query, params)
+           await conn.commit()
+       except Exception:
+           await conn.rollback()
+           raise
    ```
 
 2. **Cache DEKs**: Avoid repeated KMS calls

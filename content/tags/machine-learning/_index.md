@@ -394,11 +394,11 @@ RETURN user.id,
 ### Python Client - Feature Extraction
 
 ```python
-from geode_client import GeodeClient
+from geode_client import Client
 import numpy as np
 
 async def extract_ml_features(client, user_ids):
-    result = await client.execute("""
+    result, _ = await client.query("""
         UNWIND $user_ids AS uid
         MATCH (u:User {id: uid})
         WITH u,
@@ -592,7 +592,7 @@ Implement GCN layer operations in Geode:
 
 ```python
 import numpy as np
-from geode_client import GeodeClient
+from geode_client import Client
 
 class GraphConvolutionalLayer:
     """Simple GCN layer implementation using Geode"""
@@ -609,7 +609,7 @@ class GraphConvolutionalLayer:
         H' = σ(D^(-1/2) A D^(-1/2) H W)
         """
         # Fetch node features and neighbor information
-        result = await self.client.execute("""
+        result, _ = await self.client.query("""
             UNWIND $node_ids AS node_id
             MATCH (n:Node {id: node_id})
             OPTIONAL MATCH (n)-[:EDGE]-(neighbor:Node)
@@ -634,7 +634,7 @@ class GraphConvolutionalLayer:
 
             # Add neighbor contributions
             if neighbors:
-                neighbor_result = await self.client.execute("""
+                neighbor_result, _ = await self.client.query("""
                     UNWIND $neighbor_ids AS nid
                     MATCH (n:Node {id: nid})
                     OPTIONAL MATCH (n)-[:EDGE]-()
@@ -685,7 +685,7 @@ async def sample_training_data(client, batch_size=1000):
     Sample balanced training batches for node classification
     """
     # Get class distribution
-    class_counts = await client.execute("""
+    class_counts, _ = await client.query("""
         MATCH (n:Node)
         WHERE n.label IS NOT NULL
         RETURN n.label, COUNT(*) AS count
@@ -703,7 +703,7 @@ async def sample_training_data(client, batch_size=1000):
 
     training_nodes = []
     for label, weight in class_weights.items():
-        samples = await client.execute("""
+        samples, _ = await client.query("""
             MATCH (n:Node {label: $label})
             WITH n, RAND() AS random
             ORDER BY random
@@ -725,7 +725,7 @@ async def compute_attention_weights(client, node_id):
     """
     Compute attention weights for neighbors using learned attention mechanism
     """
-    result = await client.execute("""
+    result, _ = await client.query("""
         MATCH (center:Node {id: $node_id})
         MATCH (center)-[e:EDGE]-(neighbor:Node)
         RETURN center.embedding AS center_emb,
@@ -803,7 +803,7 @@ class IncrementalGraphModel:
         })
 
         # Incrementally update neighbor embeddings (for propagation models)
-        affected_neighbors = await client.execute("""
+        affected_neighbors, _ = await client.query("""
             UNWIND $new_nodes AS node_id
             MATCH (new:Node {id: node_id})-[:EDGE]-(neighbor:Node)
             RETURN DISTINCT neighbor.id
@@ -838,7 +838,7 @@ async def monitor_model_drift(client, model_id, prediction_window_days=30):
     over time
     """
     # Get recent predictions
-    recent_predictions = await client.execute("""
+    recent_predictions, _ = await client.query("""
         MATCH (n:Node)-[p:PREDICTION]->()
         WHERE p.model_id = $model_id
           AND p.timestamp > CURRENT_TIMESTAMP - INTERVAL '$days' DAY
@@ -912,7 +912,7 @@ class GeodeFeatureStore:
 
         for feature_name in feature_names:
             # Get feature definition
-            definition = await self.client.execute("""
+            definition, _ = await self.client.query("""
                 MATCH (f:Feature {name: $name})
                 RETURN f.query, f.entity_type
             """, {"name": feature_name})
@@ -920,7 +920,7 @@ class GeodeFeatureStore:
             query_template = definition.rows[0]['f.query']
 
             # Execute feature query for each entity
-            results = await self.client.execute(
+            results, _ = await self.client.query(
                 query_template,
                 {"entity_ids": entity_ids}
             )
@@ -1011,7 +1011,7 @@ async def ab_test_models(client, model_a_id, model_b_id, traffic_split=0.5):
         model_id = model_a_id if user_hash < traffic_split * 100 else model_b_id
 
         # Get prediction from assigned model
-        result = await client.execute("""
+        result, _ = await client.query("""
             MATCH (user:User {id: $user_id})
             MATCH (model:MLModel {id: $model_id})
             // Get features and apply model

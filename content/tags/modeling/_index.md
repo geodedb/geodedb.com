@@ -259,17 +259,19 @@ CREATE (:Category {name: 'Laptops', path: '/Electronics/Computers/Laptops'})
 ### Python Client Modeling
 
 ```python
-from geode_client import GeodeClient
+from geode_client import Client
 
-async with GeodeClient('localhost:3141') as client:
+client = Client(host="localhost", port=3141)
+
+async with client.connection() as conn:
     # Define schema with constraints
-    await client.query("""
+    await conn.query("""
         CREATE CONSTRAINT ON (u:User) ASSERT u.id IS UNIQUE;
         CREATE INDEX FOR (u:User) ON (u.email);
     """)
 
     # Insert modeled data
-    await client.query("""
+    await conn.query("""
         CREATE (u:User {id: $id, email: $email, created_at: datetime()})
     """, {"id": 1, "email": "alice@example.com"})
 ```
@@ -293,10 +295,13 @@ stmt.Exec("PROD-123", "Laptop", 999.99)
 ### Rust Client Modeling
 
 ```rust
-let client = GeodeClient::connect("localhost:3141").await?;
+use geode_client::Client;
+
+let client = Client::from_dsn("localhost:3141")?;
+let mut conn = client.connect().await?;
 
 // Define relationships with properties
-client.query(r#"
+let _ = conn.query(r#"
     CREATE (u:User {id: 1})-[:PLACED {timestamp: datetime()}]->(o:Order {total: 99.99})
 "#).await?;
 ```
@@ -335,7 +340,7 @@ Validate your model with realistic queries:
 ```python
 # Test query performance
 start = time.time()
-result = await client.query("""
+result, _ = await client.query("""
     MATCH (u:User)-[:PURCHASED]->(p:Product)
     WHERE p.category = 'Electronics'
     RETURN u.name, COUNT(p) AS purchases
@@ -343,7 +348,7 @@ result = await client.query("""
     LIMIT 10
 """)
 elapsed = time.time() - start
-print(f"Query took {elapsed:.2f}s, returned {len(result)} rows")
+print(f"Query took {elapsed:.2f}s, returned {len(result.rows)} rows")
 ```
 
 ## Related Topics

@@ -407,7 +407,7 @@ ORDER BY density_ratio DESC;
 ### Python Client
 
 ```python
-from geode_client import GeodeClient
+from geode_client import Client
 
 async def detect_communities(client, max_iterations=20):
     # Initialize labels
@@ -418,7 +418,7 @@ async def detect_communities(client, max_iterations=20):
 
     # Iterative label propagation
     for iteration in range(max_iterations):
-        result = await client.execute("""
+        result, _ = await client.query("""
             MATCH (n:User)-[:KNOWS]-(neighbor:User)
             WITH n, neighbor.community AS label, COUNT(*) AS freq
             ORDER BY freq DESC
@@ -436,7 +436,7 @@ async def detect_communities(client, max_iterations=20):
             break
 
     # Get community statistics
-    communities = await client.execute("""
+    communities, _ = await client.query("""
         MATCH (n:User)
         RETURN n.community AS id,
                COUNT(n) AS size,

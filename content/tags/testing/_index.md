@@ -38,7 +38,7 @@ import geode_client
 @pytest.fixture
 async def client():
     """Shared Geode client for tests."""
-    client = await geode_client.connect("localhost:3141")
+    client = geode_client.open_database("localhost:3141")
     yield client
     await client.close()
 
@@ -46,7 +46,7 @@ async def client():
 async def test_db(client):
     """Clean database for each test."""
     # Setup: Create test data
-    await client.execute("""
+    await tx.execute("""
         CREATE (u1:User {id: 1, name: 'Alice'})
         CREATE (u2:User {id: 2, name: 'Bob'})
         CREATE (u1)-[:FRIENDS_WITH]->(u2)
@@ -55,24 +55,25 @@ async def test_db(client):
     yield client
 
     # Teardown: Clean up
-    await client.execute("MATCH (n) DETACH DELETE n")
+    await tx.execute("MATCH (n) DETACH DELETE n")
 
 @pytest.mark.asyncio
 async def test_find_friends(test_db):
     """Test friend recommendation query."""
-    result = await test_db.execute("""
+    result, _ = await test_db.query("""
         MATCH (me:User {name: 'Alice'})-[:FRIENDS_WITH]->(friend)
         RETURN friend.name
     """)
 
-    assert len(result) == 1
-    assert result[0]["friend.name"] == "Bob"
+    assert len(result.rows) == 1
+    assert result.rows[0]["friend.name"] == "Bob"
 
 @pytest.mark.asyncio
 async def test_transaction_rollback(client):
     """Test transaction rollback behavior."""
     try:
-        async with client.transaction() as tx:
+        async with client.connection() as tx:
+            await tx.begin()
             await tx.execute("CREATE (u:User {id: 999})")
             # Simulate error
             raise ValueError("Test error")
@@ -80,8 +81,8 @@ async def test_transaction_rollback(client):
         pass
 
     # Verify rollback
-    result = await client.execute("MATCH (u:User {id: 999}) RETURN u")
-    assert len(result) == 0
+    result, _ = await tx.query("MATCH (u:User {id: 999}) RETURN u")
+    assert len(result.rows) == 0
 ```
 
 **Go application tests**:
@@ -168,8 +169,8 @@ Test GQL queries in isolation:
 @pytest.mark.asyncio
 async def test_basic_queries(test_db, query, expected_count):
     """Test basic query patterns."""
-    result = await test_db.execute(query)
-    assert len(result) == expected_count
+    result, _ = await test_db.query(query)
+    assert len(result.rows) == expected_count
 ```
 
 Test query parameterization:
@@ -178,13 +179,13 @@ Test query parameterization:
 @pytest.mark.asyncio
 async def test_parameterized_query(test_db):
     """Test query with parameters."""
-    result = await test_db.execute(
+    result, _ = await test_db.query(
         "MATCH (u:User {name: $name}) RETURN u.id AS id",
         {"name": "Alice"}
     )
 
-    assert len(result) == 1
-    assert result[0]["id"] == 1
+    assert len(result.rows) == 1
+    assert result.rows[0]["id"] == 1
 ```
 
 ## Integration Testing
@@ -229,7 +230,7 @@ async def test_user_registration_workflow(client):
     """Test complete user registration and login workflow."""
 
     # Step 1: Register user
-    await client.execute("""
+    await tx.execute("""
         CREATE (u:User {
             id: $id,
             email: $email,
@@ -243,16 +244,17 @@ async def test_user_registration_workflow(client):
     })
 
     # Step 2: Verify user exists
-    result = await client.execute("""
+    result, _ = await tx.query("""
         MATCH (u:User {email: $email})
         RETURN u.id, u.email
     """, {"email": "alice@example.com"})
 
-    assert len(result) == 1
-    assert result[0]["u.id"] == 123
+    assert len(result.rows) == 1
+    assert result.rows[0]["u.id"] == 123
 
     # Step 3: Create user session
-    async with client.transaction() as tx:
+    async with client.connection() as tx:
+        await tx.begin()
         await tx.execute("""
             MATCH (u:User {id: $user_id})
             CREATE (s:Session {
@@ -269,14 +271,14 @@ async def test_user_registration_workflow(client):
         await tx.commit()
 
     # Step 4: Verify session created
-    result = await client.execute("""
+    result, _ = await tx.query("""
         MATCH (u:User {id: $user_id})-[:HAS_SESSION]->(s:Session)
         WHERE s.expires > current_timestamp()
         RETURN s.id
     """, {"user_id": 123})
 
-    assert len(result) == 1
-    assert result[0]["s.id"] == "sess_abc123"
+    assert len(result.rows) == 1
+    assert result.rows[0]["s.id"] == "sess_abc123"
 ```
 
 ## Performance Testing
@@ -452,12 +454,12 @@ async def test_with_factory(client):
         name="Alice"
     )
 
-    result = await client.execute(
+    result, _ = await client.query(
         "MATCH (u:User {id: $id}) RETURN u.name",
         {"id": user["id"]}
     )
 
-    assert result[0]["u.name"] == "Alice"
+    assert result.rows[0]["u.name"] == "Alice"
 ```
 
 ## Continuous Integration

@@ -66,8 +66,11 @@ Geode provides full ACID (Atomicity, Consistency, Isolation, Durability) guarant
 ```python
 import geode_client
 
-async with geode_client.connect("localhost:3141") as client:
-    async with client.transaction() as tx:
+client = geode_client.open_database("localhost:3141")
+
+async with client.connection() as client:
+    async with client.connection() as tx:
+        await tx.begin()
         await tx.execute("""
             MATCH (account:Account {id: $from})
             SET account.balance = account.balance - $amount
@@ -567,7 +570,8 @@ async def migrate_relational_to_graph():
     pg_cursor.execute("SELECT id, name, email FROM users")
 
     # Load into Geode
-    async with geode_client.connect("localhost:3141") as geode:
+    client = geode_client.open_database("localhost:3141")
+    async with client.connection() as geode:
         for user_id, name, email in pg_cursor:
             await geode.execute("""
                 CREATE (:User {
@@ -612,7 +616,9 @@ Pre-built dashboards visualize:
 ```javascript
 // Express + Apollo GraphQL + Geode
 const { ApolloServer, gql } = require('apollo-server-express');
-const GeodeClient = require('geode-client');
+const { createClient } = require('@geode/client');
+
+const geode = createClient('geode://localhost:3141');
 
 const typeDefs = gql`
   type Person {
@@ -628,11 +634,12 @@ const typeDefs = gql`
 const resolvers = {
   Query: {
     person: async (_, { name }) => {
-      const result = await geodeClient.execute(
+      const client = await geode;
+      const rows = await client.queryAll(
         'MATCH (p:Person {name: $name}) RETURN p',
-        { name }
+        { params: { name } }
       );
-      return result.rows[0].p;
+      return rows[0]?.p;
     },
   },
   Person: {

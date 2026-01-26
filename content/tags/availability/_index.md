@@ -159,15 +159,21 @@ When primary fails:
 Clients automatically retry with new primary:
 
 ```python
-from geode_client import GeodeClient
+import asyncio
+from geode_client import Client, GeodeConnectionError
 
-async with GeodeClient(
-    urls=["node1:3141", "node2:3141", "node3:3141"],
-    failover_timeout=5000,  # 5 seconds
-    retry_attempts=3
-) as client:
-    # Automatic failover on primary failure
-    result = await client.execute("MATCH (n) RETURN n")
+async def query_with_failover(hosts, query):
+    """Try hosts in order until a primary responds."""
+    for host in hosts:
+        try:
+            client = Client(host=host, port=3141)
+            async with client.connection() as conn:
+                result, _ = await conn.query(query)
+                return result.rows
+        except GeodeConnectionError:
+            await asyncio.sleep(0.2)
+            continue
+    raise GeodeConnectionError("All primaries unavailable")
 ```
 
 ## Load Balancing
@@ -177,22 +183,19 @@ async with GeodeClient(
 Route reads to replicas for horizontal scaling:
 
 ```python
-from geode_client import GeodeClient, RoutingPolicy
+from geode_client import Client
 
-client = GeodeClient(
-    primary_url="node1:3141",
-    replica_urls=["node2:3141", "node3:3141"],
-    routing_policy=RoutingPolicy.READ_REPLICAS
-)
+primary = Client(host="node1", port=3141)
+replica = Client(host="node2", port=3141)
 
 # Write to primary
-await client.execute("CREATE (n:Node {id: $id})", {"id": 1})
+async with primary.connection() as conn:
+    await conn.execute("CREATE (n:Node {id: $id})", {"id": 1})
 
-# Read from replicas
-result = await client.execute(
-    "MATCH (n:Node) RETURN COUNT(n)",
-    read_preference="replica"
-)
+# Read from replica
+async with replica.connection() as conn:
+    result, _ = await conn.query("MATCH (n:Node) RETURN COUNT(n) AS total")
+    count = result.rows[0]["total"] if result.rows else 0
 ```
 
 ### Load Balancing Strategies
@@ -410,10 +413,10 @@ geode cluster monitor --metric replication_lag
 Scale reads horizontally with read replicas:
 
 ```python
-from geode_client import GeodeClient, ReplicaSelector
+from geode_client import Client, ReplicaSelector
 
 # Configure connection pool with replicas
-client = GeodeClient(
+client = Client(
     primary="primary.geode.local:3141",
     replicas=[
         "replica1.geode.local:3141",
@@ -430,9 +433,9 @@ await client.execute("""
 """, {"id": 123, "name": "Alice"})
 
 # Reads load-balanced across replicas
-result = await client.execute("""
+result, _ = await client.query("""
     MATCH (u:User) RETURN COUNT(u)
-""", read_preference="replica")
+""")
 ```
 
 ## Fault Tolerance Strategies
@@ -445,10 +448,11 @@ Continue operating with reduced functionality during failures:
 async def fetch_user_with_degradation(user_id):
     try:
         # Try primary data source
-        return await client.execute("""
+        result, _ = await client.query("""
             MATCH (u:User {id: $id})
             RETURN u
         """, {"id": user_id})
+        return result.rows[0] if result.rows else None
     except PrimaryUnavailable:
         try:
             # Fall back to cache
@@ -472,7 +476,8 @@ from circuitbreaker import CircuitBreaker, CircuitBreakerError
 )
 async def query_with_circuit_breaker(query, params):
     """Execute query with circuit breaker protection"""
-    return await client.execute(query, params)
+    result, _ = await client.query(query, params)
+    return result
 
 # Usage
 try:
@@ -499,11 +504,12 @@ class BulkheadPool:
     
     async def execute_read(self, query):
         async with self.read_semaphore:
-            return await client.execute(query)
+            result, _ = await client.query(query)
+            return result
     
     async def execute_write(self, query):
         async with self.write_semaphore:
-            return await client.execute(query)
+            await client.execute(query)
 
 # Reads and writes isolated - write failures don't block reads
 pool = BulkheadPool()
@@ -544,11 +550,11 @@ async def comprehensive_health_check(client):
     
     # Replication lag
     try:
-        lag = await client.execute("""
+        lag, _ = await client.query("""
             SELECT MAX(replication_lag_ms) as max_lag
             FROM system.replication_status
         """)
-        lag_ms = lag[0]['max_lag']
+        lag_ms = lag.rows[0]['max_lag'] if lag.rows else 0
         checks['replication'] = {
             'status': 'pass' if lag_ms < 100 else 'warn',
             'lag_ms': lag_ms
@@ -589,18 +595,18 @@ node_health = Gauge('geode_node_health', 'Node health status', ['node'])
 # Update metrics
 async def update_ha_metrics(client):
     # Replication lag
-    replicas = await client.execute("""
+    replicas, _ = await client.query("""
         SELECT node_id, replication_lag_ms
         FROM system.replication_status
     """)
-    for replica in replicas:
+    for replica in replicas.rows:
         replication_lag.labels(node=replica['node_id']).set(
             replica['replication_lag_ms'] / 1000.0
         )
     
     # Node health
-    nodes = await client.execute("SELECT * FROM system.cluster_nodes")
-    for node in nodes:
+    nodes, _ = await client.query("SELECT * FROM system.cluster_nodes")
+    for node in nodes.rows:
         node_health.labels(node=node['node_id']).set(
             1 if node['status'] == 'healthy' else 0
         )
@@ -679,13 +685,14 @@ async def verify_backup(backup_path):
     await restore_backup(backup_path, temp_db)
     
     # 4. Verify data integrity
-    async with GeodeClient(temp_db) as client:
+    client = Client(temp_db)
+    async with client.connection() as client:
         # Check node count
-        result = await client.execute("MATCH (n) RETURN COUNT(n) as count")
-        assert result[0]['count'] > 0, "No nodes in restored database"
+        result, _ = await client.query("MATCH (n) RETURN COUNT(n) as count")
+        assert result.rows[0]['count'] > 0, "No nodes in restored database"
         
         # Check sample data
-        user = await client.execute("MATCH (u:User) RETURN u LIMIT 1")
+        user, _ = await client.query("MATCH (u:User) RETURN u LIMIT 1")
         assert len(user) > 0, "No users in restored database"
     
     # 5. Cleanup
@@ -761,7 +768,7 @@ pool = ConnectionPool(
 
 # Automatic connection management
 async with pool.acquire() as conn:
-    result = await conn.execute("MATCH (u:User) RETURN u")
+    result, _ = await conn.query("MATCH (u:User) RETURN u")
 ```
 
 ## Best Practices Summary

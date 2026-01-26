@@ -505,7 +505,7 @@ Stop search when confidence is high:
 ```python
 async def adaptive_vector_search(client, query_emb, min_confidence=0.95):
     for ef in [32, 64, 128, 256, 512]:
-        results = await client.execute("""
+        results, _ = await client.query("""
             CALL vector.search({
                 index: 'embeddings',
                 query: $query,
@@ -671,7 +671,7 @@ async def measure_recall(client, test_queries, ground_truth, k=10):
     
     for query_emb, true_neighbors in zip(test_queries, ground_truth):
         # HNSW approximate search
-        results = await client.execute("""
+        results, _ = await client.query("""
             CALL vector.search({
                 index: 'test_index',
                 query: $query,

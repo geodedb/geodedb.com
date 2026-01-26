@@ -158,50 +158,39 @@ COMMIT;
 
 ```python
 # Python client - Handle transaction errors
-from geode_client import GeodeClient, GeodeError
+from geode_client import Client, QueryError
 
-client = GeodeClient("localhost:3141")
+client = Client(host="localhost", port=3141)
 
-def transfer_money(from_account, to_account, amount):
-    """Transfer money with error handling"""
-    try:
-        # Start transaction
-        client.execute("START TRANSACTION")
+async def transfer_money(from_account, to_account, amount):
+    async with client.connection() as conn:
+        try:
+            await conn.begin()
 
-        # Check balance
-        result = client.execute("""
-            MATCH (from:Account {name: $from})
-            WHERE from.balance >= $amount
-            RETURN from.balance
-        """, {'from': from_account, 'amount': amount})
+            page, _ = await conn.query(
+                \"MATCH (from:Account {name: $from}) WHERE from.balance >= $amount RETURN from.balance AS balance\",
+                {\"from\": from_account, \"amount\": amount},
+            )
 
-        if not result:
-            raise ValueError(f"Insufficient funds in {from_account}")
+            if not page.rows:
+                raise ValueError(f\"Insufficient funds in {from_account}\")
 
-        # Debit sender
-        client.execute("""
-            MATCH (from:Account {name: $from})
-            SET from.balance = from.balance - $amount
-        """, {'from': from_account, 'amount': amount})
+            await conn.execute(
+                \"MATCH (from:Account {name: $from}) SET from.balance = from.balance - $amount\",
+                {\"from\": from_account, \"amount\": amount},
+            )
 
-        # Credit receiver
-        client.execute("""
-            MATCH (to:Account {name: $to})
-            SET to.balance = to.balance + $amount
-        """, {'to': to_account, 'amount': amount})
+            await conn.execute(
+                \"MATCH (to:Account {name: $to}) SET to.balance = to.balance + $amount\",
+                {\"to\": to_account, \"amount\": amount},
+            )
 
-        # Commit
-        client.execute("COMMIT")
-        print(f"✓ Transferred ${amount} from {from_account} to {to_account}")
+            await conn.commit()
+            print(f\"Transferred ${amount} from {from_account} to {to_account}\")
 
-    except (GeodeError, ValueError) as e:
-        # Rollback on error
-        client.execute("ROLLBACK")
-        print(f"✗ Transfer failed: {e}")
-        raise
-
-# Usage
-transfer_money('Alice', 'Bob', 100)
+        except (QueryError, ValueError) as e:
+            await conn.rollback()
+            raise
 ```
 
 ## Step 3: Savepoints (Partial Rollback)
@@ -347,40 +336,41 @@ COMMIT;
 
 ```python
 # Python client - Set isolation level
-def transfer_with_isolation(from_acc, to_acc, amount, isolation='READ COMMITTED'):
-    """Transfer with specific isolation level"""
+from geode_client import Client
 
-    client.execute(f"START TRANSACTION WITH ISOLATION LEVEL {isolation}")
+client = Client(host="localhost", port=3141)
 
+async def transfer_with_isolation(conn, from_acc, to_acc, amount):
+    """Transfer using the server's default isolation level."""
+
+    await conn.begin()
     try:
-        # Check balance (with chosen isolation)
-        result = client.execute("""
+        page, _ = await conn.query("""
             MATCH (from:Account {name: $from})
-            RETURN from.balance
+            RETURN from.balance AS balance
         """, {'from': from_acc})
 
-        if result[0]['from.balance'] < amount:
+        balance = page.rows[0]["balance"].raw_value if page.rows else 0
+        if balance < amount:
             raise ValueError("Insufficient funds")
 
-        # Perform transfer
-        client.execute("""
+        await conn.query("""
             MATCH (from:Account {name: $from})
             SET from.balance = from.balance - $amount
         """, {'from': from_acc, 'amount': amount})
 
-        client.execute("""
+        await conn.query("""
             MATCH (to:Account {name: $to})
             SET to.balance = to.balance + $amount
         """, {'to': to_acc, 'amount': amount})
 
-        client.execute("COMMIT")
-
-    except Exception as e:
-        client.execute("ROLLBACK")
+        await conn.commit()
+    except Exception:
+        await conn.rollback()
         raise
 
-# Use serializable for critical operations
-transfer_with_isolation('Alice', 'Bob', 100, isolation='SERIALIZABLE')
+# async with client.connection() as conn:
+#     await transfer_with_isolation(conn, "Alice", "Bob", 100)
 ```
 
 ## Step 5: Concurrent Updates
@@ -502,41 +492,43 @@ COMMIT;
 ```python
 # Python client - Retry on deadlock
 import time
-from geode_client import GeodeError
+from geode_client import Client, QueryError
 
-def transfer_with_retry(from_acc, to_acc, amount, max_retries=3):
+client = Client(host="localhost", port=3141)
+
+async def transfer_with_retry(conn, from_acc, to_acc, amount, max_retries=3):
     """Transfer with deadlock retry logic"""
 
     for attempt in range(max_retries):
         try:
-            client.execute("START TRANSACTION")
+            await conn.begin()
 
             # Sort accounts to ensure consistent lock order
             accounts = sorted([from_acc, to_acc])
 
             # Acquire locks in consistent order
             for account in accounts:
-                client.execute("""
+                await conn.query("""
                     MATCH (a:Account {name: $name})
                     RETURN a.balance
                 """, {'name': account})
 
             # Perform transfer
-            client.execute("""
+            await conn.query("""
                 MATCH (from:Account {name: $from})
                 SET from.balance = from.balance - $amount
             """, {'from': from_acc, 'amount': amount})
 
-            client.execute("""
+            await conn.query("""
                 MATCH (to:Account {name: $to})
                 SET to.balance = to.balance + $amount
             """, {'to': to_acc, 'amount': amount})
 
-            client.execute("COMMIT")
+            await conn.commit()
             return  # Success
 
-        except GeodeError as e:
-            client.execute("ROLLBACK")
+        except QueryError as e:
+            await conn.rollback()
 
             if 'deadlock' in str(e).lower():
                 if attempt < max_retries - 1:
@@ -549,7 +541,8 @@ def transfer_with_retry(from_acc, to_acc, amount, max_retries=3):
             raise  # Re-raise if not deadlock or max retries exceeded
 
 # Usage
-transfer_with_retry('Alice', 'Bob', 100)
+# async with client.connection() as conn:
+#     await transfer_with_retry(conn, "Alice", "Bob", 100)
 ```
 
 ## Step 7: Common Transaction Patterns
@@ -679,29 +672,34 @@ COMMIT;
 
 ```python
 # Python client - Batch updates
-def batch_update(product_ids, batch_size=100):
+from geode_client import Client
+
+client = Client(host="localhost", port=3141)
+
+async def batch_update(conn, product_ids, batch_size=100):
     """Update products in batches"""
 
     for i in range(0, len(product_ids), batch_size):
         batch = product_ids[i:i + batch_size]
 
-        client.execute("START TRANSACTION")
+        await conn.begin()
 
         try:
-            client.execute("""
+            await conn.query("""
                 UNWIND $ids AS id
                 MATCH (p:Product {id: id})
                 SET p.processed = true
             """, {'ids': batch})
 
-            client.execute("COMMIT")
+            await conn.commit()
 
-        except Exception as e:
-            client.execute("ROLLBACK")
+        except Exception:
+            await conn.rollback()
             raise
 
 # Process 10,000 products in batches of 100
-batch_update(product_ids, batch_size=100)
+# async with client.connection() as conn:
+#     await batch_update(conn, product_ids, batch_size=100)
 ```
 
 ## Complete Example: E-Commerce Order Processing

@@ -147,7 +147,7 @@ RETURN p.age, p.city;
 From client code:
 ```python
 # Python
-result = await client.query(
+result, _ = await client.query(
     "MATCH (p:Person {name: $name}) RETURN p.age",
     parameters={"name": user_input}
 )
@@ -303,7 +303,8 @@ COMMIT;
 ```python
 # Python example
 async def create_order(user_id, items):
-    async with client.transaction() as tx:
+    async with client.connection() as tx:
+        await tx.begin()
         try:
             await tx.execute(
                 "INSERT (o:Order {id: $id, total: $total})",
@@ -346,7 +347,7 @@ Always use parameterized queries:
 ```python
 # GOOD: Parameterized
 user_input = request.get_param('name')
-result = await client.query(
+result, _ = await client.query(
     "MATCH (p:Person {name: $name}) RETURN p",
     {"name": user_input}
 )
@@ -410,7 +411,7 @@ Configure appropriate pool sizes:
 
 ```python
 # Python
-client = GeodeClient(
+client = Client(
     "localhost:3141",
     pool_size=20,  # Adjust based on workload
     max_overflow=10
@@ -432,7 +433,7 @@ import logging
 # Log slow queries
 async def execute_with_timing(query, params):
     start = time.time()
-    result = await client.query(query, params)
+    result, _ = await client.query(query, params)
     duration = time.time() - start
     
     if duration > 1.0:  # Log queries over 1 second
@@ -454,7 +455,7 @@ async def get_user(user_id):
     if user_id in user_cache:
         return user_cache[user_id]
     
-    result = await client.query(
+    result, _ = await client.query(
         "MATCH (u:User {id: $id}) RETURN u",
         {"id": user_id}
     )
@@ -474,7 +475,7 @@ prepared = await client.prepare(
 
 # Execute with different parameters
 for user_id in user_ids:
-    result = await prepared.execute({"id": user_id})
+    result, _ = await prepared.execute({"id": user_id})
 ```
 
 ### 2. Handle Concurrent Access
@@ -590,11 +591,11 @@ async def test_user_creation():
     )
     
     # Verify
-    result = await client.query(
+    result, _ = await client.query(
         "MATCH (u:User {email: $email}) RETURN u.name",
         {"email": "test@example.com"}
     )
-    assert result[0]['u.name'] == "Test User"
+    assert result.rows[0]['u.name'] == "Test User"
     
     # Cleanup
     await client.query("DELETE (u:User {email: 'test@example.com'})")
@@ -606,11 +607,12 @@ async def test_user_creation():
 @pytest.mark.integration
 async def test_order_workflow():
     # Create test data
-    await client.query("INSERT (u:User {id: 'test_user'})")
-    await client.query("INSERT (p:Product {id: 'test_prod', price: 99.99})")
+    await tx.query("INSERT (u:User {id: 'test_user'})")
+    await tx.query("INSERT (p:Product {id: 'test_prod', price: 99.99})")
     
     # Test workflow
-    async with client.transaction() as tx:
+    async with client.connection() as tx:
+        await tx.begin()
         await tx.execute(
             "INSERT (o:Order {id: 'test_order', total: 99.99})"
         )
@@ -621,11 +623,11 @@ async def test_order_workflow():
         await tx.commit()
     
     # Verify
-    result = await client.query(
+    result, _ = await tx.query(
         "MATCH (u:User {id: 'test_user'})-[:PLACED]->(o:Order) "
         "RETURN o.total"
     )
-    assert result[0]['o.total'] == 99.99
+    assert result.rows[0]['o.total'] == 99.99
 ```
 
 ## Common Antipatterns to Avoid

@@ -416,7 +416,7 @@ Integrate Geode with JSON Web Tokens for stateless authentication:
 
 ```python
 import jwt
-from geode_client import GeodeClient
+from geode_client import Client
 
 # Generate JWT for user
 def generate_token(user_id, roles):
@@ -429,7 +429,7 @@ def generate_token(user_id, roles):
 
 # Connect with JWT
 token = generate_token('user123', ['analyst'])
-client = GeodeClient('localhost:3141', token=token)
+client = Client('localhost:3141', token=token)
 ```
 
 Configure Geode to validate JWTs:
@@ -469,12 +469,12 @@ Use service accounts in applications:
 ```python
 # etl_pipeline.py
 import os
-from geode_client import GeodeClient
+from geode_client import Client
 
 # Load API key from environment
 API_KEY = os.environ['GEODE_API_KEY']
 
-client = GeodeClient(
+client = Client(
     'geode.prod.example.com:3141',
     api_key=API_KEY
 )
@@ -506,7 +506,7 @@ Implement MFA in client applications:
 ```python
 async def login_with_mfa(username, password, mfa_code):
     try:
-        client = GeodeClient(
+        client = Client(
             'localhost:3141',
             username=username,
             password=password,
@@ -574,7 +574,7 @@ Implement OAuth flow in web application:
 
 ```python
 from flask import Flask, redirect, request, session
-from geode_client import GeodeClient
+from geode_client import Client
 import requests
 
 app = Flask(__name__)
@@ -607,7 +607,7 @@ def oauth_callback():
     access_token = token_response.json()['access_token']
 
     # Create Geode client with OAuth token
-    session['geode_client'] = GeodeClient(
+    session['geode_client'] = Client(
         'localhost:3141',
         oauth_token=access_token
     )
@@ -672,19 +672,20 @@ Export audit logs for SIEM integration:
 ```python
 # export_audit_logs.py
 import asyncio
-from geode_client import GeodeClient
+from geode_client import Client
 import json
 
 async def export_audit_logs_to_splunk():
-    async with GeodeClient('localhost:3141', token=ADMIN_TOKEN) as client:
+    client = Client('localhost:3141', token=ADMIN_TOKEN)
+    async with client.connection() as client:
         # Fetch recent audit events
-        result = await client.execute("""
+        result, _ = await client.query("""
             SELECT * FROM system.auth_audit
             WHERE timestamp > current_timestamp() - INTERVAL '1 hour'
         """)
 
         # Send to Splunk HTTP Event Collector
-        async for event in result:
+        for event in result.rows:
             payload = {
                 'time': event['timestamp'].isoformat(),
                 'source': 'geode-auth',
@@ -738,7 +739,7 @@ WITH SUBJECT '/CN=analyst/O=Example Corp';
 Connect with certificate:
 
 ```python
-client = GeodeClient(
+client = Client(
     'geode.example.com:3141',
     tls_cert='client-cert.pem',
     tls_key='client-key.pem',

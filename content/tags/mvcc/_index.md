@@ -351,30 +351,32 @@ pub fn isVersionVisible(
 ### Snapshot Isolation Example
 
 ```python
-from geode_client import GeodeClient
+from geode_client import Client
 import asyncio
 
 async def demonstrate_snapshot_isolation():
-    client1 = GeodeClient("localhost", 3141)
-    client2 = GeodeClient("localhost", 3141)
+    client1 = Client("localhost", 3141)
+    client2 = Client("localhost", 3141)
 
     # Setup: Create test data
-    await client1.execute("""
+    await tx1.execute("""
         CREATE (account:Account {id: 'acc_123', balance: 1000})
     """)
 
     # Transaction 1: Long-running read
-    async with client1.transaction() as tx1:
+    async with client1.connection() as tx1:
+        await tx1.begin()
         # Take snapshot at t=1
         result1 = await tx1.execute("""
             MATCH (account:Account {id: 'acc_123'})
             RETURN account.balance AS balance
         """)
-        balance_t1 = (await result1.fetch_one())['balance']
+        balance_t1 = (result1.rows[0] if result1.rows else None)['balance']
         print(f"T1 reads balance: {balance_t1}")  # 1000
 
         # Transaction 2: Concurrent update
-        async with client2.transaction() as tx2:
+        async with client2.connection() as tx2:
+            await tx2.begin()
             await tx2.execute("""
                 MATCH (account:Account {id: 'acc_123'})
                 SET account.balance = account.balance - 100
@@ -389,17 +391,17 @@ async def demonstrate_snapshot_isolation():
             MATCH (account:Account {id: 'acc_123'})
             RETURN account.balance AS balance
         """)
-        balance_t2 = (await result2.fetch_one())['balance']
+        balance_t2 = (result2.rows[0] if result2.rows else None)['balance']
         print(f"T1 reads balance again: {balance_t2}")  # Still 1000!
 
         # T1 sees consistent snapshot despite T2's committed change
 
     # After T1 commits, new snapshot sees T2's change
-    result3 = await client1.execute("""
+    result3 = await tx1.execute("""
         MATCH (account:Account {id: 'acc_123'})
         RETURN account.balance AS balance
     """)
-    balance_final = (await result3.fetch_one())['balance']
+    balance_final = (result3.rows[0] if result3.rows else None)['balance']
     print(f"New snapshot sees: {balance_final}")  # 900
 
 asyncio.run(demonstrate_snapshot_isolation())
@@ -418,17 +420,17 @@ class OptimisticLock:
 
     async def read_with_version(self, entity_id):
         """Read entity and its current version."""
-        result = await self.client.execute("""
+        result, _ = await self.client.query("""
             MATCH (e:Entity {id: $id})
             RETURN e, e.version AS version
         """, {'id': entity_id})
 
-        row = await result.fetch_one()
+        row = result.rows[0] if result.rows else None
         return row['e'], row['version']
 
     async def update_with_version_check(self, entity_id, expected_version, updates):
         """Update entity only if version matches."""
-        result = await self.client.execute("""
+        result, _ = await self.client.query("""
             MATCH (e:Entity {id: $id})
             WHERE e.version = $expected_version
             SET e += $updates,
@@ -440,7 +442,7 @@ class OptimisticLock:
             'updates': updates
         })
 
-        row = await result.fetch_one()
+        row = result.rows[0] if result.rows else None
         if not row:
             raise OptimisticLockException("Version mismatch - entity was modified")
 
@@ -510,14 +512,14 @@ async def historical_balance_report(account_id, start_date, end_date):
 
     balances = []
     for ts in timestamps:
-        result = await client.execute("""
+        result, _ = await client.query("""
             BEGIN TRANSACTION AS OF SYSTEM TIME $timestamp;
             MATCH (account:Account {id: $account_id})
             RETURN account.balance AS balance;
             COMMIT;
         """, {'account_id': account_id, 'timestamp': ts})
 
-        row = await result.fetch_one()
+        row = result.rows[0] if result.rows else None
         balances.append({
             'timestamp': ts,
             'balance': row['balance'] if row else None
@@ -545,24 +547,24 @@ class MVCCGarbageCollector:
 
     async def run_gc_manually(self):
         """Trigger manual garbage collection."""
-        result = await self.client.execute("""
+        result, _ = await self.client.query("""
             CALL dbms.mvcc.garbageCollect()
             YIELD versionsReclaimed, bytesFreed
             RETURN versionsReclaimed, bytesFreed
         """)
 
-        stats = await result.fetch_one()
+        stats = result.rows[0] if result.rows else None
         return stats
 
     async def get_gc_stats(self):
         """Get garbage collection statistics."""
-        result = await self.client.execute("""
+        result, _ = await self.client.query("""
             CALL dbms.mvcc.stats()
             YIELD metric, value
             RETURN metric, value
         """)
 
-        return {row['metric']: row['value'] async for row in result}
+        return {row['metric']: row['value'] for row in result.rows}
 
 # Usage
 async def manage_storage():
@@ -630,13 +632,13 @@ gc_reclaimed_versions = Counter(
 
 async def collect_mvcc_metrics():
     """Collect and export MVCC metrics."""
-    stats = await client.execute("""
+    stats, _ = await client.query("""
         CALL dbms.mvcc.detailedStats()
         YIELD metric, value
         RETURN metric, value
     """)
 
-    async for row in stats:
+    for row in stats.rows:
         metric = row['metric']
         value = row['value']
 
@@ -655,7 +657,7 @@ async def diagnose_mvcc_issues():
     """Diagnose MVCC-related performance issues."""
 
     # Check for long version chains
-    result = await client.execute("""
+    result, _ = await client.query("""
         CALL dbms.mvcc.versionChainStats()
         YIELD nodeId, chainLength
         WHERE chainLength > 50
@@ -664,7 +666,7 @@ async def diagnose_mvcc_issues():
         LIMIT 10
     """)
 
-    long_chains = [row async for row in result]
+    long_chains = [row for row in result.rows]
     if long_chains:
         print("WARNING: Long version chains detected")
         for chain in long_chains:
@@ -672,14 +674,14 @@ async def diagnose_mvcc_issues():
         print("Recommendation: Increase GC frequency or reduce update rate")
 
     # Check for old snapshots blocking GC
-    result = await client.execute("""
+    result, _ = await client.query("""
         CALL dbms.transactions.list()
         YIELD transactionId, startTime
         WHERE duration.between(startTime, datetime()) > duration('PT5M')
         RETURN transactionId, startTime
     """)
 
-    old_txs = [row async for row in result]
+    old_txs = [row for row in result.rows]
     if old_txs:
         print("WARNING: Long-running transactions blocking GC")
         for tx in old_txs:
@@ -715,7 +717,7 @@ class DistributedMVCC:
         # Begin transaction on all nodes with same snapshot
         transactions = []
         for node in self.nodes:
-            tx = await node.begin_transaction(snapshot_timestamp)
+            tx = await node.begin(snapshot_timestamp)
             transactions.append(tx)
 
         return DistributedTransaction(transactions, snapshot_timestamp)
@@ -765,7 +767,7 @@ class HybridLogicalClock:
 **Diagnosis**:
 ```python
 async def find_bloated_chains():
-    result = await client.execute("""
+    result, _ = await client.query("""
         CALL dbms.mvcc.analyzeChains()
         YIELD entityId, entityType, chainLength, storageBytes
         WHERE chainLength > 100
@@ -773,7 +775,7 @@ async def find_bloated_chains():
         ORDER BY chainLength DESC
     """)
 
-    return [row async for row in result]
+    return [row for row in result.rows]
 ```
 
 **Solutions**:
@@ -789,23 +791,23 @@ async def find_bloated_chains():
 **Diagnosis**:
 ```python
 async def check_gc_health():
-    result = await client.execute("""
+    result, _ = await client.query("""
         CALL dbms.mvcc.gcHealth()
         YIELD lastRunTime, versionsEligible, versionsReclaimed
         RETURN lastRunTime, versionsEligible, versionsReclaimed
     """)
 
-    health = await result.fetch_one()
+    health = result.rows[0] if result.rows else None
 
     if health['versionsEligible'] > 0 and health['versionsReclaimed'] == 0:
         # GC unable to run - find why
-        blocked_by = await client.execute("""
+        blocked_by, _ = await client.query("""
             CALL dbms.transactions.blocking()
             YIELD transactionId, blockedBy
             RETURN transactionId, blockedBy
         """)
 
-        return await blocked_by.fetch_all()
+        return blocked_by.rows
 ```
 
 **Solutions**:

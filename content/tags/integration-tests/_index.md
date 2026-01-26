@@ -680,14 +680,14 @@ class IntegrationTestReporter:
         """
 
         for result in self.results:
-            status_class = result['status']
+            status_class = result.rows['status']
             html += f"""
                 <tr>
-                    <td>{result['client']}</td>
-                    <td>{result['test']}</td>
-                    <td class="{status_class}">{result['status']}</td>
-                    <td>{result['duration_ms']:.2f}</td>
-                    <td>{result['error'] or ''}</td>
+                    <td>{result.rows['client']}</td>
+                    <td>{result.rows['test']}</td>
+                    <td class="{status_class}">{result.rows['status']}</td>
+                    <td>{result.rows['duration_ms']:.2f}</td>
+                    <td>{result.rows['error'] or ''}</td>
                 </tr>
             """
 
@@ -710,12 +710,12 @@ def generate_performance_comparison(results):
     performance_data = {}
 
     for result in results:
-        test_name = result['test']
+        test_name = result.rows['test']
         if test_name not in performance_data:
             performance_data[test_name] = {}
 
-        client = result['client']
-        duration = result['duration_ms']
+        client = result.rows['client']
+        duration = result.rows['duration_ms']
 
         if client not in performance_data[test_name]:
             performance_data[test_name][client] = []

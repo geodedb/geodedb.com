@@ -442,11 +442,11 @@ ORDER BY link_probability DESC;
 ```python
 # Normalize embeddings to unit vectors
 import numpy as np
-from geode_client import GeodeClient
+from geode_client import Client
 
 async def normalize_embeddings(client):
     # Fetch embeddings
-    result = await client.execute("""
+    result, _ = await client.query("""
         MATCH (d:Document)
         WHERE d.embedding IS NOT NULL
         RETURN d.doc_id AS id, d.embedding AS embedding
@@ -494,7 +494,7 @@ for doc_id, embedding in zip(doc_ids, embeddings_384d):
 ```python
 async def embedding_pipeline(client, batch_size=100):
     # Find documents needing embeddings
-    docs = await client.execute("""
+    docs, _ = await client.query("""
         MATCH (d:Document)
         WHERE d.embedding IS NULL AND d.content IS NOT NULL
         RETURN d.doc_id AS id, d.content AS text

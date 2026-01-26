@@ -695,9 +695,11 @@ import geode_client
 client = monitoring_v3.MetricServiceClient()
 project_name = f"projects/{project_id}"
 
-async with geode_client.connect() as conn:
+client = geode_client.open_database()
+
+async with client.connection() as conn:
     start = time.time()
-    result = await conn.execute("MATCH (u:User) RETURN COUNT(u)")
+    result, _ = await conn.query("MATCH (u:User) RETURN COUNT(u)")
     duration = (time.time() - start) * 1000
 
     # Send metric to Cloud Monitoring
@@ -746,9 +748,11 @@ import geode_client
 
 tracer = trace_v2.TraceServiceClient()
 
-async with geode_client.connect() as conn:
+client = geode_client.open_database()
+
+async with client.connection() as conn:
     with tracer.span(name="geode_query"):
-        result = await conn.execute("""
+        result, _ = await conn.query("""
             MATCH (u:User)-[:FRIEND]->(f:User)
             WHERE u.city = 'Seattle'
             RETURN u.name, COUNT(f)

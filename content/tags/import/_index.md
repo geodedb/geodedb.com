@@ -171,11 +171,12 @@ Import millions of records efficiently:
 ```python
 # Python batch import
 import asyncio
-from geode_client import GeodeClient
+from geode_client import Client
 import csv
 
 async def batch_import(filename, batch_size=1000):
-    async with GeodeClient("localhost:3141") as client:
+    client = Client(host="localhost", port=3141)
+    async with client.connection() as conn:
         batch = []
         total_imported = 0
 
@@ -187,7 +188,8 @@ async def batch_import(filename, batch_size=1000):
 
                 if len(batch) >= batch_size:
                     # Import batch in transaction
-                    async with client.transaction() as tx:
+                    async with client.connection() as tx:
+                        await tx.begin()
                         for record in batch:
                             await tx.execute("""
                                 CREATE (p:Person {
@@ -205,7 +207,8 @@ async def batch_import(filename, batch_size=1000):
 
             # Import remaining records
             if batch:
-                async with client.transaction() as tx:
+                async with client.connection() as tx:
+                    await tx.begin()
                     for record in batch:
                         await tx.execute("""
                             CREATE (p:Person {
@@ -318,10 +321,11 @@ echo "Parallel import complete"
 # Python parallel import with multiprocessing
 from multiprocessing import Pool
 import asyncio
-from geode_client import GeodeClient
+from geode_client import Client
 
 async def import_chunk(chunk_file):
-    async with GeodeClient("localhost:3141") as client:
+    client = Client(host="localhost", port=3141)
+    async with client.connection() as conn:
         # Import logic for chunk
         # ... (similar to batch import)
         pass
@@ -471,7 +475,7 @@ CREATE (user)-[:PURCHASED {
 from airflow import DAG
 from airflow.operators.python import PythonOperator
 from datetime import datetime
-from geode_client import GeodeClient
+from geode_client import Client
 import pandas as pd
 
 def extract_transform_load():
@@ -483,7 +487,7 @@ def extract_transform_load():
     df['age'] = datetime.now().year - pd.to_datetime(df['birth_date']).dt.year
 
     # Load to Geode
-    client = GeodeClient("localhost:3141")
+    client = Client("localhost:3141")
 
     for _, row in df.iterrows():
         client.execute("""
@@ -525,11 +529,13 @@ CREATE INDEX idx_person_name ON Person(name);
 OPTIMAL_BATCH_SIZE = 5000
 
 async def optimized_import(data):
-    async with GeodeClient("localhost:3141") as client:
+    client = Client(host="localhost", port=3141)
+    async with client.connection() as conn:
         for i in range(0, len(data), OPTIMAL_BATCH_SIZE):
             batch = data[i:i+OPTIMAL_BATCH_SIZE]
 
-            async with client.transaction() as tx:
+            async with client.connection() as tx:
+                await tx.begin()
                 for record in batch:
                     await tx.execute(create_query, record)
                 await tx.commit()

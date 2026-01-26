@@ -738,7 +738,7 @@ checkpoint_pages_written = Counter('geode_checkpoint_pages_written_total', 'Page
 async def check_wal_health(client):
     """Monitor WAL health"""
     # Check WAL disk usage
-    wal_size = await client.execute("""
+    wal_size, _ = await client.query("""
         SELECT SUM(size_bytes) AS total_size
         FROM SYSTEM.wal_files
     """)
@@ -747,7 +747,7 @@ async def check_wal_health(client):
         alert("WAL directory growing too large")
 
     # Check replication lag
-    lag = await client.execute("""
+    lag, _ = await client.query("""
         SELECT replica_name,
                current_lsn - replica_lsn AS lag_bytes,
                extract(epoch from now() - last_replay_time) AS lag_seconds
@@ -759,7 +759,7 @@ async def check_wal_health(client):
             alert(f"Replica {replica['replica_name']} falling behind")
 
     # Check WAL archival
-    unarchived = await client.execute("""
+    unarchived, _ = await client.query("""
         SELECT COUNT(*) AS count
         FROM SYSTEM.wal_files
         WHERE archived = false

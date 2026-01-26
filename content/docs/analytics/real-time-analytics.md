@@ -240,18 +240,28 @@ CREATE (source)<-[:SHARED]-(user2);
 
 Z-score based anomaly detection with adaptive baselines:
 
+<!-- CANARY: REQ=REQ-CLIENT-PY-001; FEATURE="PythonClientConnection"; ASPECT=HelloHandshake; STATUS=IMPL; OWNER=clients; UPDATED=2025-02-14 -->
+
 ```python
 # Python client example
-import geode
+import asyncio
+from geode_client import Client
 
-# Normal activity: 100 requests/minute baseline
-for i in range(100):
-    client.execute("MATCH (u:User {id: $id}) RETURN u", {"id": i})
+client = Client(host="localhost", port=3141)
 
-# Anomaly: Sudden spike to 500 requests/minute
-# Analytics engine detects:
-# "anomaly_detection: Query rate anomaly detected"
-# Z-score: 8.5, Severity: HIGH, Confidence: 0.94
+async def simulate_activity():
+    async with client.connection() as conn:
+        # Normal activity: 100 requests/minute baseline
+        for i in range(100):
+            await conn.query("MATCH (u:User {id: $id}) RETURN u", {"id": i})
+
+        # Anomaly: Sudden spike to 500 requests/minute
+        # Analytics engine detects:
+        # "anomaly_detection: Query rate anomaly detected"
+        # Z-score: 8.5, Severity: HIGH, Confidence: 0.94
+
+asyncio.run(simulate_activity())
+
 ```
 
 **Detection Algorithm**:

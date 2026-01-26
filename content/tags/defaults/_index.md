@@ -60,11 +60,13 @@ Using nodes with static defaults:
 
 ```python
 # Python client - defaults applied automatically
-from geode_client import GeodeClient
+from geode_client import Client
 
-async with GeodeClient("localhost:3141") as client:
+client = Client(host="localhost", port=3141)
+
+async with client.connection() as conn:
     # Only provide required fields, defaults fill in the rest
-    result = await client.execute(
+    result, _ = await conn.query(
         "INSERT (p:Person {id: $id, name: $name}) RETURN p",
         {"id": "user-001", "name": "Alice"}
     )
@@ -308,23 +310,24 @@ Explicitly provided values always override defaults:
 
 ```python
 # Python - explicit values override defaults
-async with GeodeClient("localhost:3141") as client:
+client = Client(host="localhost", port=3141)
+async with client.connection() as conn:
     # Uses defaults
-    result1 = await client.execute(
+    result1 = await conn.execute(
         "INSERT (p:Person {name: 'Alice'}) RETURN p",
         {}
     )
     # p.status = 'active', p.role = 'user'
 
     # Overrides defaults
-    result2 = await client.execute(
+    result2 = await conn.execute(
         "INSERT (p:Person {name: 'Bob', status: 'suspended', role: 'admin'}) RETURN p",
         {}
     )
     # p.status = 'suspended', p.role = 'admin'
 
     # Partial override
-    result3 = await client.execute(
+    result3 = await conn.execute(
         "INSERT (p:Person {name: 'Carol', status: 'pending'}) RETURN p",
         {}
     )

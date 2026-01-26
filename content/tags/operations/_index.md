@@ -543,7 +543,7 @@ Implement automatic failover for high availability:
 ```python
 # failover.py
 import asyncio
-from geode_client import GeodeClient
+from geode_client import Client
 
 class FailoverManager:
     def __init__(self, primary_host, replica_hosts):
@@ -554,7 +554,8 @@ class FailoverManager:
     async def health_check(self, host):
         """Check if host is healthy"""
         try:
-            async with GeodeClient(host, timeout=5) as client:
+            client = Client(host, timeout=5)
+            async with client.connection() as client:
                 await client.ping()
                 return True
         except Exception:
@@ -579,7 +580,8 @@ class FailoverManager:
 
     async def promote_replica(self, replica):
         """Promote replica to primary"""
-        async with GeodeClient(replica) as client:
+        client = Client(replica)
+        async with client.connection() as client:
             await client.execute("CALL system.promote_to_primary()")
 
     async def monitor(self):

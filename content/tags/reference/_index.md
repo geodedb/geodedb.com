@@ -105,15 +105,16 @@ SHOW CONSTRAINTS
 ### Connection Management
 
 ```python
-from geode_client import GeodeClient
+from geode_client import Client
 import asyncio
 
 # Basic connection
-async with GeodeClient('localhost:3141') as client:
-    result = await client.query("MATCH (n:User) RETURN n LIMIT 10")
+client = Client(host="localhost", port=3141)
+async with client.connection() as conn:
+    result, _ = await conn.query("MATCH (n:User) RETURN n LIMIT 10")
 
 # With authentication
-client = GeodeClient(
+client = Client(
     'localhost:3141',
     username='admin',
     password='password',
@@ -122,7 +123,7 @@ client = GeodeClient(
 )
 
 # Connection pool
-client = GeodeClient(
+client = Client(
     'localhost:3141',
     pool_size=20,
     pool_timeout=30
@@ -133,39 +134,42 @@ client = GeodeClient(
 
 ```python
 # Simple query
-result = await client.query("MATCH (u:User) RETURN u.name")
-for row in result:
+result, _ = await client.query("MATCH (u:User) RETURN u.name")
+for row in result.rows:
     print(row['u.name'])
 
 # Parameterized query
-result = await client.query(
+result, _ = await client.query(
     "MATCH (u:User {id: $id}) RETURN u",
     {"id": 123}
 )
 
 # Prepared statement
 stmt = await client.prepare("MATCH (u:User {id: $id}) RETURN u")
-result = await stmt.execute({"id": 123})
+result, _ = await stmt.execute({"id": 123})
 
 # Batch execution
 queries = [
     ("CREATE (:User {id: $id, name: $name})", {"id": 1, "name": "Alice"}),
     ("CREATE (:User {id: $id, name: $name})", {"id": 2, "name": "Bob"}),
 ]
-await client.execute_batch(queries)
+for query, params in queries:
+    await client.execute(query, params)
 ```
 
 ### Transaction API
 
 ```python
 # Explicit transactions
-async with client.transaction() as tx:
+async with client.connection() as tx:
+    await tx.begin()
     await tx.execute("CREATE (:User {id: 1})")
     await tx.execute("CREATE (:User {id: 2})")
     await tx.commit()
 
 # Transaction with savepoints
-async with client.transaction() as tx:
+async with client.connection() as tx:
+    await tx.begin()
     await tx.execute("CREATE (:User {id: 1})")
     sp = await tx.savepoint('sp1')
     await tx.execute("CREATE (:User {id: 2})")
@@ -225,29 +229,32 @@ err = tx.Commit()
 ### Async Client
 
 ```rust
-use geode_client::{GeodeClient, Error};
+use geode_client::{Client, Error, Value};
+use std::collections::HashMap;
 
 // Connect
-let client = GeodeClient::connect("localhost:3141").await?;
+let client = Client::from_dsn("localhost:3141")?;
+let mut conn = client.connect().await?;
 
 // Query execution
-let result = client.query("MATCH (u:User) RETURN u.name").await?;
-for row in result.rows {
-    let name: String = row.get("u.name")?;
+let (page, _) = conn.query("MATCH (u:User) RETURN u.name").await?;
+for row in &page.rows {
+    let name = row.get("u.name").unwrap().as_string()?;
     println!("{}", name);
 }
 
 // Parameterized query
-let result = client.query_params(
-    "MATCH (u:User {id: $id}) RETURN u",
-    &[("id", &123i64)]
-).await?;
+let mut params = HashMap::new();
+params.insert("id".to_string(), Value::int(123));
+let _ = conn
+    .query_with_params("MATCH (u:User {id: $id}) RETURN u", &params)
+    .await?;
 
 // Transaction
-let mut tx = client.begin().await?;
-tx.execute("CREATE (:User {id: 1})").await?;
-tx.execute("CREATE (:User {id: 2})").await?;
-tx.commit().await?;
+conn.begin().await?;
+let _ = conn.query("CREATE (:User {id: 1})").await?;
+let _ = conn.query("CREATE (:User {id: 2})").await?;
+conn.commit().await?;
 ```
 
 ## Wire Protocol Reference
@@ -622,9 +629,11 @@ RETURN end.name AS subcategory_3_levels_down;
 ### Python Client: Streaming Results
 
 ```python
-from geode_client import GeodeClient
+from geode_client import Client
 
-async with GeodeClient('localhost:3141') as client:
+client = Client(host="localhost", port=3141)
+
+async with client.connection() as conn:
     # Stream large result sets
     async for batch in client.query_stream("""
         MATCH (u:User)
@@ -651,7 +660,7 @@ query = (qb
     .limit(10)
     .build())
 
-result = await client.execute(query, {"min_age": 25, "city": "Seattle"})
+result, _ = await client.query(query, {"min_age": 25, "city": "Seattle"})
 ```
 
 ### Go Client: Context and Timeouts
@@ -703,27 +712,21 @@ err = tx.Commit()  // Commit all inserts atomically
 ### Rust Client: Type-Safe Query Results
 
 ```rust
-use geode_client::{GeodeClient, FromRow};
-use serde::{Deserialize, Serialize};
+use geode_client::Client;
 
-#[derive(Debug, Deserialize, Serialize, FromRow)]
-struct User {
-    id: i64,
-    name: String,
-    email: String,
-    age: Option<i32>,
-}
+let client = Client::from_dsn("localhost:3141")?;
+let mut conn = client.connect().await?;
 
-let client = GeodeClient::connect("localhost:3141").await?;
-
-// Type-safe result deserialization
-let users: Vec<User> = client
+// Type-safe result access
+let (page, _) = conn
     .query("MATCH (u:User) WHERE u.active = true RETURN u.id, u.name, u.email, u.age")
-    .await?
-    .try_into()?;
+    .await?;
 
-for user in users {
-    println!("{}: {} ({})", user.id, user.name, user.email);
+for row in &page.rows {
+    let id = row.get("u.id").unwrap().as_int()?;
+    let name = row.get("u.name").unwrap().as_string()?;
+    let email = row.get("u.email").unwrap().as_string()?;
+    println!("{}: {} ({})", id, name, email);
 }
 ```
 

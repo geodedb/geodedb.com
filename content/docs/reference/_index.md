@@ -261,8 +261,12 @@ result, err := client.Query(ctx, "MATCH (n) RETURN n LIMIT 10")
 
 ```python
 # Python client example
-async with client.query("MATCH (n) RETURN n LIMIT 10") as result:
-    async for row in result:
+from geode_client import Client
+
+client = Client(host="localhost", port=3141)
+async with client.connection() as conn:
+    page, _ = await conn.query("MATCH (n) RETURN n LIMIT 10")
+    for row in page.rows:
         print(row)
 ```
 
@@ -271,11 +275,17 @@ async with client.query("MATCH (n) RETURN n LIMIT 10") as result:
 Manage transactions:
 
 ```go
-tx, err := client.Begin(ctx)
+tx, err := db.BeginTx(ctx, nil)
+if err != nil {
+    return err
+}
 defer tx.Rollback()
 
-tx.Query(ctx, "CREATE (:Person {name: 'Alice'})")
-tx.Commit(ctx)
+_, err = tx.ExecContext(ctx, "CREATE (:Person {name: 'Alice'})")
+if err != nil {
+    return err
+}
+return tx.Commit()
 ```
 
 ### Schema API
@@ -297,16 +307,14 @@ REQUIRE p.email IS UNIQUE;
 
 Authentication and authorization:
 
-```go
-// Authenticate
-client, err := geode.Connect(ctx, &geode.Config{
-    Address:  "localhost:3141",
-    Username: "admin",
-    Password: "secret",
-})
+```python
+from geode_client import AuthClient, Client
 
-// Row-level security
-client.SetRLSPolicy(ctx, policy)
+client = Client(host="localhost", port=3141)
+async with client.connection() as conn:
+    auth = AuthClient(conn)
+    session = await auth.login("admin", "secret")
+    print(session.token)
 ```
 
 See [API Reference](api-reference-complete/) for complete API documentation.

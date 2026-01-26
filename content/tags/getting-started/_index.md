@@ -115,20 +115,21 @@ Create your first nodes and relationships:
 
 ```python
 import asyncio
-from geode_client import GeodeClient
+from geode_client import Client
 
 async def first_graph():
     # Connect to Geode
-    async with GeodeClient("localhost:3141") as client:
+    client = Client(host="localhost", port=3141)
+    async with client.connection() as conn:
         # Create people
-        await client.execute("""
+        await conn.execute("""
             CREATE (alice:Person {name: 'Alice', age: 30})
             CREATE (bob:Person {name: 'Bob', age: 25})
             CREATE (carol:Person {name: 'Carol', age: 28})
         """)
 
         # Create friendships
-        await client.execute("""
+        await conn.execute("""
             MATCH (alice:Person {name: 'Alice'})
             MATCH (bob:Person {name: 'Bob'})
             MATCH (carol:Person {name: 'Carol'})
@@ -137,12 +138,12 @@ async def first_graph():
         """)
 
         # Query: Find Alice's friends
-        result = await client.execute("""
+        result, _ = await conn.query("""
             MATCH (alice:Person {name: 'Alice'})-[:KNOWS]->(friend)
             RETURN friend.name, friend.age
         """)
 
-        async for row in result:
+        for row in result.rows:
             print(f"Alice knows {row['friend.name']}, age {row['friend.age']}")
 
 asyncio.run(first_graph())
@@ -188,31 +189,29 @@ func main() {
 ### Connecting with Rust
 
 ```rust
-use geode_client::{Client, params};
+use geode_client::{Client, Result, Value};
+use std::collections::HashMap;
 
 #[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
+async fn main() -> Result<()> {
     // Connect to Geode
-    let client = Client::connect("localhost:3141").await?;
+    let client = Client::new("localhost", 3141).skip_verify(true);
+    let mut conn = client.connect().await?;
 
     // Create a node
-    client.execute(
+    let mut params = HashMap::new();
+    params.insert("name".to_string(), Value::string("Alice"));
+    params.insert("age".to_string(), Value::int(30));
+    conn.query_with_params(
         "CREATE (p:Person {name: $name, age: $age})",
-        params! {
-            "name" => "Alice",
-            "age" => 30
-        }
+        &params,
     ).await?;
 
     // Query nodes
-    let mut results = client.execute(
-        "MATCH (p:Person) RETURN p.name, p.age",
-        params! {}
-    ).stream().await?;
-
-    while let Some(row) = results.next().await {
-        let name: String = row.get("p.name")?;
-        let age: i64 = row.get("p.age")?;
+    let (page, _) = conn.query("MATCH (p:Person) RETURN p.name AS name, p.age AS age").await?;
+    for row in &page.rows {
+        let name = row.get("name").unwrap().as_string()?;
+        let age = row.get("age").unwrap().as_int()?;
         println!("{} is {} years old", name, age);
     }
 
@@ -332,20 +331,31 @@ Group operations for consistency:
 
 ```python
 # Python: Atomic multi-step operation
-async with client.transaction() as tx:
-    # Create order
-    await tx.execute("""
-        CREATE (o:Order {id: $order_id, total: $total})
-    """, order_id="order123", total=59.98)
+async with client.connection() as conn:
+    await conn.begin()
+    try:
+        # Create order
+        await conn.execute(
+            """
+            CREATE (o:Order {id: $order_id, total: $total})
+            """,
+            {"order_id": "order123", "total": 59.98},
+        )
 
-    # Link to user
-    await tx.execute("""
-        MATCH (u:User {id: $user_id})
-        MATCH (o:Order {id: $order_id})
-        CREATE (u)-[:PLACED]->(o)
-    """, user_id="user123", order_id="order123")
+        # Link to user
+        await conn.execute(
+            """
+            MATCH (u:User {id: $user_id})
+            MATCH (o:Order {id: $order_id})
+            CREATE (u)-[:PLACED]->(o)
+            """,
+            {"user_id": "user123", "order_id": "order123"},
+        )
 
-    # Both operations commit or both roll back
+        await conn.commit()
+    except Exception:
+        await conn.rollback()
+        raise
 ```
 
 ## Common Beginner Patterns
@@ -450,42 +460,56 @@ Transactions ensure atomic, consistent operations:
 ```python
 # Python transaction example
 async def transfer_funds(from_account, to_account, amount):
-    async with client.transaction() as tx:
-        # Read balances
-        result = await tx.execute("""
-            MATCH (from:Account {id: $from_id})
-            MATCH (to:Account {id: $to_id})
-            RETURN from.balance AS from_balance, to.balance AS to_balance
-        """, from_id=from_account, to_id=to_account)
+    async with client.connection() as conn:
+        await conn.begin()
+        try:
+            # Read balances
+            result, _ = await conn.query(
+                """
+                MATCH (from:Account {id: $from_id})
+                MATCH (to:Account {id: $to_id})
+                RETURN from.balance AS from_balance, to.balance AS to_balance
+                """,
+                {"from_id": from_account, "to_id": to_account},
+            )
 
-        row = await result.fetch_one()
+            row = result.rows[0] if result.rows else None
 
-        if row['from_balance'] < amount:
-            raise ValueError("Insufficient funds")
+            if row and row["from_balance"].as_int < amount:
+                raise ValueError("Insufficient funds")
 
-        # Update balances atomically
-        await tx.execute("""
-            MATCH (from:Account {id: $from_id})
-            SET from.balance = from.balance - $amount
-        """, from_id=from_account, amount=amount)
+            # Update balances atomically
+            await conn.execute(
+                """
+                MATCH (from:Account {id: $from_id})
+                SET from.balance = from.balance - $amount
+                """,
+                {"from_id": from_account, "amount": amount},
+            )
 
-        await tx.execute("""
-            MATCH (to:Account {id: $to_id})
-            SET to.balance = to.balance + $amount
-        """, to_id=to_account, amount=amount)
+            await conn.execute(
+                """
+                MATCH (to:Account {id: $to_id})
+                SET to.balance = to.balance + $amount
+                """,
+                {"to_id": to_account, "amount": amount},
+            )
 
-        # Both updates commit together or both roll back
+            await conn.commit()
+        except Exception:
+            await conn.rollback()
+            raise
 ```
 
 Transactions prevent race conditions, partial updates, and data inconsistencies.
 
 ### Connection Pool Configuration
 
-All Geode clients use connection pooling automatically, but you can tune for your workload:
+Pooling is explicit in Python and Rust, built into `database/sql` for Go, and enabled by default in Node.js. Tune pools for your workload:
 
 ```python
 # Python - explicit pool configuration
-client = GeodeClient(
+client = Client(
     "localhost:3141",
     pool_size=50,  # Maximum concurrent connections
     pool_timeout=30,  # Seconds to wait for available connection
@@ -496,16 +520,16 @@ client = GeodeClient(
 
 ```go
 // Go - database/sql automatically pools
-db, err := sql.Open("geode", "geode://localhost:3141?pool_size=50")
+db, err := sql.Open("geode", "geode://localhost:3141")
+db.SetMaxOpenConns(50)
+db.SetMaxIdleConns(10)
 ```
 
 ```rust
 // Rust - configure pool size
-let client = Client::builder()
-    .address("localhost:3141")
-    .pool_size(50)
-    .connect()
-    .await?;
+use geode_client::ConnectionPool;
+
+let pool = ConnectionPool::new("localhost", 3141, 50);
 ```
 
 Proper pool configuration prevents connection exhaustion and improves throughput.
@@ -515,33 +539,28 @@ Proper pool configuration prevents connection exhaustion and improves throughput
 Handle Geode errors gracefully:
 
 ```python
-from geode_client import GeodeError, ConstraintViolation, DeadlockDetected
+from geode_client import QueryError
 
-async def safe_insert(data):
+async def safe_insert(client, data):
     max_retries = 3
     for attempt in range(max_retries):
-        try:
-            await client.execute("""
-                INSERT (:User {id: $id, email: $email})
-            """, **data)
-            return True
-
-        except ConstraintViolation as e:
-            # Unique constraint violation - don't retry
-            logger.error(f"Duplicate user: {e}")
-            return False
-
-        except DeadlockDetected:
-            # Transaction deadlock - retry with backoff
-            if attempt < max_retries - 1:
-                await asyncio.sleep(2 ** attempt)  # Exponential backoff
-                continue
-            raise
-
-        except GeodeError as e:
-            # Other errors - log and fail
-            logger.error(f"Database error: {e}")
-            raise
+        async with client.connection() as conn:
+            try:
+                await conn.execute(
+                    "CREATE (:User {id: $id, email: $email})",
+                    data,
+                )
+                return True
+            except QueryError as exc:
+                # Constraint violation - don't retry
+                if "CONSTRAINT" in str(exc):
+                    logger.error(f"Duplicate user: {exc}")
+                    return False
+                # Retryable failures
+                if attempt < max_retries - 1:
+                    await asyncio.sleep(2 ** attempt)  # Exponential backoff
+                    continue
+                raise
 ```
 
 Appropriate error handling makes your application resilient to transient failures.
@@ -691,19 +710,22 @@ RETURN path
 
 ```python
 # Bad: N+1 queries
-users = await client.execute("MATCH (u:User) RETURN u")
-async for user in users:
-    # Separate query for each user's orders
-    orders = await client.execute(
-        "MATCH (:User {id: $id})-[:PLACED]->(o:Order) RETURN o",
-        id=user['u']['id']
-    )
+async with client.connection() as conn:
+    users_page, _ = await conn.query("MATCH (u:User) RETURN u.id AS id")
+    for user in users_page.rows:
+        # Separate query for each user's orders
+        orders_page, _ = await conn.query(
+            "MATCH (:User {id: $id})-[:PLACED]->(o:Order) RETURN o",
+            {"id": user["id"].as_string},
+        )
 
 # Good: Single query
-result = await client.execute("""
+result, _ = await conn.query(
+    """
     MATCH (u:User)-[:PLACED]->(o:Order)
-    RETURN u.id, COLLECT(o) AS orders
-""")
+    RETURN u.id AS id, COLLECT(o) AS orders
+    """
+)
 ```
 
 **Forgetting to Parameterize**: Always use parameters to prevent injection:
@@ -714,7 +736,7 @@ user_email = request.form['email']
 query = f"MATCH (u:User {{email: '{user_email}'}}) RETURN u"  # DON'T!
 
 # Safe: Parameterized
-result = await client.execute(
+result, _ = await client.query(
     "MATCH (u:User {email: $email}) RETURN u",
     email=request.form['email']
 )

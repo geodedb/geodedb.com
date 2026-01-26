@@ -326,9 +326,10 @@ async def check_geode_health() -> Dict[str, Any]:
     # Check database connectivity
     try:
         import geode_client
-        async with geode_client.connect('geode://geode:3141') as conn:
-            result = await conn.execute('MATCH (n) RETURN count(n) LIMIT 1')
-            await result.fetch_one()
+        client = geode_client.open_database('geode://geode:3141')
+        async with client.connection() as conn:
+            result, _ = await conn.query('MATCH (n) RETURN count(n) LIMIT 1')
+            result.rows[0] if result.rows else None
             health['checks']['database'] = {'status': 'up'}
     except Exception as e:
         health['checks']['database'] = {'status': 'down', 'error': str(e)}
@@ -351,9 +352,10 @@ async def check_geode_health() -> Dict[str, Any]:
 
     # Check replication lag (if applicable)
     try:
-        async with geode_client.connect('geode://geode:3141') as conn:
-            result = await conn.execute('SHOW REPLICATION STATUS')
-            row = await result.fetch_one()
+        client = geode_client.open_database('geode://geode:3141')
+        async with client.connection() as conn:
+            result, _ = await conn.query('SHOW REPLICATION STATUS')
+            row = result.rows[0] if result.rows else None
             lag_seconds = row['lag_seconds'] if row else 0
             health['checks']['replication'] = {
                 'status': 'up' if lag_seconds < 10 else 'warning',
@@ -371,13 +373,11 @@ async def liveness_probe():
     """Simple liveness check."""
     try:
         import geode_client
-        async with geode_client.connect(
-            'geode://localhost:3141',
-            timeout=2
-        ) as conn:
-            await conn.execute('SELECT 1')
+        client = geode_client.open_database('geode://localhost:3141')
+        async with client.connection() as conn:
+            await conn.query('RETURN 1 AS ok')
             return {'alive': True}
-    except:
+    except Exception:
         return {'alive': False}
 
 # Kubernetes readiness probe
@@ -396,32 +396,33 @@ from datetime import datetime, timedelta
 
 async def analyze_capacity():
     """Analyze current capacity and project growth."""
-    async with geode_client.connect('geode://localhost:3141') as conn:
+    client = geode_client.open_database('geode://localhost:3141')
+    async with client.connection() as conn:
         # Current database size
-        result = await conn.execute("""
+        result, _ = await conn.query("""
             SELECT database_size_bytes,
                    wal_size_bytes,
                    index_size_bytes
             FROM system_stats
         """)
-        stats = await result.fetch_one()
+        stats = result.rows[0] if result.rows else None
 
         # Query rate
-        result = await conn.execute("""
+        result, _ = await conn.query("""
             SELECT COUNT(*) as query_count
             FROM metrics_history
             WHERE timestamp > $start
         """, {'start': datetime.now() - timedelta(hours=1)})
-        query_stats = await result.fetch_one()
+        query_stats = result.rows[0] if result.rows else None
 
         # Connection usage
-        result = await conn.execute("""
+        result, _ = await conn.query("""
             SELECT AVG(active_connections) as avg_connections,
                    MAX(active_connections) as peak_connections
             FROM metrics_history
             WHERE timestamp > $start
         """, {'start': datetime.now() - timedelta(days=1)})
-        conn_stats = await result.fetch_one()
+        conn_stats = result.rows[0] if result.rows else None
 
         # Calculate projections
         current_size_gb = stats['database_size_bytes'] / (1024**3)

@@ -2,7 +2,7 @@
 title: "Vim Plugin"
 description: "Vim plugin for Geode GQL syntax highlighting and basic features"
 weight: 2
-tags: ["vim", "plugin", "editor", "syntax"]
+tags: ["vim", "plugin", "editor", "gql-syntax"]
 categories: ["plugins", "documentation"]
 keywords:
   - Geode Vim plugin
@@ -14,190 +14,99 @@ keywords:
 
 <!-- CANARY: REQ=REQ-SYNTAX-VIM-002; FEATURE="VimSyntaxGeneration"; ASPECT=BuildTarget; STATUS=EXEMPT; OWNER=tooling; UPDATED=2026-01-03 -->
 
-# Vim Plugin for Geode
+# Vim Plugin for Geode GQL
 
-Enhance your Vim editing experience with GQL syntax highlighting and basic Geode integration. While not as feature-rich as the Neovim plugin, it provides essential support for working with GQL files.
-
-## Installation
-
-### Using vim-plug
-
-```vim
-Plug 'codeprosorg/geode-vim'
-```
-
-### Using Vundle
-
-```vim
-Plugin 'codeprosorg/geode-vim'
-```
-
-### Using Pathogen
-
-```bash
-cd ~/.vim/bundle
-git clone https://gitlab.com/devnw/codepros/geode/geode-vim.git
-```
-
-### Manual Installation
-
-```bash
-cd ~/.vim
-git clone https://gitlab.com/devnw/codepros/geode/geode-vim.git
-cp -r geode-vim/* .
-```
+Syntax highlighting and filetype detection for Geode's GQL and Cypher-compatible files in Vim.
 
 ## Features
 
-### Syntax Highlighting
+- **Syntax Highlighting** for GQL/Cypher keywords, types, functions, and operators
+- **Filetype Detection** for `.gql` and `.geode`
+- **Comment Support** for `--`, `//`, and `/* */`
 
-Comprehensive syntax highlighting for GQL including:
+## Installation
 
-- **Keywords**: MATCH, CREATE, RETURN, WHERE, WITH, etc.
-- **Types**: INTEGER, STRING, BOOLEAN, FLOAT, etc.
-- **Functions**: count, sum, avg, collect, etc.
-- **Operators**: AND, OR, NOT, IN, etc.
-- **String Literals**: Single and double quoted strings
-- **Comments**: Line and block comments
-- **Variables**: Parameter placeholders
-- **Path Patterns**: Node and relationship patterns
-
-### File Type Detection
-
-Automatic detection of GQL files:
-
-- `.gql` files
-- `.geode` files
-- `.cypher` files (compatibility)
-
-### Basic Integration
-
-- Syntax folding
-- Comment toggling
-- Keyword completion
-
-## Configuration
-
-Add to your `.vimrc`:
+### vim-plug
 
 ```vim
-" Enable syntax highlighting
-syntax on
-
-" Set filetype for GQL files
-au BufRead,BufNewFile *.gql set filetype=gql
-au BufRead,BufNewFile *.geode set filetype=gql
-
-" Optional: Set tab width for GQL files
-au FileType gql setlocal tabstop=2 shiftwidth=2 expandtab
-
-" Optional: Enable folding
-au FileType gql setlocal foldmethod=syntax
-au FileType gql setlocal foldlevel=99
-
-" Optional: Configure comment string
-au FileType gql setlocal commentstring=//\ %s
+Plug 'devnw/geode/geode-vim'
 ```
 
-## Syntax Highlighting Examples
-
-### Keywords
-
-```gql
-MATCH (p:Person)
-WHERE p.age > 30
-RETURN p.name, p.age
-ORDER BY p.age DESC
-LIMIT 10
-```
-
-### Types and Properties
-
-```gql
-CREATE (:Person {
-  name: "Alice",
-  age: 30,
-  active: true,
-  score: 95.5
-})
-```
-
-### Functions
-
-```gql
-MATCH (p:Person)
-RETURN count(p) AS total,
-       avg(p.age) AS average_age,
-       collect(p.name) AS names
-```
-
-### Path Patterns
-
-```gql
-MATCH (p1:Person)-[:KNOWS]->(p2:Person)-[:WORKS_AT]->(c:Company)
-WHERE c.name = "Acme Corp"
-RETURN p1.name, p2.name, c.name
-```
-
-### Comments
-
-```gql
-// This is a line comment
-
-/* This is a
-   block comment */
-
-MATCH (n) RETURN n // Inline comment
-```
-
-## Commands
-
-### Basic Commands
-
-- `:GQLFormat` - Format current buffer (requires external formatter)
-- `:GQLCheck` - Check syntax (requires Geode server)
-
-### Comment Toggling
-
-Use standard Vim comment commands:
+### Vundle
 
 ```vim
-" In normal mode
-gcc         " Toggle line comment
-gc<motion>  " Toggle comment for motion
-
-" In visual mode
-gc          " Toggle comment for selection
+Plugin 'devnw/geode/geode-vim'
 ```
 
-## Folding
+### Native Packages (Vim 8+)
 
-Enable syntax folding for better code organization:
+```bash
+mkdir -p ~/.vim/pack/geode/start
+cd ~/.vim/pack/geode/start
+git clone https://gitlab.com/devnw/geode/geode-vim.git
+```
+
+### Manual
+
+```bash
+git clone https://gitlab.com/devnw/geode/geode-vim.git
+cp -r geode-vim/syntax ~/.vim/
+cp -r geode-vim/ftdetect ~/.vim/
+```
+
+## Usage
+
+Open any `.gql` or `.geode` file and Vim will detect the filetype automatically. To set manually:
 
 ```vim
-" In .vimrc
-au FileType gql setlocal foldmethod=syntax
-au FileType gql setlocal foldlevel=99
-
-" Usage
-za  " Toggle fold under cursor
-zc  " Close fold under cursor
-zo  " Open fold under cursor
-zM  " Close all folds
-zR  " Open all folds
+:set filetype=gql
 ```
 
-## Keyword Completion
+## Supported Keywords
 
-Basic keyword completion using Vim's built-in completion:
+### Query Clauses
+`MATCH`, `OPTIONAL`, `WHERE`, `RETURN`, `WITH`, `ORDER BY`, `SKIP`, `LIMIT`, `UNION`, `INTERSECT`, `EXCEPT`, `UNWIND`, `CALL`, `YIELD`
 
-```vim
-" While in insert mode
-Ctrl-X Ctrl-K   " Keyword completion
-Ctrl-X Ctrl-L   " Line completion
-Ctrl-N          " Next completion
-Ctrl-P          " Previous completion
-```
+### Data Modification
+`CREATE`, `MERGE`, `DELETE`, `DETACH DELETE`, `SET`, `REMOVE`, `INSERT`
+
+### DDL
+`CREATE GRAPH`, `DROP GRAPH`, `CREATE INDEX`, `DROP INDEX`, `CONSTRAINT`, `SCHEMA`
+
+### Transactions
+`BEGIN`, `COMMIT`, `ROLLBACK`, `TRANSACTION`
+
+### Data Types
+`INTEGER`, `FLOAT`, `STRING`, `BOOLEAN`, `DATE`, `TIME`, `DATETIME`, `DURATION`, `POINT`, `VECTOR`, `UUID`, `BYTES`, `JSON`, `LIST`, `MAP`
+
+## File Extensions
+
+| Extension | Filetype |
+|-----------|----------|
+| `.gql` | gql |
+| `.geode` | gql |
+
+## Highlight Groups
+
+| Group | Description |
+|-------|-------------|
+| `gqlKeyword` | Query clauses and keywords |
+| `gqlBoolean` | Boolean and logical operators |
+| `gqlDDL` | Data definition keywords |
+| `gqlTransaction` | Transaction keywords |
+| `gqlAggregate` | Aggregation functions |
+| `gqlFunction` | Scalar and built-in functions |
+| `gqlType` | Data types |
+| `gqlComment` | Comments |
+| `gqlString` | String literals |
+| `gqlNumber` | Numeric literals |
+| `gqlVariable` | Parameter variables (`$name`) |
+| `gqlLabel` | Node/relationship labels (`:Label`) |
+| `gqlOperator` | Operators |
+
+## Repository
+
+- GitLab: [devnw/geode/geode-vim](https://gitlab.com/devnw/geode/geode-vim)
 
 ## Color Schemes
 

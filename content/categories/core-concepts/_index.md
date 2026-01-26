@@ -239,7 +239,8 @@ Geode provides full ACID compliance:
 
 ```python
 # Python example
-async with client.transaction() as tx:
+async with client.connection() as tx:
+    await tx.begin()
     # Create user
     user = await tx.execute("""
         CREATE (u:User {name: $name, email: $email})
@@ -409,7 +410,7 @@ security:
 
 ```python
 # Connect with authentication
-client = GeodeClient(
+client = Client(
     "localhost:3141",
     username="alice",
     password="secure_password"

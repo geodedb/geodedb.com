@@ -278,7 +278,7 @@ RETURN p
 **Configuration for 10K concurrent users:**
 ```python
 # Python client
-client = GeodeClient(
+client = Client(
     "localhost", 3141,
     pool_size=200,           # Increased from default 50
     pool_timeout=10.0,       # Fail fast on pool exhaustion
@@ -390,7 +390,8 @@ async def migrate_user_network():
     """)
 
     # Transform to graph model
-    async with geode_client.transaction() as tx:
+    async with geode_client.connection() as tx:
+        await tx.begin()
         for row in pg_rows:
             await tx.execute("""
                 MERGE (u1:User {id: $user_id})

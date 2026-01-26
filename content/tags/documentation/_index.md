@@ -272,25 +272,28 @@ client, err := geode.NewClientWithConfig(config)
 **Query Execution:**
 ```python
 # Python example
-async with GeodeClient("localhost:3141") as client:
-    result = await client.execute(
+client = Client(host="localhost", port=3141)
+async with client.connection() as conn:
+    result, _ = await conn.query(
         "MATCH (n:Person) WHERE n.age > $age RETURN n",
-        parameters={"age": 30}
+        {"age": 30}
     )
 ```
 
 **Transaction Management:**
 ```rust
 // Rust example
-let mut tx = client.begin_transaction().await?;
-tx.execute("CREATE (n:Person {name: 'Alice'})").await?;
-tx.commit().await?;
+let mut conn = client.connect().await?;
+conn.begin().await?;
+conn.query("CREATE (n:Person {name: 'Alice'})").await?;
+conn.commit().await?;
 ```
 
 **Error Handling:**
 ```zig
 // Zig example
-const result = client.execute(query) catch |err| {
+try client.sendQuery(query);
+const result = client.receiveMessage(30000) catch |err| {
     std.log.err("Query failed: {}", .{err});
     return err;
 };
@@ -404,23 +407,24 @@ All documentation includes working code examples:
 
 **Complete Examples** - Examples include all necessary context:
 ```python
-from geode_client import GeodeClient
+from geode_client import Client
 import asyncio
 
 async def main():
-    async with GeodeClient("localhost:3141") as client:
+    client = Client(host="localhost", port=3141)
+    async with client.connection() as conn:
         # Create node
-        await client.execute(
+        await conn.execute(
             "CREATE (n:Person {name: $name, age: $age})",
             parameters={"name": "Alice", "age": 30}
         )
 
         # Query node
-        result = await client.execute(
+        result, _ = await conn.query(
             "MATCH (n:Person {name: $name}) RETURN n",
             parameters={"name": "Alice"}
         )
-        async for row in result:
+        for row in result.rows:
             print(row)
 
 if __name__ == "__main__":

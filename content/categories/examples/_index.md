@@ -128,22 +128,23 @@ func main() {
 **Python Example**:
 ```python
 import asyncio
-from geode_client import GeodeClient
+from geode_client import Client
 
 async def main():
-    async with GeodeClient("localhost:3141") as client:
+    client = Client(host="localhost", port=3141)
+    async with client.connection() as conn:
         # Create a person
-        await client.execute("""
+        await conn.execute("""
             CREATE (p:Person {name: $name, age: $age})
         """, {"name": "Alice", "age": 30})
 
         # Query
-        result = await client.execute("""
+        result, _ = await conn.query("""
             MATCH (p:Person {name: $name})
             RETURN p.name, p.age
         """, {"name": "Alice"})
 
-        async for row in result:
+        for row in result.rows:
             print(f"{row['p.name']} is {row['p.age']} years old")
 
 asyncio.run(main())
@@ -151,31 +152,35 @@ asyncio.run(main())
 
 **Rust Example**:
 ```rust
-use geode_client::{GeodeClient, Value};
+use geode_client::{Client, Value};
+use std::collections::HashMap;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let client = GeodeClient::connect("localhost:3141").await?;
+    let client = Client::from_dsn("localhost:3141")?;
+    let mut conn = client.connect().await?;
 
     // Create a person
-    client.execute(
-        "CREATE (p:Person {name: $name, age: $age})",
-        vec![
-            ("name", Value::String("Alice".to_string())),
-            ("age", Value::Integer(30)),
-        ],
-    ).await?;
+    let mut params = HashMap::new();
+    params.insert("name".to_string(), Value::string("Alice"));
+    params.insert("age".to_string(), Value::int(30));
+    let _ = conn
+        .query_with_params("CREATE (p:Person {name: $name, age: $age})", &params)
+        .await?;
 
     // Query
-    let result = client.execute(
-        "MATCH (p:Person {name: $name}) RETURN p.name, p.age",
-        vec![("name", Value::String("Alice".to_string()))],
-    ).await?;
+    let mut params = HashMap::new();
+    params.insert("name".to_string(), Value::string("Alice"));
+    let (page, _) = conn
+        .query_with_params("MATCH (p:Person {name: $name}) RETURN p.name, p.age", &params)
+        .await?;
 
-    for row in result {
-        println!("{} is {} years old",
-            row.get("p.name").unwrap(),
-            row.get("p.age").unwrap());
+    for row in &page.rows {
+        println!(
+            \"{} is {} years old\",
+            row.get(\"p.name\").unwrap().as_string()?,
+            row.get(\"p.age\").unwrap().as_int()?
+        );
     }
 
     Ok(())
@@ -386,9 +391,10 @@ Complex multi-step transaction:
 ```python
 async def transfer_funds(client, from_account, to_account, amount):
     """Transfer money between accounts atomically"""
-    async with client.transaction() as tx:
+    async with client.connection() as tx:
+        await tx.begin()
         # Debit from source
-        result = await tx.execute("""
+        result, _ = await tx.query("""
             MATCH (a:Account {id: $from_id})
             WHERE a.balance >= $amount
             SET a.balance = a.balance - $amount
@@ -463,7 +469,7 @@ Building a REST API with Geode backend:
 
 ```python
 from fastapi import FastAPI, HTTPException
-from geode_client import GeodeClient
+from geode_client import Client
 import asyncio
 
 app = FastAPI()
@@ -472,35 +478,33 @@ client = None
 @app.on_event("startup")
 async def startup():
     global client
-    client = GeodeClient("localhost:3141")
-    await client.connect()
+    client = Client(host="localhost", port=3141)
 
 @app.get("/users/{user_id}")
 async def get_user(user_id: str):
-    result = await client.execute("""
-        MATCH (u:User {id: $user_id})
-        RETURN u
-    """, {"user_id": user_id})
+    async with client.connection() as conn:
+        result, _ = await conn.query("""
+            MATCH (u:User {id: $user_id})
+            RETURN u
+        """, {"user_id": user_id})
 
-    user = await result.single()
+    user = result.rows[0]["u"].raw_value if result.rows else None
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     return user
 
 @app.get("/users/{user_id}/friends")
 async def get_friends(user_id: str):
-    result = await client.execute("""
-        MATCH (u:User {id: $user_id})-[:FRIENDS_WITH]->(f:User)
-        RETURN f.id, f.name, f.email
-    """, {"user_id": user_id})
+    async with client.connection() as conn:
+        result, _ = await conn.query("""
+            MATCH (u:User {id: $user_id})-[:FRIENDS_WITH]->(f:User)
+            RETURN f.id AS id, f.name AS name, f.email AS email
+        """, {"user_id": user_id})
 
-    friends = []
-    async for row in result:
-        friends.append({
-            "id": row["f.id"],
-            "name": row["f.name"],
-            "email": row["f.email"]
-        })
+    friends = [
+        {"id": row["id"].raw_value, "name": row["name"].raw_value, "email": row["email"].raw_value}
+        for row in result.rows
+    ]
     return {"friends": friends}
 ```
 
@@ -510,18 +514,31 @@ Change data capture example:
 
 ```python
 async def stream_changes(client):
-    """Stream database changes in real-time"""
-    async with client.cdc_stream(
-        labels=["User", "Post"],
-        operations=["CREATE", "UPDATE", "DELETE"]
-    ) as stream:
-        async for change in stream:
-            print(f"Operation: {change.operation}")
-            print(f"Label: {change.label}")
-            print(f"Data: {change.data}")
-
-            # Push to message queue, webhook, etc.
-            await publish_to_kafka(change)
+    """Poll ChangeLog entries for near real-time updates."""
+    last_seen = "1970-01-01T00:00:00Z"
+    async with client.connection() as conn:
+        while True:
+            result, _ = await conn.query(
+                """
+                MATCH (e:ChangeLog)
+                WHERE e.emitted_at > $since AND e.label IN $labels
+                RETURN e.operation AS operation,
+                       e.label AS label,
+                       e.after AS after,
+                       e.emitted_at AS emitted_at
+                ORDER BY emitted_at
+                """,
+                {"since": last_seen, "labels": ["User", "Post"]},
+            )
+            for row in result.rows:
+                change = {
+                    "operation": row["operation"].raw_value,
+                    "label": row["label"].raw_value,
+                    "data": row["after"].raw_value,
+                }
+                # Push to message queue, webhook, etc.
+                await publish_to_kafka(change)
+                last_seen = row["emitted_at"].raw_value
 ```
 
 ### Machine Learning Integration
@@ -532,19 +549,20 @@ Using Geode with scikit-learn:
 import asyncio
 import numpy as np
 from sklearn.cluster import KMeans
-from geode_client import GeodeClient
+from geode_client import Client
 
 async def cluster_users():
-    async with GeodeClient("localhost:3141") as client:
+    client = Client(host="localhost", port=3141)
+    async with client.connection() as conn:
         # Fetch user features
-        result = await client.execute("""
+        result, _ = await conn.query("""
             MATCH (u:User)
             RETURN u.id, u.age, u.purchase_count, u.avg_purchase_amount
         """)
 
         users = []
         features = []
-        async for row in result:
+        for row in result.rows:
             users.append(row["u.id"])
             features.append([
                 row["u.age"],
@@ -559,7 +577,7 @@ async def cluster_users():
 
         # Store cluster assignments back in graph
         for user_id, cluster in zip(users, labels):
-            await client.execute("""
+            await conn.execute("""
                 MATCH (u:User {id: $user_id})
                 SET u.cluster = $cluster
             """, {"user_id": user_id, "cluster": int(cluster)})
@@ -626,11 +644,11 @@ RETURN p;
 
 ```python
 import pytest
-from geode_client import GeodeClient
+from geode_client import Client
 
 @pytest.fixture
 async def client():
-    client = GeodeClient("localhost:3141")
+    client = Client("localhost:3141")
     await client.connect()
     yield client
     # Cleanup
@@ -643,7 +661,7 @@ async def test_create_user(client):
         CREATE (u:User {name: 'Test User', email: 'test@example.com'})
     """)
 
-    result = await client.execute("""
+    result, _ = await client.query("""
         MATCH (u:User {email: 'test@example.com'})
         RETURN count(u) as count
     """)

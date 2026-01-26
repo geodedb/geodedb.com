@@ -11,7 +11,9 @@ keywords:
   - client library
 ---
 
-<!-- CANARY: REQ=REQ-CLIENT-INTEGRATION-001; FEATURE="RustClientIntegration"; ASPECT=QUICTransport; STATUS=TESTED; OWNER=clients; UPDATED=2026-01-15 -->
+<!-- CANARY: REQ=REQ-GQL-UNICODE-012; FEATURE="UTF-8 -> UTF-16 Conversion"; ASPECT=ClientWrapperGo; STATUS=IMPL; TEST=TestCANARY_ClientGo_Utf8Utf16RoundTrip; OWNER=clients; UPDATED=2025-09-27 -->
+<!-- CANARY: REQ=REQ-GQL-UNICODE-013; FEATURE="UTF-16 -> UTF-8 Conversion"; ASPECT=ClientWrapperGo; STATUS=IMPL; TEST=TestCANARY_ClientGo_Utf8Utf16RoundTrip; OWNER=clients; UPDATED=2025-09-27 -->
+<!-- CANARY: REQ=REQ-GQL-UNICODE-014; FEATURE="WTF-8 Lossy Decode"; ASPECT=ClientWrapperGo; STATUS=IMPL; TEST=TestCANARY_ClientGo_Wtf8Lossy; OWNER=clients; UPDATED=2025-09-27 -->
 
 # Geode Go Client Library
 
@@ -113,8 +115,6 @@ db, _ := sql.Open("geode", "localhost:3141?ca=/path/to/ca.crt&cert=/path/to/clie
 // Custom page size
 db, _ := sql.Open("geode", "localhost:3141?page_size=5000")
 
-// With authentication
-db, _ := sql.Open("geode", "user:password@localhost:3141")
 ```
 
 ### DSN Options

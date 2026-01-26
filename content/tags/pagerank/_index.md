@@ -381,7 +381,7 @@ CALL { ... PageRank update logic ... };
 ### Python Client
 
 ```python
-from geode_client import GeodeClient
+from geode_client import Client
 
 async def compute_pagerank(client, iterations=20, damping=0.85):
     # Initialize PageRank
@@ -392,7 +392,7 @@ async def compute_pagerank(client, iterations=20, damping=0.85):
 
     # Iterate
     for i in range(iterations):
-        result = await client.execute(f"""
+        result, _ = await client.query(f"""
             MATCH (s)-[:LINKS_TO]->(t)
             WITH t, SUM(s.pagerank / COUNT {{ (s)-[:LINKS_TO]->() }}) AS rank
             SET t.pr_new = {1-damping} + {damping} * rank
@@ -407,7 +407,7 @@ async def compute_pagerank(client, iterations=20, damping=0.85):
             break
 
     # Get top results
-    top_pages = await client.execute("""
+    top_pages, _ = await client.query("""
         MATCH (n:Page)
         RETURN n.id, n.pagerank
         ORDER BY n.pagerank DESC

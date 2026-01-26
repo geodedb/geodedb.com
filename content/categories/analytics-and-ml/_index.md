@@ -77,14 +77,16 @@ These algorithms run in-process without data export, maintaining ACID guarantees
 Geode's HNSW (Hierarchical Navigable Small World) index enables approximate nearest neighbor search for vector embeddings, supporting ML workloads:
 
 ```python
-from geode_client import GeodeClient
+from geode_client import Client
 import numpy as np
 
-async with GeodeClient("localhost:3141") as client:
+client = Client(host="localhost", port=3141)
+
+async with client.connection() as conn:
     # Store embeddings from your ML model
     embedding = model.encode("Graph databases for analytics")
 
-    await client.execute("""
+    await conn.execute("""
         CREATE (:Article {
             title: $title,
             content: $content,
@@ -99,7 +101,7 @@ async with GeodeClient("localhost:3141") as client:
     # Semantic similarity search
     query_embedding = model.encode("machine learning with graphs")
 
-    results = await client.execute("""
+    results = await conn.execute("""
         MATCH (a:Article)
         WITH a, vector_similarity(a.embedding, $query_vector) AS similarity
         WHERE similarity > 0.75
@@ -381,13 +383,13 @@ ORDER BY growth_rate DESC
 Extract graph-based features for training ML models:
 
 ```python
-from geode_client import GeodeClient
+from geode_client import Client
 import pandas as pd
 
 async def extract_node_features(client, node_label):
     """Extract graph features for ML training."""
 
-    features = await client.execute(f"""
+    features, _ = await client.query(f"""
         MATCH (n:{node_label})
         WITH n,
              SIZE((n)--()) AS degree,
@@ -416,7 +418,7 @@ async def train_node_classifier(client):
     df = await extract_node_features(client, 'User')
 
     # Get labels (assuming they exist)
-    labels = await client.execute("""
+    labels, _ = await client.query("""
         MATCH (n:User)
         RETURN id(n) AS node_id, n.is_fraudulent AS label
     """)

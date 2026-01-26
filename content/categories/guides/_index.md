@@ -369,9 +369,9 @@ geode user create analyst --password 'UserPass456'
 
 **Connect with authentication**:
 ```python
-from geode_client import GeodeClient
+from geode_client import Client
 
-client = GeodeClient(
+client = Client(
     "localhost:3141",
     username="analyst",
     password="UserPass456"
@@ -609,18 +609,19 @@ tail -f /var/log/geode/slow-queries.log
 
 ```python
 import asyncio
-from geode_client import GeodeClient
+from geode_client import Client
 
 async def main():
-    async with GeodeClient("localhost:3141") as client:
+    client = Client(host="localhost", port=3141)
+    async with client.connection() as conn:
         # Execute query
-        result = await client.execute("""
+        result, _ = await conn.query("""
             MATCH (p:Person {name: $name})
             RETURN p.email
         """, {"name": "Alice"})
 
         # Process results
-        async for row in result:
+        for row in result.rows:
             print(f"Email: {row['p.email']}")
 
 asyncio.run(main())
@@ -667,14 +668,14 @@ func main() {
 
 ```python
 from fastapi import FastAPI
-from geode_client import GeodeClient
+from geode_client import Client
 
 app = FastAPI()
-client = GeodeClient("localhost:3141")
+client = Client("localhost:3141")
 
 @app.get("/users/{user_id}")
 async def get_user(user_id: str):
-    result = await client.execute("""
+    result, _ = await client.query("""
         MATCH (u:User {id: $user_id})
         RETURN u
     """, {"user_id": user_id})

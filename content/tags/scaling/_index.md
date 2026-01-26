@@ -703,7 +703,7 @@ max_connections_per_client = (
 # - Application instances: 20
 # - Per-client max: 50 connections
 
-client = GeodeClient(
+client = Client(
     host="geode.example.com",
     port=3141,
     max_connections=50,

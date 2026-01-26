@@ -153,12 +153,13 @@ Execution Profile:
 ### Python Client Profiling
 
 ```python
-from geode_client import GeodeClient
+from geode_client import Client
 import asyncio
 
 async def profile_query():
-    async with GeodeClient("localhost", 3141) as client:
-        result = await client.execute("""
+    client = Client(host="localhost", port=3141)
+    async with client.connection() as conn:
+        result, _ = await conn.query("""
             PROFILE
             MATCH (p:Product)
             WHERE p.category = $cat
@@ -292,7 +293,7 @@ Connection pooling improves client performance by reusing connections:
 
 **Python Client with Pooling**:
 ```python
-from geode_client import GeodeClient, ConnectionPool
+from geode_client import Client, ConnectionPool
 
 # Create connection pool
 pool = ConnectionPool(
@@ -306,7 +307,7 @@ pool = ConnectionPool(
 async def query_with_pool():
     # Reuses existing connection from pool
     async with pool.acquire() as client:
-        result = await client.execute("MATCH (n:User) RETURN count(n)")
+        result, _ = await client.query("MATCH (n:User) RETURN count(n)")
         return result.bindings[0]['count']
 
 # Pool improves throughput; benchmark your workload
@@ -339,11 +340,13 @@ Batch multiple operations to reduce round-trip latency:
 
 ```python
 async def insert_users_batch(users):
-    async with GeodeClient("localhost", 3141) as client:
+    client = Client(host="localhost", port=3141)
+    async with client.connection() as conn:
         # Batch insert with transaction
-        async with client.transaction():
+        await conn.begin()
+        try:
             for batch in chunk(users, 1000):
-                await client.execute("""
+                await conn.execute("""
                     UNWIND $users AS user_data
                     CREATE (u:User {
                         id: user_data.id,
@@ -351,6 +354,10 @@ async def insert_users_batch(users):
                         email: user_data.email
                     })
                 """, {"users": batch})
+            await conn.commit()
+        except Exception:
+            await conn.rollback()
+            raise
 
 # Much faster than individual INSERTs
 await insert_users_batch(user_list)  # 10,000 users in 2-3 seconds
@@ -414,8 +421,9 @@ query_duration = Histogram('app_geode_query_duration', 'Query execution time')
 @query_duration.time()
 async def execute_query(query, params):
     query_counter.inc()
-    async with GeodeClient("localhost", 3141) as client:
-        return await client.execute(query, params)
+    client = Client(host="localhost", port=3141)
+    async with client.connection() as conn:
+        return await conn.execute(query, params)
 
 # Start metrics server
 start_http_server(8000)

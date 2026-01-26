@@ -1,21 +1,25 @@
 ---
 title: "Python Client"
-description: "Official Python client library for Geode"
+description: "Official async Python client for Geode graph database with QUIC + TLS 1.3"
 weight: 2
-tags: ["python", "client", "async", "aioquic"]
+tags: ["python", "client", "async", "aioquic", "gql", "quic", "tls"]
 categories: ["clients", "documentation"]
 keywords:
   - Geode Python client
-  - Python SDK
-  - GQL driver
-  - graph database Python
+  - Python GQL driver
+  - async QUIC client
+  - graph database Python SDK
+  - ISO 39075 GQL
+  - connection pooling
+series:
+  - client-libraries
 ---
 
-<!-- CANARY: REQ=REQ-CLIENT-INTEGRATION-001; FEATURE="RustClientIntegration"; ASPECT=QUICTransport; STATUS=TESTED; OWNER=clients; UPDATED=2026-01-15 -->
+<!-- CANARY: REQ=REQ-CLIENT-PY-001; FEATURE="PythonClientConnection"; ASPECT=HelloHandshake; STATUS=IMPL; OWNER=clients; UPDATED=2025-02-14 -->
 
 # Python Client Library
 
-The official Python client for Geode provides an async/await interface built on aioquic for high-performance QUIC communication. Supports connection pooling, type hints, and full transaction management.
+The official Python client for Geode provides an async/await API built on aioquic for QUIC + TLS 1.3 transport. Use the `Client` factory to create `Connection` instances, or use `ConnectionPool` for concurrent workloads.
 
 ## Installation
 
@@ -29,19 +33,18 @@ pip install geode-client
 
 ```python
 import asyncio
-from geode_client import GeodeClient
+from geode_client import Client
 
 async def main():
-    # Create client instance
-    async with GeodeClient("localhost", 3141) as client:
-        # Execute query
-        result = await client.query(
-            "MATCH (p:Person) RETURN p.name, p.age"
+    client = Client(host="localhost", port=3141)
+
+    async with client.connection() as conn:
+        page, _ = await conn.query(
+            "MATCH (p:Person) RETURN p.name AS name, p.age AS age"
         )
 
-        # Process results
-        async for row in result:
-            print(f"Name: {row['p.name']}, Age: {row['p.age']}")
+        for row in page.rows:
+            print(f"{row['name'].as_string}: {row['age'].as_int}")
 
 if __name__ == "__main__":
     asyncio.run(main())
@@ -49,29 +52,42 @@ if __name__ == "__main__":
 
 ## Connection Configuration
 
-### Basic Connection
+### Client and Connection
+
+`Client` is a factory; `Connection` is the async context manager that runs queries.
 
 ```python
-from geode_client import GeodeClient
+from geode_client import Client
 
-# Simple connection
-client = GeodeClient("localhost", 3141)
-
-# With authentication
-client = GeodeClient(
-    "localhost",
-    3141,
-    username="user",
-    password="pass"
+client = Client(
+    host="localhost",
+    port=3141,
+    page_size=1000,
+    hello_name="geode-python",
+    hello_ver="0.1.0",
+    conformance="min",
+    ca_cert="/path/to/ca.pem",
+    client_cert="/path/to/client.crt",
+    client_key="/path/to/client.key",
+    skip_verify=False,
+    server_name="geode.internal",
 )
 
-# With TLS configuration
-client = GeodeClient(
-    "localhost",
-    3141,
-    tls_verify=True,
-    tls_ca_file="/path/to/ca.pem"
-)
+async with client.connection() as conn:
+    page, _ = await conn.query("RETURN 1 AS ok")
+```
+
+### URL Helper
+
+Use `open_database` with `quic://` URLs when you prefer a single string.
+
+```python
+from geode_client import open_database
+
+client = open_database("quic://localhost:3141?skip_verify=true&page_size=500")
+
+async with client.connection() as conn:
+    page, _ = await conn.query("RETURN 1 AS ok")
 ```
 
 ### Connection Pool
@@ -79,18 +95,20 @@ client = GeodeClient(
 ```python
 from geode_client import ConnectionPool
 
-# Create connection pool
 pool = ConnectionPool(
     host="localhost",
     port=3141,
     min_size=2,
     max_size=10,
-    connection_timeout=30.0,
-    idle_timeout=300.0
+    timeout=30.0,
+    page_size=1000,
+    skip_verify=True,
 )
 
-async with pool.acquire() as client:
-    result = await client.query("MATCH (n) RETURN count(n)")
+async with pool:
+    async with pool.acquire() as conn:
+        page, _ = await conn.query("MATCH (n) RETURN count(n) AS count")
+        print(page.rows[0]["count"].as_int)
 ```
 
 ## Query Execution
@@ -98,374 +116,141 @@ async with pool.acquire() as client:
 ### Basic Queries
 
 ```python
-# Simple query
-result = await client.query("MATCH (n:Person) RETURN n LIMIT 10")
+page, _ = await conn.query("MATCH (n:Person) RETURN n LIMIT 10")
 
-# Query with parameters
-result = await client.query(
+page, _ = await conn.query(
     "MATCH (p:Person {name: $name}) RETURN p",
-    params={"name": "Alice"}
-)
-
-# Multiple parameters
-result = await client.query(
-    "MATCH (p:Person) WHERE p.age >= $min_age AND p.age <= $max_age RETURN p",
-    params={"min_age": 25, "max_age": 40}
+    params={"name": "Alice"},
 )
 ```
 
-### Result Processing
+### Pagination
 
 ```python
-# Iterate over results
-result = await client.query("MATCH (p:Person) RETURN p.name, p.age")
-async for row in result:
-    name = row["p.name"]
-    age = row["p.age"]
-    print(f"{name}: {age}")
+page, pager = await conn.query("MATCH (p:Person) RETURN p", page_size=100)
 
-# Fetch all results
-result = await client.query("MATCH (p:Person) RETURN p")
-rows = await result.fetch_all()
-for row in rows:
-    print(row)
+for row in page.rows:
+    print(row["p"].as_object)
 
-# Fetch one result
-result = await client.query("MATCH (p:Person {id: $id}) RETURN p", params={"id": 123})
-row = await result.fetch_one()
-if row:
-    print(row["p"])
+async for next_page in pager():
+    for row in next_page.rows:
+        print(row["p"].as_object)
 ```
 
 ## Transactions
 
-### Basic Transaction
+The Python client exposes explicit transaction methods on `Connection`.
 
 ```python
-async with client.transaction() as tx:
-    # Execute multiple statements
-    await tx.execute(
-        "CREATE (:Person {name: $name, age: $age})",
-        params={"name": "Alice", "age": 30}
-    )
-
-    await tx.execute(
-        "CREATE (:Person {name: $name, age: $age})",
-        params={"name": "Bob", "age": 25}
-    )
-
-    # Transaction commits automatically on successful exit
-    # Or rolls back on exception
-```
-
-### Manual Transaction Control
-
-```python
-tx = await client.begin_transaction()
+await conn.begin()
 try:
-    await tx.execute("CREATE (:Person {name: 'Alice'})")
-    await tx.execute("CREATE (:Person {name: 'Bob'})")
-    await tx.commit()
-except Exception as e:
-    await tx.rollback()
+    await conn.execute(
+        "CREATE (:Person {name: $name, age: $age})",
+        params={"name": "Alice", "age": 30},
+    )
+    await conn.execute(
+        "CREATE (:Person {name: $name, age: $age})",
+        params={"name": "Bob", "age": 25},
+    )
+    await conn.commit()
+except Exception:
+    await conn.rollback()
     raise
 ```
 
 ### Savepoints
 
 ```python
-async with client.transaction() as tx:
-    await tx.execute("CREATE (:Person {name: 'Alice'})")
-
-    # Create savepoint
-    sp = await tx.savepoint("sp1")
+await conn.begin()
+try:
+    await conn.execute("CREATE (:Person {name: 'Alice'})")
+    sp = await conn.savepoint("before_risky_op")
 
     try:
-        await tx.execute("CREATE (:Person {name: 'Bob'})")
-        # This might fail
-        await tx.execute("CREATE (:Invalid)")
+        await conn.execute("CREATE (:Invalid)")
     except Exception:
-        # Roll back to savepoint
-        await sp.rollback()
+        await conn.rollback_to(sp)
 
-    # Alice is still created, Bob is not
+    await conn.commit()
+except Exception:
+    await conn.rollback()
+    raise
+```
+
+## Prepared Statements
+
+```python
+stmt = await conn.prepare("MATCH (p:Person {name: $name}) RETURN p")
+
+async with stmt:
+    page, _ = await stmt.execute({"name": "Alice"})
+    page2, _ = await stmt.execute({"name": "Bob"})
+```
+
+## Query Builder
+
+```python
+from geode_client import QueryBuilder
+
+query, params = (
+    QueryBuilder()
+    .match("(p:Person)")
+    .where("p.age >= $min_age")
+    .return_("p.name AS name", "p.age AS age")
+    .order_by("p.age DESC")
+    .limit(10)
+    .with_param("min_age", 21)
+    .build()
+)
+
+page, _ = await conn.query(query, params=params)
+```
+
+## EXPLAIN and PROFILE
+
+```python
+plan = await conn.explain("MATCH (p:Person) RETURN p")
+profile = await conn.profile("MATCH (p:Person) RETURN p")
+```
+
+## Authentication Helpers
+
+Use `AuthClient` for RBAC and RLS operations.
+
+```python
+from geode_client import AuthClient
+
+async with client.connection() as conn:
+    auth = AuthClient(conn)
+    session = await auth.login("admin", "secret")
+    print(session.token)
 ```
 
 ## Type Mapping
 
-The Python client automatically converts between GQL and Python types:
-
-| GQL Type | Python Type |
-|----------|-------------|
-| INTEGER | int |
-| FLOAT | float |
-| STRING | str |
-| BOOLEAN | bool |
-| NULL | None |
-| LIST | list |
-| MAP | dict |
-| NODE | Node |
-| RELATIONSHIP | Relationship |
-| PATH | Path |
-
-### Working with Nodes
+Results are returned as `Value` objects with typed accessors.
 
 ```python
-from geode_client import Node
+from geode_client import Value
 
-result = await client.query("MATCH (p:Person) RETURN p")
-async for row in result:
-    person: Node = row["p"]
-
-    # Access properties
-    print(person["name"])
-    print(person.properties["age"])
-
-    # Access labels
-    print(person.labels)  # ["Person"]
-
-    # Access element ID
-    print(person.element_id)
+page, _ = await conn.query("RETURN 42 AS answer")
+value: Value = page.rows[0]["answer"]
+print(value.as_int)
 ```
 
-### Working with Relationships
-
-```python
-from geode_client import Relationship
-
-result = await client.query("MATCH (:Person)-[r:KNOWS]->(:Person) RETURN r")
-async for row in result:
-    rel: Relationship = row["r"]
-
-    print(rel.type)  # "KNOWS"
-    print(rel.properties)
-    print(rel.start_node_id)
-    print(rel.end_node_id)
-```
-
-### Working with Paths
-
-```python
-from geode_client import Path
-
-result = await client.query(
-    "MATCH p = (:Person)-[:KNOWS*1..3]->(:Person) RETURN p LIMIT 1"
-)
-async for row in result:
-    path: Path = row["p"]
-
-    print(f"Path length: {len(path)}")
-    print(f"Nodes: {path.nodes}")
-    print(f"Relationships: {path.relationships}")
-```
-
-## Error Handling
-
-```python
-from geode_client import GeodeError, SyntaxError, ConstraintError
-
-try:
-    result = await client.query("MATCH (p:Invalid) RETURN p")
-except SyntaxError as e:
-    print(f"Syntax error: {e.message}")
-    print(f"Position: {e.line}:{e.column}")
-except ConstraintError as e:
-    print(f"Constraint violation: {e.message}")
-except GeodeError as e:
-    print(f"Geode error [{e.code}]: {e.message}")
-    print(f"Details: {e.details}")
-```
-
-### Error Types
-
-The client provides specific exception types for different error categories:
-
-- `SyntaxError` - GQL syntax errors
-- `ConstraintError` - Constraint violations
-- `AuthenticationError` - Authentication failures
-- `AuthorizationError` - Permission denied
-- `TransactionError` - Transaction failures
-- `ConnectionError` - Network errors
-- `TimeoutError` - Operation timeouts
-
-## Advanced Features
-
-### Query Timeout
-
-```python
-# Set timeout for individual query
-result = await client.query(
-    "MATCH (n) RETURN n",
-    timeout=5.0  # 5 seconds
-)
-
-# Set default timeout for client
-client = GeodeClient("localhost", 3141, default_timeout=10.0)
-```
-
-### Batch Operations
-
-```python
-# Execute multiple queries efficiently
-queries = [
-    ("CREATE (:Person {name: $name})", {"name": f"Person{i}"})
-    for i in range(100)
-]
-
-async with client.transaction() as tx:
-    for query, params in queries:
-        await tx.execute(query, params=params)
-```
-
-### Prepared Statements
-
-```python
-# Prepare statement for reuse
-stmt = await client.prepare("MATCH (p:Person {name: $name}) RETURN p")
-
-# Execute with different parameters
-result1 = await stmt.execute(params={"name": "Alice"})
-result2 = await stmt.execute(params={"name": "Bob"})
-
-# Clean up
-await stmt.close()
-```
-
-### Query Profiling
-
-```python
-# Get query execution profile
-result = await client.query(
-    "MATCH (p:Person) RETURN p",
-    profile=True
-)
-
-# Access profiling information
-print(result.profile)
-```
-
-### Schema Introspection
-
-```python
-# Get node labels
-labels = await client.get_labels()
-print(labels)
-
-# Get relationship types
-types = await client.get_relationship_types()
-print(types)
-
-# Get property keys
-keys = await client.get_property_keys()
-print(keys)
-```
-
-## Testing
-
-### Using pytest-asyncio
-
-```python
-import pytest
-from geode_client import GeodeClient
-
-@pytest.fixture
-async def geode_client():
-    client = GeodeClient("localhost", 3141)
-    yield client
-    await client.close()
-
-@pytest.mark.asyncio
-async def test_create_person(geode_client):
-    async with geode_client.transaction() as tx:
-        await tx.execute(
-            "CREATE (:Person {name: 'Test', age: 25})"
-        )
-
-    result = await geode_client.query(
-        "MATCH (p:Person {name: 'Test'}) RETURN p.age"
-    )
-    row = await result.fetch_one()
-    assert row["p.age"] == 25
-```
-
-### Test Containers
-
-```python
-import pytest
-from testcontainers.core.container import DockerContainer
-
-@pytest.fixture(scope="session")
-async def geode_container():
-    container = DockerContainer("geode:latest")
-    container.with_exposed_ports(3141)
-    container.start()
-
-    yield container
-
-    container.stop()
-
-@pytest.fixture
-async def geode_client(geode_container):
-    port = geode_container.get_exposed_port(3141)
-    client = GeodeClient("localhost", int(port))
-    yield client
-    await client.close()
-```
-
-## Performance Tips
-
-1. **Use Connection Pools** - Reuse connections for better performance
-2. **Batch Operations** - Use transactions for multiple operations
-3. **Async/Await** - Leverage async for concurrent queries
-4. **Prepared Statements** - Reuse prepared statements for repeated queries
-5. **Result Streaming** - Use async iteration instead of fetch_all() for large results
-6. **Parameter Binding** - Always use parameters instead of string formatting
-
-## Type Hints
-
-The client provides full type hint support:
-
-```python
-from typing import AsyncIterator
-from geode_client import GeodeClient, Node, Relationship, Result
-
-async def get_people(client: GeodeClient) -> AsyncIterator[Node]:
-    result: Result = await client.query("MATCH (p:Person) RETURN p")
-    async for row in result:
-        yield row["p"]
-
-async def create_friendship(
-    client: GeodeClient,
-    person1: str,
-    person2: str
-) -> Relationship:
-    result = await client.query(
-        """
-        MATCH (p1:Person {name: $name1})
-        MATCH (p2:Person {name: $name2})
-        CREATE (p1)-[r:KNOWS]->(p2)
-        RETURN r
-        """,
-        params={"name1": person1, "name2": person2}
-    )
-    row = await result.fetch_one()
-    return row["r"]
-```
-
-## Examples
-
-See the [examples directory](https://gitlab.com/devnw/codepros/geode/geode-client-python/tree/main/examples) for complete examples:
-
-- Basic CRUD operations
-- Transaction management
-- Connection pooling
-- Error handling
-- Type conversions
-- Async patterns
-- Integration testing
+| GQL Type | Python Value | Notes |
+|----------|--------------|-------|
+| INT | `Value` | `value.as_int` |
+| DECIMAL / FLOAT | `Value` | `value.as_decimal` |
+| STRING | `Value` | `value.as_string` |
+| BOOL | `Value` | `value.as_bool` |
+| LIST | `Value` | `value.as_array` |
+| MAP | `Value` | `value.as_object` |
+| NODE | `Value` | Returned as object map |
+| EDGE | `Value` | Returned as object map |
+| PATH | `Value` | Returned as object map |
 
 ## Repository
 
 - GitLab: [devnw/codepros/geode/geode-client-python](https://gitlab.com/devnw/codepros/geode/geode-client-python)
 - PyPI: [geode-client](https://pypi.org/project/geode-client/)
-- Documentation: [docs.geodedb.com/clients/python](https://docs.geodedb.com/clients/python)

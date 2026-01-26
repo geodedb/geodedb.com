@@ -53,12 +53,14 @@ When inserting nodes without required values, Geode immediately rejects the oper
 
 ```python
 # Python client - constraint violation
-from geode_client import GeodeClient, ConstraintViolationError
+from geode_client import Client, ConstraintViolationError
 
-async with GeodeClient("localhost:3141") as client:
+client = Client(host="localhost", port=3141)
+
+async with client.connection() as conn:
     try:
         # Missing required 'name' field
-        await client.execute(
+        await conn.execute(
             "INSERT (p:Person {email: $email})",
             {"email": "alice@example.com"}
         )
@@ -312,29 +314,34 @@ For large data migrations, temporarily disable constraints:
 ```python
 # Python - bulk load with constraint management
 async def bulk_migrate_users(client, user_data):
-    async with client.transaction() as tx:
+    async with client.connection() as tx:
+        await tx.begin()
         # Disable constraints for bulk operation
         await tx.execute("ALTER NODE TYPE Person DISABLE CONSTRAINTS")
 
         try:
             # Bulk insert
             for batch in chunked(user_data, 1000):
-                await tx.execute_many(
-                    "INSERT (p:Person {id: $id, email: $email, age: $age})",
-                    batch
-                )
+                await tx.execute("""
+                    UNWIND $batch AS row
+                    CREATE (p:Person {
+                        id: row.id,
+                        email: row.email,
+                        age: row.age
+                    })
+                """, {"batch": batch})
 
             # Re-enable and validate
             await tx.execute("ALTER NODE TYPE Person ENABLE CONSTRAINTS")
 
             # Check for violations
-            violations = await tx.execute("""
+            violations, _ = await tx.query("""
                 MATCH (p:Person)
                 WHERE p.age < 0 OR p.age > 150 OR p.email NOT LIKE '%@%.%'
                 RETURN p.id, p.email, p.age
             """)
 
-            if violations:
+            if violations.rows:
                 raise ValueError(f"Found {len(violations)} constraint violations")
 
             await tx.commit()

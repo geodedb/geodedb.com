@@ -217,18 +217,19 @@ All documentation includes working examples:
 ```python
 # Python client example from documentation
 import asyncio
-from geode_client import GeodeClient
+from geode_client import Client
 
 async def main():
-    async with GeodeClient("localhost:3141") as client:
+    client = Client(host="localhost", port=3141)
+    async with client.connection() as conn:
         # Create nodes
-        result = await client.execute("""
+        result, _ = await conn.query("""
             CREATE (p:Person {name: 'Alice', age: 30})
             RETURN p
         """)
 
         # Query with parameters
-        result = await client.execute("""
+        result, _ = await conn.query("""
             MATCH (p:Person {name: $name})
             RETURN p.age
         """, {"name": "Alice"})
@@ -348,7 +349,7 @@ Complete integration guides for each supported language:
 // Database/sql driver documentation
 import (
     "database/sql"
-    _ "go.codepros.org/geode/driver"
+    _ "go.codepros.org/geode"
 )
 
 db, err := sql.Open("geode", "geode://localhost:3141")
@@ -357,19 +358,21 @@ db, err := sql.Open("geode", "geode://localhost:3141")
 **Python Integration**:
 ```python
 # Async client documentation
-from geode_client import GeodeClient
+from geode_client import Client
 
-async with GeodeClient("localhost:3141") as client:
-    result = await client.execute("MATCH (n) RETURN count(n)")
+client = Client(host="localhost", port=3141)
+
+async with client.connection() as conn:
+    result, _ = await conn.query("MATCH (n) RETURN count(n) AS total")
 ```
 
 **Rust Integration**:
 ```rust
 // Tokio integration documentation
-use geode_client::GeodeClient;
+use geode_client::Client;
 
-let client = GeodeClient::connect("localhost:3141").await?;
-let result = client.execute("MATCH (n) RETURN count(n)").await?;
+let mut conn = Client::from_dsn("localhost:3141")?.connect().await?;
+let page = conn.query("MATCH (n) RETURN count(n) AS total", None).await?;
 ```
 
 ### Ecosystem Integration

@@ -52,77 +52,67 @@ A session in Geode represents a stateful connection between a client and the ser
 **Python Client**
 
 ```python
-from geode_client import GeodeClient
+from geode_client import Client
 
-# Create client with session management
-client = GeodeClient(
-    host='geode.example.com',
-    port=3141,
-    username='alice@example.com',
-    password='SecurePassword',
-    session_timeout=1800,  # 30 minutes
-    session_idle_timeout=900  # 15 minutes
-)
+client = Client(host="geode.example.com", port=3141, skip_verify=True)
 
-# Sessions created automatically
-async with client.session() as session:
-    # Session-scoped operations
-    await session.run("SET SESSION tenant_id = 'tenant_123'")
+async with client.connection() as conn:
+    # Session-scoped variables live on the connection
+    await conn.execute("SET SESSION tenant_id = 'tenant_123'")
 
-    # Start transaction within session
-    async with session.transaction() as txn:
-        await txn.run("CREATE (:Person {name: 'Bob'})")
-        await txn.commit()
+    # Start transaction within the session
+    await conn.begin()
+    try:
+        await conn.execute("CREATE (:Person {name: 'Bob'})")
+        await conn.commit()
+    except Exception:
+        await conn.rollback()
+        raise
 
-    # Session variables persist
-    result = await session.run("RETURN current_tenant_id()")
-    # Returns: tenant_123
-
-# Session automatically closed when exiting context
+    # Session variables persist for the connection lifetime
+    result, _ = await conn.query("RETURN current_tenant_id() AS tenant_id")
+    tenant_id = result.rows[0]["tenant_id"].as_string
 ```
 
 **Go Client**
 
 ```go
-import "go.codepros.org/geode"
+import (
+    "context"
+    "database/sql"
+    "log"
 
-// Create session
-session, err := client.NewSession(geode.SessionConfig{
-    Timeout: 30 * time.Minute,
-    IdleTimeout: 15 * time.Minute,
-})
+    _ "go.codepros.org/geode"
+)
+
+db, err := sql.Open("geode", "geode://geode.example.com:3141")
 if err != nil {
     log.Fatal(err)
 }
-defer session.Close()
+defer db.Close()
 
 // Set session variables
-err = session.SetVariable("tenant_id", "tenant_123")
+_, err = db.ExecContext(context.Background(), "SET SESSION tenant_id = 'tenant_123'")
 
 // Execute queries in session context
-result, err := session.Query("MATCH (p:Person) WHERE p.tenant_id = current_tenant_id() RETURN p")
+rows, err := db.QueryContext(
+    context.Background(),
+    "MATCH (p:Person) WHERE p.tenant_id = current_tenant_id() RETURN p",
+)
 ```
 
 **Rust Client**
 
 ```rust
-use geode_client::Session;
+use geode_client::Client;
 
-// Create session with configuration
-let session = client.session()
-    .timeout(Duration::from_secs(1800))
-    .idle_timeout(Duration::from_secs(900))
-    .build()
+let client = Client::new("geode.example.com", 3141).skip_verify(true);
+let mut conn = client.connect().await?;
+
+conn.query("SET SESSION tenant_id = 'tenant_123'").await?;
+let (page, _) = conn
+    .query("MATCH (p:Person) WHERE p.tenant_id = current_tenant_id() RETURN p")
     .await?;
-
-// Session variables
-session.set_variable("tenant_id", "tenant_123").await?;
-
-// Query within session
-let result = session.query("MATCH (p:Person) RETURN p").await?;
-
-// Explicit session close
-session.close().await?;
 ```
 
 ### Server-Side Session Configuration
@@ -228,11 +218,12 @@ sessions:
 Client receives warning before timeout:
 
 ```python
-async with client.session() as session:
-    # Session sends warning event before timeout
-    session.on_idle_warning(lambda remaining:
-        print(f"Session will timeout in {remaining} seconds")
-    )
+import asyncio
+
+async with client.connection() as conn:
+    while True:
+        await conn.query("RETURN 1 AS ok")
+        await asyncio.sleep(300)
 ```
 
 ### Absolute Timeout
@@ -250,11 +241,14 @@ sessions:
 Prevent timeout with periodic ping:
 
 ```python
-# Automatic keep-alive
-client = GeodeClient(
-    host='geode.example.com',
-    keepalive_interval=300  # Send ping every 5 minutes
-)
+# Application-level keep-alive (periodic query)
+import asyncio
+
+client = Client(host="geode.example.com", port=3141, skip_verify=True)
+async with client.connection() as conn:
+    while True:
+        await conn.query("RETURN 1 AS ok")
+        await asyncio.sleep(300)
 ```
 
 Manual ping:
@@ -355,7 +349,7 @@ Client reconnection after server restart:
 
 ```python
 # Client automatically reconnects to existing session
-client = GeodeClient(
+client = Client(
     host='geode.example.com',
     session_id='sess_abc123',  # Reuse existing session
     auto_reconnect=True
@@ -444,7 +438,7 @@ RETURN count(p);
 
 ```python
 # Sessions use secure tokens
-client = GeodeClient(
+client = Client(
     host='geode.example.com',
     username='alice@example.com',
     password='SecurePassword'

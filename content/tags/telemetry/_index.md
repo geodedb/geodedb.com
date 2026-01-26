@@ -211,10 +211,14 @@ tracer = trace.get_tracer(__name__)
 
 with tracer.start_as_current_span("fetch_user_network"):
     # Trace context propagated automatically
-    results = await client.execute_gql("""
-        MATCH (u:User {id: $id})-[:FRIENDS_WITH]->(f)
-        RETURN f
-    """, {"id": user_id})
+    async with client.connection() as conn:
+        results, _ = await conn.query(
+            """
+            MATCH (u:User {id: $id})-[:FRIENDS_WITH]->(f)
+            RETURN f
+            """,
+            {"id": user_id},
+        )
 ```
 
 ### Trace Spans
@@ -414,7 +418,7 @@ telemetry.EnablePrometheus(":9091")
 ### Python Client Metrics
 
 ```python
-from geode_client import GeodeClient, enable_telemetry
+from geode_client import Client, enable_telemetry
 
 # Enable telemetry export
 enable_telemetry(

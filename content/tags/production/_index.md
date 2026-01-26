@@ -321,7 +321,7 @@ server:
 
 **Client Configuration**:
 ```python
-client = GeodeClient(
+client = Client(
     "geode.example.com:3141",
     tls_verify=True,
     tls_cert="/path/to/client.crt",
@@ -435,7 +435,7 @@ transaction_duration = Histogram('geode_transaction_duration_seconds', 'Transact
 @query_duration.time()
 async def execute_query(client, query):
     try:
-        result = await client.execute(query)
+        result, _ = await client.query(query)
         query_counter.labels(status='success').inc()
         return result
     except Exception as e:
@@ -641,14 +641,14 @@ systemctl start geode
 ```python
 # load_test.py using locust
 from locust import User, task, between
-from geode_client import GeodeClient
+from geode_client import Client
 import asyncio
 
 class GeodeUser(User):
     wait_time = between(0.1, 0.5)
 
     def on_start(self):
-        self.client = GeodeClient("geode.example.com:3141")
+        self.client = Client("geode.example.com:3141")
 
     @task(10)  # 10x weight
     def read_query(self):

@@ -61,26 +61,25 @@ geode serve --listen 0.0.0.0:3141 \
 
 **Client connection (Python)**:
 ```python
-from geode_client import GeodeClient
+from geode_client import Client
 
 # Production: Verify server certificate
-async with GeodeClient(
+client = Client(
     host="geodedb.example.com",
     port=3141,
-    tls=True,
-    tls_verify=True,  # Verify certificate chain
-    tls_ca_file="/path/to/ca-bundle.crt"
-) as client:
-    result = await client.execute("MATCH (n:User) RETURN count(n)")
+    ca_cert="/path/to/ca-bundle.crt"
+)
+async with client.connection() as conn:
+    result, _ = await conn.query("MATCH (n:User) RETURN count(n) AS total")
 
 # Development: Self-signed certificate
-async with GeodeClient(
+client = Client(
     host="localhost",
     port=3141,
-    tls=True,
-    tls_verify=False  # Skip verification (dev only!)
-) as client:
-    result = await client.execute("MATCH (n:User) RETURN count(n)")
+    skip_verify=True  # Skip verification (dev only!)
+)
+async with client.connection() as conn:
+    result, _ = await conn.query("MATCH (n:User) RETURN count(n) AS total")
 ```
 
 **Certificate management best practices**:
@@ -104,16 +103,13 @@ CREATE USER alice PASSWORD 'secure_password_here' REQUIRE SECURE TRANSPORT;
 
 **Python client authentication**:
 ```python
-from geode_client import GeodeClient
+from geode_client import AuthClient, Client
 
-async with GeodeClient(
-    host="localhost",
-    port=3141,
-    username="alice",
-    password="secure_password_here",
-    tls=True
-) as client:
-    result = await client.execute("MATCH (n:Node) RETURN n")
+client = Client(host="localhost", port=3141)
+async with client.connection() as conn:
+    auth = AuthClient(conn)
+    await auth.login("alice", "secure_password_here")
+    result, _ = await conn.query("MATCH (n:Node) RETURN n")
 ```
 
 **Password hashing** (server-side):
@@ -134,14 +130,15 @@ geode serve --listen 0.0.0.0:3141 \
 
 ```python
 # Client provides certificate
-async with GeodeClient(
+client = Client(
     host="localhost",
     port=3141,
-    tls=True,
-    tls_client_cert="/path/to/client-cert.pem",
-    tls_client_key="/path/to/client-key.pem"
-) as client:
-    result = await client.execute("MATCH (n:Node) RETURN n")
+    ca_cert="/path/to/ca.pem",
+    client_cert="/path/to/client-cert.pem",
+    client_key="/path/to/client-key.pem"
+)
+async with client.connection() as conn:
+    result, _ = await conn.query("MATCH (n:Node) RETURN n")
 ```
 
 **LDAP/Active Directory Integration** (Enterprise):
@@ -219,30 +216,26 @@ ALTER LABEL Employee ENABLE ROW LEVEL SECURITY;
 
 **Python usage with RLS**:
 ```python
-from geode_client import GeodeClient
+from geode_client import AuthClient, Client
 
 # User alice logs in
-async with GeodeClient(
-    host="localhost",
-    port=3141,
-    username="alice",
-    password="alice_password"
-) as client:
+client = Client(host="localhost", port=3141)
+async with client.connection() as conn:
+    auth = AuthClient(conn)
+    await auth.login("alice", "alice_password")
     # Query automatically filtered by RLS policy
-    result = await client.execute("""
+    result, _ = await conn.query("""
         MATCH (e:Employee)
         RETURN e.name, e.salary
     """)
     # Only returns employees alice manages (RLS policy applied)
 
 # Different user sees different results
-async with GeodeClient(
-    host="localhost",
-    port=3141,
-    username="bob",
-    password="bob_password"
-) as client:
-    result = await client.execute("""
+client = Client(host="localhost", port=3141)
+async with client.connection() as conn:
+    auth = AuthClient(conn)
+    await auth.login("bob", "bob_password")
+    result, _ = await conn.query("""
         MATCH (e:Employee)
         RETURN e.name, e.salary
     """)
@@ -316,7 +309,7 @@ Encrypt specific sensitive fields in application:
 
 ```python
 from cryptography.fernet import Fernet
-from geode_client import GeodeClient
+from geode_client import Client
 
 # Application-managed encryption key
 encryption_key = Fernet.generate_key()
@@ -326,8 +319,10 @@ async def create_user_with_encrypted_ssn(name, ssn):
     # Encrypt SSN before storing
     encrypted_ssn = cipher.encrypt(ssn.encode()).decode()
 
-    async with GeodeClient("localhost", 3141) as client:
-        await client.execute("""
+    client = Client(host="localhost", port=3141)
+
+    async with client.connection() as conn:
+        await conn.execute("""
             CREATE (u:User {
                 name: $name,
                 ssn_encrypted: $ssn_encrypted
@@ -335,8 +330,9 @@ async def create_user_with_encrypted_ssn(name, ssn):
         """, {"name": name, "ssn_encrypted": encrypted_ssn})
 
 async def get_user_ssn(user_id):
-    async with GeodeClient("localhost", 3141) as client:
-        result = await client.execute("""
+    client = Client(host="localhost", port=3141)
+    async with client.connection() as conn:
+        result, _ = await conn.query("""
             MATCH (u:User {id: $id})
             RETURN u.ssn_encrypted
         """, {"id": user_id})
@@ -437,11 +433,11 @@ GRANT SELECT ON Product TO app_user;
 **Never hardcode credentials**:
 ```python
 # BAD: Hardcoded password
-client = GeodeClient("localhost", 3141, username="app", password="hardcoded_pass")
+client = Client("localhost", 3141, username="app", password="hardcoded_pass")
 
 # GOOD: Environment variables
 import os
-client = GeodeClient(
+client = Client(
     "localhost",
     3141,
     username=os.getenv("GEODE_USERNAME"),
@@ -454,7 +450,7 @@ secrets_client = Session().client('secretsmanager', region_name='us-east-1')
 secret = secrets_client.get_secret_value(SecretId='geode/prod/credentials')
 credentials = json.loads(secret['SecretString'])
 
-client = GeodeClient(
+client = Client(
     "localhost",
     3141,
     username=credentials['username'],
@@ -467,23 +463,24 @@ client = GeodeClient(
 ```python
 # Automated security checks
 async def security_audit():
-    async with GeodeClient("localhost", 3141, username="admin") as client:
+    client = Client("localhost", 3141, username="admin")
+    async with client.connection() as client:
         # Check for users without passwords
-        result = await client.execute("""
+        result, _ = await client.query("""
             SHOW USERS WHERE password_set = false
         """)
         if result.bindings:
             print(f"WARNING: {len(result.bindings)} users without passwords")
 
         # Check for overly permissive grants
-        result = await client.execute("""
+        result, _ = await client.query("""
             SHOW GRANTS WHERE privilege = 'ALL' AND grantee NOT IN ('admin', 'root')
         """)
         if result.bindings:
             print(f"WARNING: {len(result.bindings)} users with ALL privileges")
 
         # Check TLS enforcement
-        result = await client.execute("SHOW VARIABLES LIKE 'require_secure_transport'")
+        result, _ = await client.query("SHOW VARIABLES LIKE 'require_secure_transport'")
         if result.bindings[0]['value'] != 'ON':
             print("WARNING: TLS not enforced")
 

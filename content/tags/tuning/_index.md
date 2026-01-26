@@ -191,7 +191,7 @@ Idle connections consume resources without providing value. Configure idle timeo
 
 ```python
 # Python client pool configuration
-client = GeodeClient(
+client = Client(
     address="localhost:3141",
     max_pool_size=50,
     min_pool_size=10,

@@ -319,12 +319,14 @@ Parameterized queries enable plan caching:
 # BAD: String concatenation prevents plan reuse
 async def get_user(user_id):
     query = f"MATCH (u:User {{id: '{user_id}'}}) RETURN u"
-    return await client.execute(query)
+    result, _ = await client.query(query)
+    return result
 
 # GOOD: Parameters enable plan caching
 async def get_user(user_id):
     query = "MATCH (u:User {id: $user_id}) RETURN u"
-    return await client.execute(query, {"user_id": user_id})
+    result, _ = await client.query(query, {"user_id": user_id})
+    return result
 ```
 
 ### Batch Processing
@@ -402,7 +404,7 @@ Disk I/O: 234 pages
 
 ```python
 import asyncio
-from geode_client import GeodeClient
+from geode_client import Client
 
 async def benchmark_queries():
     queries = [
@@ -417,10 +419,12 @@ async def benchmark_queries():
         """),
     ]
 
-    async with GeodeClient("localhost", 3141) as client:
+    client = Client(host="localhost", port=3141)
+
+    async with client.connection() as conn:
         for name, query in queries:
             start = time.time()
-            result = await client.execute(query, {"email": "user@example.com"})
+            result, _ = await conn.query(query, {"email": "user@example.com"})
             elapsed = time.time() - start
             print(f"{name}: {elapsed*1000:.2f}ms")
 ```
@@ -519,7 +523,7 @@ ANALYZE User;
 ```python
 # Check plan cache hit rate
 async def monitor_plan_cache(client):
-    result = await client.execute("""
+    result, _ = await client.query("""
         CALL system.plan_cache_stats()
         RETURN hits, misses, hit_rate
     """)
@@ -665,7 +669,7 @@ async def streaming_aggregation(client):
         GROUP BY p.category
     """
 
-    async for row in client.execute_streaming(query):
+    for row in client.rows.execute_streaming(query):
         category = row['p.category']
         purchases = row['purchases']
         # Process incrementally without loading all into memory
@@ -822,7 +826,7 @@ class QueryPerformanceMonitor:
 
     async def execute_tracked(self, query, params=None):
         start = time.time()
-        result = await self.client.execute(query, params)
+        result, _ = await self.client.query(query, params)
         duration = time.time() - start
 
         # Track query performance
@@ -873,7 +877,7 @@ async def recommend_indexes(client, query_log_file):
     recommendations = []
     for (label, property), count in property_access.most_common(20):
         # Check if index exists
-        existing = await client.execute(
+        existing, _ = await client.query(
             "SHOW INDEXES WHERE label = $label AND property = $prop",
             label=label, prop=property
         )

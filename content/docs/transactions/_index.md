@@ -350,18 +350,23 @@ COMMIT;
 ### Retry Pattern
 
 ```python
-def execute_with_retry(query, max_retries=3):
+import asyncio
+from geode_client import QueryError
+
+async def execute_with_retry(client, query, max_retries=3):
     for attempt in range(max_retries):
-        try:
-            with client.transaction() as tx:
-                result = tx.query(query)
-                tx.commit()
-                return result
-        except SerializationError:
-            if attempt == max_retries - 1:
-                raise
-            # Exponential backoff
-            time.sleep(2 ** attempt)
+        async with client.connection() as conn:
+            await conn.begin()
+            try:
+                page, _ = await conn.query(query)
+                await conn.commit()
+                return page.rows
+            except QueryError as exc:
+                await conn.rollback()
+                if attempt == max_retries - 1:
+                    raise
+                # Exponential backoff
+                await asyncio.sleep(2 ** attempt)
 ```
 
 ### Batch Processing

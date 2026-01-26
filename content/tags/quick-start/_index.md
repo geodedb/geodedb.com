@@ -95,24 +95,25 @@ cargo add geode-client
 
 ```python
 import asyncio
-from geode_client import GeodeClient
+from geode_client import Client
 
 async def main():
-    async with GeodeClient("localhost:3141") as client:
+    client = Client(host="localhost", port=3141)
+    async with client.connection() as conn:
         # Create nodes
-        await client.execute("""
+        await conn.execute("""
             CREATE (alice:Person {name: 'Alice', age: 30})
             CREATE (bob:Person {name: 'Bob', age: 25})
             CREATE (alice)-[:KNOWS]->(bob)
         """)
 
         # Query
-        result = await client.execute("""
+        result, _ = await conn.query("""
             MATCH (a:Person)-[:KNOWS]->(b:Person)
             RETURN a.name, b.name
         """)
 
-        async for row in result:
+        for row in result.rows:
             print(f"{row['a.name']} knows {row['b.name']}")
 
 asyncio.run(main())
@@ -151,24 +152,22 @@ func main() {
 ### Rust Quick Start
 
 ```rust
-use geode_client::{Client, params};
+use geode_client::{Client, Result, Value};
+use std::collections::HashMap;
 
 #[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let client = Client::connect("localhost:3141").await?;
+async fn main() -> Result<()> {
+    let client = Client::new("localhost", 3141).skip_verify(true);
+    let mut conn = client.connect().await?;
 
-    client.execute(
-        "CREATE (p:Person {name: $name})",
-        params! { "name" => "Alice" }
-    ).await?;
+    let mut params = HashMap::new();
+    params.insert("name".to_string(), Value::string("Alice"));
+    conn.query_with_params("CREATE (p:Person {name: $name})", &params)
+        .await?;
 
-    let mut results = client.execute(
-        "MATCH (p:Person) RETURN p.name",
-        params! {}
-    ).stream().await?;
-
-    while let Some(row) = results.next().await {
-        println!("{}", row.get::<String>("p.name")?);
+    let (page, _) = conn.query("MATCH (p:Person) RETURN p.name AS name").await?;
+    for row in &page.rows {
+        println!("{}", row.get("name").unwrap().as_string()?);
     }
 
     Ok(())
@@ -248,10 +247,15 @@ RETURN length(path)
 ## Using Transactions
 
 ```python
-async with client.transaction() as tx:
-    await tx.execute("CREATE (p:Person {name: 'Alice'})")
-    await tx.execute("CREATE (p:Person {name: 'Bob'})")
-    # Both commit together or both roll back
+async with client.connection() as conn:
+    await conn.begin()
+    try:
+        await conn.execute("CREATE (p:Person {name: 'Alice'})")
+        await conn.execute("CREATE (p:Person {name: 'Bob'})")
+        await conn.commit()
+    except Exception:
+        await conn.rollback()
+        raise
 ```
 
 ## Next Steps (2 minutes)
@@ -273,8 +277,14 @@ CREATE INDEX ON Person(name)
 
 **Use Transactions**: Ensure consistency
 ```python
-async with client.transaction() as tx:
-    # multiple operations
+async with client.connection() as conn:
+    await conn.begin()
+    try:
+        # multiple operations
+        await conn.commit()
+    except Exception:
+        await conn.rollback()
+        raise
 ```
 
 ## Key Concepts
@@ -345,9 +355,10 @@ Build a basic social network:
 
 ```python
 async def build_social_network():
-    async with GeodeClient("localhost:3141") as client:
+    client = Client(host="localhost", port=3141)
+    async with client.connection() as conn:
         # Create users
-        await client.execute("""
+        await conn.execute("""
             CREATE (alice:User {id: 'u1', name: 'Alice', age: 30})
             CREATE (bob:User {id: 'u2', name: 'Bob', age: 25})
             CREATE (carol:User {id: 'u3', name: 'Carol', age: 28})
@@ -355,7 +366,7 @@ async def build_social_network():
         """)
 
         # Create friendships
-        await client.execute("""
+        await conn.execute("""
             MATCH (alice:User {id: 'u1'})
             MATCH (bob:User {id: 'u2'})
             MATCH (carol:User {id: 'u3'})
@@ -367,13 +378,13 @@ async def build_social_network():
         """)
 
         # Find friends of friends
-        result = await client.execute("""
+        result, _ = await conn.query("""
             MATCH (me:User {id: 'u1'})-[:KNOWS*2]->(fof:User)
             WHERE NOT (me)-[:KNOWS]->(fof)
             RETURN DISTINCT fof.name AS friend_suggestion
         """)
 
-        async for row in result:
+        for row in result.rows:
             print(f"Suggested friend: {row['friend_suggestion']}")
 ```
 
@@ -381,9 +392,10 @@ async def build_social_network():
 
 ```python
 async def build_recommendation_engine():
-    async with GeodeClient("localhost:3141") as client:
+    client = Client(host="localhost", port=3141)
+    async with client.connection() as conn:
         # Create products and purchases
-        await client.execute("""
+        await conn.execute("""
             CREATE (u1:User {id: 'user1', name: 'Alice'})
             CREATE (u2:User {id: 'user2', name: 'Bob'})
             CREATE (u3:User {id: 'user3', name: 'Carol'})
@@ -402,7 +414,7 @@ async def build_recommendation_engine():
         """)
 
         # Get recommendations for Alice
-        result = await client.execute("""
+        result, _ = await conn.query("""
             MATCH (me:User {id: 'user1'})-[:PURCHASED]->(p:Product)
                   <-[:PURCHASED]-(other:User)-[:PURCHASED]->(rec:Product)
             WHERE NOT (me)-[:PURCHASED]->(rec)
@@ -412,7 +424,7 @@ async def build_recommendation_engine():
         """)
 
         print("Recommended products:")
-        async for row in result:
+        for row in result.rows:
             print(f"  {row['rec.name']} (${row['rec.price']}) - Score: {row['score']}")
 ```
 
@@ -420,9 +432,10 @@ async def build_recommendation_engine():
 
 ```python
 async def build_knowledge_graph():
-    async with GeodeClient("localhost:3141") as client:
+    client = Client(host="localhost", port=3141)
+    async with client.connection() as conn:
         # Create concepts and relationships
-        await client.execute("""
+        await conn.execute("""
             CREATE (db:Concept {id: 'c1', name: 'Database'})
             CREATE (graph:Concept {id: 'c2', name: 'Graph Database'})
             CREATE (geode:Concept {id: 'c3', name: 'Geode'})
@@ -436,14 +449,14 @@ async def build_knowledge_graph():
         """)
 
         # Find all ancestors of Geode
-        result = await client.execute("""
+        result, _ = await conn.query("""
             MATCH path = (geode:Concept {id: 'c3'})-[:IS_A*]->(ancestor:Concept)
             RETURN ancestor.name, length(path) as distance
             ORDER BY distance
         """)
 
         print("Geode is a:")
-        async for row in result:
+        for row in result.rows:
             print(f"  {'  ' * row['distance']}{row['ancestor.name']}")
 ```
 
@@ -465,9 +478,9 @@ PROFILE MATCH (u:User {email: 'alice@example.com'}) RETURN u;
 
 Index creation typically improves lookup queries by 10-100x.
 
-### Use Connection Pooling (Already enabled!)
+### Use Connection Pooling
 
-All official Geode clients use connection pooling automatically. No configuration needed for basic usage.
+Pooling is explicit in Python and Rust, built into `database/sql` for Go, and enabled by default in Node.js. Enable it when you need higher concurrency.
 
 ### Batch Operations (2 minutes)
 
@@ -475,14 +488,16 @@ Process multiple operations efficiently:
 
 ```python
 # Instead of individual inserts
-for user in users:
-    await client.execute("CREATE (:User {name: $name})", name=user['name'])
+async with client.connection() as conn:
+    for user in users:
+        await conn.execute("CREATE (:User {name: $name})", {"name": user["name"]})
 
 # Use batch operations
-await client.execute_batch([
-    ("CREATE (:User {name: $name})", {"name": user['name']})
-    for user in users
-])
+async with client.connection() as conn:
+    await conn.batch([
+        ("CREATE (:User {name: $name})", {"name": user["name"]})
+        for user in users
+    ])
 ```
 
 Batching reduces network roundtrips and improves throughput by 5-10x.
@@ -528,10 +543,10 @@ max_memory: 16GB
 **Authentication Errors**:
 ```python
 # Ensure you're using correct credentials
-client = GeodeClient("localhost:3141", username="admin", password="password")
+client = Client("localhost:3141", username="admin", password="password")
 
 # Or with token
-client = GeodeClient("localhost:3141", token="your-api-token")
+client = Client("localhost:3141", token="your-api-token")
 ```
 
 ## Production Readiness Checklist (5 minutes)

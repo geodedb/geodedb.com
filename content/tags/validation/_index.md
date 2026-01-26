@@ -164,7 +164,7 @@ Application-layer validation provides richer error messages, async checks, and u
 
 ```python
 from marshmallow import Schema, fields, validates, validates_schema, ValidationError
-from geode_client import GeodeClient
+from geode_client import Client
 import re
 
 class PersonSchema(Schema):
@@ -200,7 +200,7 @@ class PersonSchema(Schema):
             raise ValidationError("Users under 18 cannot use .edu emails")
 
 
-async def create_person(client: GeodeClient, person_data: dict):
+async def create_person(client: Client, person_data: dict):
     """Create person with validation."""
     schema = PersonSchema()
 
@@ -211,7 +211,7 @@ async def create_person(client: GeodeClient, person_data: dict):
         return {"success": False, "errors": err.messages}
 
     # Check uniqueness (async validation)
-    exists = await client.execute(
+    exists, _ = await client.query(
         "MATCH (p:Person {email: $email}) RETURN count(p) AS count",
         {"email": validated['email']}
     )
@@ -221,7 +221,7 @@ async def create_person(client: GeodeClient, person_data: dict):
 
     # Insert validated data
     try:
-        result = await client.execute(
+        result, _ = await client.query(
             """INSERT (p:Person {
                 email: $email,
                 name: $name,
@@ -495,7 +495,7 @@ async def validate_order(order_data: dict) -> ValidationResult:
 **Email Uniqueness**:
 ```python
 async def check_email_unique(email: str) -> bool:
-    result = await client.execute(
+    result, _ = await client.query(
         "MATCH (p:Person {email: $email}) RETURN count(p) AS count",
         {"email": email}
     )

@@ -351,13 +351,14 @@ RETURN u;
 ### Python Client
 
 ```python
-from geode_client import GeodeClient
+from geode_client import Client
 import asyncio
 
 async def query_example():
-    async with GeodeClient("localhost", 3141) as client:
+    client = Client(host="localhost", port=3141)
+    async with client.connection() as conn:
         # Simple query
-        result = await client.execute("""
+        result, _ = await conn.query("""
             MATCH (u:User)
             WHERE u.country = $country
             RETURN u.name, u.email
@@ -366,20 +367,30 @@ async def query_example():
         """, {"country": "USA"})
 
         # Iterate results
-        for row in result.bindings:
-            print(f"{row['name']}: {row['email']}")
+        for row in result.rows:
+            print(f"{row['name'].as_string}: {row['email'].as_string}")
 
         # Transaction
-        async with client.transaction():
-            await client.execute("""
+        await conn.begin()
+        try:
+            await conn.execute(
+                """
                 CREATE (u:User {id: $id, name: $name})
-            """, {"id": 123, "name": "Alice"})
+                """,
+                {"id": 123, "name": "Alice"},
+            )
 
-            await client.execute("""
+            await conn.execute(
+                """
                 MATCH (u:User {id: $id})
                 SET u.verified = true
-            """, {"id": 123})
-            # Commits automatically on context exit
+                """,
+                {"id": 123},
+            )
+            await conn.commit()
+        except Exception:
+            await conn.rollback()
+            raise
 
 asyncio.run(query_example())
 ```
@@ -472,13 +483,14 @@ RETURN connection.name;
 Geode caches compiled query plans for repeated queries:
 
 ```python
-from geode_client import GeodeClient
+from geode_client import Client
 import asyncio
 
 async def demonstrate_plan_caching():
-    async with GeodeClient("localhost", 3141) as client:
+    client = Client(host="localhost", port=3141)
+    async with client.connection() as conn:
         # Prepared statement - plan cached
-        stmt = await client.prepare("""
+        stmt = await conn.prepare("""
             MATCH (u:User {id: $user_id})-[:PURCHASED]->(p:Product)
             WHERE p.price > $min_price
             RETURN p.name, p.price
@@ -487,11 +499,11 @@ async def demonstrate_plan_caching():
 
         # Execute multiple times - uses cached plan
         for user_id in range(1, 1000):
-            result = await stmt.execute(
+            result, _ = await stmt.execute(
                 user_id=user_id,
                 min_price=100.0
             )
-            products = [row async for row in result]
+            products = [row for row in result.rows]
             await process_products(products)
 
 async def process_products(products):
@@ -610,10 +622,11 @@ ORDER BY u.created_at
 
 ```python
 # Estimate query cost before execution
-from geode_client import GeodeClient
+from geode_client import Client
 
 async def estimate_query_cost(query, params):
-    async with GeodeClient("localhost", 3141) as client:
+    client = Client(host="localhost", port=3141)
+    async with client.connection() as conn:
         # Get query plan
         plan = await client.explain(query, params)
 
@@ -659,14 +672,14 @@ async def monitored_query(client, query, params):
     cache_hit = False
 
     try:
-        result = await client.execute(query, params)
+        result, _ = await client.query(query, params)
         query_total.labels(status='success').inc()
 
         # Check if result came from cache
         if hasattr(result, 'from_cache'):
             cache_hit = result.from_cache
 
-        rows = [row async for row in result]
+        rows = [row for row in result.rows]
 
         latency = time.time() - start
         query_latency.labels(
@@ -710,7 +723,8 @@ def log_slow_queries(threshold_seconds=1.0):
 
 @log_slow_queries(threshold_seconds=2.0)
 async def execute_query(client, query, params):
-    return await client.execute(query, params)
+    result, _ = await client.query(query, params)
+    return result
 ```
 
 ## Query Pattern Catalog
@@ -870,16 +884,22 @@ RETURN u;
 # Solution: Implement retry with exponential backoff
 import asyncio
 import random
+from geode_client import QueryError
 
 async def execute_with_retry(client, query, params, max_attempts=5):
     for attempt in range(max_attempts):
-        try:
-            async with client.transaction():
-                result = await client.execute(query, params)
-                return [row async for row in result]
-        except SerializationError:
-            if attempt == max_attempts - 1:
-                raise
+        async with client.connection() as conn:
+            await conn.begin()
+            try:
+                result, _ = await conn.query(query, params)
+                await conn.commit()
+                return [row for row in result.rows]
+            except QueryError as exc:
+                await conn.rollback()
+                if "SERIALIZATION" not in str(exc):
+                    raise
+                if attempt == max_attempts - 1:
+                    raise
 
             # Exponential backoff with jitter
             delay = (2 ** attempt) * 0.1 * random.uniform(0.5, 1.5)

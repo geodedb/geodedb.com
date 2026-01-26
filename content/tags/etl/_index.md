@@ -38,7 +38,7 @@ Extract phase reads data from source systems without modifying the original data
 ```python
 # Python - Extract from PostgreSQL
 import asyncpg
-from geode_client import GeodeClient
+from geode_client import Client
 
 async def extract_from_postgres(pg_pool):
     """Extract users and orders from PostgreSQL."""
@@ -250,27 +250,29 @@ Load phase efficiently inserts transformed data into Geode with proper error han
 
 ```python
 # Python - Batch load with transaction support
-from geode_client import GeodeClient
+from geode_client import Client
 import asyncio
 
-async def load_to_geode(client: GeodeClient, nodes: List[Dict], edges: List[Dict]):
+async def load_to_geode(client: Client, nodes: List[Dict], edges: List[Dict]):
     """Load nodes and edges to Geode in batches."""
     batch_size = 1000
 
-    async with client.transaction() as tx:
+    async with client.connection() as tx:
+        await tx.begin()
         # Load nodes in batches
         for i in range(0, len(nodes), batch_size):
             batch = nodes[i:i + batch_size]
 
             # Use MERGE to handle duplicates idempotently
-            await tx.execute_many(
-                """MERGE (n:Person {id: $id})
-                   SET n.email = $email,
-                       n.name = $name,
-                       n.created_at = $created_at,
+            await tx.execute(
+                """UNWIND $batch AS row
+                   MERGE (n:Person {id: row.id})
+                   SET n.email = row.email,
+                       n.name = row.name,
+                       n.created_at = row.created_at,
                        n.updated_at = NOW()
-                   RETURN n.id""",
-                [node['properties'] for node in batch]
+                """,
+                {"batch": [node['properties'] for node in batch]}
             )
 
             print(f"Loaded {i + len(batch)}/{len(nodes)} nodes")
@@ -279,13 +281,14 @@ async def load_to_geode(client: GeodeClient, nodes: List[Dict], edges: List[Dict
         for i in range(0, len(edges), batch_size):
             batch = edges[i:i + batch_size]
 
-            await tx.execute_many(
-                """MATCH (from:Person {id: $from_id})
-                   MATCH (to:Order {id: $to_id})
+            await tx.execute(
+                """UNWIND $batch AS row
+                   MATCH (from:Person {id: row.from_id})
+                   MATCH (to:Order {id: row.to_id})
                    MERGE (from)-[r:PLACED]->(to)
-                   SET r.placed_at = $placed_at
-                   RETURN id(r)""",
-                [edge['properties'] for edge in batch]
+                   SET r.placed_at = row.placed_at
+                """,
+                {"batch": [edge['properties'] for edge in batch]}
             )
 
             print(f"Loaded {i + len(batch)}/{len(edges)} edges")
@@ -447,7 +450,7 @@ For real-time data integration, use streaming ETL with Kafka or similar:
 ```python
 # Python - Streaming ETL with Kafka
 from kafka import KafkaConsumer
-from geode_client import GeodeClient
+from geode_client import Client
 import json
 
 async def streaming_etl():
@@ -460,14 +463,16 @@ async def streaming_etl():
         auto_offset_reset='earliest'
     )
 
-    async with GeodeClient("localhost:3141") as client:
+    client = Client(host="localhost", port=3141)
+
+    async with client.connection() as conn:
         for message in consumer:
             event = message.value
 
             try:
                 if event['type'] == 'user.created':
                     node = transform_user(event['data'])
-                    await client.execute(
+                    await conn.execute(
                         """MERGE (p:Person {id: $id})
                            SET p += $properties""",
                         {"id": node['properties']['id'], "properties": node['properties']}
@@ -477,7 +482,7 @@ async def streaming_etl():
                     order_node = transform_order(event['data'])
                     relationship = transform_order_relationship(event['data'])
 
-                    await client.execute(
+                    await conn.execute(
                         """MERGE (o:Order {id: $order_id})
                            SET o += $order_props
                            WITH o
@@ -517,9 +522,11 @@ logger = logging.getLogger(__name__)
 async def load_batch_with_retry(client, batch, batch_num):
     """Load batch with exponential backoff retry."""
     try:
-        await client.execute_many(
-            "MERGE (n:Person {id: $id}) SET n += $properties",
-            batch
+        await client.execute(
+            "UNWIND $batch AS row\n"
+            "MERGE (n:Person {id: row.id})\n"
+            "SET n += row.properties",
+            {"batch": batch}
         )
         logger.info(f"Batch {batch_num} loaded successfully")
     except Exception as e:

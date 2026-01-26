@@ -584,21 +584,23 @@ RETURN leaf.name, [node IN NODES(path) | node.name] AS breadcrumb
 ### Python
 
 ```python
-from geode_client import GeodeClient
+from geode_client import Client
 
-async with GeodeClient("localhost:3141") as client:
+client = Client(host="localhost", port=3141)
+
+async with client.connection() as conn:
     # Simple MATCH
-    result = await client.query("""
+    result, _ = await conn.query("""
         MATCH (u:User)-[:FOLLOWS]->(f:User)
         WHERE u.id = $user_id
         RETURN f.name, f.bio
     """, {"user_id": 123})
 
-    async for row in result:
+    for row in result.rows:
         print(f"{row['name']}: {row['bio']}")
 
     # Variable-length path
-    result = await client.query("""
+    result, _ = await conn.query("""
         MATCH path = (a:User)-[:KNOWS*1..3]->(b:User)
         WHERE a.id = $from AND b.id = $to
         RETURN [node IN NODES(path) | node.name] AS path_names

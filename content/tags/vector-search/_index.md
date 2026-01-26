@@ -103,20 +103,21 @@ LIMIT 10;
 Store document embeddings generated from sentence transformers or OpenAI models:
 
 ```python
-from geode_client import GeodeClient
+from geode_client import Client
 import asyncio
 
 async def create_document_index():
-    async with GeodeClient("localhost", 3141) as client:
+    client = Client(host="localhost", port=3141)
+    async with client.connection() as conn:
         # Create schema with vector index
-        await client.execute("""
+        await conn.execute("""
             CREATE VECTOR INDEX doc_embeddings
             ON Document(embedding)
             WITH (metric = 'cosine', dimensions = 384, m = 16);
         """)
 
         # Insert documents with embeddings
-        await client.execute("""
+        await conn.execute("""
             CREATE (d:Document {
                 title: 'Introduction to Graph Databases',
                 content: 'Graph databases model data as nodes and relationships...',
@@ -125,10 +126,11 @@ async def create_document_index():
         """, {"embedding": generate_embedding("Graph databases model...")})
 
 async def semantic_search(query_text):
-    async with GeodeClient("localhost", 3141) as client:
+    client = Client(host="localhost", port=3141)
+    async with client.connection() as conn:
         query_embedding = generate_embedding(query_text)
 
-        result = await client.execute("""
+        result, _ = await conn.query("""
             MATCH (d:Document)
             WITH d, vector_similarity(d.embedding, $query_emb, 'cosine') AS score
             WHERE score > 0.6
@@ -137,7 +139,7 @@ async def semantic_search(query_text):
             LIMIT 5
         """, {"query_emb": query_embedding})
 
-        for row in result:
+        for row in result.rows:
             print(f"{row['score']:.3f} - {row['title']}")
 ```
 
@@ -166,8 +168,10 @@ Use image embeddings from models like CLIP or ResNet:
 async def find_similar_images(image_path, limit=10):
     embedding = image_encoder.encode(image_path)  # Generate embedding
 
-    async with GeodeClient("localhost", 3141) as client:
-        result = await client.execute("""
+    client = Client(host="localhost", port=3141)
+
+    async with client.connection() as conn:
+        result, _ = await conn.query("""
             MATCH (img:Image)
             WITH img, vector_similarity(img.embedding, $query_emb, 'euclidean') AS distance
             WHERE distance < 0.5
@@ -217,13 +221,14 @@ def generate_embedding(text):
 **Batch processing for efficiency**:
 ```python
 async def index_documents_batch(documents, batch_size=100):
-    async with GeodeClient("localhost", 3141) as client:
+    client = Client(host="localhost", port=3141)
+    async with client.connection() as conn:
         for i in range(0, len(documents), batch_size):
             batch = documents[i:i + batch_size]
             embeddings = model.encode([d.text for d in batch])
 
             for doc, emb in zip(batch, embeddings):
-                await client.execute("""
+                await conn.execute("""
                     CREATE (d:Document {
                         id: $id,
                         text: $text,

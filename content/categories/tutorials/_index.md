@@ -216,15 +216,16 @@ import geode_client
 import asyncio
 
 async def get_employee_data():
-    async with geode_client.connect('geode://localhost:3141') as conn:
-        result = await conn.execute("""
+    client = geode_client.open_database('geode://localhost:3141')
+    async with client.connection() as conn:
+        result, _ = await conn.query("""
             MATCH (p:Person)-[:WORKS_AT]->(c:Company)
             WHERE p.age > 30
             RETURN p.name, c.name
         """)
 
         employees = []
-        async for row in result:
+        for row in result.rows:
             employees.append({
                 'name': row[0],
                 'company': row[1]
@@ -370,7 +371,8 @@ import geode_client
 import asyncio
 
 async def setup_movie_database():
-    async with geode_client.connect('geode://localhost:3141') as conn:
+    client = geode_client.open_database('geode://localhost:3141')
+    async with client.connection() as conn:
         # Create movies
         movies = [
             {'title': 'The Matrix', 'genre': 'Sci-Fi', 'year': 1999},
@@ -420,8 +422,9 @@ asyncio.run(setup_movie_database())
 ```python
 async def get_recommendations(user_name, limit=5):
     """Get movie recommendations for a user."""
-    async with geode_client.connect('geode://localhost:3141') as conn:
-        result = await conn.execute("""
+    client = geode_client.open_database('geode://localhost:3141')
+    async with client.connection() as conn:
+        result, _ = await conn.query("""
             // Find users with similar taste
             MATCH (me:User {name: $user})-[my_rating:RATED]->(movie:Movie)
                  <-[their_rating:RATED]-(similar:User)
@@ -442,7 +445,7 @@ async def get_recommendations(user_name, limit=5):
         """, {'user': user_name, 'limit': limit})
 
         recommendations = []
-        async for row in result:
+        for row in result.rows:
             recommendations.append({
                 'title': row['title'],
                 'genre': row['genre'],
@@ -477,7 +480,8 @@ The Shawshank Redemption: 5.0 (confidence: 1 user)
 
 ```python
 async def create_transaction_network():
-    async with geode_client.connect('geode://localhost:3141') as conn:
+    client = geode_client.open_database('geode://localhost:3141')
+    async with client.connection() as conn:
         # Create accounts
         for i in range(1, 11):
             await conn.execute("""
@@ -533,8 +537,9 @@ asyncio.run(create_transaction_network())
 ```python
 async def detect_circular_transactions(time_window_hours=24):
     """Find circular money flows within time window."""
-    async with geode_client.connect('geode://localhost:3141') as conn:
-        result = await conn.execute("""
+    client = geode_client.open_database('geode://localhost:3141')
+    async with client.connection() as conn:
+        result, _ = await conn.query("""
             MATCH path = (a1:Account)-[t1:TRANSFER]->(a2:Account)
                         -[t2:TRANSFER]->(a3:Account)
                         -[t3:TRANSFER]->(a1)
@@ -550,7 +555,7 @@ async def detect_circular_transactions(time_window_hours=24):
         """, {'hours': time_window_hours})
 
         suspicious_patterns = []
-        async for row in result:
+        for row in result.rows:
             suspicious_patterns.append({
                 'accounts': [row['account1'], row['account2'], row['account3']],
                 'total_amount': row['total_amount'],
@@ -572,8 +577,9 @@ for case in fraud_cases:
 ```python
 async def velocity_check(account_id, threshold_multiplier=5):
     """Detect accounts with unusual transaction velocity."""
-    async with geode_client.connect('geode://localhost:3141') as conn:
-        result = await conn.execute("""
+    client = geode_client.open_database('geode://localhost:3141')
+    async with client.connection() as conn:
+        result, _ = await conn.query("""
             MATCH (a:Account {id: $account_id})-[t:TRANSFER]->()
             WITH a,
                  COUNT{(a)-[recent:TRANSFER]->()
@@ -585,7 +591,7 @@ async def velocity_check(account_id, threshold_multiplier=5):
                    historical_avg AS normal_rate
         """, {'account_id': account_id, 'threshold': threshold_multiplier})
 
-        return await result.fetch_one()
+        return result.rows[0] if result.rows else None
 
 # Check specific account
 alert = asyncio.run(velocity_check(5))
@@ -662,9 +668,10 @@ CREATE INDEX user_city ON :User(city);
 async def paginated_query(page_size=1000):
     """Process large result sets in chunks."""
     offset = 0
-    async with geode_client.connect('geode://localhost:3141') as conn:
+    client = geode_client.open_database('geode://localhost:3141')
+    async with client.connection() as conn:
         while True:
-            result = await conn.execute("""
+            result, _ = await conn.query("""
                 MATCH (n:Node)
                 RETURN n
                 ORDER BY n.id
@@ -673,7 +680,7 @@ async def paginated_query(page_size=1000):
             """, {'offset': offset, 'limit': page_size})
 
             rows = []
-            async for row in result:
+            for row in result.rows:
                 rows.append(row)
 
             if not rows:

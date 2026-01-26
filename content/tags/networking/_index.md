@@ -79,13 +79,13 @@ geode serve --listen 0.0.0.0:8443
 Configure client connections with connection strings:
 
 ```python
-from geode_client import GeodeClient
+from geode_client import Client
 
 # Basic connection
-client = GeodeClient("localhost:3141")
+client = Client("localhost:3141")
 
 # Explicit TLS configuration
-client = GeodeClient("geode.example.com:3141", tls={
+client = Client("geode.example.com:3141", tls={
     "verify": True,
     "ca_cert": "/etc/ssl/certs/geode-ca.pem",
     "client_cert": "/etc/ssl/certs/client.pem",
@@ -93,7 +93,7 @@ client = GeodeClient("geode.example.com:3141", tls={
 })
 
 # Connection with custom timeout
-client = GeodeClient("geode.example.com:3141",
+client = Client("geode.example.com:3141",
     connect_timeout=10,
     idle_timeout=300
 )
@@ -234,7 +234,7 @@ verify_mode = "strict"  # strict, permissive, or optional
 Client configuration for mTLS:
 
 ```python
-client = GeodeClient("geode.example.com:3141", tls={
+client = Client("geode.example.com:3141", tls={
     "verify": True,
     "ca_cert": "/etc/ssl/certs/geode-ca.pem",
     "client_cert": "/etc/ssl/certs/my-client.pem",
@@ -271,7 +271,7 @@ enable_statistics = true
 Configure client connection pools for optimal performance:
 
 ```python
-from geode_client import GeodeClient, ConnectionPool
+from geode_client import Client, ConnectionPool
 
 # Create connection pool
 pool = ConnectionPool(
@@ -285,7 +285,7 @@ pool = ConnectionPool(
 
 # Use connection from pool
 async with pool.acquire() as client:
-    result = await client.execute("MATCH (n:User) RETURN n LIMIT 10")
+    result, _ = await client.query("MATCH (n:User) RETURN n LIMIT 10")
 
 # Pool statistics
 stats = pool.get_statistics()
@@ -457,7 +457,7 @@ Client automatically tries different IP addresses:
 
 ```python
 # Client will try all IPs in round-robin fashion
-client = GeodeClient("geode.example.com:3141")
+client = Client("geode.example.com:3141")
 ```
 
 ### Layer 4 Load Balancing

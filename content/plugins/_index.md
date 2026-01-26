@@ -7,7 +7,10 @@ tags:
   - editors
   - ide
   - tools
+  - lsp
 categories:
+  - plugins
+  - documentation
 keywords:
   - Geode plugins
   - editor integrations
@@ -38,9 +41,10 @@ Enhance your development experience with Geode plugins for popular editors and I
 | Syntax Highlighting | ✓ | ✓ | ✓ | ✓ |
 | LSP Support | ✓ | - | ✓ | ✓ |
 | Auto-completion | ✓ | - | ✓ | ✓ |
-| Query Execution | ✓ | - | ✓ | ✓ |
-| Schema Browser | ✓ | - | ✓ | ✓ |
-| Debugging | ✓ | - | ✓ | - |
+| Query Execution | ✓ | - | ✓ | - |
+| Snippets | ✓ | - | ✓ | - |
+| Status Bar | ✓ | - | ✓ | - |
+| Slash Commands | - | - | - | ✓ |
 | AI Assistance | - | - | - | ✓ |
 
 ## Language Server Protocol (LSP)
@@ -61,7 +65,8 @@ The Geode LSP server provides:
 ```lua
 -- Using lazy.nvim
 {
-  'codeprosorg/geode-neovim',
+  'devnw/geode/geode-neovim',
+  url = 'https://gitlab.com/devnw/geode/geode-neovim.git',
   config = function()
     require('geode').setup({
       server = {
@@ -75,22 +80,17 @@ The Geode LSP server provides:
 
 ### VSCode
 
-1. Install from marketplace: "Geode GQL"
-2. Configure in settings:
-
-```json
-{
-  "geode.server.host": "localhost",
-  "geode.server.port": 3141
-}
+```bash
+npm install
+npm run compile
+npm run package
+code --install-extension geode-gql-1.0.0.vsix
 ```
 
 ### Claude Code
 
-Add to your `.claude/` directory or use the skill:
-
 ```bash
-/plugin geode
+claude --plugin-dir ./claude-code-lsp-plugin
 ```
 
 ## GQL Syntax Highlighting

@@ -179,7 +179,7 @@ result = execute_query(
     {"name": "Alice"}
 )
 
-for row in result['data']:
+for row in result.rows['data']:
     print(row['f.name'])
 ```
 

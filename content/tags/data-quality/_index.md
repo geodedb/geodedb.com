@@ -165,11 +165,11 @@ RETURN
 
 ```python
 # Python - analyze age distribution
-from geode_client import GeodeClient
+from geode_client import Client
 import matplotlib.pyplot as plt
 
-async def profile_age_distribution(client: GeodeClient):
-    result = await client.execute("""
+async def profile_age_distribution(client: Client):
+    result, _ = await client.query("""
         MATCH (p:Person)
         WHERE p.age IS NOT NULL
         RETURN
@@ -241,9 +241,9 @@ Python script for safe deduplication:
 
 ```python
 # Python - deduplicate with manual review
-async def find_duplicates(client: GeodeClient):
+async def find_duplicates(client: Client):
     """Find potential duplicate persons based on email."""
-    result = await client.execute("""
+    result, _ = await tx.query("""
         MATCH (p:Person)
         WITH p.email AS email, COLLECT(p) AS persons
         WHERE SIZE(persons) > 1
@@ -259,9 +259,10 @@ async def find_duplicates(client: GeodeClient):
     return result.bindings
 
 
-async def merge_persons(client: GeodeClient, keep_id: str, merge_id: str):
+async def merge_persons(client: Client, keep_id: str, merge_id: str):
     """Merge two person records, keeping the first."""
-    async with client.transaction() as tx:
+    async with client.connection() as tx:
+        await tx.begin()
         # Transfer relationships
         await tx.execute("""
             MATCH (keep:Person {id: $keep_id})
@@ -369,7 +370,7 @@ class QualityCheck:
     critical: bool = False
 
 class QualityMonitor:
-    def __init__(self, client: GeodeClient):
+    def __init__(self, client: Client):
         self.client = client
         self.checks = [
             QualityCheck(
@@ -398,7 +399,7 @@ class QualityMonitor:
         ]
 
     async def run_check(self, check: QualityCheck) -> dict:
-        result = await self.client.execute(check.query)
+        result = await self.conn.execute(check.query)
         score = result.bindings[0]['score']
         passed = score >= check.threshold
 
@@ -426,7 +427,8 @@ class QualityMonitor:
 
 # Usage
 async def main():
-    async with GeodeClient("localhost:3141") as client:
+    client = Client(host="localhost", port=3141)
+    async with client.connection() as conn:
         monitor = QualityMonitor(client)
         report = await monitor.run_all_checks()
 

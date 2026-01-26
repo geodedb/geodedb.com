@@ -369,11 +369,13 @@ RETURN m.timestamp,
 Extend with custom functions (Python example):
 
 ```python
-from geode_client import GeodeClient
+from geode_client import Client
 
-async with GeodeClient('localhost:3141') as client:
+client = Client(host="localhost", port=3141)
+
+async with client.connection() as conn:
     # Register custom function
-    await client.execute("""
+    await conn.execute("""
         CREATE FUNCTION haversine_distance(
             lat1 FLOAT, lon1 FLOAT,
             lat2 FLOAT, lon2 FLOAT
@@ -394,7 +396,7 @@ async with GeodeClient('localhost:3141') as client:
     """)
 
     # Use custom function
-    result = await client.query("""
+    result, _ = await conn.query("""
         MATCH (loc1:Location {name: 'NYC'}),
               (loc2:Location {name: 'SF'})
         RETURN haversine_distance(
@@ -730,7 +732,7 @@ $$
 """)
 
 # Use custom function
-result = await client.execute("""
+result, _ = await client.query("""
 MATCH (p:Post)
 RETURN p.content,
        sentiment_score(p.content) AS sentiment

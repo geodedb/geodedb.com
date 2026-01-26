@@ -65,7 +65,7 @@ EMIT CHANGES;
 Publish events to streams:
 
 ```python
-from geode_client import GeodeClient
+from geode_client import Client
 
 async def publish_user_action(client, user_id, action):
     """Publish user action event"""

@@ -285,31 +285,32 @@ geode serve --listen 0.0.0.0:3141
 **For Development (Self-Signed Certificates)**:
 ```bash
 # Python client - disable verification (dev only!)
-import os
-os.environ['GEODE_INSECURE'] = '1'
+from geode_client import Client
+client = Client(host="localhost", port=3141, skip_verify=True)
 
 # Go client - disable verification (dev only!)
 db, err := sql.Open("geode", "localhost:3141?insecure=true")
 
 # Rust client - disable verification (dev only!)
-let client = GeodeClient::builder()
-    .insecure(true)
-    .connect("localhost:3141").await?;
+use geode_client::Client;
+let client = Client::new("localhost", 3141).skip_verify(true);
+let mut conn = client.connect().await?;
 ```
 
 **For Production (Proper CA)**:
 ```bash
 # Provide CA certificate path
 # Python
-export GEODE_CA_PATH=/path/to/ca.crt
+from geode_client import Client
+client = Client(host="localhost", port=3141, ca_cert="/path/to/ca.crt")
 
 # Go
 db, err := sql.Open("geode", "localhost:3141?ca=/path/to/ca.crt")
 
 # Rust
-let client = GeodeClient::builder()
-    .ca_path("/path/to/ca.crt")
-    .connect("localhost:3141").await?;
+use geode_client::Client;
+let client = Client::new("localhost", 3141).skip_verify(false);
+let mut conn = client.connect().await?;
 ```
 
 ### QUIC Connection Timeout
@@ -330,12 +331,7 @@ sudo tcpdump -i any udp port 3141
 
 **Solution**:
 ```bash
-# Increase client timeout
-# Python
-client = GeodeClient(host="...", connect_timeout=30.0)
-
-# Go
-db, err := sql.Open("geode", "localhost:3141?timeout=30s")
+# Validate UDP connectivity and QUIC MTU settings
 
 # Check MTU issues (QUIC requires proper MTU)
 ping -M do -s 1400 <server-ip>
@@ -361,16 +357,12 @@ db.SetMaxIdleConns(10)
 db.SetConnMaxLifetime(time.Hour)
 
 # Python
-client = GeodeClient(
-    host="...",
-    pool_size=100,
-    max_overflow=20
-)
+from geode_client import ConnectionPool
+pool = ConnectionPool(host="localhost", port=3141, max_size=100, timeout=30.0)
 
 # Rust
-let client = GeodeClient::builder()
-    .pool_size(100)
-    .connect("localhost:3141").await?;
+use geode_client::ConnectionPool;
+let pool = ConnectionPool::new("localhost", 3141, 100);
 ```
 
 ---
@@ -599,7 +591,7 @@ LIMIT 100
 **3. Use Streaming for Large Data**:
 ```python
 # Python - stream results instead of loading all
-async for row in client.query_stream("MATCH (n:Person) RETURN n"):
+for row in client.rows.query_stream("MATCH (n:Person) RETURN n"):
     process(row)  # Process one row at a time
 ```
 
@@ -695,17 +687,24 @@ SELECT * FROM person_stats;
 ```python
 import time
 import random
+from geode_client import Client, QueryError
 
-def execute_with_retry(query, max_retries=3):
+client = Client(host="localhost", port=3141)
+
+async def execute_with_retry(conn, query, max_retries=3):
     for attempt in range(max_retries):
         try:
-            return client.execute(query)
-        except DeadlockError:
+            await conn.query(query)
+            return
+        except QueryError:
             if attempt == max_retries - 1:
                 raise
             # Exponential backoff with jitter
             wait = (2 ** attempt) + random.uniform(0, 1)
             time.sleep(wait)
+
+# async with client.connection() as conn:
+#     await execute_with_retry(conn, "MATCH (n) RETURN count(n)")
 ```
 
 **Solution 2: Consistent Lock Ordering**:
@@ -739,7 +738,8 @@ geode serve \
 **Solution 2: Break into Smaller Transactions**:
 ```python
 # SLOW: One huge transaction
-async with client.transaction() as tx:
+async with client.connection() as tx:
+    await tx.begin()
     for i in range(100000):
         await tx.execute("CREATE (n:Node {id: $id})", {"id": i})
     await tx.commit()
@@ -747,7 +747,8 @@ async with client.transaction() as tx:
 # FASTER: Batch into smaller transactions
 batch_size = 1000
 for i in range(0, 100000, batch_size):
-    async with client.transaction() as tx:
+    async with client.connection() as tx:
+        await tx.begin()
         for j in range(i, min(i + batch_size, 100000)):
             await tx.execute("CREATE (n:Node {id: $id})", {"id": j})
         await tx.commit()
@@ -845,26 +846,16 @@ rows, err := db.QueryContext(ctx, "MATCH (n) RETURN n LIMIT 10")
 
 **Solution**:
 ```rust
-use geode_client::{GeodeClient, Error};
+use geode_client::{Client, Error};
 
-let client = GeodeClient::builder()
-    .host("localhost")
-    .port(3141)
-    .ca_path("/path/to/ca.crt")  // For TLS verification
-    .connect_timeout(std::time::Duration::from_secs(30))
-    .pool_size(10)
-    .connect()
-    .await?;
+let client = Client::new("localhost", 3141).skip_verify(false);
+let mut conn = client.connect().await?;
 
-// Handle connection errors with retry
 let mut retries = 3;
 while retries > 0 {
-    match client.query("MATCH (n) RETURN n LIMIT 10").await {
-        Ok(result) => {
-            // Success
-            break;
-        }
-        Err(Error::ConnectionError(_)) if retries > 1 => {
+    match conn.query("MATCH (n) RETURN n LIMIT 10").await {
+        Ok(_) => break,
+        Err(Error::Connection(_)) if retries > 1 => {
             retries -= 1;
             tokio::time::sleep(std::time::Duration::from_secs(1)).await;
         }

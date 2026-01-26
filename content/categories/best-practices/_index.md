@@ -149,7 +149,7 @@ async with client.execute("""
 
 # AVOID: String concatenation (SQL injection risk + no plan caching)
 query = f"MATCH (u:User {{email: '{user_email}'}}) RETURN u"
-result = await client.execute(query)
+result, _ = await client.query(query)
 ```
 
 **Why**: Parameterized queries prevent injection attacks, enable query plan caching, and improve performance.
@@ -231,7 +231,8 @@ Minimize transaction duration to reduce lock contention:
 ```python
 # GOOD: Short, focused transactions
 async def update_user(client, user_id, new_data):
-    async with client.transaction() as tx:
+    async with client.connection() as tx:
+        await tx.begin()
         await tx.execute("""
             MATCH (u:User {id: $user_id})
             SET u.name = $name, u.email = $email
@@ -240,7 +241,8 @@ async def update_user(client, user_id, new_data):
 
 # AVOID: Long-running transactions
 async def bad_batch_update(client, users):
-    async with client.transaction() as tx:
+    async with client.connection() as tx:
+        await tx.begin()
         for user in users:  # Holds locks for entire loop
             await tx.execute("""
                 MATCH (u:User {id: $user_id})
@@ -258,7 +260,8 @@ Implement partial rollback with savepoints:
 
 ```python
 async def complex_operation(client):
-    async with client.transaction() as tx:
+    async with client.connection() as tx:
+        await tx.begin()
         # Initial work
         await tx.execute("CREATE (:User {name: 'Alice'})")
 
@@ -292,8 +295,9 @@ from geode_client import DeadlockError
 async def transactional_update_with_retry(client, max_retries=3):
     for attempt in range(max_retries):
         try:
-            async with client.transaction() as tx:
-                result = await tx.execute("""
+            async with client.connection() as tx:
+                await tx.begin()
+                result, _ = await tx.query("""
                     MATCH (u:User {id: $user_id})
                     SET u.last_updated = datetime()
                     RETURN u
@@ -450,7 +454,7 @@ pool = ConnectionPool(
 
 async def query_with_pool():
     async with pool.acquire() as client:
-        result = await client.execute("MATCH (n:User) RETURN COUNT(n)")
+        result, _ = await client.query("MATCH (n:User) RETURN COUNT(n)")
         return result.single()
 ```
 
@@ -558,7 +562,7 @@ GET_POPULAR_POSTS = """
 # Use in application
 from queries.users import GET_USER_FRIENDS
 
-result = await client.execute(GET_USER_FRIENDS, {'user_id': 123})
+result, _ = await client.query(GET_USER_FRIENDS, {'user_id': 123})
 ```
 
 **Why**: Query versioning enables review, testing, and change tracking.

@@ -424,9 +424,8 @@ docker rm geode-blue
 async def migrate_v017_to_v018():
     """Migrate data from v0.17.0 to v0.18.0."""
     # Connect to old and new instances
-    old_client = await geode_client.connect("old-server:3141")
-    new_client = await geode_client.connect("new-server:3141")
-
+    old_client = geode_client.open_database("old-server:3141")
+    new_client = geode_client.open_database("new-server:3141")
     try:
         # Export from old version
         export_result = await old_client.execute("""
@@ -436,7 +435,7 @@ async def migrate_v017_to_v018():
         """)
 
         # Import to new version
-        async for row in export_result:
+        for row in export_result.rows:
             # Transform data if needed for new schema
             node_data = transform_node(row['n'])
             await new_client.execute("""

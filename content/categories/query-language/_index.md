@@ -387,8 +387,10 @@ Use parameters for security and performance:
 ```python
 import geode_client
 
-async with geode_client.connect("localhost:3141") as client:
-    result = await client.execute("""
+client = geode_client.open_database("localhost:3141")
+
+async with client.connection() as client:
+    result, _ = await client.query("""
         MATCH (u:User {email: $email})
         SET u.last_login = $timestamp
         RETURN u
@@ -405,7 +407,8 @@ Parameters prevent SQL injection, enable query plan caching, and improve readabi
 Manage multi-statement transactions:
 
 ```python
-async with client.transaction() as tx:
+async with client.connection() as tx:
+    await tx.begin()
     # All operations in one transaction
     await tx.execute("""
         MATCH (a:Account {id: $from})
@@ -826,7 +829,7 @@ RETURN product.name,
 async def safe_query_execution(client, query, params):
     """Execute query with comprehensive error handling."""
     try:
-        result = await client.execute(query, params)
+        result, _ = await client.query(query, params)
         return result
     except geode_client.ConstraintViolationError as e:
         logger.error(f"Constraint violation: {e}")
@@ -919,7 +922,7 @@ query = f"MATCH (u:User {{email: '{user_input}'}}) RETURN u"
 
 # CORRECT - Parameterized
 query = "MATCH (u:User {email: $email}) RETURN u"
-result = await client.execute(query, {"email": user_input})
+result, _ = await client.query(query, {"email": user_input})
 ```
 
 ### Input Validation

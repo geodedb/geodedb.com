@@ -382,19 +382,22 @@ defer client.Close()
 
 **Query Execution (Python):**
 ```python
-from geode_client import GeodeClient
+from geode_client import Client
 
-async with GeodeClient("localhost:3141") as client:
-    result = await client.execute("MATCH (n:Person) RETURN n.name")
-    async for row in result:
+client = Client(host="localhost", port=3141)
+
+async with client.connection() as conn:
+    result, _ = await conn.query("MATCH (n:Person) RETURN n.name")
+    for row in result.rows:
         print(row['n.name'])
 ```
 
 **Transaction (Rust):**
 ```rust
-let mut tx = client.begin_transaction().await?;
-tx.execute("CREATE (n:Person {name: 'Alice'})").await?;
-tx.commit().await?;
+let mut conn = client.connect().await?;
+conn.begin().await?;
+conn.query("CREATE (n:Person {name: 'Alice'})").await?;
+conn.commit().await?;
 ```
 
 ### Video Tutorials

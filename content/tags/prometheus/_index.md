@@ -478,7 +478,7 @@ Create custom exporters for Geode-specific metrics:
 # geode_exporter.py
 from prometheus_client import start_http_server, Gauge, Counter
 import asyncio
-from geode_client import GeodeClient
+from geode_client import Client
 
 # Define custom metrics
 active_queries_gauge = Gauge('geode_custom_active_queries',
@@ -492,7 +492,7 @@ async def collect_custom_metrics(client):
     """Collect custom Geode metrics"""
     while True:
         # Active queries by type
-        result = await client.execute("""
+        result, _ = await client.query("""
             CALL system.active_queries()
             RETURN query_type, count(*) as count
         """)
@@ -503,7 +503,7 @@ async def collect_custom_metrics(client):
             ).set(row['count'])
 
         # Cache memory usage
-        cache_stats = await client.execute("""
+        cache_stats, _ = await client.query("""
             CALL system.cache_stats()
             RETURN memory_bytes
         """)
@@ -514,7 +514,7 @@ async def collect_custom_metrics(client):
 
 if __name__ == '__main__':
     start_http_server(9090)
-    client = GeodeClient("localhost:3141")
+    client = Client("localhost:3141")
     asyncio.run(collect_custom_metrics(client))
 ```
 

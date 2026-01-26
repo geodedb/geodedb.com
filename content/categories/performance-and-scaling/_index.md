@@ -81,9 +81,11 @@ Monitor index effectiveness in production:
 ```python
 import geode_client
 
-async with geode_client.connect("localhost:3141") as client:
+client = geode_client.open_database("localhost:3141")
+
+async with client.connection() as client:
     # Query index statistics
-    stats = await client.execute("""
+    stats, _ = await client.query("""
         SHOW INDEX STATISTICS
     """)
 
@@ -160,7 +162,8 @@ GROUP BY u.id
 Prepared statements improve performance by caching query plans:
 
 ```python
-async with geode_client.connect("localhost:3141") as client:
+client = geode_client.open_database("localhost:3141")
+async with client.connection() as client:
     # Prepare once
     stmt = await client.prepare("""
         MATCH (u:User {id: $user_id})-[:PURCHASED]->(p:Product)
@@ -170,7 +173,7 @@ async with geode_client.connect("localhost:3141") as client:
 
     # Execute many times with different parameters
     for user_id in range(1000):
-        result = await stmt.execute({"user_id": user_id})
+        result, _ = await stmt.execute({"user_id": user_id})
         process_results(result)
 ```
 
@@ -215,7 +218,7 @@ Monitor key metrics in production:
 
 ```python
 # Query performance metrics
-metrics = await client.execute("""
+metrics, _ = await client.query("""
     SELECT
         query_id,
         execution_time_ms,
@@ -296,7 +299,8 @@ Geode's MVCC architecture enables high concurrency:
 import asyncio
 
 async def concurrent_queries():
-    async with geode_client.connect("localhost:3141") as client:
+    client = geode_client.open_database("localhost:3141")
+    async with client.connection() as client:
         # Execute 100 queries concurrently
         tasks = [
             client.execute("MATCH (n:Node {id: $id}) RETURN n", {"id": i})
@@ -385,8 +389,7 @@ Client routing:
 
 ```python
 # Primary for writes
-primary = await geode_client.connect("primary.example.com:3141")
-
+primary = geode_client.open_database("primary.example.com:3141")
 # Replicas for reads
 replicas = geode_client.Pool([
     "replica1.example.com:3141",
@@ -396,7 +399,7 @@ replicas = geode_client.Pool([
 
 # Route appropriately
 await primary.execute("CREATE (n:Node {id: 123})")
-result = await replicas.execute("MATCH (n:Node) RETURN count(n)")
+result, _ = await replicas.query("MATCH (n:Node) RETURN count(n)")
 ```
 
 ### Sharding Strategies
@@ -417,7 +420,7 @@ def get_shard(user_id):
 
 # Route query to correct shard
 shard = get_shard(user_id)
-result = await shard.execute("MATCH (u:User {id: $id})", {"id": user_id})
+result, _ = await shard.query("MATCH (u:User {id: $id})", {"id": user_id})
 ```
 
 ## Best Practices

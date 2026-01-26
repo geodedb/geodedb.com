@@ -85,22 +85,23 @@ Reduce parsing overhead for frequently executed queries:
 # Python client example
 from geode_client import Client
 
-client = Client("geodedb://localhost:3141")
+client = Client(host="localhost", port=3141)
 
-# Prepare query once
-stmt = client.prepare("""
-    MATCH (u:User {user_id: $user_id})-[:PURCHASED]->(p:Product)
-    WHERE p.created_at > $since
-    RETURN p.product_id, p.name, p.price
-""")
+async with client.connection() as conn:
+    # Prepare query once
+    stmt = await conn.prepare("""
+        MATCH (u:User {user_id: $user_id})-[:PURCHASED]->(p:Product)
+        WHERE p.created_at > $since
+        RETURN p.product_id, p.name, p.price
+    """)
 
-# Execute multiple times with different parameters (faster)
-for user_id in user_ids:
-    results = stmt.execute({
-        'user_id': user_id,
-        'since': datetime.now() - timedelta(days=7)
-    })
-    process_results(results)
+    # Execute multiple times with different parameters (faster)
+    for user_id in user_ids:
+        results, _ = await stmt.execute({
+            'user_id': user_id,
+            'since': datetime.now() - timedelta(days=7)
+        })
+        process_results(results)
 ```
 
 ## Change Data Capture (CDC)
@@ -462,7 +463,7 @@ class OrderProcessingService:
     async def process_new_order(self, order):
         """Handle new order with sub-10ms latency"""
         # Validate inventory (indexed lookup, <1ms)
-        available = await self.client.execute("""
+        available, _ = await self.client.query("""
             MATCH (p:Product {id: $product_id})
             WHERE p.stock_quantity >= $quantity
             RETURN p.stock_quantity
@@ -586,7 +587,7 @@ class RecommendationEngine:
     async def get_recommendations(self, user_id, context):
         """Real-time recommendations with <5ms latency"""
         # Use prepared statement for hot path
-        recommendations = await self.similar_products_stmt.execute({
+        recommendations, _ = await self.similar_products_stmt.execute({
             "user_id": user_id,
             "product_id": context['current_product_id'],
             "limit": 20
@@ -595,7 +596,7 @@ class RecommendationEngine:
         # Apply real-time personalization filters
         filtered = await self._apply_user_preferences(
             user_id,
-            recommendations.bindings
+            recommendations.rows
         )
 
         return filtered
@@ -624,7 +625,7 @@ async def compute_rolling_metrics():
     client = await Client.connect("localhost:3141")
 
     # 5-minute rolling average of response times
-    result = await client.execute("""
+    result, _ = await client.query("""
         MATCH (req:Request)
         WHERE req.timestamp > datetime().minusMinutes(5)
         WITH req.timestamp AS ts, req.duration_ms AS duration
@@ -653,7 +654,7 @@ async def detect_anomalies():
     client = await Client.connect("localhost:3141")
 
     # Detect unusual user behavior patterns
-    anomalies = await client.execute("""
+    anomalies, _ = await client.query("""
         MATCH (u:User)-[a:ACTION]->(resource)
         WHERE a.timestamp > datetime().minusMinutes(5)
         WITH u,
@@ -689,7 +690,7 @@ async def join_streams_with_graph():
 
     async for event in event_stream:
         # Enrich event with user graph context
-        context = await client.execute("""
+        context, _ = await client.query("""
             MATCH (u:User {id: $user_id})
             OPTIONAL MATCH (u)-[:FRIEND]->(friend:User)
             OPTIONAL MATCH (u)-[:MEMBER_OF]->(group:Group)
@@ -762,7 +763,7 @@ async def handle_request(user_id):
     """Process request with pooled connection"""
     async with pool.acquire() as client:
         # Connection acquired from pool (no handshake overhead)
-        result = await client.execute("""
+        result, _ = await client.query("""
             MATCH (u:User {id: $user_id})-[:RECENT]->(items)
             RETURN items
             LIMIT 10
@@ -784,7 +785,7 @@ Cache frequently accessed data at application layer:
 import asyncio
 from cachetools import TTLCache
 
-class CachedGeodeClient:
+class CachedClient:
     def __init__(self, client):
         self.client = client
         # TTL cache: 1000 entries, 60-second TTL
@@ -798,7 +799,7 @@ class CachedGeodeClient:
             return self.cache[cache_key]  # Cache hit (<0.1ms)
 
         # Cache miss - query database
-        result = await self.client.execute("""
+        result, _ = await self.client.query("""
             MATCH (u:User {id: $id})
             RETURN u
         """, {"id": user_id})
@@ -836,7 +837,7 @@ client = LoadBalancedClient(
 # Queries automatically distributed
 async def query_with_lb():
     # Routes to healthy, least-loaded node
-    result = await client.execute("MATCH (u:User) RETURN count(u)")
+    result, _ = await client.query("MATCH (u:User) RETURN count(u)")
 ```
 
 ### Monitoring Real-Time Performance
@@ -856,7 +857,7 @@ async def execute_with_metrics(client, query, params):
     """Execute query with performance tracking"""
     with query_duration.time():
         try:
-            result = await client.execute(query, params)
+            result, _ = await client.query(query, params)
             return result
         except Exception as e:
             query_errors.inc()

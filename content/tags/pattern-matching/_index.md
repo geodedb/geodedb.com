@@ -486,21 +486,23 @@ RETURN a, b, c
 ### Python
 
 ```python
-from geode_client import GeodeClient
+from geode_client import Client
 
-async with GeodeClient("localhost:3141") as client:
+client = Client(host="localhost", port=3141)
+
+async with client.connection() as conn:
     # Simple pattern match
-    result = await client.query("""
+    result, _ = await conn.query("""
         MATCH (u:User)-[:FOLLOWS]->(followed:User)
         WHERE u.id = $user_id
         RETURN followed.name, followed.bio
     """, {"user_id": 123})
 
-    async for row in result:
+    for row in result.rows:
         print(f"{row['name']}: {row['bio']}")
 
     # Variable-length path
-    result = await client.query("""
+    result, _ = await conn.query("""
         MATCH path = (a:User {id: $from})-[:KNOWS*1..3]->(b:User {id: $to})
         RETURN LENGTH(path) AS degrees,
                [node IN NODES(path) | node.name] AS path_names

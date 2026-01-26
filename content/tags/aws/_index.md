@@ -530,14 +530,15 @@ rm "$BACKUP_FILE"
 
 ```python
 import boto3
-from geode_client import GeodeClient
+from geode_client import Client
 
 cloudwatch = boto3.client('cloudwatch', region_name='us-east-1')
 
 async def publish_metrics():
-    async with GeodeClient('geode.internal', 3141) as client:
+    client = Client(host="geode.internal", port=3141)
+    async with client.connection() as conn:
         # Query Geode metrics
-        result = await client.execute("""
+        result, _ = await conn.query("""
             MATCH (n) RETURN count(n) AS total_nodes
         """)
 
@@ -628,7 +629,7 @@ aws secretsmanager get-secret-value \
 ```python
 import boto3
 import json
-from geode_client import GeodeClient
+from geode_client import AuthClient, Client
 
 def get_geode_credentials():
     client = boto3.client('secretsmanager', region_name='us-east-1')
@@ -637,14 +638,12 @@ def get_geode_credentials():
 
 async def connect_to_geode():
     creds = get_geode_credentials()
-    async with GeodeClient(
-        'geode.internal',
-        3141,
-        username=creds['username'],
-        password=creds['password']
-    ) as client:
-        result = await client.execute("MATCH (n) RETURN count(n)")
-        return result
+    client = Client(host="geode.internal", port=3141)
+    async with client.connection() as conn:
+        auth = AuthClient(conn)
+        await auth.login(creds['username'], creds['password'])
+        result, _ = await conn.query("MATCH (n) RETURN count(n) AS total")
+        return result.rows[0]["total"] if result.rows else 0
 ```
 
 ### Route 53 DNS

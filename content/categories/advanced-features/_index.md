@@ -67,11 +67,13 @@ BM25 scoring considers term saturation and document length normalization, provid
 RLS policies provide fine-grained access control at the data level, enabling multi-tenant applications and complex authorization requirements without application-level filtering.
 
 ```python
-from geode_client import GeodeClient
+from geode_client import Client
 
-async with GeodeClient("localhost:3141") as client:
+client = Client(host="localhost", port=3141)
+
+async with client.connection() as conn:
     # Create a security policy
-    await client.execute("""
+    await conn.execute("""
         CREATE POLICY user_data_access ON :UserData
         USING (node.user_id = current_user_id())
         WITH CHECK (node.user_id = current_user_id())
@@ -79,7 +81,7 @@ async with GeodeClient("localhost:3141") as client:
 
     # Queries automatically respect RLS policies
     # Users only see their own data
-    result = await client.execute("""
+    result, _ = await conn.query("""
         MATCH (d:UserData)
         RETURN d.content
     """)
@@ -363,14 +365,30 @@ Use CDC to trigger external workflows:
 
 ```python
 async def process_cdc_events():
-    async with GeodeClient("localhost:3141") as client:
-        async for event in client.subscribe_cdc():
-            if event.operation == "CREATE" and "Order" in event.labels:
-                # Trigger order processing workflow
-                await process_order(event.new_data)
-            elif event.operation == "UPDATE" and "Inventory" in event.labels:
-                # Update recommendation cache
-                await refresh_recommendations(event.entity_id)
+    client = Client(host="localhost", port=3141)
+    last_seen = "1970-01-01T00:00:00Z"
+    async with client.connection() as conn:
+        while True:
+            result, _ = await conn.query(
+                """
+                MATCH (e:ChangeLog)
+                WHERE e.emitted_at > $since
+                RETURN e.operation AS operation,
+                       e.labels AS labels,
+                       e.entity_id AS entity_id,
+                       e.after AS after,
+                       e.emitted_at AS emitted_at
+                ORDER BY emitted_at
+                """,
+                {"since": last_seen},
+            )
+            for row in result.rows:
+                labels = row["labels"].raw_value or []
+                if row["operation"].raw_value == "CREATE" and "Order" in labels:
+                    await process_order(row["after"].raw_value)
+                elif row["operation"].raw_value == "UPDATE" and "Inventory" in labels:
+                    await refresh_recommendations(row["entity_id"].raw_value)
+                last_seen = row["emitted_at"].raw_value
 ```
 
 ## Advanced Transaction Patterns
@@ -381,7 +399,7 @@ async def process_cdc_events():
 async def update_with_optimistic_locking(client, node_id, version):
     """Update with version checking to prevent lost updates."""
     try:
-        result = await client.execute("""
+        result, _ = await client.query("""
             MATCH (n:Node {id: $id, version: $expected_version})
             SET n.data = $new_data,
                 n.version = $expected_version + 1
@@ -392,7 +410,7 @@ async def update_with_optimistic_locking(client, node_id, version):
             "new_data": "updated"
         })
 
-        return await result.fetch_one()
+        return result.rows[0] if result.rows else None
     except geode_client.NoResultsError:
         raise ConflictError("Version mismatch - data was modified")
 ```
@@ -405,7 +423,8 @@ async def execute_saga(client, steps):
     completed_steps = []
 
     try:
-        async with client.transaction() as tx:
+        async with client.connection() as tx:
+            await tx.begin()
             for step in steps:
                 await step['forward'](tx)
                 completed_steps.append(step)
@@ -484,20 +503,21 @@ RETURN u.name, u.city
 ### Multi-Factor Authentication Integration
 
 ```python
-from geode_client import GeodeClient
+from geode_client import Client
 import pyotp
 
 async def authenticate_with_mfa(username, password, totp_code):
     """Authenticate with username, password, and TOTP."""
     # First verify password
-    async with GeodeClient("localhost:3141") as client:
-        user = await client.execute("""
+    client = Client(host="localhost", port=3141)
+    async with client.connection() as conn:
+        user = await conn.execute("""
             MATCH (u:User {username: $username})
             WHERE crypto.verify_password($password, u.password_hash)
             RETURN u.totp_secret AS secret, u.id AS id
         """, {"username": username, "password": password})
 
-        user_data = await user.fetch_one()
+        user_data = user.rows[0] if user.rows else None
         if not user_data:
             raise AuthenticationError("Invalid credentials")
 
@@ -508,7 +528,7 @@ async def authenticate_with_mfa(username, password, totp_code):
 
         # Create session
         session_token = generate_secure_token()
-        await client.execute("""
+        await conn.execute("""
             MATCH (u:User {id: $user_id})
             CREATE (s:Session {
                 token: $token,
@@ -577,7 +597,7 @@ async def create_audit_log(client, user_id, action, entity_type, entity_id, deta
 # Query audit logs
 async def get_audit_trail(entity_id):
     """Retrieve complete audit trail for entity."""
-    result = await client.execute("""
+    result, _ = await client.query("""
         MATCH (log:AuditLog {entity_id: $entity_id})
         RETURN log.timestamp AS when,
                log.user_id AS who,
@@ -586,7 +606,7 @@ async def get_audit_trail(entity_id):
         ORDER BY log.timestamp DESC
     """, {"entity_id": entity_id})
 
-    return [row async for row in result]
+    return [row for row in result.rows]
 ```
 
 ## Stream Processing Integration
@@ -604,16 +624,32 @@ async def stream_changes_to_kafka(client, topic):
         value_serializer=lambda v: json.dumps(v).encode('utf-8')
     )
 
-    async with client.subscribe_cdc() as stream:
-        async for event in stream:
-            kafka_message = {
-                'operation': event.operation,
-                'entity_type': event.entity_type,
-                'entity_id': event.entity_id,
-                'timestamp': event.timestamp.isoformat(),
-                'data': event.new_data
-            }
-            producer.send(topic, value=kafka_message)
+    last_seen = "1970-01-01T00:00:00Z"
+    async with client.connection() as conn:
+        while True:
+            result, _ = await conn.query(
+                """
+                MATCH (e:ChangeLog)
+                WHERE e.emitted_at > $since
+                RETURN e.operation AS operation,
+                       e.entity_type AS entity_type,
+                       e.entity_id AS entity_id,
+                       e.emitted_at AS emitted_at,
+                       e.after AS after
+                ORDER BY emitted_at
+                """,
+                {"since": last_seen},
+            )
+            for row in result.rows:
+                kafka_message = {
+                    'operation': row["operation"].raw_value,
+                    'entity_type': row["entity_type"].raw_value,
+                    'entity_id': row["entity_id"].raw_value,
+                    'timestamp': row["emitted_at"].raw_value,
+                    'data': row["after"].raw_value,
+                }
+                producer.send(topic, value=kafka_message)
+                last_seen = row["emitted_at"].raw_value
 
 async def consume_from_kafka_to_geode(topic):
     """Consume Kafka messages and write to Geode."""
@@ -623,10 +659,12 @@ async def consume_from_kafka_to_geode(topic):
         value_deserializer=lambda m: json.loads(m.decode('utf-8'))
     )
 
-    async with GeodeClient("localhost:3141") as client:
+    client = Client(host="localhost", port=3141)
+
+    async with client.connection() as conn:
         for message in consumer:
             event = message.value
-            await client.execute("""
+            await conn.execute("""
                 CREATE (n:Event {
                     type: $type,
                     timestamp: $timestamp,
@@ -701,7 +739,7 @@ from sklearn.ensemble import RandomForestClassifier
 async def train_link_predictor(client):
     """Train ML model to predict future links."""
     # Extract features for existing links
-    result = await client.execute("""
+    result, _ = await client.query("""
         MATCH (u1:User)-[r:KNOWS]->(u2:User)
         WITH u1, u2,
              COUNT{(u1)-[:KNOWS]->()<-[:KNOWS]-(u2)} AS common_friends,
@@ -715,7 +753,7 @@ async def train_link_predictor(client):
 
     features = []
     labels = []
-    async for row in result:
+    for row in result.rows:
         features.append([row['common_friends'], row['join_diff']])
         labels.append(row['label'])
 
@@ -728,7 +766,7 @@ async def train_link_predictor(client):
 async def predict_new_links(client, model):
     """Predict which user pairs will connect."""
     # Get candidate pairs (users who aren't connected)
-    result = await client.execute("""
+    result, _ = await client.query("""
         MATCH (u1:User), (u2:User)
         WHERE u1.id < u2.id
           AND NOT EXISTS {MATCH (u1)-[:KNOWS]-(u2)}
@@ -743,7 +781,7 @@ async def predict_new_links(client, model):
     """)
 
     predictions = []
-    async for row in result:
+    for row in result.rows:
         features = [[row['common_friends'], row['join_diff']]]
         probability = model.predict_proba(features)[0][1]
         predictions.append({
@@ -761,7 +799,7 @@ async def predict_new_links(client, model):
 async def classify_graph_nodes(client, trained_gnn_model):
     """Classify nodes using Graph Neural Network."""
     # Extract node embeddings
-    result = await client.execute("""
+    result, _ = await client.query("""
         MATCH (n:Node)
         RETURN n.id AS id,
                n.embedding AS embedding,
@@ -770,7 +808,7 @@ async def classify_graph_nodes(client, trained_gnn_model):
 
     node_features = {}
     edges = []
-    async for row in result:
+    for row in result.rows:
         node_features[row['id']] = row['embedding']
         for neighbor in row['neighbor_ids']:
             edges.append((row['id'], neighbor))
@@ -811,7 +849,7 @@ class MultiTenantConnectionManager:
     async def get_connection(self, tenant_id):
         """Get tenant-specific connection with RLS context."""
         if tenant_id not in self.pools:
-            self.pools[tenant_id] = await GeodeClient.create_pool(
+            self.pools[tenant_id] = await Client.create_pool(
                 "localhost:3141",
                 context={"tenant_id": tenant_id}
             )
@@ -821,7 +859,7 @@ class MultiTenantConnectionManager:
 manager = MultiTenantConnectionManager()
 async with manager.get_connection("tenant1") as conn:
     # Queries automatically filtered to tenant1
-    result = await conn.execute("MATCH (d:Document) RETURN d")
+    result, _ = await conn.query("MATCH (d:Document) RETURN d")
 ```
 
 ## Further Reading

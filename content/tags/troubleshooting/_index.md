@@ -573,8 +573,9 @@ import logging
 logging.basicConfig(level=logging.DEBUG)
 
 # Test connection
-async with GeodeClient("localhost:3141") as client:
-    await client.ping()
+client = Client(host="localhost", port=3141)
+async with client.connection() as conn:
+    await conn.query("RETURN 1 AS ok")
 ```
 
 ### Rust Client Problems
@@ -588,8 +589,11 @@ use tracing_subscriber;
 tracing_subscriber::fmt::init();
 
 // Test connection
-let client = GeodeClient::connect("localhost:3141").await?;
-client.ping().await?;
+use geode_client::Client;
+
+let client = Client::from_dsn("localhost:3141")?;
+let mut conn = client.connect().await?;
+let _ = conn.query("RETURN 1 AS ok").await?;
 ```
 
 ## Logging and Diagnostics

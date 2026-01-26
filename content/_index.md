@@ -43,6 +43,7 @@ Geode provides official client libraries for multiple programming languages:
 - [**Go**](/clients/go/) - `database/sql` driver with full prepared statement support
 - [**Python**](/clients/python/) - Async client with connection pooling
 - [**Rust**](/clients/rust/) - High-performance tokio-based client
+- [**Node.js**](/clients/nodejs/) - TypeScript-first client with pooling
 - [**Zig**](/clients/zig/) - Native Zig implementation
 
 All clients communicate via QUIC+TLS using the JSON line protocol.

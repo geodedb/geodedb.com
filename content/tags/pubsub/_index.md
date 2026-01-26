@@ -57,7 +57,7 @@ SCHEMA (
 Publish to topics:
 
 ```python
-from geode_client import GeodeClient
+from geode_client import Client
 
 async def publish_user_event(client, user_id, event_type):
     """Publish user event to topic"""
@@ -689,10 +689,16 @@ async def create_user(user_data):
     user_id = str(uuid.uuid4())
 
     # Store in write database
-    async with geode_client.transaction():
-        await geode_client.execute("""
-            CREATE (u:User {id: $id, email: $email, created_at: datetime()})
-        """, {"id": user_id, "email": user_data['email']})
+    async with geode_client.connection() as conn:
+        await conn.begin()
+        try:
+            await conn.execute("""
+                CREATE (u:User {id: $id, email: $email, created_at: datetime()})
+            """, {"id": user_id, "email": user_data['email']})
+            await conn.commit()
+        except Exception:
+            await conn.rollback()
+            raise
 
     # Publish event
     await pubsub_client.publish("user_events", {

@@ -548,14 +548,15 @@ allowVolumeExpansion: true
 
 ```python
 import boto3
-from geode_client import GeodeClient
+from geode_client import Client
 
 cloudwatch = boto3.client('cloudwatch')
 
 async def publish_geode_metrics():
-    async with GeodeClient('geode.aws.internal', 3141) as client:
+    client = Client(host="geode.aws.internal", port=3141)
+    async with client.connection() as conn:
         # Get metrics from Geode
-        result = await client.execute("""
+        result, _ = await conn.query("""
             MATCH (n) RETURN count(n) AS node_count
         """)
 

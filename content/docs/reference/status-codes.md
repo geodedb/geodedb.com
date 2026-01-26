@@ -378,7 +378,8 @@ COMMIT  -- No active transaction
 
 \`\`\`python
 # Python - Safe transaction handling
-async with db.transaction() as tx:
+async with db.connection() as tx:
+    await tx.begin()
     await tx.execute("CREATE (p:Person {name: 'Alice'})")
     # Automatic commit on success, rollback on exception
 \`\`\`
@@ -417,7 +418,8 @@ CREATE (p:Person {id: 1})
 max_retries = 3
 for attempt in range(max_retries):
     try:
-        async with db.transaction() as tx:
+        async with db.connection() as tx:
+            await tx.begin()
             await tx.execute(query, params)
         break  # Success
     except TransactionRollbackError as e:
@@ -778,46 +780,43 @@ RETURN p.name, count(f) AS friend_count
 
 **Example**:
 \`\`\`python
+import asyncio
+from geode_client import Client, QueryError
+
 async def transfer_with_retry(from_id, to_id, amount, max_retries=3):
+    client = Client(host="localhost", port=3141)
+
     for attempt in range(max_retries):
-        try:
-            async with db.transaction(isolation_level=IsolationLevel.SERIALIZABLE) as tx:
-                # Access accounts in consistent order (by ID)
+        async with client.connection() as conn:
+            try:
+                await conn.begin()
+
                 if from_id < to_id:
-                    from_acct = await tx.query(
-                        "MATCH (a:Account {id: $id}) RETURN a",
-                        {"id": from_id}
-                    )
-                    to_acct = await tx.query(
-                        "MATCH (a:Account {id: $id}) RETURN a",
-                        {"id": to_id}
-                    )
+                    await conn.query("MATCH (a:Account {id: $id}) RETURN a", {"id": from_id})
+                    await conn.query("MATCH (a:Account {id: $id}) RETURN a", {"id": to_id})
                 else:
-                    to_acct = await tx.query(
-                        "MATCH (a:Account {id: $id}) RETURN a",
-                        {"id": to_id}
-                    )
-                    from_acct = await tx.query(
-                        "MATCH (a:Account {id: $id}) RETURN a",
-                        {"id": from_id}
-                    )
+                    await conn.query("MATCH (a:Account {id: $id}) RETURN a", {"id": to_id})
+                    await conn.query("MATCH (a:Account {id: $id}) RETURN a", {"id": from_id})
 
-                # Perform transfer
-                await tx.execute(
+                await conn.execute(
                     "MATCH (a:Account {id: $id}) SET a.balance = a.balance - $amount",
-                    {"id": from_id, "amount": amount}
+                    {"id": from_id, "amount": amount},
                 )
-                await tx.execute(
+                await conn.execute(
                     "MATCH (a:Account {id: $id}) SET a.balance = a.balance + $amount",
-                    {"id": to_id, "amount": amount}
+                    {"id": to_id, "amount": amount},
                 )
 
-            return  # Success
-        except TransactionRollbackError as e:
-            if attempt < max_retries - 1:
-                await asyncio.sleep(0.1 * (2 ** attempt))
-            else:
-                raise
+                await conn.commit()
+                return
+            except QueryError as e:
+                await conn.rollback()
+                if not str(e).startswith("40502:"):
+                    raise
+                if attempt < max_retries - 1:
+                    await asyncio.sleep(0.1 * (2 ** attempt))
+                else:
+                    raise
 \`\`\`
 
 ### Data Validation Errors

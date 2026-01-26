@@ -9,7 +9,7 @@ Official documentation for the Geode Graph Database, hosted at [geodedb.com](htt
 This repository contains the source for the Geode documentation website, built with Hugo and the Ultra theme. The site includes:
 
 - **Database Documentation**: Complete reference for Geode database server
-- **Client Libraries**: Documentation for Go, Python, Rust, and Zig clients
+- **Client Libraries**: Documentation for Go, Python, Rust, Node.js, and Zig clients
 - **Editor Plugins**: Guides for Neovim, Vim, and VSCode integration
 - **Claude Plugins**: Documentation for Claude Code integration
 - **Getting Started Guides**: Quick start tutorials and examples
@@ -68,6 +68,7 @@ content/
 │   ├── go/
 │   ├── python/
 │   ├── rust/
+│   ├── nodejs/
 │   └── zig/
 ├── plugins/            # Editor plugin docs
 │   ├── neovim/

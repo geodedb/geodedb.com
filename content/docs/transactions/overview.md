@@ -265,18 +265,27 @@ COMMIT;  -- FAILS with serialization error (conflict detected)
 
 ```python
 # Python client example
+import asyncio
+from geode_client import QueryError
+
 max_retries = 3
 for attempt in range(max_retries):
-    try:
-        async with client.transaction():
-            # Execute transaction
-            await client.query("MATCH (a:Account {name: 'Alice'}) SET a.balance = a.balance - 800")
-            await client.query("MATCH (c:Account {name: 'Charlie'}) SET c.balance = c.balance + 800")
-        break  # Success
-    except SerializationError:
-        if attempt == max_retries - 1:
-            raise  # Final attempt failed
-        await asyncio.sleep(2 ** attempt)  # Exponential backoff
+    async with client.connection() as conn:
+        await conn.begin()
+        try:
+            await conn.execute(
+                "MATCH (a:Account {name: 'Alice'}) SET a.balance = a.balance - 800"
+            )
+            await conn.execute(
+                "MATCH (c:Account {name: 'Charlie'}) SET c.balance = c.balance + 800"
+            )
+            await conn.commit()
+            break  # Success
+        except QueryError:
+            await conn.rollback()
+            if attempt == max_retries - 1:
+                raise  # Final attempt failed
+            await asyncio.sleep(2 ** attempt)  # Exponential backoff
 ```
 
 ## Sessions and Transaction Scope
@@ -467,18 +476,29 @@ COMMIT;
 SSI may abort transactions due to conflicts. **Retry** with exponential backoff.
 
 ```python
-# Pseudo-code
-def transfer_money(from_id, to_id, amount):
+import asyncio
+from geode_client import QueryError
+
+async def transfer_money(client, from_id, to_id, amount):
     for attempt in range(MAX_RETRIES):
-        try:
-            with client.transaction():
-                debit(from_id, amount)
-                credit(to_id, amount)
-            return  # Success
-        except SerializationError:
-            if attempt == MAX_RETRIES - 1:
-                raise
-            sleep(2 ** attempt)  # Exponential backoff
+        async with client.connection() as conn:
+            await conn.begin()
+            try:
+                await conn.execute(
+                    "MATCH (a:Account {id: $id}) SET a.balance = a.balance - $amount",
+                    {"id": from_id, "amount": amount},
+                )
+                await conn.execute(
+                    "MATCH (b:Account {id: $id}) SET b.balance = b.balance + $amount",
+                    {"id": to_id, "amount": amount},
+                )
+                await conn.commit()
+                return  # Success
+            except QueryError:
+                await conn.rollback()
+                if attempt == MAX_RETRIES - 1:
+                    raise
+                await asyncio.sleep(2 ** attempt)  # Exponential backoff
 ```
 
 ### 3. Use Savepoints for Complex Logic

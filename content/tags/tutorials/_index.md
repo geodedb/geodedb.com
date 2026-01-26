@@ -49,7 +49,7 @@ Install Geode, start the server, connect with the Python client, and execute you
 
 ```python
 # Step 1: Create your first node
-result = await client.execute("CREATE (p:Person {name: 'Alice'}) RETURN p")
+result, _ = await client.query("CREATE (p:Person {name: 'Alice'}) RETURN p")
 
 # Step 2: Create a relationship
 await client.execute("""
@@ -59,7 +59,7 @@ await client.execute("""
 """)
 
 # Step 3: Query the relationship
-result = await client.execute("""
+result, _ = await client.query("""
     MATCH (a:Person {name: 'Alice'})-[:KNOWS]->(b)
     RETURN b.name
 """)
@@ -89,7 +89,8 @@ LIMIT 10
 Understand ACID guarantees in Geode. Learn when to use transactions, how to handle rollbacks, and implement savepoints for complex multi-step operations. Build a banking transfer function that maintains consistency even during failures.
 
 ```python
-async with client.transaction() as tx:
+async with client.connection() as tx:
+    await tx.begin()
     # Deduct from sender
     await tx.execute("""
         MATCH (sender:Account {id: $sender_id})
@@ -219,7 +220,7 @@ query = f"MATCH (p:Person {{name: '{name}'}}) RETURN p"
 
 # Correct - safe parameterization
 query = "MATCH (p:Person {name: $name}) RETURN p"
-result = await client.execute(query, name=request.get("name"))
+result, _ = await client.query(query, name=request.get("name"))
 ```
 
 **Connection Management**: Use connection pools and resource management patterns to avoid connection leaks.

@@ -256,22 +256,24 @@ pip install geode-client
 **Basic Usage**:
 ```python
 import asyncio
-from geode_client import GeodeClient
+from geode_client import Client
 
 async def main():
-    async with GeodeClient("localhost:3141") as client:
+    client = Client(host="localhost", port=3141)
+    async with client.connection() as conn:
         # Execute query
-        result = await client.execute(
+        result, _ = await conn.query(
             "MATCH (p:Person {name: $name}) RETURN p",
             name="Alice"
         )
 
         # Iterate results
-        async for row in result:
+        for row in result.rows:
             print(row['p'])
 
         # Transactions
-        async with client.transaction() as tx:
+        async with client.connection() as tx:
+            await tx.begin()
             await tx.execute("CREATE (p:Person {name: $name})", name="Bob")
             await tx.execute("CREATE (p:Person {name: $name})", name="Carol")
 
@@ -280,7 +282,7 @@ asyncio.run(main())
 
 **Connection Pooling**:
 ```python
-client = GeodeClient("localhost:3141", pool_size=100, pool_timeout=30)
+client = Client("localhost:3141", pool_size=100, pool_timeout=30)
 ```
 
 **Error Handling**:
@@ -407,7 +409,7 @@ pub fn main() !void {
 
 **Python**:
 ```python
-client = GeodeClient(
+client = Client(
     address="localhost:3141",
     tls_verify=True,
     pool_size=100,
@@ -435,7 +437,8 @@ let client = Client::builder()
 
 **Python**:
 ```python
-async with client.transaction() as tx:
+async with client.connection() as tx:
+    await tx.begin()
     await tx.execute(query1)
 
     sp = await tx.savepoint("checkpoint")
@@ -467,13 +470,13 @@ tx.commit().await?;
 
 **Python**:
 ```python
-result = await client.execute(query)
+result, _ = await client.query(query)
 
 # Get first row
 row = await result.first()
 
 # Iterate all rows
-async for row in result:
+for row in result.rows:
     value = row['column_name']
 
 # Get all rows as list
@@ -509,7 +512,7 @@ while let Some(row) = stream.next().await {
 **Use Parameters**:
 ```python
 # Good: Prepared statement, safe from injection
-result = await client.execute(
+result, _ = await client.query(
     "MATCH (p:Person {name: $name}) RETURN p",
     name=user_input
 )
@@ -536,18 +539,21 @@ RETURN b.name
 **Keep Transactions Short**:
 ```python
 # Good: focused transaction
-async with client.transaction() as tx:
+async with client.connection() as tx:
+    await tx.begin()
     await tx.execute("CREATE (p:Person {name: 'Alice'})")
 
 # Bad: long-running transaction holding locks
-async with client.transaction() as tx:
+async with client.connection() as tx:
+    await tx.begin()
     for item in huge_list:  # Don't do this
         await tx.execute(f"CREATE (p:Person {{name: '{item}'}})")
 ```
 
 **Use Savepoints for Complex Operations**:
 ```python
-async with client.transaction() as tx:
+async with client.connection() as tx:
+    await tx.begin()
     await tx.execute(critical_operation)
 
     sp = await tx.savepoint("optional_part")
@@ -568,20 +574,27 @@ from tenacity import retry, stop_after_attempt, wait_exponential
     wait=wait_exponential(multiplier=1, min=1, max=10)
 )
 async def execute_with_retry(client, query):
-    return await client.execute(query)
+    result, _ = await client.query(query)
+    return result
 ```
 
 **Handle Specific Errors**:
 ```python
+from geode_client import QueryError
+
 try:
     await client.execute(query)
-except TransactionConflictError:
-    # Retry this one
-    pass
-except QuerySyntaxError:
-    # Don't retry syntax errors
-    logger.error("Invalid query syntax")
-    raise
+except QueryError as exc:
+    message = str(exc).lower()
+    if "40502" in message:
+        # Retry this one
+        pass
+    elif "syntax" in message:
+        # Don't retry syntax errors
+        logger.error("Invalid query syntax")
+        raise
+    else:
+        raise
 ```
 
 ## Production Deployment
@@ -609,7 +622,7 @@ performance:
 
 **Client Configuration**:
 ```python
-client = GeodeClient(
+client = Client(
     address="geode.example.com:3141",
     tls_verify=True,
     pool_size=100,

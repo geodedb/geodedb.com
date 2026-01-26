@@ -54,9 +54,11 @@ These algorithms are crucial for market segmentation, detecting fraud rings, org
 # Python example: Finding communities through pattern analysis
 import geode_client
 
-async with geode_client.connect("localhost:3141") as client:
+client = geode_client.open_database("localhost:3141")
+
+async with client.connection() as client:
     # Find tightly connected user groups
-    result = await client.execute("""
+    result, _ = await client.query("""
         MATCH (u1:User)-[:FOLLOWS]->(u2:User)
         WHERE EXISTS {
             MATCH (u2)-[:FOLLOWS]->(u1)
@@ -93,7 +95,7 @@ await client.execute("""
 """, {"product_id": 123, "embedding_vector": [0.23, 0.45, -0.12, ...]})
 
 # Find similar products using cosine similarity
-result = await client.execute("""
+result, _ = await client.query("""
     MATCH (target:Product {id: $id})
     MATCH (candidate:Product)
     WHERE candidate.id <> $id
@@ -135,7 +137,7 @@ RETURN a.id, b.id, c.id, SUM(edge_amount) AS total_amount
 
 ```python
 # Detect accounts with unusual transaction patterns
-result = await client.execute("""
+result, _ = await client.query("""
     MATCH (a:Account)-[t:TRANSACTION]->()
     WITH a,
          AVG(t.amount) AS avg_amount,
@@ -239,7 +241,7 @@ async def bfs_traversal(client, start_id, max_depth=5):
         if not current_level:
             break
 
-        result = await client.execute("""
+        result, _ = await client.query("""
             MATCH (n)-[:CONNECTED]-(neighbor)
             WHERE n.id IN $current_ids
               AND NOT neighbor.id IN $visited
@@ -247,7 +249,7 @@ async def bfs_traversal(client, start_id, max_depth=5):
         """, {"current_ids": current_level, "visited": list(visited)})
 
         next_level = []
-        async for row in result:
+        for row in result.rows:
             next_level.append(row['id'])
             visited.add(row['id'])
 
@@ -327,7 +329,7 @@ Graph structure provides rich features for machine learning models.
 ```python
 async def extract_node_features(client, node_id):
     """Extract graph-based features for ML."""
-    features = await client.execute("""
+    features, _ = await client.query("""
         MATCH (n {id: $node_id})
         OPTIONAL MATCH (n)-[r]-()
         WITH n,
@@ -344,27 +346,27 @@ async def extract_node_features(client, node_id):
                friend_count::FLOAT / NULLIF(degree, 0) AS friend_ratio
     """, {"node_id": node_id})
 
-    return await features.fetch_one()
+    return features.rows[0] if features.rows else None
 ```
 
 ### Graph Embedding Training
 
 ```python
 import numpy as np
-from geode_client import GeodeClient
+from geode_client import Client
 
 async def train_node2vec_embeddings(client, dimensions=128):
     """Generate Node2Vec embeddings."""
     # Generate random walks
     walks = []
-    result = await client.execute("""
+    result, _ = await client.query("""
         MATCH (start:Node)
         MATCH path = (start)-[:EDGE*10..20]-(end)
         RETURN [n IN nodes(path) | n.id] AS walk
         LIMIT 10000
     """)
 
-    async for row in result:
+    for row in result.rows:
         walks.append(row['walk'])
 
     # Train Word2Vec on walks (node sequences)
@@ -429,7 +431,7 @@ async def parallel_community_detection(client, communities):
 
 async def compute_pagerank_for_community(client, community_id):
     """Compute PageRank within a single community."""
-    result = await client.execute("""
+    result, _ = await client.query("""
         MATCH (n:Node {community: $community_id})-[r]->()
         WITH n, COUNT(r) AS out_degree
         RETURN n.id, out_degree
@@ -523,13 +525,13 @@ While Geode focuses on data storage and querying, visualization tools help explo
 ```python
 async def export_for_visualization(client, community_id):
     """Export subgraph for visualization tools."""
-    result = await client.execute("""
+    result, _ = await client.query("""
         MATCH (n:Node {community: $community_id})-[r]-(m:Node {community: $community_id})
         RETURN COLLECT(DISTINCT n) AS nodes,
                COLLECT(DISTINCT r) AS relationships
     """, {"community_id": community_id})
 
-    data = await result.fetch_one()
+    data = result.rows[0] if result.rows else None
     # Export to formats like GraphML, GEXF, or D3.js JSON
     return convert_to_graphml(data['nodes'], data['relationships'])
 ```
@@ -537,15 +539,22 @@ async def export_for_visualization(client, community_id):
 ## Error Handling and Validation
 
 ```python
+import asyncio
+from geode_client import QueryError
+
 async def robust_algorithm_execution(client, query, params):
     """Execute algorithm with proper error handling."""
     try:
-        result = await client.execute(query, params)
+        result, _ = await client.query(query, params)
         return result
-    except geode_client.QueryError as e:
+    except QueryError as e:
         if "timeout" in str(e).lower():
             # Retry with increased timeout
-            return await client.execute(query, params, timeout=60000)
+            result, _ = await asyncio.wait_for(
+                client.query(query, params),
+                timeout=60
+            )
+            return result
         elif "memory" in str(e).lower():
             # Suggest reducing dataset
             raise ValueError("Graph too large, consider sampling")

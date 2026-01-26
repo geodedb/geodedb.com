@@ -442,45 +442,62 @@ volumes:
 Use Geode with event streaming:
 
 ```python
-from geode_client import GeodeClient
+from geode_client import Client, open_database
 from kafka import KafkaProducer, KafkaConsumer
 
 class EventDrivenService:
     def __init__(self, geode_url, kafka_brokers):
-        self.geode = GeodeClient(geode_url)
+        self.geode = open_database(geode_url)
         self.producer = KafkaProducer(bootstrap_servers=kafka_brokers)
         self.consumer = KafkaConsumer('geode-events', bootstrap_servers=kafka_brokers)
     
     async def process_events(self):
         """Process events from Kafka and update Geode"""
-        async for message in self.consumer:
-            event = json.loads(message.value)
-            
-            # Update graph based on event
-            if event['type'] == 'UserCreated':
-                await self.geode.execute("""
-                    CREATE (u:User {
-                        id: $id,
-                        name: $name,
-                        created_at: datetime()
-                    })
-                """, event['data'])
-            
-            elif event['type'] == 'FriendshipCreated':
-                await self.geode.execute("""
-                    MATCH (a:User {id: $user1}), (b:User {id: $user2})
-                    CREATE (a)-[:FRIENDS_WITH {since: datetime()}]->(b)
-                """, event['data'])
+        async with self.geode.connection() as conn:
+            async for message in self.consumer:
+                event = json.loads(message.value)
+
+                # Update graph based on event
+                if event['type'] == 'UserCreated':
+                    await conn.execute("""
+                        CREATE (u:User {
+                            id: $id,
+                            name: $name,
+                            created_at: datetime()
+                        })
+                    """, event['data'])
+
+                elif event['type'] == 'FriendshipCreated':
+                    await conn.execute("""
+                        MATCH (a:User {id: $user1}), (b:User {id: $user2})
+                        CREATE (a)-[:FRIENDS_WITH {since: datetime()}]->(b)
+                    """, event['data'])
     
     async def publish_graph_changes(self):
         """Publish Geode changes to Kafka"""
-        async for change in self.geode.cdc_stream():
-            self.producer.send('graph-changes', json.dumps({
-                'type': change.operation,
-                'entity': change.label,
-                'data': change.data,
-                'timestamp': change.timestamp.isoformat()
-            }).encode())
+        last_seen = "1970-01-01T00:00:00Z"
+        async with self.geode.connection() as conn:
+            while True:
+                result, _ = await conn.query(
+                    """
+                    MATCH (e:ChangeLog)
+                    WHERE e.emitted_at > $since
+                    RETURN e.operation AS operation,
+                           e.entity_type AS entity_type,
+                           e.after AS after,
+                           e.emitted_at AS emitted_at
+                    ORDER BY emitted_at
+                    """,
+                    {"since": last_seen},
+                )
+                for row in result.rows:
+                    self.producer.send('graph-changes', json.dumps({
+                        'type': row["operation"].raw_value,
+                        'entity': row["entity_type"].raw_value,
+                        'data': row["after"].raw_value,
+                        'timestamp': row["emitted_at"].raw_value
+                    }).encode())
+                    last_seen = row["emitted_at"].raw_value
 ```
 
 ### API Gateway Pattern
@@ -489,7 +506,7 @@ Centralized API layer for Geode:
 
 ```python
 from fastapi import FastAPI, HTTPException, Depends
-from geode_client import GeodeClient
+from geode_client import Client
 from pydantic import BaseModel
 
 app = FastAPI()
@@ -503,13 +520,14 @@ class FriendshipCreate(BaseModel):
     user2_id: str
 
 async def get_geode_client():
-    async with GeodeClient("geode:3141") as client:
+    client = Client(host="geode", port=3141)
+    async with client.connection() as conn:
         yield client
 
 @app.post("/users")
 async def create_user(user: UserCreate, client=Depends(get_geode_client)):
     """Create new user"""
-    result = await client.execute("""
+    result, _ = await conn.query("""
         CREATE (u:User {
             id: randomUUID(),
             name: $name,
@@ -519,12 +537,12 @@ async def create_user(user: UserCreate, client=Depends(get_geode_client)):
         RETURN u.id as user_id
     """, {"name": user.name, "email": user.email})
     
-    return {"user_id": result[0]['user_id']}
+    return {"user_id": result.rows[0]['user_id']}
 
 @app.get("/users/{user_id}/friends")
 async def get_friends(user_id: str, client=Depends(get_geode_client)):
     """Get user's friends"""
-    result = await client.execute("""
+    result, _ = await conn.query("""
         MATCH (u:User {id: $id})-[:FRIENDS_WITH]-(friend:User)
         RETURN friend.id, friend.name, friend.email
     """, {"id": user_id})
@@ -537,7 +555,7 @@ async def create_friendship(
     client=Depends(get_geode_client)
 ):
     """Create friendship between users"""
-    await client.execute("""
+    await conn.execute("""
         MATCH (a:User {id: $user1}), (b:User {id: $user2})
         CREATE (a)-[:FRIENDS_WITH {since: datetime()}]->(b)
     """, {"user1": friendship.user1_id, "user2": friendship.user2_id})
@@ -590,7 +608,7 @@ class GeodeCacheLayer:
             MATCH (u:User {id: $id})-[:FRIENDS_WITH]-(friend)
             RETURN COUNT(friend) as count
         """, {"id": user_id})
-        return result[0]['count']
+        return result.rows[0]['count']
 ```
 
 ### Query Result Streaming
@@ -603,7 +621,7 @@ async def stream_large_dataset(client, batch_size=1000):
     offset = 0
     
     while True:
-        batch = await client.execute("""
+        batch, _ = await client.query("""
             MATCH (n:Node)
             RETURN n
             ORDER BY n.id
@@ -630,10 +648,10 @@ async for node in stream_large_dataset(client):
 Horizontal scaling through sharding:
 
 ```python
-class ShardedGeodeClient:
+class ShardedClient:
     def __init__(self, shard_configs):
         self.shards = [
-            GeodeClient(config['url'])
+            Client(config['url'])
             for config in shard_configs
         ]
     
@@ -645,11 +663,11 @@ class ShardedGeodeClient:
     async def get_user(self, user_id):
         """Get user from appropriate shard"""
         shard = self.get_shard(user_id)
-        result = await shard.execute("""
+        result, _ = await shard.query("""
             MATCH (u:User {id: $id})
             RETURN u
         """, {"id": user_id})
-        return result[0]['u'] if result else None
+        return result.rows[0]['u'] if result else None
     
     async def create_user(self, user_id, name, email):
         """Create user in appropriate shard"""
@@ -743,7 +761,7 @@ Run Geode queries from serverless functions:
 ```python
 # AWS Lambda handler
 import json
-from geode_client import GeodeClient
+from geode_client import Client
 
 # Reuse connection across invocations
 geode_client = None
@@ -753,7 +771,7 @@ def lambda_handler(event, context):
     
     # Initialize connection (reused across warm starts)
     if geode_client is None:
-        geode_client = GeodeClient(
+        geode_client = Client(
             os.environ['GEODE_URL'],
             connection_pool_size=1
         )
@@ -780,34 +798,43 @@ def lambda_handler(event, context):
 Implement defense in depth:
 
 ```python
-class SecureGeodeClient:
+class SecureClient:
     def __init__(self, url, cert_file, key_file):
-        self.client = GeodeClient(
-            url,
-            tls=True,
-            cert_file=cert_file,
-            key_file=key_file,
-            verify_cert=True
+        host, port = url.split(":")
+        self.client = Client(
+            host=host,
+            port=int(port),
+            ca_cert="/etc/geode/ca.crt",
+            client_cert=cert_file,
+            client_key=key_file,
         )
     
     async def execute_with_rls(self, query, params, user_context):
         """Execute query with row-level security"""
-        async with self.client.transaction() as tx:
-            # Set user context for RLS
-            await tx.execute("""
-                SET app.user_id = $user_id;
-                SET app.tenant_id = $tenant_id;
-                SET app.roles = $roles;
-            """, {
-                "user_id": user_context['user_id'],
-                "tenant_id": user_context['tenant_id'],
-                "roles": json.dumps(user_context['roles'])
-            })
-            
-            # Execute query (RLS policies auto-applied)
-            result = await tx.execute(query, params)
-            
-            return result
+        async with self.client.connection() as conn:
+            await conn.begin()
+            try:
+                # Set user context for RLS
+                await conn.execute(
+                    """
+                    SET app.user_id = $user_id;
+                    SET app.tenant_id = $tenant_id;
+                    SET app.roles = $roles;
+                    """,
+                    {
+                        "user_id": user_context["user_id"],
+                        "tenant_id": user_context["tenant_id"],
+                        "roles": json.dumps(user_context["roles"]),
+                    },
+                )
+
+                # Execute query (RLS policies auto-applied)
+                result, _ = await conn.query(query, params)
+                await conn.commit()
+                return result.rows
+            except Exception:
+                await conn.rollback()
+                raise
 ```
 
 ### Audit Logging Architecture
@@ -815,7 +842,7 @@ class SecureGeodeClient:
 Comprehensive audit trail:
 
 ```python
-class AuditedGeodeClient:
+class AuditedClient:
     def __init__(self, client, audit_logger):
         self.client = client
         self.audit = audit_logger
@@ -825,7 +852,7 @@ class AuditedGeodeClient:
         start_time = time.time()
         
         try:
-            result = await self.client.execute(query, params)
+            result, _ = await self.client.query(query, params)
             
             # Log successful execution
             await self.audit.log({
@@ -835,7 +862,7 @@ class AuditedGeodeClient:
                 'params': params,
                 'status': 'success',
                 'duration_ms': (time.time() - start_time) * 1000,
-                'rows_returned': len(result)
+                'rows_returned': len(result.rows)
             })
             
             return result

@@ -72,7 +72,7 @@ EXECUTE GQL
 Process events asynchronously:
 
 ```python
-from geode_client import GeodeClient
+from geode_client import Client
 
 class EventProcessor:
     def __init__(self, client):
@@ -370,38 +370,48 @@ class OrderSaga:
 Stream database changes to external systems:
 
 ```python
-from geode_client import GeodeClient
+from geode_client import open_database
 import asyncio
 
 class CDCProcessor:
     def __init__(self, geode_url, output_handler):
-        self.client = GeodeClient(geode_url)
+        self.client = open_database(geode_url)
         self.output = output_handler
-    
+
     async def stream_changes(self, labels=None):
-        """Stream CDC events"""
-        async with self.client.cdc_stream(labels=labels) as stream:
-            async for change in stream:
-                await self.process_change(change)
-    
-    async def process_change(self, change):
-        """Process individual change event"""
-        event = {
-            'timestamp': change.timestamp.isoformat(),
-            'operation': change.operation,  # INSERT, UPDATE, DELETE
-            'label': change.label,
-            'before': change.before_state,
-            'after': change.after_state,
-            'transaction_id': change.transaction_id
-        }
-        
-        # Send to external system
-        await self.output.publish(event)
+        """Poll ChangeLog entries and publish events."""
+        last_seen = "1970-01-01T00:00:00Z"
+        async with self.client.connection() as conn:
+            while True:
+                result, _ = await conn.query(
+                    """
+                    MATCH (e:ChangeLog)
+                    WHERE e.emitted_at > $since
+                      AND ($labels IS NULL OR e.label IN $labels)
+                    RETURN e.operation AS operation,
+                           e.label AS label,
+                           e.before AS before,
+                           e.after AS after,
+                           e.emitted_at AS emitted_at
+                    ORDER BY emitted_at
+                    """,
+                    {"since": last_seen, "labels": labels},
+                )
+                for row in result.rows:
+                    event = {
+                        "timestamp": row["emitted_at"].raw_value,
+                        "operation": row["operation"].raw_value,
+                        "label": row["label"].raw_value,
+                        "before": row["before"].raw_value,
+                        "after": row["after"].raw_value,
+                    }
+                    await self.output.publish(event)
+                    last_seen = row["emitted_at"].raw_value
 
 # Usage
 async def main():
     processor = CDCProcessor(
-        "localhost:3141",
+        "geode://localhost:3141",
         KafkaOutput("kafka:9092", "geode-cdc")
     )
     await processor.stream_changes(labels=['User', 'Order', 'Product'])
@@ -418,46 +428,63 @@ class EventStore:
     
     async def append_event(self, aggregate_id, event_type, event_data, expected_version=None):
         """Append event with optimistic concurrency"""
-        async with self.client.transaction() as tx:
-            # Check version if specified
-            if expected_version is not None:
-                current = await tx.execute("""
-                    MATCH (a:Aggregate {id: $id})
-                    RETURN a.version as version
-                """, {"id": aggregate_id})
-                
-                if current and current[0]['version'] != expected_version:
-                    raise ConcurrencyError("Version mismatch")
-            
-            # Append event
-            await tx.execute("""
-                MERGE (a:Aggregate {id: $aggregate_id})
-                ON CREATE SET a.version = 0
-                CREATE (e:Event {
-                    id: randomUUID(),
-                    aggregate_id: $aggregate_id,
-                    event_type: $event_type,
-                    event_data: $event_data,
-                    version: a.version + 1,
-                    timestamp: datetime()
-                })
-                CREATE (a)-[:HAS_EVENT]->(e)
-                SET a.version = a.version + 1
-            """, {
-                "aggregate_id": aggregate_id,
-                "event_type": event_type,
-                "event_data": event_data
-            })
+        async with self.client.connection() as conn:
+            await conn.begin()
+            try:
+                # Check version if specified
+                if expected_version is not None:
+                    current, _ = await conn.query(
+                        """
+                        MATCH (a:Aggregate {id: $id})
+                        RETURN a.version as version
+                        """,
+                        {"id": aggregate_id},
+                    )
+
+                    row = current.rows[0] if current.rows else None
+                    if row and row["version"].as_int != expected_version:
+                        raise ConcurrencyError("Version mismatch")
+
+                # Append event
+                await conn.execute(
+                    """
+                    MERGE (a:Aggregate {id: $aggregate_id})
+                    ON CREATE SET a.version = 0
+                    CREATE (e:Event {
+                        id: randomUUID(),
+                        aggregate_id: $aggregate_id,
+                        event_type: $event_type,
+                        event_data: $event_data,
+                        version: a.version + 1,
+                        timestamp: datetime()
+                    })
+                    CREATE (a)-[:HAS_EVENT]->(e)
+                    SET a.version = a.version + 1
+                    """,
+                    {
+                        "aggregate_id": aggregate_id,
+                        "event_type": event_type,
+                        "event_data": event_data,
+                    },
+                )
+                await conn.commit()
+            except Exception:
+                await conn.rollback()
+                raise
     
     async def get_events(self, aggregate_id, from_version=0):
         """Get events for aggregate"""
-        result = await self.client.execute("""
-            MATCH (a:Aggregate {id: $id})-[:HAS_EVENT]->(e:Event)
-            WHERE e.version > $from_version
-            RETURN e.event_type, e.event_data, e.version, e.timestamp
-            ORDER BY e.version
-        """, {"id": aggregate_id, "from_version": from_version})
-        return result
+        async with self.client.connection() as conn:
+            result, _ = await conn.query(
+                """
+                MATCH (a:Aggregate {id: $id})-[:HAS_EVENT]->(e:Event)
+                WHERE e.version > $from_version
+                RETURN e.event_type, e.event_data, e.version, e.timestamp
+                ORDER BY e.version
+                """,
+                {"id": aggregate_id, "from_version": from_version},
+            )
+        return result.rows
 ```
 
 ### Saga Orchestration
@@ -472,41 +499,52 @@ class SagaOrchestrator:
     
     async def execute_saga(self, saga_id, steps):
         """Execute saga with compensation on failure"""
-        async with self.client.transaction() as tx:
+        async with self.client.connection() as conn:
+            await conn.begin()
             # Create saga record
-            await tx.execute("""
+            await conn.execute(
+                """
                 CREATE (s:Saga {
                     id: $id,
                     status: 'running',
                     started_at: datetime()
                 })
-            """, {"id": saga_id})
-            
+                """,
+                {"id": saga_id},
+            )
+
             try:
                 # Execute each step
                 for i, step in enumerate(steps):
-                    await self.execute_step(tx, saga_id, i, step)
-                
+                    await self.execute_step(conn, saga_id, i, step)
+
                 # Mark success
-                await tx.execute("""
+                await conn.execute(
+                    """
                     MATCH (s:Saga {id: $id})
                     SET s.status = 'completed', s.completed_at = datetime()
-                """, {"id": saga_id})
-                
+                    """,
+                    {"id": saga_id},
+                )
+                await conn.commit()
             except Exception as e:
                 # Rollback with compensations
-                await self.compensate(tx, saga_id)
-                
-                await tx.execute("""
+                await self.compensate(conn, saga_id)
+
+                await conn.execute(
+                    """
                     MATCH (s:Saga {id: $id})
                     SET s.status = 'failed', s.error = $error
-                """, {"id": saga_id, "error": str(e)})
+                    """,
+                    {"id": saga_id, "error": str(e)},
+                )
+                await conn.commit()
                 raise
     
-    async def execute_step(self, tx, saga_id, step_num, step):
+    async def execute_step(self, conn, saga_id, step_num, step):
         """Execute single saga step"""
         # Record step
-        await tx.execute("""
+        await conn.execute("""
             MATCH (s:Saga {id: $saga_id})
             CREATE (step:SagaStep {
                 saga_id: $saga_id,
@@ -522,22 +560,22 @@ class SagaOrchestrator:
         })
         
         # Execute step action
-        await step['execute'](tx)
+        await step['execute'](conn)
         
         # Store compensation
         self.compensations.append(step.get('compensate'))
         
         # Mark step complete
-        await tx.execute("""
+        await conn.execute("""
             MATCH (step:SagaStep {saga_id: $saga_id, step_num: $step_num})
             SET step.status = 'completed'
         """, {"saga_id": saga_id, "step_num": step_num})
     
-    async def compensate(self, tx, saga_id):
+    async def compensate(self, conn, saga_id):
         """Execute compensating transactions"""
         for compensate in reversed(self.compensations):
             if compensate:
-                await compensate(tx)
+                await compensate(conn)
 ```
 
 ### Real-Time Event Processing
@@ -587,10 +625,14 @@ async def send_welcome_email(event):
 async def update_inventory(event):
     product_id = event['data']['product_id']
     quantity = event['data']['quantity']
-    await client.execute("""
-        MATCH (p:Product {id: $id})
-        SET p.stock = p.stock - $qty
-    """, {"id": product_id, "qty": quantity})
+    async with client.connection() as conn:
+        await conn.execute(
+            """
+            MATCH (p:Product {id: $id})
+            SET p.stock = p.stock - $qty
+            """,
+            {"id": product_id, "qty": quantity},
+        )
 
 # Start processing
 await processor.process_stream()

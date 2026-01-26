@@ -182,12 +182,14 @@ CREATE (:Entity {
 
 #### From Unstructured Text
 
+<!-- CANARY: REQ=REQ-CLIENT-PY-001; FEATURE="PythonClientConnection"; ASPECT=HelloHandshake; STATUS=IMPL; OWNER=clients; UPDATED=2025-02-14 -->
+
 ```python
 # Python client - Extract entities from text
-from geode_client import GeodeClient
+from geode_client import Client
 import spacy
 
-client = GeodeClient("geode.example.com:3141")
+client = Client(host="geode.example.com", port=3141)
 nlp = spacy.load("en_core_web_sm")
 
 def extract_entities(text):
@@ -209,12 +211,16 @@ text = "Marie Curie discovered radioactivity at the University of Paris."
 entities = extract_entities(text)
 
 # Create entities in Geode
-for ent in entities:
-    client.execute("""
-        MERGE (e:Entity {name: $name, type: $type})
-        ON CREATE SET e.mentions = 1
-        ON MATCH SET e.mentions = e.mentions + 1
-    """, {'name': ent['text'], 'type': ent['label']})
+async def store_entities(entities_to_store):
+    async with client.connection() as conn:
+        for ent in entities_to_store:
+            await conn.execute("""
+                MERGE (e:Entity {name: $name, type: $type})
+                ON CREATE SET e.mentions = 1
+                ON MATCH SET e.mentions = e.mentions + 1
+            """, {'name': ent['text'], 'type': ent['label']})
+
+# asyncio.run(store_entities(entities))
 ```
 
 ### Step 2: Entity Resolution
@@ -393,40 +399,44 @@ RETURN subject.uri, r.predicate, object.uri;
 ```python
 # Generate entity embeddings
 from sentence_transformers import SentenceTransformer
-from geode_client import GeodeClient
+from geode_client import Client
 
 model = SentenceTransformer('all-MiniLM-L6-v2')
-client = GeodeClient("geode.example.com:3141")
+client = Client(host="geode.example.com", port=3141)
 
-# Get entities
-result = client.execute("MATCH (e:Entity) RETURN e.id, e.name, e.description")
+async def embed_entities():
+    async with client.connection() as conn:
+        # Get entities
+        page, _ = await conn.query("MATCH (e:Entity) RETURN e.id, e.name, e.description")
 
-for record in result:
-    ent_id = record['e.id']
-    text = f"{record['e.name']} {record['e.description']}"
+        for record in page.rows:
+            ent_id = record["e.id"].raw_value
+            text = f"{record['e.name'].raw_value} {record['e.description'].raw_value}"
 
-    # Generate embedding
-    embedding = model.encode(text)
+            # Generate embedding
+            embedding = model.encode(text)
 
-    # Store in Geode
-    client.execute("""
-        MATCH (e:Entity {id: $id})
-        SET e.embedding = $embedding
-    """, {'id': ent_id, 'embedding': embedding.tolist()})
+            # Store in Geode
+            await conn.execute("""
+                MATCH (e:Entity {id: $id})
+                SET e.embedding = $embedding
+            """, {'id': ent_id, 'embedding': embedding.tolist()})
 
-# Create vector index
-client.execute("CREATE INDEX entity_emb_idx ON Entity(embedding) USING vector")
+        # Create vector index
+        await conn.execute("CREATE INDEX entity_emb_idx ON Entity(embedding) USING vector")
 
-# Find semantically similar entities
-query_embedding = model.encode("nuclear physics research")
-result = client.execute("""
-    MATCH (e:Entity)
-    WHERE vector_distance_cosine(e.embedding, $query_vec) < 0.5
-    RETURN e.name, e.type,
-           vector_distance_cosine(e.embedding, $query_vec) AS similarity
-    ORDER BY similarity ASC
-    LIMIT 10
-""", {'query_vec': query_embedding.tolist()})
+        # Find semantically similar entities
+        query_embedding = model.encode("nuclear physics research")
+        page, _ = await conn.query("""
+            MATCH (e:Entity)
+            WHERE vector_distance_cosine(e.embedding, $query_vec) < 0.5
+            RETURN e.name, e.type,
+                   vector_distance_cosine(e.embedding, $query_vec) AS similarity
+            ORDER BY similarity ASC
+            LIMIT 10
+        """, {'query_vec': query_embedding.tolist()})
+
+# asyncio.run(embed_entities())
 ```
 
 ### Temporal Knowledge Graphs
@@ -534,14 +544,26 @@ CREATE INDEX person_type_idx ON Entity(type) USING btree;
 
 ```python
 # Python client with caching
-from functools import lru_cache
+from geode_client import Client
 
-@lru_cache(maxsize=1000)
-def get_entity_context(entity_id):
-    return client.execute("""
+client = Client(host="geode.example.com", port=3141)
+context_cache = {}
+
+async def get_entity_context(conn, entity_id):
+    if entity_id in context_cache:
+        return context_cache[entity_id]
+
+    page, _ = await conn.query("""
         MATCH (e:Entity {id: $id})-[r]-(related:Entity)
-        RETURN e, collect({rel: type(r), entity: related})
+        RETURN e, collect({rel: type(r), entity: related}) AS context
     """, {'id': entity_id})
+
+    context = page.rows[0] if page.rows else None
+    context_cache[entity_id] = context
+    return context
+
+# async with client.connection() as conn:
+#     ctx = await get_entity_context(conn, "entity_123")
 ```
 
 ## Best Practices

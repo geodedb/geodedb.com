@@ -114,7 +114,7 @@ LIMIT 1000;
 Subscribe for real-time delivery:
 
 ```python
-from geode_client import GeodeClient
+from geode_client import Client
 
 async def handle_change(event):
     print(f"Change detected: {event['operation']} on {event['entity_id']}")
@@ -130,12 +130,35 @@ async def handle_change(event):
         await process_deletion(event['before'])
 
 async def main():
-    client = GeodeClient("localhost", 3141)
-    
-    # Subscribe to CDC stream
-    async with client.subscribe_cdc("user_changes") as stream:
-        async for event in stream:
-            await handle_change(event)
+    client = Client(host="localhost", port=3141)
+    last_seen = "1970-01-01T00:00:00Z"
+
+    # Poll application-managed ChangeLog entries
+    async with client.connection() as conn:
+        while True:
+            result, _ = await conn.query(
+                """
+                MATCH (e:ChangeLog)
+                WHERE e.emitted_at > $since
+                RETURN e.operation AS operation,
+                       e.entity_id AS entity_id,
+                       e.before AS before,
+                       e.after AS after,
+                       e.emitted_at AS emitted_at
+                ORDER BY emitted_at
+                """,
+                {"since": last_seen},
+            )
+
+            for row in result.rows:
+                event = {
+                    "operation": row["operation"].raw_value,
+                    "entity_id": row["entity_id"].raw_value,
+                    "before": row["before"].raw_value,
+                    "after": row["after"].raw_value,
+                }
+                await handle_change(event)
+                last_seen = row["emitted_at"].raw_value
 ```
 
 ### Event Filtering
@@ -186,9 +209,29 @@ async def replicate_to_postgres(event):
         )
 
 async def main():
-    async with client.subscribe_cdc("user_changes") as stream:
-        async for event in stream:
-            await replicate_to_postgres(event)
+    last_seen = "1970-01-01T00:00:00Z"
+    async with client.connection() as conn:
+        while True:
+            result, _ = await conn.query(
+                """
+                MATCH (e:ChangeLog)
+                WHERE e.emitted_at > $since
+                RETURN e.operation AS operation,
+                       e.entity_id AS entity_id,
+                       e.after AS after,
+                       e.emitted_at AS emitted_at
+                ORDER BY emitted_at
+                """,
+                {"since": last_seen},
+            )
+            for row in result.rows:
+                event = {
+                    "operation": row["operation"].raw_value,
+                    "entity_id": row["entity_id"].raw_value,
+                    "after": row["after"].raw_value,
+                }
+                await replicate_to_postgres(event)
+                last_seen = row["emitted_at"].raw_value
 ```
 
 ### Cache Invalidation
@@ -197,26 +240,40 @@ Keep caches synchronized:
 
 ```javascript
 const redis = require('redis');
-const client = redis.createClient();
+const { createClient } = require('@geode/client');
+const cache = redis.createClient();
 
-async function invalidateCache(event) {
-  const cacheKey = `user:${event.entity_id}`;
-  
-  if (event.operation === 'DELETE') {
-    // Remove from cache
-    await client.del(cacheKey);
-  } else {
-    // Update cache
-    await client.setex(
-      cacheKey,
-      3600,
-      JSON.stringify(event.after)
+async function pollChanges() {
+  const geode = await createClient('geode://localhost:3141');
+  let lastSeen = '1970-01-01T00:00:00Z';
+
+  while (true) {
+    const rows = await geode.queryAll(
+      `
+      MATCH (e:ChangeLog)
+      WHERE e.emitted_at > $since
+      RETURN e.operation AS operation,
+             e.entity_id AS entity_id,
+             e.after AS after,
+             e.emitted_at AS emitted_at
+      ORDER BY emitted_at
+      `,
+      { params: { since: lastSeen } }
     );
+
+    for (const row of rows) {
+      const cacheKey = `user:${row.entity_id}`;
+      if (row.operation === 'DELETE') {
+        await cache.del(cacheKey);
+      } else {
+        await cache.setEx(cacheKey, 3600, JSON.stringify(row.after));
+      }
+      lastSeen = row.emitted_at;
+    }
   }
 }
 
-// Subscribe to changes
-geodeclient.subscribeCDC('user_changes', invalidateCache);
+pollChanges();
 ```
 
 ### Search Index Synchronization
@@ -243,9 +300,30 @@ async def sync_to_elasticsearch(event):
         }
         es.index(index=index, id=doc_id, document=doc)
 
-async with client.subscribe_cdc("user_changes") as stream:
-    async for event in stream:
-        await sync_to_elasticsearch(event)
+last_seen = "1970-01-01T00:00:00Z"
+async with client.connection() as conn:
+    while True:
+        result, _ = await conn.query(
+            """
+            MATCH (e:ChangeLog)
+            WHERE e.emitted_at > $since
+            RETURN e.operation AS operation,
+                   e.entity_id AS entity_id,
+                   e.after AS after,
+                   e.emitted_at AS emitted_at
+            ORDER BY emitted_at
+            """,
+            {"since": last_seen},
+        )
+        for row in result.rows:
+            event = {
+                "operation": row["operation"].raw_value,
+                "entity_id": row["entity_id"].raw_value,
+                "after": row["after"].raw_value,
+                "timestamp": row["emitted_at"].raw_value,
+            }
+            await sync_to_elasticsearch(event)
+            last_seen = row["emitted_at"].raw_value
 ```
 
 ### Materialized View Updates
@@ -291,14 +369,33 @@ async def process_batch(events):
     if deletes:
         await batch_delete(deletes)
 
-async with client.subscribe_cdc("user_changes", batch_size=100) as stream:
-    batch = []
-    async for event in stream:
-        batch.append(event)
-        
-        if len(batch) >= 100:
-            await process_batch(batch)
-            batch = []
+last_seen = "1970-01-01T00:00:00Z"
+batch = []
+async with client.connection() as conn:
+    while True:
+        result, _ = await conn.query(
+            """
+            MATCH (e:ChangeLog)
+            WHERE e.emitted_at > $since
+            RETURN e.operation AS operation,
+                   e.entity_id AS entity_id,
+                   e.after AS after,
+                   e.emitted_at AS emitted_at
+            ORDER BY emitted_at
+            """,
+            {"since": last_seen},
+        )
+        for row in result.rows:
+            batch.append({
+                "operation": row["operation"].raw_value,
+                "entity_id": row["entity_id"].raw_value,
+                "after": row["after"].raw_value,
+            })
+            last_seen = row["emitted_at"].raw_value
+
+            if len(batch) >= 100:
+                await process_batch(batch)
+                batch = []
 ```
 
 ### Event Compression
@@ -332,13 +429,29 @@ class CheckpointManager:
         redis.set(f"cdc:checkpoint:{self.stream_name}", event_id)
     
     async def process_from_checkpoint(self):
-        async with client.subscribe_cdc(
-            self.stream_name,
-            from_event=self.checkpoint
-        ) as stream:
-            async for event in stream:
-                await process_event(event)
-                self.save_checkpoint(event['event_id'])
+        last_seen = self.checkpoint or "0"
+        async with client.connection() as conn:
+            while True:
+                result, _ = await conn.query(
+                    """
+                    MATCH (e:ChangeLog)
+                    WHERE e.event_id > $since
+                    RETURN e.event_id AS event_id,
+                           e.operation AS operation,
+                           e.after AS after
+                    ORDER BY e.event_id
+                    """,
+                    {"since": last_seen},
+                )
+                for row in result.rows:
+                    event = {
+                        "event_id": row["event_id"].raw_value,
+                        "operation": row["operation"].raw_value,
+                        "after": row["after"].raw_value,
+                    }
+                    await process_event(event)
+                    self.save_checkpoint(event["event_id"])
+                    last_seen = event["event_id"]
 ```
 
 ## CDC Reliability
@@ -367,7 +480,8 @@ Achieve exactly-once with deduplication:
 
 ```python
 async def process_with_dedup(event):
-    async with db.transaction() as tx:
+    async with db.connection() as tx:
+        await tx.begin()
         # Check for duplicate
         if await tx.exists("SELECT 1 FROM processed WHERE event_id = $1", event['event_id']):
             return

@@ -528,11 +528,13 @@ CREATE INDEX FOR (p:Post) ON (p.category, p.created_at)
 ### Python
 
 ```python
-from geode_client import GeodeClient
+from geode_client import Client
 
-async with GeodeClient("localhost:3141") as client:
+client = Client(host="localhost", port=3141)
+
+async with client.connection() as conn:
     # Get EXPLAIN output
-    result = await client.query("""
+    result, _ = await conn.query("""
         EXPLAIN
         MATCH (u:User)-[:FOLLOWS]->(f:User)
         WHERE u.id = $user_id
@@ -544,7 +546,7 @@ async with GeodeClient("localhost:3141") as client:
     print(f"Plan: {plan}")
 
     # Get PROFILE statistics
-    result = await client.query("""
+    result, _ = await conn.query("""
         PROFILE
         MATCH (u:User)-[:FOLLOWS]->(f:User)
         WHERE u.id = $user_id

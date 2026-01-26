@@ -1,61 +1,42 @@
 ---
 title: "Python Client"
-description: "Complete guide to the Geode Python async client library with full type hints"
+description: "Complete guide to the Geode Python async client library with QUIC + TLS support"
 weight: 20
-
 keywords:
   - Geode Python client
   - Python SDK
   - GQL driver
   - graph database Python
-  - client library
+  - async QUIC client
 ---
 
-<!-- CANARY: REQ=REQ-CLIENT-INTEGRATION-001; FEATURE="RustClientIntegration"; ASPECT=QUICTransport; STATUS=TESTED; OWNER=clients; UPDATED=2026-01-15 -->
+<!-- CANARY: REQ=REQ-CLIENT-PY-001; FEATURE="PythonClientConnection"; ASPECT=HelloHandshake; STATUS=IMPL; OWNER=clients; UPDATED=2025-02-14 -->
 
 # Geode Python Client Library
 
-A modern, fully async Python client library for Geode graph database with complete type hints and QUIC+TLS support.
+A modern async Python client for Geode graph database with QUIC + TLS 1.3 transport, query builders, and connection pooling.
 
 ## Installation
 
 ```bash
-# Install from source
 pip install geode-client
-
-# Or install in editable mode for development
-pip install -e ".[dev]"
 ```
 
 ## Requirements
 
 - Python 3.9+
 - aioquic >= 0.9.0
-- Running Geode server with QUIC enabled
-
-## Features
-
-- ✅ **Fully async** - asyncio and type hints throughout
-- ✅ **QUIC + TLS 1.3** - Modern, secure transport
-- ✅ **Query builders** - Programmatic query construction
-- ✅ **Connection pooling** - Concurrent workload support
-- ✅ **Authentication** - RBAC and RLS support
-- ✅ **Rich type system** - Decimal, temporal, advanced types
-- ✅ **Full type hints** - Excellent IDE support
+- Geode server with QUIC enabled
 
 ## Quick Start
-
-### Basic Connection
 
 ```python
 import asyncio
 from geode_client import Client
 
 async def main():
-    # Create client
     client = Client(host="127.0.0.1", port=3141, skip_verify=True)
 
-    # Execute query
     async with client.connection() as conn:
         page, _ = await conn.query("RETURN 1 AS x, 'Hello' AS greeting")
 
@@ -67,20 +48,15 @@ async def main():
 asyncio.run(main())
 ```
 
-### Using URL Connection
+## URL Connection Helper
 
 ```python
 from geode_client import open_database
 
-async def main():
-    # Open database with URL
-    client = open_database("quic://localhost:3141?skip_verify=true")
+client = open_database("quic://localhost:3141?skip_verify=true")
 
-    async with client.connection() as conn:
-        page, _ = await conn.query("MATCH (n) RETURN n LIMIT 10")
-        print(f"Found {len(page.rows)} nodes")
-
-asyncio.run(main())
+async with client.connection() as conn:
+    page, _ = await conn.query("MATCH (n) RETURN n LIMIT 10")
 ```
 
 ## Querying
@@ -129,7 +105,6 @@ pattern = (
     .node("b", "Person", {"name": "$person2"})
     .build()
 )
-# Result: (a:Person {name: $person1})-[knows:KNOWS*1..6]-(b:Person {name: $person2})
 ```
 
 ### Predicate Builder
@@ -144,12 +119,9 @@ predicate = (
     .in_("p.role", ["admin", "user"])
     .build_and()
 )
-# Result: p.age > 25 AND p.email IS NOT NULL AND p.role IN ['admin', 'user']
 ```
 
 ## Transactions
-
-### Basic Transactions
 
 ```python
 async with client.connection() as conn:
@@ -160,32 +132,33 @@ async with client.connection() as conn:
             {"name": "Bob", "age": 30}
         )
         await conn.commit()
-        print("Transaction committed")
-    except Exception as e:
+    except Exception:
         await conn.rollback()
-        print(f"Transaction rolled back: {e}")
+        raise
 ```
 
-### Savepoints (Partial Rollback)
+### Savepoints
 
 ```python
 async with client.connection() as conn:
     await conn.begin()
 
-    # Create initial data
     await conn.execute("CREATE (p:Person {name: 'Alice', age: 30})")
 
-    # Create a savepoint
     sp = await conn.savepoint("before_update")
-
-    # Make changes
     await conn.execute("MATCH (p:Person {name: 'Alice'}) SET p.age = 40")
 
-    # Rollback to savepoint (undoes the age change)
     await conn.rollback_to(sp)
-
-    # Alice's age is still 30
     await conn.commit()
+```
+
+## Prepared Statements
+
+```python
+stmt = await conn.prepare("MATCH (p:Person {name: $name}) RETURN p")
+
+async with stmt:
+    page, _ = await stmt.execute({"name": "Alice"})
 ```
 
 ## Connection Pooling
@@ -193,345 +166,45 @@ async with client.connection() as conn:
 ```python
 from geode_client import ConnectionPool
 
-# Create pool
 pool = ConnectionPool(
     host="localhost",
     port=3141,
     min_size=2,
     max_size=10,
-    skip_verify=True
+    timeout=30.0,
+    page_size=1000,
 )
 
 async with pool:
-    # Acquire connection from pool
     async with pool.acquire() as conn:
-        page, _ = await conn.query("RETURN 1")
-
-    # Pool automatically manages connection lifecycle
-    print(f"Pool size: {pool.size}, available: {pool.available}")
+        page, _ = await conn.query("MATCH (n) RETURN count(n) AS count")
+        print(page.rows[0]["count"].as_int)
 ```
 
 ## Authentication
-
-### Login and User Management
 
 ```python
 from geode_client import AuthClient
 
 async with client.connection() as conn:
     auth = AuthClient(conn)
-
-    # Login
-    session = await auth.login("username", "password")
-    print(f"Token: {session.token}")
-    print(f"Roles: {session.roles}")
-
-    # Create user
-    user = await auth.create_user(
-        username="newuser",
-        email="user@example.com",
-        password="secure123",
-        roles=["user"]
-    )
-    print(f"Created user: {user.username}")
-
-    # Check permission
-    has_perm = await auth.check_permission(
-        user_id=user.id,
-        resource="data",
-        action="read"
-    )
-    print(f"Has read permission: {has_perm}")
-
-    # Logout
-    await auth.logout(session.token)
-```
-
-### Row-Level Security (RLS)
-
-```python
-from geode_client import RLSPolicy
-
-policy = RLSPolicy(
-    name="user_data_policy",
-    table="user_data",
-    graph="main",
-    operation="SELECT",
-    permissive=True,
-    roles=[1, 2],
-    using_expression="owner_id = current_user_id()",
-    enabled=True,
-    audit_level="READ"
-)
-
-policy = await auth.create_rls_policy(policy)
-print(f"Created policy: {policy.name} (ID: {policy.id})")
+    session = await auth.login("admin", "secret")
+    print(session.token)
 ```
 
 ## Type System
 
-### Accessing Typed Values
+Geode values are returned as `Value` objects.
 
 ```python
-# Access typed values
-row = page.rows[0]
+from geode_client import Value
 
-# Basic types
-int_val = row["count"].as_int
-str_val = row["name"].as_string
-bool_val = row["active"].as_bool
-decimal_val = row["price"].as_decimal
-
-# Temporal types
-date_val = row["birthdate"].as_date
-timestamp_val = row["created_at"].as_datetime
-
-# Complex types
-array_val = row["tags"].as_array
-object_val = row["metadata"].as_object
-bytes_val = row["data"].as_bytes
-range_val = row["period"].as_range
+page, _ = await conn.query("RETURN 42 AS answer")
+value: Value = page.rows[0]["answer"]
+print(value.as_int)
 ```
 
-### Type Constructors
+## Repository
 
-```python
-from geode_client import types
-
-# Create typed values
-person = {
-    "name": types.Text("Alice"),
-    "age": types.Int(30),
-    "email": types.Varchar("alice@example.com", 255),
-    "joined": types.Timestamp("2024-01-15 10:30:00"),
-    "salary": types.Decimal(75000.50, 2)
-}
-```
-
-## Pagination
-
-```python
-async with client.connection() as conn:
-    query = "MATCH (n:Person) RETURN n.name ORDER BY n.name"
-
-    # Get first page
-    page, pager = await conn.query(query, page_size=100)
-
-    # Process first page
-    for row in page.rows:
-        process(row)
-
-    # Get more pages
-    async for next_page in pager():
-        for row in next_page.rows:
-            process(row)
-```
-
-## Connection Options
-
-### URL Format
-
-```
-quic://host:port?param=value&param2=value2
-```
-
-### Available Parameters
-
-- `page_size` - Results page size (default: 1000)
-- `hello_name` - Client name (default: "geode-python")
-- `hello_ver` - Client version (default: "0.1.0")
-- `conformance` - GQL conformance level (default: "min")
-- `ca_cert` - CA certificate path for server verification
-- `client_cert` - Client certificate path for mTLS
-- `client_key` - Client key path for mTLS
-- `skip_verify` - Skip TLS verification (default: false, **insecure**)
-- `server_name` - SNI server name (default: hostname)
-
-### TLS Configuration
-
-```python
-# Development (skip verification)
-client = Client(host="localhost", port=3141, skip_verify=True)
-
-# Production with CA certificate
-client = Client(
-    host="geode.example.com",
-    port=3141,
-    ca_cert="/path/to/ca.crt"
-)
-
-# Mutual TLS
-client = Client(
-    host="geode.example.com",
-    port=3141,
-    ca_cert="/path/to/ca.crt",
-    client_cert="/path/to/client.crt",
-    client_key="/path/to/client.key",
-    server_name="geode.example.com"
-)
-```
-
-## Error Handling
-
-```python
-from geode_client import GeodeError, ConnectionError, QueryError, AuthError
-
-try:
-    page, _ = await conn.query("INVALID SYNTAX")
-except QueryError as e:
-    print(f"Query failed: {e}")
-except ConnectionError as e:
-    print(f"Connection failed: {e}")
-except AuthError as e:
-    print(f"Auth failed: {e}")
-except GeodeError as e:
-    print(f"Geode error: {e}")
-```
-
-## Testing
-
-### Running Tests
-
-```bash
-# Run tests
-pytest
-
-# Run tests with coverage
-pytest --cov=geode_client
-
-# Run specific test
-pytest tests/test_connection.py::test_basic_query
-```
-
-### Code Quality
-
-```bash
-# Format code
-black geode_client/
-
-# Type checking
-mypy geode_client/
-
-# Linting
-ruff check geode_client/
-```
-
-## Examples
-
-### Social Network Query
-
-```python
-async with client.connection() as conn:
-    query = """
-        MATCH (person:Person {name: $name})-[:KNOWS*1..2]->(friend:Person)
-        WHERE friend <> person
-        RETURN DISTINCT friend.name AS name, friend.age AS age
-        ORDER BY friend.age DESC
-        LIMIT 10
-    """
-    params = {"name": "Alice"}
-
-    page, _ = await conn.query(query, params)
-
-    for row in page.rows:
-        name = row["name"].as_string
-        age = row["age"].as_int
-        print(f"{name} (age {age})")
-```
-
-### Aggregation Query
-
-```python
-async with client.connection() as conn:
-    query = """
-        MATCH (p:Person)
-        RETURN p.city AS city, count(*) AS population
-        GROUP BY p.city
-        ORDER BY population DESC
-        LIMIT 5
-    """
-
-    page, _ = await conn.query(query)
-
-    for row in page.rows:
-        city = row["city"].as_string
-        population = row["population"].as_int
-        print(f"{city}: {population} people")
-```
-
-### Batch Insert
-
-```python
-async with client.connection() as conn:
-    await conn.begin()
-
-    people = [
-        {"name": "Alice", "age": 30},
-        {"name": "Bob", "age": 25},
-        {"name": "Charlie", "age": 35},
-    ]
-
-    for person in people:
-        await conn.execute(
-            "CREATE (p:Person {name: $name, age: $age})",
-            person
-        )
-
-    await conn.commit()
-```
-
-## Performance
-
-The QUIC client provides:
-
-- **Low latency**: ~2-3ms per query (localhost)
-- **High throughput**: Depends on workload and pool sizing
-- **Efficient**: Zero-copy where possible, minimal allocations
-- **Concurrent**: Full async support for parallel queries
-
-### Performance Tips
-
-1. **Use connection pooling** for concurrent workloads
-2. **Batch operations** in transactions
-3. **Reuse query builders** for similar queries
-4. **Use pagination** for large result sets
-5. **Monitor connection pool** metrics
-
-## Troubleshooting
-
-### Connection Refused
-
-Ensure Geode server is running with QUIC enabled:
-
-```bash
-./geode serve --listen 0.0.0.0:3141
-```
-
-### TLS Verification Errors
-
-For development, skip verification:
-
-```python
-client = Client(host="localhost", port=3141, skip_verify=True)
-```
-
-For production, provide CA certificate:
-
-```python
-client = Client(host="server", port=3141, ca_cert="/path/to/ca.crt")
-```
-
-### Import Errors
-
-Ensure aioquic is installed:
-
-```bash
-pip install aioquic
-```
-
-## Next Steps
-
-- [GQL Reference](../../gql-reference/) - Query language guide
-- [Type System](../../data-types/) - Data types reference
-- [Authentication](../../features/authentication/) - Security features
-- [Performance Tuning](../../performance/) - Optimize performance
+- GitLab: [devnw/codepros/geode/geode-client-python](https://gitlab.com/devnw/codepros/geode/geode-client-python)
+- PyPI: [geode-client](https://pypi.org/project/geode-client/)

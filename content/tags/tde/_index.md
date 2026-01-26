@@ -675,7 +675,7 @@ def generate_tde_compliance_report():
         RETURN key_id, created_at, last_rotation
     """)
 
-    for row in result:
+    for row in result.rows:
         days_since_rotation = (datetime.now() - row['last_rotation']).days
         report['key_management'][row['key_id']] = {
             'age_days': days_since_rotation,

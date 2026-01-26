@@ -550,16 +550,18 @@ This distributes leadership and write load across nodes.
 Ensure clients see their own writes:
 
 ```python
-from geode_client import GeodeClient
+from geode_client import Client
 
-async with GeodeClient('localhost:3141') as client:
+client = Client(host="localhost", port=3141)
+
+async with client.connection() as conn:
     # Write operation returns LSN
-    lsn = await client.execute("""
+    lsn = await conn.execute("""
         CREATE (u:User {id: 123, name: 'Alice'})
     """)
 
     # Read from replica with LSN requirement
-    result = await client.execute("""
+    result, _ = await conn.query("""
         MATCH (u:User {id: 123}) RETURN u
     """, read_lsn=lsn)  # Waits until replica reaches this LSN
 ```
@@ -675,7 +677,7 @@ Route queries to nearest replica:
 
 ```python
 # Client automatically selects low-latency replica
-client = GeodeClient(
+client = Client(
     nodes=[
         'node1.us-east.example.com:3141',
         'node2.eu-west.example.com:3141',

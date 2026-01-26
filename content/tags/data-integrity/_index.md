@@ -422,9 +422,9 @@ COMMIT;
 ### Constraint Violation Handling
 
 ```python
-from geode_client import GeodeClient, ConstraintViolationError
+from geode_client import Client, ConstraintViolationError
 
-client = GeodeClient('geode.example.com')
+client = Client('geode.example.com')
 
 try:
     await client.run("""
@@ -444,14 +444,15 @@ retry_count = 0
 
 while retry_count < max_retries:
     try:
-        async with client.transaction() as txn:
+        async with client.connection() as txn:
+            await txn.begin()
             # Read current value
             result = await txn.run("""
                 MATCH (p:Product {sku: $sku})
                 RETURN p.inventory, p.version
             """, sku=sku)
 
-            inventory, version = result[0]
+            inventory, version = result.rows[0]
 
             # Update with optimistic locking
             await txn.run("""

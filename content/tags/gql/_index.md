@@ -528,25 +528,27 @@ ORDER BY combined_score DESC;
 ### Python Advanced Usage
 
 ```python
-from geode_client import GeodeClient, QueryBuilder
+from geode_client import Client, QueryBuilder
 import asyncio
 
 async def advanced_query_patterns():
-    async with GeodeClient("localhost", 3141) as client:
+    client = Client(host="localhost", port=3141)
+    async with client.connection() as conn:
         # Prepared statement caching
-        stmt = await client.prepare("""
+        stmt = await conn.prepare("""
             MATCH (u:User {id: $user_id})-[:FRIEND*1..2]->(friend)
             RETURN DISTINCT friend.name, friend.email
         """)
 
         # Execute with different parameters
         for user_id in range(1, 100):
-            result = await stmt.execute(user_id=user_id)
-            friends = [row async for row in result]
+            result, _ = await stmt.execute(user_id=user_id)
+            friends = [row for row in result.rows]
             print(f"User {user_id} has {len(friends)} friends")
 
         # Transaction with savepoints
-        async with client.transaction() as txn:
+        async with client.connection() as txn:
+            await txn.begin()
             await txn.execute("CREATE (u:User {id: 1000, name: 'Alice'})")
 
             await txn.savepoint("after_user")
@@ -571,7 +573,7 @@ async def advanced_query_patterns():
 
         async with client.stream(query) as stream:
             batch = []
-            async for row in stream:
+            for row in stream.rows:
                 batch.append(row)
                 if len(batch) >= 1000:
                     await process_batch(batch)
@@ -745,14 +747,22 @@ RETURN n;
 - Use optimistic locking patterns
 
 ```python
+from geode_client import QueryError
+
 async def retry_on_conflict(client, query, params, max_attempts=3):
     for attempt in range(max_attempts):
-        try:
-            async with client.transaction():
-                return await client.execute(query, params)
-        except ConflictError:
-            if attempt == max_attempts - 1:
-                raise
+        async with client.connection() as conn:
+            await conn.begin()
+            try:
+                page, _ = await conn.query(query, params)
+                await conn.commit()
+                return page
+            except QueryError as exc:
+                await conn.rollback()
+                if "40502" not in str(exc):
+                    raise
+                if attempt == max_attempts - 1:
+                    raise
             await asyncio.sleep(0.1 * (2 ** attempt))
 ```
 
@@ -779,7 +789,7 @@ query_errors = Counter(
 async def monitored_query(client, query, params):
     start = time.time()
     try:
-        result = await client.execute(query, params)
+        result, _ = await client.query(query, params)
         query_duration.labels(query_type='read').observe(time.time() - start)
         return result
     except Exception as e:
@@ -812,7 +822,7 @@ class QueryCache:
             if time.time() - entry['timestamp'] < self.ttl:
                 return entry['result']
 
-        result = await client.execute(query, params)
+        result, _ = await client.query(query, params)
 
         self.cache[cache_key] = {
             'result': result,
@@ -837,20 +847,26 @@ class GeodeCluster:
             self.current_index = (self.current_index + 1) % len(self.nodes)
 
             try:
-                client = GeodeClient(node['host'], node['port'])
-                await client.ping()
-                return client
-            except ConnectionError:
+                client = Client(host=node['host'], port=node['port'])
+                conn = await client.connect()
+                try:
+                    await conn.query("RETURN 1")
+                    return conn
+                except Exception:
+                    await conn.close()
+                    continue
+            except Exception:
                 continue
 
         raise Exception("No healthy nodes available")
 
     async def execute(self, query, params):
-        client = await self.get_client()
+        conn = await self.get_client()
         try:
-            return await client.execute(query, params)
+            result, _ = await conn.query(query, params)
+            return result
         finally:
-            await client.close()
+            await conn.close()
 ```
 
 Geode's complete GQL implementation provides a production-ready platform for graph workloads. Whether you're building social networks, fraud detection systems, recommendation engines, or knowledge graphs, GQL's declarative syntax and Geode's optimized execution deliver both developer productivity and runtime performance.

@@ -163,7 +163,8 @@ import geode_client
 
 async def setup_rls_policies():
     """Set up RLS policies for multi-tenant application."""
-    async with geode_client.connect('geode://localhost:3141') as conn:
+    client = geode_client.open_database('geode://localhost:3141')
+    async with client.connection() as conn:
         # Create policy: users can only see their own data
         await conn.execute("""
             CREATE POLICY user_isolation ON Person
@@ -195,71 +196,66 @@ async def setup_rls_policies():
 # Query data with RLS enforcement
 async def get_customer_data(user_id: int):
     """Get customer data - RLS policies automatically enforced."""
-    async with geode_client.connect(
-        'geode://localhost:3141',
-        user='app_user',
-        password='secure_password'
-    ) as conn:
+    client = geode_client.open_database('geode://localhost:3141')
+    async with client.connection() as conn:
+        auth = geode_client.AuthClient(conn)
+        await auth.login('app_user', 'secure_password')
+
         # RLS policies automatically filter results
-        result = await conn.execute("""
+        result, _ = await conn.query("""
             MATCH (c:Customer)
             RETURN c.name, c.email, c.phone
         """)
 
         # Only customers this user is authorized to see
-        return [row async for row in result]
+        return [row for row in result.rows]
 ```
 
 ### Configuring Field-Level Encryption
 
 ```python
-from geode_client import FieldEncryption
+import base64
+import hashlib
+import hmac
+
+def tokenize(value: str, key: bytes) -> str:
+    """Deterministic tokenization for lookup (use KMS/HSM in production)."""
+    return hmac.new(key, value.encode("utf-8"), hashlib.sha256).hexdigest()
 
 async def store_sensitive_data():
-    """Store data with field-level encryption."""
-    # Configure encryption
-    fle = FieldEncryption(
-        master_key=get_master_key(),
-        key_id='customer-data-v1'
-    )
+    """Store data with application-layer tokenization."""
+    token_key = get_master_key()
+    client = geode_client.open_database('geode://localhost:3141')
 
-    async with geode_client.connect('geode://localhost:3141') as conn:
-        # Encrypt sensitive fields client-side
-        encrypted_ssn = fle.encrypt_deterministic('123-45-6789')
-        encrypted_card = fle.encrypt_randomized('4111-1111-1111-1111')
+    async with client.connection() as conn:
+        tokenized_ssn = tokenize('123-45-6789', token_key)
 
         await conn.execute("""
             INSERT (:Customer {
                 name: $name,
                 email: $email,
-                ssn: $ssn,
-                credit_card: $card
+                ssn_token: $ssn_token
             })
         """, {
             'name': 'John Doe',
             'email': 'john@example.com',
-            'ssn': encrypted_ssn,  # Stored encrypted
-            'card': encrypted_card  # Stored encrypted
+            'ssn_token': tokenized_ssn
         })
 
-# Query encrypted data
+# Query tokenized data
 async def find_customer_by_ssn(ssn: str):
-    """Find customer by SSN using deterministic encryption."""
-    fle = FieldEncryption(
-        master_key=get_master_key(),
-        key_id='customer-data-v1'
-    )
+    """Find customer by SSN using deterministic tokenization."""
+    token_key = get_master_key()
+    tokenized_ssn = tokenize(ssn, token_key)
 
-    async with geode_client.connect('geode://localhost:3141') as conn:
-        # Encrypt query parameter to search encrypted data
-        encrypted_ssn = fle.encrypt_deterministic(ssn)
-
-        result = await conn.execute("""
-            MATCH (c:Customer {ssn: $ssn})
+    client = geode_client.open_database('geode://localhost:3141')
+    async with client.connection() as conn:
+        result, _ = await conn.query("""
+            MATCH (c:Customer {ssn_token: $ssn_token})
             RETURN c.name, c.email
-        """, {'ssn': encrypted_ssn})
+        """, {'ssn_token': tokenized_ssn})
 
-        row = await result.fetch_one()
+        row = result.rows[0] if result.rows else None
         return row if row else None
 ```
 
@@ -268,7 +264,8 @@ async def find_customer_by_ssn(ssn: str):
 ```python
 async def setup_audit_logging():
     """Configure audit logging for compliance."""
-    async with geode_client.connect('geode://localhost:3141') as conn:
+    client = geode_client.open_database('geode://localhost:3141')
+    async with client.connection() as conn:
         # Enable audit logging
         await conn.execute("""
             ALTER SYSTEM SET audit_logging = 'all';
@@ -285,8 +282,9 @@ async def setup_audit_logging():
 # Generate compliance report
 async def generate_gdpr_access_report(user_id: int):
     """Generate GDPR data access report for user."""
-    async with geode_client.connect('geode://localhost:3141') as conn:
-        result = await conn.execute("""
+    client = geode_client.open_database('geode://localhost:3141')
+    async with client.connection() as conn:
+        result, _ = await conn.query("""
             SELECT timestamp, user, query, affected_records
             FROM audit_log
             WHERE query LIKE '%User {id: $user_id}%'
@@ -294,7 +292,7 @@ async def generate_gdpr_access_report(user_id: int):
         """, {'user_id': user_id})
 
         accesses = []
-        async for row in result:
+        for row in result.rows:
             accesses.append({
                 'timestamp': row['timestamp'],
                 'accessed_by': row['user'],
@@ -316,39 +314,36 @@ async def generate_gdpr_access_report(user_id: int):
 import geode_client
 
 async def authenticate_user(username: str, password: str):
-    """Authenticate user with secure password hashing."""
+    """Authenticate user with RBAC support."""
     try:
-        # Connection automatically authenticates
-        conn = await geode_client.connect(
-            'geode://localhost:3141',
-            user=username,
-            password=password,
-            verify_cert=True,
-            ca_bundle='/path/to/ca.crt'
-        )
+        client = geode_client.open_database('geode://localhost:3141')
+        async with client.connection() as conn:
+            auth = geode_client.AuthClient(conn)
+            await auth.login(username, password)
 
-        # Check user permissions
-        result = await conn.execute("""
-            MATCH (u:User {username: $username})
-            RETURN u.roles AS roles, u.permissions AS permissions
-        """, {'username': username})
+            # Check user permissions
+            result, _ = await conn.query("""
+                MATCH (u:User {username: $username})
+                RETURN u.roles AS roles, u.permissions AS permissions
+            """, {'username': username})
 
-        user_info = await result.fetch_one()
-        return {
-            'authenticated': True,
-            'roles': user_info['roles'],
-            'permissions': user_info['permissions']
-        }
+            user_info = result.rows[0] if result.rows else None
+            return {
+                'authenticated': True,
+                'roles': user_info['roles'],
+                'permissions': user_info['permissions']
+            }
 
-    except geode_client.AuthenticationError as e:
+    except geode_client.AuthError as e:
         # Failed authentication logged to audit log
         return {'authenticated': False, 'error': str(e)}
 
 # Role-based access control
 async def check_permission(user_id: int, resource: str, action: str):
     """Check if user has permission for action on resource."""
-    async with geode_client.connect('geode://localhost:3141') as conn:
-        result = await conn.execute("""
+    client = geode_client.open_database('geode://localhost:3141')
+    async with client.connection() as conn:
+        result, _ = await conn.query("""
             MATCH (u:User {id: $user_id})-[:HAS_ROLE]->(r:Role)
                  -[:HAS_PERMISSION]->(p:Permission)
             WHERE p.resource = $resource AND p.action = $action
@@ -359,7 +354,7 @@ async def check_permission(user_id: int, resource: str, action: str):
             'action': action
         })
 
-        row = await result.fetch_one()
+        row = result.rows[0] if result.rows else None
         return row['has_permission']
 ```
 

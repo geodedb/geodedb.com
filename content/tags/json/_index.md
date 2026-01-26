@@ -396,8 +396,8 @@ await client.execute(
 )
 
 # Query returns parsed JSON
-result = await client.execute("MATCH (u:User) RETURN u.preferences AS prefs")
-prefs = result[0]["prefs"]  # Already parsed as dict
+result, _ = await client.query("MATCH (u:User) RETURN u.preferences AS prefs")
+prefs = result.rows[0]["prefs"]  # Already parsed as dict
 ```
 
 **Rust Client**:

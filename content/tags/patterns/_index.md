@@ -575,7 +575,7 @@ query, params = build_user_query({
     'country': 'USA',
     'limit': 50
 })
-result = await client.execute(query, params)
+result, _ = await client.query(query, params)
 ```
 
 ### Batch Operations
@@ -823,7 +823,7 @@ class GeodeCachedClient:
                 return result  # Cache hit
 
         # Cache miss - execute query
-        result = await self.client.execute(query, params)
+        result, _ = await self.client.query(query, params)
         self.cache[cache_key] = (result, time.time())
         return result
 
@@ -1025,7 +1025,7 @@ async def test_user_recommendation():
     """)
 
     # Execute: Run recommendation query
-    result = await client.execute("""
+    result, _ = await client.query("""
         MATCH (alice:User {user_id: 'alice'})-[:PURCHASED]->(p:Product)
           <-[:PURCHASED]-(other:User)
         MATCH (other)-[:PURCHASED]->(rec:Product)
@@ -1036,9 +1036,9 @@ async def test_user_recommendation():
     """)
 
     # Assert: Verify expected recommendations
-    assert len(result) == 1
-    assert result[0]['rec.product_id'] == 'p2'
-    assert result[0]['rec.name'] == 'Mouse'
+    assert len(result.rows) == 1
+    assert result.rows[0]['rec.product_id'] == 'p2'
+    assert result.rows[0]['rec.name'] == 'Mouse'
 
     # Cleanup
     await client.execute("MATCH (n) DETACH DELETE n")

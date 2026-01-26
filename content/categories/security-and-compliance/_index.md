@@ -51,28 +51,33 @@ Geode supports multiple authentication mechanisms:
 ```python
 import geode_client
 
-client = await geode_client.connect(
-    "localhost:3141",
-    username="alice",
-    password="secure_password"
-)
+async def connect_with_password():
+    client = geode_client.open_database("geode://localhost:3141")
+    async with client.connection() as conn:
+        auth = geode_client.AuthClient(conn)
+        session = await auth.login("alice", "secure_password")
+        return session
 ```
 
 **Certificate-Based Authentication**:
 ```python
-client = await geode_client.connect(
-    "localhost:3141",
-    tls_cert="/path/to/client-cert.pem",
-    tls_key="/path/to/client-key.pem"
+client = geode_client.Client(
+    host="localhost",
+    port=3141,
+    ca_cert="/path/to/ca.crt",
+    client_cert="/path/to/client-cert.pem",
+    client_key="/path/to/client-key.pem",
 )
 ```
 
 **Token-Based Authentication**:
 ```python
-client = await geode_client.connect(
-    "localhost:3141",
-    token=os.getenv("GEODE_AUTH_TOKEN")
-)
+async def login_and_store_token():
+    client = geode_client.open_database("geode://localhost:3141")
+    async with client.connection() as conn:
+        auth = geode_client.AuthClient(conn)
+        session = await auth.login("alice", "secure_password")
+        return session.token
 ```
 
 ### Managing Users
@@ -189,13 +194,12 @@ USING (
 Python client example:
 
 ```python
-async with geode_client.connect(
-    "localhost:3141",
-    username="alice",
-    password="password"
-) as client:
+client = geode_client.open_database("geode://localhost:3141")
+async with client.connection() as conn:
+    auth = geode_client.AuthClient(conn)
+    await auth.login("alice", "password")
     # RLS automatically filters results based on policies
-    result = await client.execute("""
+    result, _ = await conn.query("""
         MATCH (u:User)
         RETURN u.name, u.department
     """)
@@ -252,8 +256,8 @@ await client.execute("""
 })
 
 # Decrypt when reading
-result = await client.execute("MATCH (p:Person {name: $name}) RETURN p.ssn", {"name": "Alice"})
-ssn = encryption.decrypt(result[0]["p.ssn"])
+result, _ = await client.query("MATCH (p:Person {name: $name}) RETURN p.ssn", {"name": "Alice"})
+ssn = encryption.decrypt(result.rows[0]["p.ssn"])
 ```
 
 **FLE Use Cases**:

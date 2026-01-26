@@ -141,49 +141,53 @@ input CreateCommentInput {
 
 ```javascript
 const { ApolloServer } = require('apollo-server');
-const { GeodeClient } = require('geode-client-node');
+const { createClient } = require('@geode/client');
 
 // Initialize Geode client
-const geode = new GeodeClient('localhost:3141');
+const geode = createClient('geode://localhost:3141');
 
 const resolvers = {
   Query: {
     user: async (_, { id }) => {
-      const result = await geode.query(
+      const client = await geode;
+      const rows = await client.queryAll(
         'MATCH (u:User {id: $id}) RETURN u',
-        { id }
+        { params: { id } }
       );
-      return result.data[0]?.u;
+      return rows[0]?.u;
     },
 
     users: async (_, { limit = 10, offset = 0 }) => {
-      const result = await geode.query(
+      const client = await geode;
+      const rows = await client.queryAll(
         'MATCH (u:User) RETURN u SKIP $offset LIMIT $limit',
-        { offset, limit }
+        { params: { offset, limit } }
       );
-      return result.data.map(row => row.u);
+      return rows.map(row => row.u);
     },
 
     userFriends: async (_, { userId, depth = 2 }) => {
-      const result = await geode.query(
+      const client = await geode;
+      const rows = await client.queryAll(
         `MATCH (u:User {id: $userId})-[:FOLLOWS*1..$depth]->(friend:User)
          RETURN DISTINCT friend`,
-        { userId, depth }
+        { params: { userId, depth } }
       );
-      return result.data.map(row => row.friend);
+      return rows.map(row => row.friend);
     },
 
     recommendedPosts: async (_, { userId, limit = 10 }) => {
       // Complex graph algorithm for recommendations
-      const result = await geode.query(
+      const client = await geode;
+      const rows = await client.queryAll(
         `MATCH (u:User {id: $userId})-[:FOLLOWS]->(friend:User)-[:AUTHORED]->(p:Post)
          WHERE NOT (u)-[:AUTHORED]->(p)
          RETURN p, COUNT(DISTINCT friend) AS score
          ORDER BY score DESC
          LIMIT $limit`,
-        { userId, limit }
+        { params: { userId, limit } }
       );
-      return result.data.map(row => row.p);
+      return rows.map(row => row.p);
     }
   },
 
@@ -292,11 +296,11 @@ server.listen().then(({ url }) => {
 
 ```python
 import graphene
-from geode_client import GeodeClient
+from geode_client import Client
 from datetime import datetime
 import asyncio
 
-client = GeodeClient("localhost:3141")
+client = Client("localhost:3141")
 
 class User(graphene.ObjectType):
     id = graphene.ID()
@@ -309,14 +313,14 @@ class User(graphene.ObjectType):
     following = graphene.List(lambda: User)
 
     async def resolve_posts(self, info):
-        result = await client.execute(
+        result, _ = await client.query(
             "MATCH (u:User {id: $id})-[:AUTHORED]->(p:Post) RETURN p",
             {"id": self.id}
         )
         return [Post(**row['p']) for row in result]
 
     async def resolve_followers(self, info):
-        result = await client.execute(
+        result, _ = await client.query(
             "MATCH (follower:User)-[:FOLLOWS]->(u:User {id: $id}) RETURN follower",
             {"id": self.id}
         )
@@ -332,11 +336,11 @@ class Post(graphene.ObjectType):
     comments = graphene.List(lambda: Comment)
 
     async def resolve_author(self, info):
-        result = await client.execute(
+        result, _ = await client.query(
             "MATCH (u:User)-[:AUTHORED]->(p:Post {id: $id}) RETURN u",
             {"id": self.id}
         )
-        return User(**result[0]['u']) if result else None
+        return User(**result.rows[0]['u']) if result else None
 
 class Comment(graphene.ObjectType):
     id = graphene.ID()
@@ -355,21 +359,21 @@ class Query(graphene.ObjectType):
     )
 
     async def resolve_user(self, info, id):
-        result = await client.execute(
+        result, _ = await client.query(
             "MATCH (u:User {id: $id}) RETURN u",
             {"id": id}
         )
-        return User(**result[0]['u']) if result else None
+        return User(**result.rows[0]['u']) if result else None
 
     async def resolve_users(self, info, limit=10, offset=0):
-        result = await client.execute(
+        result, _ = await client.query(
             "MATCH (u:User) RETURN u SKIP $offset LIMIT $limit",
             {"offset": offset, "limit": limit}
         )
         return [User(**row['u']) for row in result]
 
     async def resolve_user_friends(self, info, user_id, depth=2):
-        result = await client.execute(
+        result, _ = await client.query(
             """MATCH (u:User {id: $user_id})-[:FOLLOWS*1..$depth]->(friend:User)
                RETURN DISTINCT friend""",
             {"user_id": user_id, "depth": depth}
@@ -387,7 +391,7 @@ class CreateUser(graphene.Mutation):
     user = graphene.Field(User)
 
     async def mutate(self, info, input):
-        result = await client.execute(
+        result, _ = await client.query(
             """CREATE (u:User {
                  id: randomUUID(),
                  username: $username,
@@ -397,7 +401,7 @@ class CreateUser(graphene.Mutation):
                RETURN u""",
             {"username": input.username, "email": input.email}
         )
-        return CreateUser(user=User(**result[0]['u']))
+        return CreateUser(user=User(**result.rows[0]['u']))
 
 class Mutation(graphene.ObjectType):
     create_user = CreateUser.Field()

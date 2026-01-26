@@ -265,13 +265,14 @@ RETURN coworker.name
 
 ```python
 import asyncio
-from geode_client import GeodeClient
+from geode_client import Client
 
 async def load_data():
-    async with GeodeClient("localhost:3141") as client:
+    client = Client(host="localhost", port=3141)
+    async with client.connection() as conn:
         # Create 1000 users
         for i in range(1000):
-            await client.execute("""
+            await conn.execute("""
                 CREATE (u:User {
                     id: $id,
                     name: $name,
@@ -321,9 +322,10 @@ Implement an atomic money transfer:
 
 ```python
 async def transfer(client, from_id, to_id, amount):
-    async with client.transaction() as tx:
+    async with client.connection() as tx:
+        await tx.begin()
         # Check sender balance
-        result = await tx.execute("""
+        result, _ = await tx.query("""
             MATCH (sender:Account {id: $id})
             RETURN sender.balance
         """, id=from_id)
@@ -353,7 +355,8 @@ async def transfer(client, from_id, to_id, amount):
 
 ```python
 async def complex_operation(client):
-    async with client.transaction() as tx:
+    async with client.connection() as tx:
+        await tx.begin()
         await tx.execute("CREATE (u:User {id: 'temp1', name: 'Test'})")
 
         sp = await tx.savepoint("checkpoint")
@@ -531,21 +534,23 @@ class RecommendationEngine:
 
     async def collaborative_filtering(self, user_id, limit=10):
         """Find products liked by similar users"""
-        return await self.client.execute("""
+        result, _ = await self.client.query("""
             // TODO: Implement collaborative filtering
             // 1. Find users who bought similar products
             // 2. Find products those users also bought
             // 3. Rank by similarity score
         """, {"user_id": user_id, "limit": limit})
+        return result
 
     async def content_based(self, user_id, limit=10):
         """Recommend based on product attributes"""
-        return await self.client.execute("""
+        result, _ = await self.client.query("""
             // TODO: Implement content-based filtering
             // 1. Find products user has liked
             // 2. Find similar products by attributes
             // 3. Rank by attribute similarity
         """, {"user_id": user_id, "limit": limit})
+        return result
 
     async def hybrid(self, user_id, limit=10):
         """Combine both approaches"""
@@ -637,7 +642,7 @@ class KnowledgeGraphQueryEngine:
         # 3. Execute queries
         results = []
         for query in gql_queries:
-            result = await self.client.execute(query)
+            result, _ = await self.client.query(query)
             results.append(result)
 
         # 4. Rank and format answers

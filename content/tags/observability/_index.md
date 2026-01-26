@@ -184,10 +184,10 @@ async def process_user_query(user_id, query):
         logger.info("Processing user query", query_type="recommendation")
 
         try:
-            result = await client.execute(query)
+            result, _ = await client.query(query)
             logger.info(
                 "Query completed",
-                rows_returned=len(result),
+                rows_returned=len(result.rows),
                 duration_ms=result.duration
             )
             return result
@@ -297,10 +297,10 @@ Span: transaction
   Duration: 2340ms
 
   Child Spans:
-    - begin_transaction (2ms)
+    - begin (2ms)
     - execute_query_1 (145ms)
     - execute_query_2 (234ms)
-    - commit_transaction (15ms)
+    - commit (15ms)
 ```
 
 **Index Operations**:
@@ -328,7 +328,7 @@ async def recommend_products(user_id):
 
         # Fetch user preferences
         with tracer.start_as_current_span("fetch_preferences"):
-            prefs = await client.execute(
+            prefs, _ = await client.query(
                 "MATCH (u:User {id: $id})-[:LIKES]->(p:Product) RETURN p",
                 {"id": user_id}
             )
@@ -382,7 +382,7 @@ import uuid
 request_id = str(uuid.uuid4())
 
 # Include in query metadata
-result = await client.execute(
+result, _ = await client.query(
     query,
     params,
     metadata={"request_id": request_id}

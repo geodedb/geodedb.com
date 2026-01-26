@@ -445,30 +445,41 @@ ORDER BY sustainability_score ASC;
 
 ### Vehicle Routing Problem (VRP)
 
+<!-- CANARY: REQ=REQ-CLIENT-PY-001; FEATURE="PythonClientConnection"; ASPECT=HelloHandshake; STATUS=IMPL; OWNER=clients; UPDATED=2025-02-14 -->
+
 ```python
 # Python client - Solve VRP with capacity constraints
-from geode_client import GeodeClient
+from geode_client import Client
 
-client = GeodeClient("geode.example.com:3141")
+client = Client(host="geode.example.com", port=3141)
 
-def solve_vrp(warehouse_id, customer_ids, vehicle_capacity):
+async def solve_vrp(conn, warehouse_id, customer_ids, vehicle_capacity):
     """Solve VRP for multiple deliveries from one warehouse"""
 
     # Get distances between all points
     query = """
-    MATCH (wh:Warehouse {id: $wh_id})
-    UNWIND $cust_ids AS cust_id
-    MATCH (cust:Customer {id: cust_id})
-    MATCH path = shortestPath((wh)-[:ROUTE*]->(cust))
-    RETURN cust_id,
-           reduce(dist = 0, r IN relationships(path) | dist + r.distance_km) AS distance,
-           cust.demand_weekly AS demand
+        MATCH (wh:Warehouse {id: $wh_id})
+        UNWIND $cust_ids AS cust_id
+        MATCH (cust:Customer {id: cust_id})
+        MATCH path = shortestPath((wh)-[:ROUTE*]->(cust))
+        RETURN cust_id,
+               reduce(dist = 0, r IN relationships(path) | dist + r.distance_km) AS distance,
+               cust.demand_weekly AS demand
     """
 
-    distances = client.execute(query, {
+    page, _ = await conn.query(query, {
         'wh_id': warehouse_id,
         'cust_ids': customer_ids
     })
+
+    distance_map = {row["cust_id"].raw_value: row["distance"].raw_value for row in page.rows}
+    demand_map = {row["cust_id"].raw_value: row["demand"].raw_value for row in page.rows}
+
+    def get_distance(_from_id, to_id):
+        return distance_map.get(to_id, float("inf"))
+
+    def get_demand(cust_id):
+        return demand_map.get(cust_id, 0)
 
     # Greedy nearest neighbor with capacity constraints
     routes = []
@@ -478,10 +489,8 @@ def solve_vrp(warehouse_id, customer_ids, vehicle_capacity):
 
     while unvisited:
         if not current_route:
-            # Start new route from warehouse
             next_cust = min(unvisited, key=lambda c: get_distance(warehouse_id, c))
         else:
-            # Find nearest unvisited customer
             last_cust = current_route[-1]
             next_cust = min(unvisited, key=lambda c: get_distance(last_cust, c))
 
@@ -492,7 +501,6 @@ def solve_vrp(warehouse_id, customer_ids, vehicle_capacity):
             current_capacity += demand
             unvisited.remove(next_cust)
         else:
-            # Complete current route, start new one
             routes.append(current_route)
             current_route = []
             current_capacity = 0
@@ -501,6 +509,9 @@ def solve_vrp(warehouse_id, customer_ids, vehicle_capacity):
         routes.append(current_route)
 
     return routes
+
+# async with client.connection() as conn:
+#     routes = await solve_vrp(conn, "wh_1", ["c1", "c2"], 200)
 ```
 
 ### Dynamic Rerouting
@@ -545,17 +556,29 @@ RETURN wh.name, wh.location;
 
 ```python
 # Cache frequently used routes
-from functools import lru_cache
+from geode_client import Client
 
-@lru_cache(maxsize=10000)
-def get_shortest_path(origin_id, dest_id):
+client = Client(host="geode.example.com", port=3141)
+route_cache = {}
+
+async def get_shortest_path(conn, origin_id, dest_id):
     """Cache shortest paths between common locations"""
-    result = client.execute("""
+    cache_key = (origin_id, dest_id)
+    if cache_key in route_cache:
+        return route_cache[cache_key]
+
+    page, _ = await conn.query("""
         MATCH (o {id: $origin}), (d {id: $dest}),
               path = shortestPath((o)-[:ROUTE*]->(d))
         RETURN path
     """, {'origin': origin_id, 'dest': dest_id})
-    return result[0]['path'] if result else None
+
+    path = page.rows[0]["path"].raw_value if page.rows else None
+    route_cache[cache_key] = path
+    return path
+
+# async with client.connection() as conn:
+#     path = await get_shortest_path(conn, "wh_1", "cust_42")
 ```
 
 ### Materialized Views

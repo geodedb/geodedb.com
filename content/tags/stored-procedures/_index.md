@@ -206,7 +206,7 @@ result = await client.call_procedure(
     max_age=30
 )
 
-async for row in result:
+for row in result.rows:
     print(row['name'], row['age'])
 ```
 
@@ -554,13 +554,14 @@ CALL test_calculate_discount();
 ```python
 # Python integration tests
 import pytest
-from geode_client import GeodeClient
+from geode_client import Client
 
 @pytest.mark.asyncio
 async def test_process_order_procedure():
-    async with GeodeClient("localhost:3141") as client:
+    client = Client(host="localhost", port=3141)
+    async with client.connection() as conn:
         # Setup test data
-        await client.execute("""
+        await conn.execute("""
             CREATE (o:Order {
                 id: 'test_order_1',
                 status: 'pending',
@@ -569,10 +570,10 @@ async def test_process_order_procedure():
         """)
 
         # Call procedure
-        result = await client.execute("CALL process_order('test_order_1')")
+        result, _ = await conn.query("CALL process_order('test_order_1')")
 
         # Verify results
-        order = await client.execute("""
+        order = await conn.execute("""
             MATCH (o:Order {id: 'test_order_1'})
             RETURN o.status, o.processed_at
         """)
@@ -581,7 +582,7 @@ async def test_process_order_procedure():
         assert order[0]['o.processed_at'] is not None
 
         # Cleanup
-        await client.execute("MATCH (o:Order {id: 'test_order_1'}) DELETE o")
+        await conn.execute("MATCH (o:Order {id: 'test_order_1'}) DELETE o")
 ```
 
 ## Best Practices

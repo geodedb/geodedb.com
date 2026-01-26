@@ -406,8 +406,10 @@ Integrate profiling into monitoring:
 # Python example
 import geode_client
 
-async with geode_client.connect() as conn:
-    result = await conn.execute("""
+client = geode_client.open_database()
+
+async with client.connection() as conn:
+    result, _ = await conn.query("""
         PROFILE
         MATCH (u:User)-[:PURCHASED]->(p:Product)
         WHERE u.id = ?

@@ -82,9 +82,13 @@ RETURN p.name, friend.name;
 ### Go
 
 ```go
-import "go.codepros.org/geode"
+import (
+    "database/sql"
 
-db, err := sql.Open("geode", "geode://localhost:3141")
+    _ "go.codepros.org/geode"
+)
+
+db, err := sql.Open("geode", "localhost:3141")
 if err != nil {
     log.Fatal(err)
 }
@@ -96,12 +100,13 @@ rows, err := db.Query("MATCH (p:Person) RETURN p.name")
 ### Python
 
 ```python
-from geode_client import GeodeClient
+from geode_client import Client
 
-async with GeodeClient("localhost", 3141) as client:
-    result = await client.query("MATCH (p:Person) RETURN p.name")
-    async for row in result:
-        print(row["p.name"])
+client = Client(host="localhost", port=3141)
+async with client.connection() as conn:
+    page, _ = await conn.query("MATCH (p:Person) RETURN p.name AS name")
+    for row in page.rows:
+        print(row["name"].as_string)
 ```
 
 ### Rust
@@ -109,8 +114,9 @@ async with GeodeClient("localhost", 3141) as client:
 ```rust
 use geode_client::Client;
 
-let client = Client::connect("localhost:3141").await?;
-let result = client.query("MATCH (p:Person) RETURN p.name").await?;
+let client = Client::new("localhost", 3141);
+let mut conn = client.connect().await?;
+let (page, _) = conn.query("MATCH (p:Person) RETURN p.name AS name").await?;
 ```
 
 ## Next Steps

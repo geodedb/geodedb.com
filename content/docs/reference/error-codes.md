@@ -323,18 +323,20 @@ for attempt in range(max_retries):
 
 ```python
 # Python client example
-from geode_client import GeodeClient, GeodeError
+from geode_client import Client, QueryError
 
-async with GeodeClient("localhost", 3141) as client:
+client = Client(host="localhost", port=3141)
+async with client.connection() as conn:
     try:
-        result = await client.query("MATCH (p:Person) RETURN p")
-    except GeodeError as e:
-        if e.status_class == "42P01":
+        page, _ = await conn.query("MATCH (p:Person) RETURN p")
+    except QueryError as e:
+        message = str(e)
+        if message.startswith("42P01:"):
             print("Table doesn't exist - creating it")
-            await client.query("CREATE (:Person {name: 'Alice'})")
-        elif e.status_class == "53200":
+            await conn.execute("CREATE (:Person {name: 'Alice'})")
+        elif message.startswith("53200:"):
             print("Out of memory - reducing query complexity")
-            result = await client.query("MATCH (p:Person) RETURN p LIMIT 100")
+            page, _ = await conn.query("MATCH (p:Person) RETURN p LIMIT 100")
         else:
             raise
 ```
@@ -376,20 +378,20 @@ func isRetryable(err error) bool {
 
 ```rust
 // Rust client example
-use geode_client::{Client, Result};
+use geode_client::{Connection, Error, Result};
 
-async fn create_person(client: &Client, name: &str, age: i32) -> Result<()> {
+async fn create_person(conn: &mut Connection, name: &str, age: i32) -> Result<()> {
     // Validate before sending to database
     if name.is_empty() {
-        return Err(Error::ValidationError("Name cannot be empty"));
+        return Err(Error::validation("Name cannot be empty"));
     }
 
     if age < 0 || age > 150 {
-        return Err(Error::ValidationError("Age must be 0-150"));
+        return Err(Error::validation("Age must be 0-150"));
     }
 
     let query = format!("CREATE (p:Person {{name: '{}', age: {}}})", name, age);
-    client.execute(&query).await?;
+    conn.query(&query).await?;
 
     Ok(())
 }
@@ -457,18 +459,25 @@ ON MATCH SET p.updated_at = timestamp();
 ```python
 # Implement retry with exponential backoff
 import time
+from geode_client import Client, QueryError
 
-def execute_with_retry(query, max_retries=3):
+client = Client(host="localhost", port=3141)
+
+async def execute_with_retry(conn, query, max_retries=3):
     for attempt in range(max_retries):
         try:
-            client.execute("BEGIN TRANSACTION ISOLATION LEVEL SERIALIZABLE SNAPSHOT")
-            client.execute(query)
-            client.execute("COMMIT")
+            await conn.begin()
+            await conn.query(query)
+            await conn.commit()
             return
-        except TransactionConflict:
+        except QueryError:
+            await conn.rollback()
             if attempt == max_retries - 1:
                 raise
             time.sleep(0.1 * (2 ** attempt))  # Exponential backoff
+
+# async with client.connection() as conn:
+#     await execute_with_retry(conn, "MATCH (n) RETURN count(n)")
 ```
 
 ### Scenario 4: Query Timeout

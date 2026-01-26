@@ -496,15 +496,16 @@ pip install geode-client
 **Usage**:
 
 ```python
-from geode_client import GeodeClient
+from geode_client import Client
 
-async with GeodeClient("localhost", 3141) as client:
-    result = await client.query(
-        "MATCH (p:Person) WHERE p.age > $age RETURN p.name",
-        params={"age": 25}
+client = Client(host="localhost", port=3141)
+async with client.connection() as conn:
+    page, _ = await conn.query(
+        "MATCH (p:Person) WHERE p.age > $age RETURN p.name AS name",
+        params={"age": 25},
     )
-    async for row in result:
-        print(row["p.name"])
+    for row in page.rows:
+        print(row["name"].as_string)
 ```
 
 **Features**:
@@ -521,27 +522,32 @@ async with GeodeClient("localhost", 3141) as client:
 
 ```toml
 [dependencies]
-geode-client = "0.18"
+geode-client = "0.1.0"
 ```
 
 **Usage**:
 
 ```rust
-use geode_client::Client;
+use geode_client::{Client, Value};
+use std::collections::HashMap;
 
 #[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let client = Client::connect("localhost:3141").await?;
+async fn main() -> geode_client::Result<()> {
+    let client = Client::new("localhost", 3141);
+    let mut conn = client.connect().await?;
 
-    let result = client.query(
-        "MATCH (p:Person) WHERE p.age > $age RETURN p.name",
+    let mut params = HashMap::new();
+    params.insert("age".to_string(), Value::int(25));
+
+    let (page, _) = conn.query_with_params(
+        "MATCH (p:Person) WHERE p.age > $age RETURN p.name AS name",
+        &params,
     )
-    .param("age", 25)
-    .execute()
     .await?;
 
-    for row in result {
-        println!("{}", row.get::<String>("p.name")?);
+    for row in page.rows {
+        let name = row.get("name").unwrap().as_string()?;
+        println!("{}", name);
     }
 
     Ok(())
@@ -561,22 +567,27 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 **Usage**:
 
 ```zig
+const std = @import("std");
 const geode = @import("geode_client");
 
 pub fn main() !void {
-    const client = try geode.Client.connect("localhost", 3141);
-    defer client.disconnect();
+    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    defer _ = gpa.deinit();
+    const allocator = gpa.allocator();
 
-    const result = try client.query(
-        "MATCH (p:Person) WHERE p.age > $age RETURN p.name",
-        .{ .age = 25 },
-    );
-    defer result.deinit();
+    var client = geode.GeodeClient.init(allocator, "localhost", 3141, true);
+    defer client.deinit();
 
-    while (try result.next()) |row| {
-        const name = try row.get("p.name");
-        std.debug.print("{s}\n", .{name});
-    }
+    try client.connect();
+    try client.openStream();
+    try client.sendHello("geode-zig", "2.0.0");
+    _ = try client.receiveMessage(2000);
+
+    const request_id: u64 = 1;
+    try client.sendRunGql(request_id, "MATCH (p:Person) RETURN p.name", null);
+    _ = try client.receiveMessage(3000);
+    try client.sendPull(request_id, 1000);
+    _ = try client.receiveMessage(3000);
 }
 ```
 

@@ -1473,12 +1473,12 @@ geode query "MATCH (n:TestNode) DETACH DELETE n"
 tests:
   - name: "isolated-test"
     setup:
-      - begin_transaction
+      - begin
     args: ["query", "CREATE (n:TestNode {id: 1})"]
     expect:
       exit_code: 0
     teardown:
-      - rollback_transaction
+      - rollback
 ```
 
 ## Troubleshooting

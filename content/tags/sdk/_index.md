@@ -1,6 +1,6 @@
 ---
 title: "Software Development Kits (SDKs)"
-description: "Comprehensive guide to Geode SDKs including client libraries for Go, Python, Rust, and Zig with installation, configuration, API reference, and code examples for graph database development."
+description: "Comprehensive guide to Geode SDKs including client libraries for Go, Python, Node.js, Rust, and Zig with installation, configuration, API reference, and code examples for graph database development."
 keywords:
   - SDK
   - software development kit
@@ -21,7 +21,7 @@ params:
 
 # Software Development Kits (SDKs)
 
-Geode provides production-ready SDKs for Go, Python, Rust, and Zig, enabling developers to integrate graph database capabilities into applications with minimal setup. Each SDK is designed to leverage language-specific features while maintaining consistent behavior across platforms through adherence to the ISO/IEC 39075:2024 GQL standard.
+Geode provides production-ready SDKs for Go, Python, Node.js, Rust, and Zig, enabling developers to integrate graph database capabilities into applications with minimal setup. Each SDK is designed to leverage language-specific features while maintaining consistent behavior across platforms through adherence to the ISO/IEC 39075:2024 GQL standard.
 
 ## Overview
 
@@ -37,16 +37,16 @@ Geode's SDKs provide:
 
 ## SDK Comparison Matrix
 
-| Feature | Go | Python | Rust | Zig |
-|---------|----|----|------|-----|
-| **Installation** | `go get` | `pip install` | `cargo add` | `zig fetch` |
-| **Async Support** | Context-aware | async/await | tokio | Event loop |
-| **Type Safety** | Strong | Type hints | Strong | Strong |
-| **Connection Pool** | database/sql | aioquic | Quinn | Custom |
-| **Transaction Support** | ✓ | ✓ | ✓ | ✓ |
-| **Prepared Statements** | ✓ | ✓ | ✓ | ✓ |
-| **Query Builder** | Planned | ✓ | ✓ | Planned |
-| **Performance** | Workload-dependent | Workload-dependent | Workload-dependent | Workload-dependent |
+| Feature | Go | Python | Node.js | Rust | Zig |
+|---------|----|----|------|------|-----|
+| **Installation** | `go get` | `pip install` | `npm install` | `cargo add` | `zig fetch` |
+| **Async Support** | Context-aware | async/await | async/await | tokio | Event loop |
+| **Type Safety** | Strong | Type hints | TypeScript types | Strong | Strong |
+| **Connection Pool** | database/sql | ConnectionPool | Built-in pooling | Quinn | Custom |
+| **Transaction Support** | ✓ | ✓ | ✓ | ✓ | Manual |
+| **Prepared Statements** | ✓ | ✓ | ✓ | ✓ | Manual |
+| **Query Builder** | Planned | ✓ | ✓ | ✓ | Planned |
+| **Performance** | Workload-dependent | Workload-dependent | Workload-dependent | Workload-dependent | Workload-dependent |
 
 ## Go SDK
 
@@ -114,7 +114,7 @@ func main() {
 
 ### Documentation
 
-Full Go SDK documentation: [Go Client Guide](/docs/clients/go/)
+Full Go SDK documentation: [Go Client Guide](/docs/client-libraries/go-client/)
 
 ## Python SDK
 
@@ -128,28 +128,36 @@ pip install geode-client
 
 ```python
 import asyncio
-from geode_client import GeodeClient
+from geode_client import Client
 
 async def main():
     # Create client with connection pool
-    async with GeodeClient("localhost:3141") as client:
+    client = Client(host="localhost", port=3141)
+    async with client.connection() as conn:
         # Execute query
-        result = await client.execute("""
+        result, _ = await conn.query("""
             MATCH (p:Person)-[:KNOWS]->(friend:Person)
             WHERE p.name = $name
             RETURN friend.name AS name, friend.age AS age
         """, {"name": "Alice"})
 
         # Process results
-        for row in result:
-            print(f"{row['name']} is {row['age']} years old")
+        for row in result.rows:
+            print(f"{row['name'].as_string} is {row['age'].as_int} years old")
 
         # Transaction support
-        async with client.transaction() as tx:
-            await tx.execute("""
+        await conn.begin()
+        try:
+            await conn.execute(
+                """
                 CREATE (p:Person {name: $name, age: $age})
-            """, {"name": "Bob", "age": 30})
-            await tx.commit()
+                """,
+                {"name": "Bob", "age": 30},
+            )
+            await conn.commit()
+        except Exception:
+            await conn.rollback()
+            raise
 
 asyncio.run(main())
 ```
@@ -164,7 +172,7 @@ asyncio.run(main())
 
 ### Documentation
 
-Full Python SDK documentation: [Python Client Guide](/docs/clients/python/)
+Full Python SDK documentation: [Python Client Guide](/docs/client-libraries/python-client/)
 
 ## Rust SDK
 
@@ -181,36 +189,40 @@ tokio = { version = "1", features = ["full"] }
 ### Quick Start
 
 ```rust
-use geode_client::{Client, Error};
-use tokio;
+use geode_client::{Client, Result, Value};
+use std::collections::HashMap;
 
 #[tokio::main]
-async fn main() -> Result<(), Error> {
+async fn main() -> Result<()> {
     // Connect to Geode
-    let client = Client::connect("localhost:3141").await?;
+    let client = Client::new("localhost", 3141).skip_verify(true);
+    let mut conn = client.connect().await?;
 
     // Execute query
-    let results = client.execute(
-        "MATCH (p:Person)-[:KNOWS]->(friend:Person)
-         WHERE p.name = $name
-         RETURN friend.name, friend.age",
-        &[("name", "Alice")]
+    let mut params = HashMap::new();
+    params.insert("name".to_string(), Value::string("Alice"));
+    let (results, _) = conn.query_with_params(
+        "MATCH (p:Person)-[:KNOWS]->(friend:Person)\n         WHERE p.name = $name\n         RETURN friend.name AS name, friend.age AS age",
+        &params,
     ).await?;
 
     // Process results
-    for row in results {
-        let name: String = row.get("friend.name")?;
-        let age: i64 = row.get("friend.age")?;
+    for row in &results.rows {
+        let name = row.get("name").unwrap().as_string()?;
+        let age = row.get("age").unwrap().as_int()?;
         println!("{} is {} years old", name, age);
     }
 
     // Transaction
-    let mut tx = client.transaction().await?;
-    tx.execute(
+    conn.begin().await?;
+    let mut create_params = HashMap::new();
+    create_params.insert("name".to_string(), Value::string("Bob"));
+    create_params.insert("age".to_string(), Value::int(30));
+    conn.query_with_params(
         "CREATE (p:Person {name: $name, age: $age})",
-        &[("name", "Bob"), ("age", 30i64)]
+        &create_params,
     ).await?;
-    tx.commit().await?;
+    conn.commit().await?;
 
     Ok(())
 }
@@ -226,7 +238,39 @@ async fn main() -> Result<(), Error> {
 
 ### Documentation
 
-Full Rust SDK documentation: [Rust Client Guide](/docs/clients/rust/)
+Full Rust SDK documentation: [Rust Client Guide](/docs/client-libraries/rust-client/)
+
+## Node.js SDK
+
+### Installation
+
+```bash
+npm install @geode/client
+```
+
+### Quick Start
+
+```ts
+import { createClient } from '@geode/client';
+
+const client = await createClient('geode://localhost:3141');
+const rows = await client.queryAll(
+  'MATCH (p:Person) RETURN p.name AS name, p.age AS age'
+);
+console.log(rows);
+await client.close();
+```
+
+### Features
+
+- **TypeScript-first API** with strong typing
+- **Connection pooling** enabled by default
+- **Streaming queries** via async iterators
+- **Transactions** with `withTransaction` and savepoints
+
+### Documentation
+
+Full Node.js SDK documentation: [Node.js Client Guide](/docs/client-libraries/nodejs-client/)
 
 ## Zig SDK
 
@@ -245,6 +289,7 @@ Add to `build.zig.zon`:
 
 ### Quick Start
 
+<!-- CANARY: REQ=REQ-ZIG-CLIENT-001; FEATURE="Zig Client"; ASPECT=VendorQuicIntegration; STATUS=IMPL; OWNER=clients; UPDATED=2025-12-22 -->
 ```zig
 const std = @import("std");
 const geode = @import("geode_client");
@@ -254,41 +299,25 @@ pub fn main() !void {
     defer _ = gpa.deinit();
     const allocator = gpa.allocator();
 
-    // Connect to Geode
-    var client = try geode.Client.connect(allocator, "localhost:3141");
+    var client = geode.GeodeClient.init(allocator, "localhost", 3141, true);
     defer client.deinit();
 
-    // Execute query
-    const query =
-        \\MATCH (p:Person)-[:KNOWS]->(friend:Person)
-        \\WHERE p.name = $name
-        \\RETURN friend.name, friend.age
-    ;
+    try client.connect();
+    try client.openStream();
 
-    var params = geode.Params.init(allocator);
-    defer params.deinit();
-    try params.put("name", .{ .string = "Alice" });
+    try client.sendHello("docs-sdk", "1.0.0");
+    const hello = try client.receiveMessage(30000);
+    defer allocator.free(hello);
 
-    var result = try client.execute(query, params);
-    defer result.deinit();
-
-    // Process results
-    while (try result.next()) |row| {
-        const name = try row.getString("friend.name");
-        const age = try row.getInt("friend.age");
-        std.debug.print("{s} is {d} years old\n", .{ name, age });
-    }
-
-    // Transaction
-    var tx = try client.transaction();
-    defer tx.deinit();
-
-    try tx.execute(
-        "CREATE (p:Person {name: $name, age: $age})",
-        .{ .name = "Bob", .age = 30 }
+    try client.sendQuery(
+        "MATCH (p:Person)-[:KNOWS]->(friend:Person) "
+        "WHERE p.name = 'Alice' "
+        "RETURN friend.name, friend.age"
     );
+    const result = try client.receiveMessage(30000);
+    defer allocator.free(result);
 
-    try tx.commit();
+    std.debug.print("Result: {s}\\n", .{result});
 }
 ```
 
@@ -302,7 +331,7 @@ pub fn main() !void {
 
 ### Documentation
 
-Full Zig SDK documentation: [Zig Client Guide](/docs/clients/zig/)
+Full Zig SDK documentation: [Zig Client Guide](/docs/client-libraries/zig-client/)
 
 ## Common SDK Patterns
 
@@ -356,10 +385,10 @@ if err != nil {
 
 **Python**:
 ```python
-from geode_client import GeodeClient, SyntaxError, ConstraintViolation
+from geode_client import Client, SyntaxError, ConstraintViolation
 
 try:
-    result = await client.execute(query)
+    result, _ = await client.query(query)
 except SyntaxError as e:
     print(f"Query syntax error: {e}")
 except ConstraintViolation as e:
@@ -395,18 +424,33 @@ err = tx.Commit()
 
 **Python**:
 ```python
-async with client.transaction() as tx:
-    await tx.execute("CREATE (n:Node {id: $id})", {"id": 1})
-    await tx.execute("CREATE (m:Node {id: $id})", {"id": 2})
-    await tx.commit()  # Auto-commits if no exception
+async with client.connection() as conn:
+    await conn.begin()
+    try:
+        await conn.execute("CREATE (n:Node {id: $id})", {"id": 1})
+        await conn.execute("CREATE (m:Node {id: $id})", {"id": 2})
+        await conn.commit()
+    except Exception:
+        await conn.rollback()
+        raise
 ```
 
 **Rust**:
 ```rust
-let mut tx = client.transaction().await?;
-tx.execute("CREATE (n:Node {id: $id})", &[("id", 1i64)]).await?;
-tx.execute("CREATE (m:Node {id: $id})", &[("id", 2i64)]).await?;
-tx.commit().await?;
+use geode_client::Value;
+use std::collections::HashMap;
+
+let mut conn = client.connect().await?;
+conn.begin().await?;
+
+let mut params = HashMap::new();
+params.insert("id".to_string(), Value::int(1));
+conn.query_with_params("CREATE (n:Node {id: $id})", &params).await?;
+
+params.insert("id".to_string(), Value::int(2));
+conn.query_with_params("CREATE (m:Node {id: $id})", &params).await?;
+
+conn.commit().await?;
 ```
 
 ### Prepared Statements
@@ -424,12 +468,12 @@ for id := 1; id <= 100; id++ {
 
 **Python**:
 ```python
-stmt = await client.prepare(
+stmt = await conn.prepare(
     "MATCH (n:Node {id: $id}) RETURN n"
 )
 
 for i in range(100):
-    result = await stmt.execute({"id": i})
+    result, _ = await stmt.execute({"id": i})
 ```
 
 ## Performance Best Practices
@@ -470,14 +514,15 @@ func TestGeodeIntegration(t *testing.T) {
 
 ```python
 import pytest
-from geode_client import GeodeClient
+from geode_client import Client
 
 @pytest.fixture
 async def client():
-    async with GeodeClient("localhost:3141") as c:
+    client = Client(host="localhost", port=3141)
+    async with client.connection() as conn:
         # Clean up test data
-        await c.execute("MATCH (n:TestNode) DELETE n")
-        yield c
+        await conn.execute("MATCH (n:TestNode) DELETE n")
+        yield conn
 
 @pytest.mark.asyncio
 async def test_create_node(client):
@@ -486,11 +531,11 @@ async def test_create_node(client):
         {"id": 1}
     )
 
-    result = await client.execute(
+    result, _ = await client.query(
         "MATCH (n:TestNode) RETURN COUNT(n) AS count"
     )
 
-    assert result[0]['count'] == 1
+    assert result.rows[0]['count'] == 1
 ```
 
 ## Migration Guides
@@ -511,10 +556,12 @@ with driver.session() as session:
 
 **Geode (Python)**:
 ```python
-from geode_client import GeodeClient
+from geode_client import Client
 
-async with GeodeClient("localhost:3141") as client:
-    result = await client.execute(
+client = Client(host="localhost", port=3141)
+
+async with client.connection() as conn:
+    result, _ = await conn.query(
         "MATCH (p:Person {name: $name}) RETURN p",
         {"name": "Alice"}
     )
@@ -542,8 +589,9 @@ rows, err := db.Query("MATCH (u:User {name: $name}) RETURN u", "Alice")
 
 ## Further Reading
 
-- [Go SDK Documentation](/docs/clients/go/) - Complete Go guide
-- [Python SDK Documentation](/docs/clients/python/) - Python reference
-- [Rust SDK Documentation](/docs/clients/rust/) - Rust guide
-- [Zig SDK Documentation](/docs/clients/zig/) - Zig reference
+- [Go SDK Documentation](/docs/client-libraries/go-client/) - Complete Go guide
+- [Python SDK Documentation](/docs/client-libraries/python-client/) - Python reference
+- [Rust SDK Documentation](/docs/client-libraries/rust-client/) - Rust guide
+- [Node.js SDK Documentation](/docs/client-libraries/nodejs-client/) - Node.js guide
+- [Zig SDK Documentation](/docs/client-libraries/zig-client/) - Zig reference
 - [SDK Examples](/docs/examples/sdk/) - Real-world examples

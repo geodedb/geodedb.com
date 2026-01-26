@@ -1,25 +1,26 @@
 ---
 title: "Go Client"
-description: "Official Go client library for Geode"
+description: "Official Go database/sql driver for Geode graph database over QUIC + TLS 1.3"
 weight: 1
 tags:
   - go
   - golang
   - client
   - database-sql
+  - quic
+  - tls
 categories:
 keywords:
   - Geode Go client
-  - Go SDK
-  - GQL driver
-  - graph database Go
+  - Go database/sql driver
+  - ISO GQL driver
+  - graph database Go driver
+  - QUIC TLS client
   - client-libraries
   - go
 series:
   - client-libraries
 ---
-
-<!-- CANARY: REQ=REQ-CLIENT-INTEGRATION-001; FEATURE="RustClientIntegration"; ASPECT=QUICTransport; STATUS=TESTED; OWNER=clients; UPDATED=2026-01-15 -->
 
 # Go Client Library
 
@@ -48,7 +49,7 @@ import (
 
 func main() {
     // Open connection
-    db, err := sql.Open("geode", "geode://localhost:3141")
+    db, err := sql.Open("geode", "localhost:3141")
     if err != nil {
         log.Fatal(err)
     }
@@ -81,31 +82,47 @@ func main() {
 ## Connection String
 
 ```
-geode://[user:password@]host:port[/database][?param1=value1&param2=value2]
+geode://host:port?options
+host:port?options
+host:port
+host
 ```
 
-**Parameters**:
-- `timeout` - Connection timeout (default: 30s)
-- `max_pool_size` - Maximum connection pool size (default: 10)
-- `tls_verify` - Verify TLS certificate (default: true)
+**Options**:
+- `page_size` - Results page size (default: 1000)
+- `hello_name` - Client name sent in HELLO (default: `geode-go`)
+- `hello_ver` - Client version sent in HELLO (default: `0.1`)
+- `conformance` - GQL conformance level (default: `min`)
+- `ca` - Path to CA certificate
+- `cert` - Path to client certificate (mTLS)
+- `key` - Path to client key (mTLS)
+- `insecure` - Skip TLS verification (testing only)
+
+**Environment Variables**:
+- `GEODE_HOST` - Default host if DSN is empty
+- `GEODE_PORT` - Default port if not specified
+- `GEODE_TLS_CA` - Default CA certificate path
 
 **Examples**:
 ```go
 // Basic connection
 db, err := sql.Open("geode", "geode://localhost:3141")
 
-// With authentication
-db, err := sql.Open("geode", "geode://user:pass@localhost:3141")
+// With TLS verification
+db, err := sql.Open("geode", "localhost:3141?ca=/path/to/ca.crt")
 
-// With parameters
-db, err := sql.Open("geode", "geode://localhost:3141?timeout=60s&max_pool_size=20")
+// With mTLS
+db, err := sql.Open("geode", "localhost:3141?ca=/path/to/ca.crt&cert=/path/to/client.crt&key=/path/to/client.key")
+
+// With paging options
+db, err := sql.Open("geode", "localhost:3141?page_size=5000&conformance=full")
 ```
 
 ## Prepared Statements
 
 ```go
 // Prepare statement
-stmt, err := db.Prepare("MATCH (p:Person {name: $1}) RETURN p")
+stmt, err := db.Prepare("MATCH (p:Person {name: ?}) RETURN p")
 if err != nil {
     log.Fatal(err)
 }
@@ -133,13 +150,13 @@ if err != nil {
 }
 
 // Execute statements
-_, err = tx.Exec("CREATE (:Person {name: $1, age: $2})", "Alice", 30)
+_, err = tx.Exec("CREATE (:Person {name: ?, age: ?})", "Alice", 30)
 if err != nil {
     tx.Rollback()
     log.Fatal(err)
 }
 
-_, err = tx.Exec("CREATE (:Person {name: $1, age: $2})", "Bob", 25)
+_, err = tx.Exec("CREATE (:Person {name: ?, age: ?})", "Bob", 25)
 if err != nil {
     tx.Rollback()
     log.Fatal(err)
@@ -166,12 +183,15 @@ db.SetConnMaxIdleTime(1 * time.Minute)
 The Go client provides rich error types with ISO GQL status codes:
 
 ```go
+import "errors"
+
 rows, err := db.Query("MATCH (p:Invalid) RETURN p")
 if err != nil {
-    if geodeErr, ok := err.(*geode.Error); ok {
+    var geodeErr *geode.DriverError
+    if errors.As(err, &geodeErr) {
         fmt.Printf("Code: %s\n", geodeErr.Code)
         fmt.Printf("Message: %s\n", geodeErr.Message)
-        fmt.Printf("Details: %v\n", geodeErr.Details)
+        fmt.Printf("Status Class: %s\n", geodeErr.StatusClass())
     }
     log.Fatal(err)
 }
@@ -188,9 +208,23 @@ if err != nil {
 | NULL | nil |
 | LIST | []interface{} |
 | MAP | map[string]interface{} |
-| NODE | geode.Node |
-| RELATIONSHIP | geode.Relationship |
-| PATH | geode.Path |
+| NODE | map[string]any |
+| EDGE | map[string]any |
+| PATH | map[string]any |
+
+## Unicode Utilities
+
+The Go driver includes Unicode helpers used by the protocol framing layer:
+
+```go
+utf16 := geode.Utf8ToUtf16("Hello 🌍")
+utf8 := geode.Utf16ToUtf8(utf16)
+safe := geode.Wtf8Lossy([]byte{0x61, 0x80, 0x62})
+```
+
+<!-- CANARY: REQ=REQ-GQL-UNICODE-012; FEATURE="UTF-8 -> UTF-16 Conversion"; ASPECT=ClientWrapperGo; STATUS=IMPL; TEST=TestCANARY_ClientGo_Utf8Utf16RoundTrip; OWNER=clients; UPDATED=2025-09-27 -->
+<!-- CANARY: REQ=REQ-GQL-UNICODE-013; FEATURE="UTF-16 -> UTF-8 Conversion"; ASPECT=ClientWrapperGo; STATUS=IMPL; TEST=TestCANARY_ClientGo_Utf8Utf16RoundTrip; OWNER=clients; UPDATED=2025-09-27 -->
+<!-- CANARY: REQ=REQ-GQL-UNICODE-014; FEATURE="WTF-8 Lossy Decode"; ASPECT=ClientWrapperGo; STATUS=IMPL; TEST=TestCANARY_ClientGo_Wtf8Lossy; OWNER=clients; UPDATED=2025-09-27 -->
 
 ## Testing
 
@@ -203,7 +237,7 @@ func TestWithGeode(t *testing.T) {
     container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
         ContainerRequest: testcontainers.ContainerRequest{
             Image: "geode:latest",
-            ExposedPorts: []string{"3141/tcp"},
+            ExposedPorts: []string{"3141/udp"},
             WaitingFor: wait.ForLog("Server started"),
         },
         Started: true,

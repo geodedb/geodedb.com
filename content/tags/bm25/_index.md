@@ -637,13 +637,14 @@ from functools import lru_cache
 
 @lru_cache(maxsize=1000)
 async def cached_search(query: str, limit: int = 20):
-    return await client.execute("""
+    result, _ = await client.query("""
         MATCH (d:Document)
         WHERE text_search(d.content, $query)
         RETURN d.doc_id, d.title, text_score(d) AS score
         ORDER BY score DESC
         LIMIT $limit
     """, {"query": query, "limit": limit})
+    return result
 ```
 
 ## Evaluation and Tuning

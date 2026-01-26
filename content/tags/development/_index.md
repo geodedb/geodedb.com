@@ -243,19 +243,20 @@ pip install geode-client
 **Basic Usage**:
 ```python
 import asyncio
-from geode_client import GeodeClient
+from geode_client import Client
 
 async def main():
     # Connect
-    async with GeodeClient("localhost:3141") as client:
+    client = Client(host="localhost", port=3141)
+    async with client.connection() as conn:
         # Execute query
-        result = await client.query(
+        result, _ = await conn.query(
             "MATCH (p:Person) WHERE p.age > $age RETURN p.name, p.city",
             parameters={"age": 30}
         )
         
         # Process results
-        async for row in result:
+        for row in result.rows:
             print(f"{row['p.name']} from {row['p.city']}")
 
 asyncio.run(main())
@@ -264,7 +265,8 @@ asyncio.run(main())
 **Advanced Features**:
 ```python
 # Transactions
-async with client.transaction() as tx:
+async with client.connection() as tx:
+    await tx.begin()
     await tx.execute(
         "INSERT (u:User {name: $name})",
         {"name": "Alice"}
@@ -276,7 +278,7 @@ async with client.transaction() as tx:
     await tx.commit()
 
 # Connection pooling
-client = GeodeClient(
+client = Client(
     "localhost:3141",
     pool_size=20,
     max_overflow=10
@@ -294,7 +296,7 @@ query = (
     .limit(10)
 )
 
-result = await client.query(query.build(), {"age": 30})
+result, _ = await tx.query(query.build(), {"age": 30})
 ```
 
 ### Rust Client
@@ -308,22 +310,32 @@ tokio = { version = "1", features = ["full"] }
 
 **Basic Usage**:
 ```rust
-use geode_client::{GeodeClient, Error};
+use geode_client::{Client, Error, Value};
+use std::collections::HashMap;
 
 #[tokio::main]
 async fn main() -> Result<(), Error> {
     // Connect
-    let client = GeodeClient::connect("localhost:3141").await?;
+    let client = Client::from_dsn("localhost:3141")?;
+    let mut conn = client.connect().await?;
     
     // Execute query
-    let mut result = client.query(
-        "MATCH (p:Person) WHERE p.age > $age RETURN p.name, p.city",
-        &[("age", 30.into())]
-    ).await?;
+    let mut params = HashMap::new();
+    params.insert("age".to_string(), Value::int(30));
+    let (page, _) = conn
+        .query_with_params(
+            "MATCH (p:Person) WHERE p.age > $age RETURN p.name, p.city",
+            &params,
+        )
+        .await?;
     
     // Process results
-    while let Some(row) = result.next().await? {
-        println!("{} from {}", row["p.name"], row["p.city"]);
+    for row in &page.rows {
+        println!(
+            \"{} from {}\",
+            row.get(\"p.name\").unwrap().as_string()?,
+            row.get(\"p.city\").unwrap().as_string()?
+        );
     }
     
     Ok(())
@@ -333,14 +345,15 @@ async fn main() -> Result<(), Error> {
 **Advanced Features**:
 ```rust
 // Transactions
-let mut tx = client.begin_transaction().await?;
+use geode_client::Value;
+use std::collections::HashMap;
 
-tx.execute(
-    "INSERT (u:User {name: $name})",
-    &[("name", "Alice".into())]
-).await?;
-
-tx.commit().await?;
+let mut conn = client.connect().await?;
+conn.begin().await?;
+let mut params = HashMap::new();
+params.insert("name".to_string(), Value::string("Alice"));
+conn.query_with_params("CREATE (u:User {name: $name})", &params).await?;
+conn.commit().await?;
 
 // Concurrent queries
 use futures::future::join_all;
@@ -410,30 +423,31 @@ observer.start()
 **Unit Tests** (test queries in isolation):
 ```python
 import pytest
-from geode_client import GeodeClient
+from geode_client import Client
 
 @pytest.fixture
 async def client():
-    async with GeodeClient("localhost:3141") as c:
+    client = Client("localhost:3141")
+    async with client.connection() as c:
         yield c
 
 @pytest.mark.asyncio
 async def test_create_user(client):
     # Setup
-    await client.query("DELETE (u:User {email: 'test@example.com'})")
+    await c.query("DELETE (u:User {email: 'test@example.com'})")
     
     # Execute
-    await client.query(
+    await c.query(
         "INSERT (u:User {email: $email, name: $name})",
         {"email": "test@example.com", "name": "Test User"}
     )
     
     # Verify
-    result = await client.query(
+    result, _ = await c.query(
         "MATCH (u:User {email: $email}) RETURN u.name",
         {"email": "test@example.com"}
     )
-    rows = [row async for row in result]
+    rows = [row for row in result.rows]
     assert len(rows) == 1
     assert rows[0]['u.name'] == "Test User"
 ```
@@ -443,15 +457,16 @@ async def test_create_user(client):
 @pytest.mark.integration
 async def test_order_creation_workflow(client):
     # Create test data
-    await client.query(
+    await tx.query(
         "INSERT (u:User {id: 'test_user', name: 'Test'})"
     )
-    await client.query(
+    await tx.query(
         "INSERT (p:Product {id: 'test_prod', price: 99.99})"
     )
     
     # Execute workflow
-    async with client.transaction() as tx:
+    async with client.connection() as tx:
+        await tx.begin()
         await tx.execute(
             "INSERT (o:Order {id: 'test_order', total: 99.99})"
         )
@@ -462,11 +477,11 @@ async def test_order_creation_workflow(client):
         await tx.commit()
     
     # Verify
-    result = await client.query(
+    result, _ = await tx.query(
         "MATCH (u:User {id: 'test_user'})-[:PLACED]->(o:Order) "
         "RETURN o.id, o.total"
     )
-    rows = [row async for row in result]
+    rows = [row for row in result.rows]
     assert len(rows) == 1
     assert rows[0]['o.total'] == 99.99
 ```
@@ -509,8 +524,8 @@ import logging
 
 logging.basicConfig(level=logging.DEBUG)
 
-# GeodeClient will log all queries
-client = GeodeClient("localhost:3141")
+# Client will log all queries
+client = Client("localhost:3141")
 ```
 
 ### Profile Queries
@@ -581,11 +596,11 @@ Here's a complete example - a social network API:
 ```python
 # app.py
 from fastapi import FastAPI, HTTPException
-from geode_client import GeodeClient
+from geode_client import Client
 from pydantic import BaseModel
 
 app = FastAPI()
-client = GeodeClient("localhost:3141", pool_size=20)
+client = Client("localhost:3141", pool_size=20)
 
 class User(BaseModel):
     id: str
@@ -610,7 +625,7 @@ async def create_user(user: User):
 
 @app.get("/users/{user_id}/friends")
 async def get_friends(user_id: str):
-    result = await client.query(
+    result, _ = await client.query(
         "MATCH (u:User {id: $id})-[:FRIENDS_WITH]->(friend:User) "
         "RETURN friend.id, friend.name",
         {"id": user_id}
@@ -618,13 +633,13 @@ async def get_friends(user_id: str):
     
     friends = [
         {"id": row['friend.id'], "name": row['friend.name']}
-        async for row in result
+        for row in result.rows
     ]
     return {"friends": friends}
 
 @app.get("/users/{user_id}/recommendations")
 async def get_friend_recommendations(user_id: str):
-    result = await client.query(
+    result, _ = await client.query(
         "MATCH (u:User {id: $id})-[:FRIENDS_WITH]->(f1)-[:FRIENDS_WITH]->(f2) "
         "WHERE f2 <> u AND NOT EXISTS { MATCH (u)-[:FRIENDS_WITH]->(f2) } "
         "RETURN f2.id, f2.name, count(f1) AS mutual_friends "
@@ -639,7 +654,7 @@ async def get_friend_recommendations(user_id: str):
             "name": row['f2.name'],
             "mutual_friends": row['mutual_friends']
         }
-        async for row in result
+        for row in result.rows
     ]
     return {"recommendations": recommendations}
 

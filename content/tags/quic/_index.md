@@ -131,15 +131,16 @@ Geode fully supports QUIC connection migration:
 import geode_client
 
 # Client maintains connection during network changes
-async with geode_client.connect('geode://db.example.com:3141') as conn:
+client = geode_client.open_database('geode://db.example.com:3141')
+async with client.connection() as conn:
     # Execute query on WiFi
-    result = await conn.execute("MATCH (n:Person) RETURN count(n)")
+    result, _ = await conn.query("MATCH (n:Person) RETURN count(n)")
 
     # User moves from WiFi to cellular - connection migrates automatically
     # Network stack detects new path, validates it, and migrates connection
 
     # Subsequent query uses migrated connection without interruption
-    result = await conn.execute("MATCH (n:Product) RETURN count(n)")
+    result, _ = await conn.query("MATCH (n:Product) RETURN count(n)")
 ```
 
 ### 0-RTT Resumption
@@ -148,14 +149,16 @@ Geode supports 0-RTT for repeat connections:
 
 ```python
 # First connection: 1-RTT handshake
-async with geode_client.connect('geode://db.example.com:3141') as conn:
-    result = await conn.execute("MATCH (n) RETURN count(n)")
+client = geode_client.open_database('geode://db.example.com:3141')
+async with client.connection() as conn:
+    result, _ = await conn.query("MATCH (n) RETURN count(n)")
 # Server sends session ticket for resumption
 
 # Second connection within ticket lifetime: 0-RTT
-async with geode_client.connect('geode://db.example.com:3141') as conn:
+client = geode_client.open_database('geode://db.example.com:3141')
+async with client.connection() as conn:
     # Query sent in first packet, no handshake wait
-    result = await conn.execute("MATCH (n) RETURN count(n)")
+    result, _ = await conn.query("MATCH (n) RETURN count(n)")
 ```
 
 ## Use Cases
@@ -168,15 +171,16 @@ import asyncio
 
 async def measure_query_latency():
     """Measure end-to-end query latency with QUIC."""
-    async with geode_client.connect('geode://localhost:3141') as conn:
+    client = geode_client.open_database('geode://localhost:3141')
+    async with client.connection() as conn:
         for i in range(100):
             start = asyncio.get_event_loop().time()
 
-            result = await conn.execute(
+            result, _ = await conn.query(
                 "MATCH (n:Person {id: $id}) RETURN n.name",
                 {"id": i}
             )
-            row = await result.fetch_one()
+            row = result.rows[0] if result.rows else None
 
             latency = (asyncio.get_event_loop().time() - start) * 1000
             print(f"Query {i}: {latency:.2f}ms")
@@ -192,7 +196,8 @@ async def measure_query_latency():
 ```python
 async def concurrent_queries():
     """Execute multiple queries in parallel over QUIC streams."""
-    async with geode_client.connect('geode://localhost:3141') as conn:
+    client = geode_client.open_database('geode://localhost:3141')
+    async with client.connection() as conn:
         # All queries use the same QUIC connection but different streams
         results = await asyncio.gather(
             conn.execute("MATCH (p:Person) RETURN count(p)"),
@@ -202,7 +207,7 @@ async def concurrent_queries():
         )
 
         for i, result in enumerate(results):
-            row = await result.fetch_one()
+            row = result.rows[0] if result.rows else None
             print(f"Query {i}: {row[0]} entities")
 
 # QUIC multiplexing allows all queries to execute concurrently
@@ -212,39 +217,27 @@ async def concurrent_queries():
 ### Mobile Application Resilience
 
 ```python
-class MobileGeodeClient:
-    """Database client that handles network transitions."""
+import asyncio
+from geode_client import GeodeConnectionError, open_database
+
+class MobileClient:
+    """Database client that retries on transient network loss."""
 
     def __init__(self, url: str):
-        self.url = url
-        self.conn = None
+        self.client = open_database(url)
 
     async def query(self, gql: str):
-        """Execute query with automatic reconnection."""
-        if not self.conn:
-            # QUIC connection with 0-RTT resumption
-            self.conn = await geode_client.connect(
-                self.url,
-                enable_0rtt=True,
-                connection_migration=True
-            )
-
-        try:
-            result = await self.conn.execute(gql)
-            return await result.fetch_all()
-        except geode_client.ConnectionLost:
-            # QUIC connection migrated or lost
-            # Automatic reconnection with 0-RTT
-            self.conn = await geode_client.connect(
-                self.url,
-                enable_0rtt=True,
-                connection_migration=True
-            )
-            result = await self.conn.execute(gql)
-            return await result.fetch_all()
+        """Execute query with a simple reconnect loop."""
+        while True:
+            try:
+                async with self.client.connection() as conn:
+                    result, _ = await conn.query(gql)
+                    return result.rows
+            except GeodeConnectionError:
+                await asyncio.sleep(0.5)
 
 # Usage in mobile app
-client = MobileGeodeClient('geode://db.example.com:3141')
+client = MobileClient('geode://db.example.com:3141')
 
 # Works seamlessly across WiFi/cellular transitions
 results = await client.query("MATCH (n:Person) RETURN n.name LIMIT 10")
@@ -253,25 +246,21 @@ results = await client.query("MATCH (n:Person) RETURN n.name LIMIT 10")
 ### WAN Optimization
 
 ```python
+from geode_client import ConnectionPool
+
 async def wan_optimized_queries():
     """Optimize queries over high-latency WAN links."""
-    async with geode_client.connect(
-        'geode://remote-db.example.com:3141',
-        max_streams=50,  # Allow many concurrent streams
-        enable_0rtt=True,  # Minimize connection latency
-        congestion_control='bbr'  # BBR for high-latency links
-    ) as conn:
-        # Pipeline multiple queries without waiting for responses
-        futures = []
-        for i in range(50):
-            future = conn.execute(f"MATCH (n:Person {{id: {i}}}) RETURN n")
-            futures.append(future)
+    pool = ConnectionPool(host="remote-db.example.com", port=3141, max_size=20)
+    async with pool:
+        async def run_query(i: int):
+            async with pool.acquire() as conn:
+                result, _ = await conn.query(
+                    "MATCH (n:Person {id: $id}) RETURN n",
+                    {"id": i},
+                )
+                return result.rows
 
-        # Await all results
-        results = await asyncio.gather(*futures)
-
-        # QUIC multiplexing allows full throughput utilization
-        # without head-of-line blocking
+        results = await asyncio.gather(*(run_query(i) for i in range(50)))
 ```
 
 ## Best Practices

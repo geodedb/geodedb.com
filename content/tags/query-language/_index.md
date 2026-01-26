@@ -495,11 +495,13 @@ RETURN u.name, COUNT(p) AS posts
 ### Python
 
 ```python
-from geode_client import GeodeClient
+from geode_client import Client
 
-async with GeodeClient("localhost:3141") as client:
+client = Client(host="localhost", port=3141)
+
+async with client.connection() as conn:
     # Simple query
-    result = await client.query("""
+    result, _ = await conn.query("""
         MATCH (u:User)
         WHERE u.age >= $min_age
         RETURN u.name, u.age
@@ -507,11 +509,11 @@ async with GeodeClient("localhost:3141") as client:
         LIMIT 10
     """, {"min_age": 18})
 
-    async for row in result:
+    for row in result.rows:
         print(f"{row['name']}: {row['age']}")
 
     # Parameterized write
-    await client.query("""
+    await conn.query("""
         CREATE (u:User {
             name: $name,
             email: $email,

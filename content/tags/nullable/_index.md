@@ -147,11 +147,13 @@ Python client example:
 
 ```python
 # Python - COALESCE in queries
-from geode_client import GeodeClient
+from geode_client import Client
 
-async with GeodeClient("localhost:3141") as client:
+client = Client(host="localhost", port=3141)
+
+async with client.connection() as conn:
     # Get user display names with fallback logic
-    result = await client.execute("""
+    result, _ = await conn.query("""
         MATCH (u:User)
         RETURN
             u.id,
@@ -383,7 +385,7 @@ fn format_full_name(person: &Person) -> String {
 # Python - NULL handling with None
 from typing import Optional
 from dataclasses import dataclass
-from geode_client import GeodeClient
+from geode_client import Client
 
 @dataclass
 class User:
@@ -393,7 +395,7 @@ class User:
     bio: Optional[str] = None
     last_login: Optional[str] = None
 
-async def create_user(client: GeodeClient, email: str, phone: Optional[str] = None):
+async def create_user(client: Client, email: str, phone: Optional[str] = None):
     """Create user with optional phone number."""
     params = {"email": email}
 
@@ -403,12 +405,12 @@ async def create_user(client: GeodeClient, email: str, phone: Optional[str] = No
     else:
         query = "INSERT (u:User {email: $email}) RETURN u"
 
-    result = await client.execute(query, params)
+    result, _ = await client.query(query, params)
     return result.bindings[0]["u"]
 
-async def get_contact_info(client: GeodeClient, user_id: str) -> str:
+async def get_contact_info(client: Client, user_id: str) -> str:
     """Get contact info with NULL-safe formatting."""
-    result = await client.execute(
+    result, _ = await client.query(
         "MATCH (u:User {id: $id}) RETURN u.email, u.phone",
         {"id": user_id}
     )

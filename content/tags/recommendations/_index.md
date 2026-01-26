@@ -409,11 +409,11 @@ LIMIT 20;
 ### Python Client
 
 ```python
-from geode_client import GeodeClient
+from geode_client import Client
 
 async def get_recommendations(client, user_id, limit=20):
     # Collaborative filtering recommendations
-    result = await client.execute("""
+    result, _ = await client.query("""
         MATCH (user:User {id: $user_id})-[:RATED]->(item:Product)<-[:RATED]-(similar:User)
         WHERE user <> similar
         WITH similar, COUNT(DISTINCT item) AS common_items

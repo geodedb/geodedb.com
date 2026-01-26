@@ -551,7 +551,7 @@ Optimize latent factors iteratively:
 
 ```python
 # External computation with Spark MLlib or custom implementation
-from geode_client import GeodeClient
+from geode_client import Client
 import numpy as np
 
 async def compute_als_factors(client, rank=50, iterations=10, lambda_reg=0.1):
@@ -562,7 +562,7 @@ async def compute_als_factors(client, rank=50, iterations=10, lambda_reg=0.1):
     for iteration in range(iterations):
         # Fix item factors, solve for user factors
         for u in range(num_users):
-            user_ratings = await client.execute("""
+            user_ratings, _ = await client.query("""
                 MATCH (u:User {user_id: $uid})-[r:RATED]->(i:Item)
                 RETURN i.item_idx AS item_idx, r.rating AS rating
             """, {"uid": u})

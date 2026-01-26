@@ -287,21 +287,19 @@ docker run -p 3141:3141 geodedb/geode:0.18.0
 **Client Version Selection**:
 
 ```go
-// Go - specify server version in connection
-conn, err := geode.Connect("geode://localhost:3141?version=0.18.0")
+// Go - include client version in HELLO
+db, err := sql.Open("geode", "localhost:3141?hello_ver=0.18.0")
 
-// Python - version negotiation
-client = GeodeClient(
+// Python - include client version in HELLO
+client = Client(
     host="localhost",
     port=3141,
-    preferred_version="0.18.0",
-    min_version="0.18.0"
+    hello_ver="0.18.0"
 )
 
-// Rust - version requirement
-let client = GeodeClient::connect("geode://localhost:3141")
-    .require_version("0.18.0")
-    .await?;
+// Rust - include client version in HELLO
+let client = Client::new("localhost", 3141).hello_ver("0.18.0");
+let mut conn = client.connect().await?;
 ```
 
 ## Version Metadata

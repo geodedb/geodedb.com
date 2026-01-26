@@ -110,12 +110,15 @@ RETURN p.name
 ```
 
 ```go
-db, err := sql.Open("geode", "geode://localhost:3141")
+db, err := sql.Open("geode", "localhost:3141")
 ```
 
 ```python
-async with GeodeClient("localhost", 3141) as client:
-    result = await client.query("MATCH (p:Person) RETURN p.name")
+from geode_client import Client
+
+client = Client(host="localhost", port=3141)
+async with client.connection() as conn:
+    page, _ = await conn.query("MATCH (p:Person) RETURN p.name AS name")
 ```
 ````
 

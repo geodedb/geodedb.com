@@ -175,10 +175,9 @@ tracer.configure(
 
 # Geode queries automatically traced
 async def get_user_preferences(user_id):
-    client = await geode_client.connect('localhost:3141')
-
+    client = geode_client.open_database('localhost:3141')
     # This query automatically creates a span in Datadog
-    result = await client.execute(
+    result, _ = await client.query(
         "MATCH (u:User {id: $id})-[:LIKES]->(p:Product) RETURN p",
         {"id": user_id}
     )
@@ -303,10 +302,9 @@ apm = ElasticAPM(app)
 @app.route('/recommendations/<user_id>')
 async def recommendations(user_id):
     # Transaction automatically created and traced
-    client = await geode_client.connect('localhost:3141')
-
+    client = geode_client.open_database('localhost:3141')
     # Geode query creates span
-    result = await client.execute(
+    result, _ = await client.query(
         "MATCH (u:User {id: $id})-[:LIKES]->(p:Product) RETURN p",
         {"id": user_id}
     )
@@ -371,7 +369,7 @@ Add custom tags to queries for APM categorization:
 
 ```python
 # Tag queries by category
-result = await client.execute(
+result, _ = await client.query(
     query,
     params,
     tags={

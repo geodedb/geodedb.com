@@ -222,12 +222,13 @@ CREATE (u:User {email: 'existing@example.com'});
 ### Detecting Violations
 
 ```python
-from geode_client import GeodeClient, UniqueViolationError
+from geode_client import Client, UniqueViolationError
 
 async def create_user(email, name):
     try:
-        async with GeodeClient("localhost:3141") as client:
-            result = await client.execute("""
+        client = Client(host="localhost", port=3141)
+        async with client.connection() as conn:
+            result, _ = await conn.query("""
                 CREATE (u:User {
                     email: $email,
                     name: $name
@@ -235,7 +236,7 @@ async def create_user(email, name):
                 RETURN u.id
             """, {"email": email, "name": name})
 
-            return result[0]['u.id']
+            return result.rows[0]['u.id']
 
     except UniqueViolationError as e:
         print(f"Email {email} already exists")
@@ -326,25 +327,26 @@ ON CONFLICT (sku) DO NOTHING;
 
 ```python
 async def upsert_user(email, name):
-    async with GeodeClient("localhost:3141") as client:
+    client = Client(host="localhost", port=3141)
+    async with client.connection() as conn:
         # Try insert first
         try:
-            result = await client.execute("""
+            result, _ = await conn.query("""
                 CREATE (u:User {email: $email, name: $name})
                 RETURN u.id AS id, 'created' AS action
             """, {"email": email, "name": name})
 
-            return result[0]
+            return result.rows[0]
 
         except UniqueViolationError:
             # Update existing
-            result = await client.execute("""
+            result, _ = await conn.query("""
                 MATCH (u:User {email: $email})
                 SET u.name = $name, u.updated_at = NOW()
                 RETURN u.id AS id, 'updated' AS action
             """, {"email": email, "name": name})
 
-            return result[0]
+            return result.rows[0]
 ```
 
 ## Managing Constraints
@@ -420,11 +422,11 @@ CREATE INDEX idx_user_status ON User(status);
 # Cost: O(log n) with unique index
 
 # Without unique constraint, application must query:
-result = await client.execute(
+result, _ = await client.query(
     "MATCH (u:User {email: $email}) RETURN COUNT(u)",
     {"email": email}
 )
-if result[0]['COUNT(u)'] > 0:
+if result.rows[0]['COUNT(u)'] > 0:
     raise ValueError("Email already exists")
 # Cost: O(log n) + application round-trip
 # Less efficient than database constraint
@@ -446,27 +448,29 @@ if result[0]['COUNT(u)'] > 0:
 # Good: Let database enforce uniqueness
 async def create_user(email, name):
     try:
-        return await client.execute(
+        result, _ = await client.query(
             "CREATE (u:User {email: $email, name: $name})",
             {"email": email, "name": name}
         )
+        return result
     except UniqueViolationError:
         return None  # Handle duplicate
 
 # Bad: Check-then-insert (race condition)
 async def create_user_bad(email, name):
     # Race condition between check and insert!
-    existing = await client.execute(
+    existing, _ = await client.query(
         "MATCH (u:User {email: $email}) RETURN u",
         {"email": email}
     )
     if existing:
         return None
 
-    return await client.execute(
+    result, _ = await client.query(
         "CREATE (u:User {email: $email, name: $name})",
         {"email": email, "name": name}
     )
+    return result
 ```
 
 ### Error Handling

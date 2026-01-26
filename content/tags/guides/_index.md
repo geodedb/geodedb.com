@@ -59,11 +59,11 @@ A social media platform might model users, posts, comments, likes, and shares as
 
 ```python
 class UserRepository:
-    def __init__(self, client: GeodeClient):
+    def __init__(self, client: Client):
         self.client = client
 
     async def find_user_by_id(self, user_id: str) -> Optional[User]:
-        result = await self.client.execute(
+        result, _ = await self.client.query(
             "MATCH (u:User {id: $id}) RETURN u",
             id=user_id
         )
@@ -71,12 +71,12 @@ class UserRepository:
         return User.from_row(row) if row else None
 
     async def find_friends(self, user_id: str) -> List[User]:
-        result = await self.client.execute("""
+        result, _ = await self.client.query("""
             MATCH (u:User {id: $id})-[:FRIENDS]->(friend:User)
             RETURN friend
             ORDER BY friend.name
         """, id=user_id)
-        return [User.from_row(row) async for row in result]
+        return [User.from_row(row) for row in result.rows]
 ```
 
 **Go Integration**: Use the standard database/sql interface for familiar patterns, implement repository structs that encapsulate query logic, and leverage struct tags for result mapping. The guide demonstrates connection pool configuration and graceful shutdown handling.

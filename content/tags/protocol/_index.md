@@ -420,7 +420,7 @@ import json
 from aioquic.asyncio import connect
 from aioquic.quic.configuration import QuicConfiguration
 
-class GeodeClient:
+class Client:
     def __init__(self, host, port):
         self.host = host
         self.port = port
@@ -479,7 +479,7 @@ class GeodeClient:
 
 # Usage
 async def main():
-    client = GeodeClient("localhost", 3141)
+    client = Client("localhost", 3141)
     await client.connect()
 
     results = await client.query(
@@ -545,7 +545,7 @@ async def stream_results(connection, query):
 
     schema = await receive_schema(connection)
 
-    async for row in receive_rows(connection):
+    for row in receive_rows.rows(connection):
         yield row  # Process immediately, don't buffer
 ```
 

@@ -404,55 +404,71 @@ RETURN {
 
 ### Live Notifications
 
+<!-- CANARY: REQ=REQ-CLIENT-PY-001; FEATURE="PythonClientConnection"; ASPECT=HelloHandshake; STATUS=IMPL; OWNER=clients; UPDATED=2025-02-14 -->
+
 ```python
-# Python client - Real-time notifications with CDC
-from geode_client import GeodeClient
+# Python client - Polling-based notifications
+# (Current clients do not expose CDC streams; use polling or a custom CDC service.)
+from geode_client import Client
 import asyncio
 
-client = GeodeClient("geode.example.com:3141")
+client = Client(host="geode.example.com", port=3141)
 
-async def subscribe_to_notifications(user_id):
-    """Subscribe to real-time notifications via CDC"""
+async def poll_notifications(user_id):
+    last_seen = None
+    async with client.connection() as conn:
+        while True:
+            page, _ = await conn.query("""
+                MATCH (u:User {id: $user_id})<-[r]-()
+                WHERE $last_seen IS NULL OR r.timestamp > $last_seen
+                RETURN type(r) AS rel_type, r.timestamp AS ts
+                ORDER BY ts DESC
+                LIMIT 20
+            """, {"user_id": user_id, "last_seen": last_seen})
 
-    # Subscribe to changes
-    async for event in client.subscribe_cdc(
-        filters=[f"MATCH (:User {{id: '{user_id}'}})<-[r]-()"]
-    ):
-        if event.change_type == 'insert':
-            # New interaction
-            rel_type = event.entity_type
-            if rel_type == 'LIKED':
-                print(f"Someone liked your post!")
-            elif rel_type == 'FOLLOWED':
-                print(f"New follower!")
-            elif rel_type == 'COMMENTED':
-                print(f"New comment on your post")
+            for row in page.rows:
+                rel_type = row["rel_type"].raw_value
+                if rel_type == "LIKED":
+                    print("Someone liked your post!")
+                elif rel_type == "FOLLOWED":
+                    print("New follower!")
+                elif rel_type == "COMMENTED":
+                    print("New comment on your post")
 
-# Run subscriber
-asyncio.run(subscribe_to_notifications('u1'))
+            if page.rows:
+                last_seen = page.rows[0]["ts"].raw_value
+
+            await asyncio.sleep(2)
+
+asyncio.run(poll_notifications("u1"))
 ```
 
 ### Real-Time Feed Updates
 
 ```python
-# Stream new posts from followed users
-async def get_live_feed(user_id):
-    """Get live updates for user's feed"""
+# Poll for new posts from followed users
+async def poll_live_feed(user_id):
+    last_seen = None
+    async with client.connection() as conn:
+        while True:
+            page, _ = await conn.query("""
+                MATCH (me:User {id: $user_id})-[:FOLLOWS]->(friend:User)
+                      -[:POSTED]->(p:Post)
+                WHERE $last_seen IS NULL OR p.created_at > $last_seen
+                RETURN friend.username AS username, p.content AS content, p.created_at AS created_at
+                ORDER BY p.created_at DESC
+                LIMIT 50
+            """, {"user_id": user_id, "last_seen": last_seen})
 
-    query = """
-        MATCH (me:User {id: $user_id})-[:FOLLOWS]->(friend:User)
-        RETURN collect(friend.id) AS following
-    """
+            for row in page.rows:
+                username = row["username"].raw_value
+                content = row["content"].raw_value
+                print(f"New post from {username}: {content}")
 
-    result = await client.execute_async(query, {'user_id': user_id})
-    following_ids = result[0]['following']
+            if page.rows:
+                last_seen = page.rows[0]["created_at"].raw_value
 
-    # Subscribe to posts from following
-    filter_pattern = f"MATCH (u:User)-[:POSTED]->(p:Post) WHERE u.id IN {following_ids}"
-
-    async for event in client.subscribe_cdc(filters=[filter_pattern]):
-        if event.change_type == 'insert':
-            print(f"New post from {event.metadata['username']}: {event.after['content']}")
+            await asyncio.sleep(3)
 ```
 
 ## Performance Optimization
@@ -493,28 +509,44 @@ RETURN user.username;
 
 ```python
 # Cache frequently accessed data
-from functools import lru_cache
-from geode_client import GeodeClient
+from geode_client import Client
 
-client = GeodeClient("geode.example.com:3141")
+client = Client(host="geode.example.com", port=3141)
+profile_cache = {}
+followers_cache = {}
 
-@lru_cache(maxsize=10000)
-def get_user_profile(user_id):
+async def get_user_profile(conn, user_id):
     """Cache user profiles"""
-    result = client.execute("""
+    if user_id in profile_cache:
+        return profile_cache[user_id]
+
+    page, _ = await conn.query("""
         MATCH (u:User {id: $id})
         RETURN u.username, u.name, u.bio, u.verified
     """, {'id': user_id})
-    return result[0] if result else None
 
-@lru_cache(maxsize=1000)
-def get_follower_count(user_id):
+    profile = page.rows[0] if page.rows else None
+    profile_cache[user_id] = profile
+    return profile
+
+async def get_follower_count(conn, user_id):
     """Cache follower counts"""
-    result = client.execute("""
+    if user_id in followers_cache:
+        return followers_cache[user_id]
+
+    page, _ = await conn.query("""
         MATCH (:User {id: $id})<-[:FOLLOWS]-(follower)
         RETURN count(follower) AS count
     """, {'id': user_id})
-    return result[0]['count']
+
+    count = page.rows[0]["count"].raw_value if page.rows else 0
+    followers_cache[user_id] = count
+    return count
+
+# Usage
+# async with client.connection() as conn:
+#     profile = await get_user_profile(conn, "u1")
+#     count = await get_follower_count(conn, "u1")
 ```
 
 ## Metrics and KPIs

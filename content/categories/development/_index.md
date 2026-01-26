@@ -158,7 +158,8 @@ import asyncio
 
 async def get_user_recommendations(user_id: int, limit: int = 10):
     """Get product recommendations for a user."""
-    async with geode_client.connect('geode://localhost:3141') as conn:
+    client = geode_client.open_database('geode://localhost:3141')
+    async with client.connection() as conn:
         query = """
             MATCH (user:User {id: $user_id})-[:PURCHASED]->(product:Product)
                  <-[:PURCHASED]-(similar:User)-[:PURCHASED]->(rec:Product)
@@ -172,13 +173,13 @@ async def get_user_recommendations(user_id: int, limit: int = 10):
             LIMIT $limit
         """
 
-        result = await conn.execute(query, {
+        result, _ = await conn.query(query, {
             'user_id': user_id,
             'limit': limit
         })
 
         recommendations = []
-        async for row in result:
+        for row in result.rows:
             recommendations.append({
                 'product': row['product'],
                 'price': row['price'],
@@ -300,7 +301,8 @@ import geode_client
 @pytest.fixture
 async def db():
     """Provide test database connection."""
-    async with geode_client.connect('geode://localhost:3141') as conn:
+    client = geode_client.open_database('geode://localhost:3141')
+    async with client.connection() as conn:
         # Setup: Create test data
         await conn.execute("""
             INSERT (:Person {id: 1, name: 'Alice', age: 30}),
@@ -316,7 +318,7 @@ async def db():
 @pytest.mark.asyncio
 async def test_friend_recommendation(db):
     """Test friend recommendation query."""
-    result = await db.execute("""
+    result, _ = await db.query("""
         MATCH (p:Person {id: 1})-[:KNOWS]->()-[:KNOWS]->(foaf:Person)
         WHERE NOT EXISTS {
             MATCH (p)-[:KNOWS]->(foaf)
@@ -324,7 +326,7 @@ async def test_friend_recommendation(db):
         RETURN foaf.name AS recommended_friend
     """)
 
-    friends = [row['recommended_friend'] async for row in result]
+    friends = [row['recommended_friend'] for row in result.rows]
     assert len(friends) > 0
 ```
 
@@ -428,7 +430,7 @@ pool = DatabasePool("geode://localhost:3141")
 await pool.initialize()
 
 async with pool.acquire() as conn:
-    result = await conn.execute("MATCH (n) RETURN count(n)")
+    result, _ = await conn.query("MATCH (n) RETURN count(n)")
 ```
 
 ### Query Builder Pattern
@@ -550,7 +552,7 @@ class UserRepository(Repository):
     async def find_by_id(self, user_id: int) -> Optional[dict]:
         """Find user by ID."""
         async with self.pool.acquire() as conn:
-            result = await conn.execute("""
+            result, _ = await conn.query("""
                 MATCH (u:User {id: $id})
                 RETURN u.id AS id,
                        u.name AS name,
@@ -558,28 +560,28 @@ class UserRepository(Repository):
                        u.created AS created
             """, {"id": user_id})
 
-            return await result.fetch_one()
+            return result.rows[0] if result.rows else None
 
     async def find_by_email(self, email: str) -> Optional[dict]:
         """Find user by email."""
         async with self.pool.acquire() as conn:
-            result = await conn.execute("""
+            result, _ = await conn.query("""
                 MATCH (u:User {email: $email})
                 RETURN u.id AS id, u.name AS name, u.email AS email
             """, {"email": email})
 
-            return await result.fetch_one()
+            return result.rows[0] if result.rows else None
 
     async def find_all(self) -> List[dict]:
         """Get all users."""
         async with self.pool.acquire() as conn:
-            result = await conn.execute("""
+            result, _ = await conn.query("""
                 MATCH (u:User)
                 RETURN u.id AS id, u.name AS name, u.email AS email
                 ORDER BY u.created DESC
             """)
 
-            return [row async for row in result]
+            return [row for row in result.rows]
 
     async def save(self, user: dict):
         """Create or update user."""
@@ -651,7 +653,8 @@ async def execute_with_retry(func, max_retries=3, backoff_factor=2):
 # Usage
 async def transfer_money(from_id, to_id, amount):
     async with pool.acquire() as conn:
-        async with conn.transaction() as tx:
+        async with conn.connection() as tx:
+            await tx.begin()
             await tx.execute("""
                 MATCH (from:Account {id: $from_id})
                 SET from.balance = from.balance - $amount
@@ -735,7 +738,7 @@ class SlowQueryLogger:
         """Execute query with timing."""
         start = time.perf_counter()
         try:
-            result = await conn.execute(query, params)
+            result, _ = await conn.query(query, params)
             return result
         finally:
             duration_ms = (time.perf_counter() - start) * 1000
@@ -753,7 +756,7 @@ class SlowQueryLogger:
 # Usage
 logger = SlowQueryLogger(threshold_ms=500)
 async with pool.acquire() as conn:
-    result = await logger.execute(conn, "MATCH (n) RETURN count(n)")
+    result, _ = await logger.query(conn, "MATCH (n) RETURN count(n)")
 ```
 
 ## Code Generation and Scaffolding

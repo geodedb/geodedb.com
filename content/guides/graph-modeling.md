@@ -588,10 +588,10 @@ async def test_user_creation():
         "CREATE (:User {id: 1, name: 'Test'})"
     )
 
-    result = await client.query(
+    result, _ = await client.query(
         "MATCH (u:User {id: 1}) RETURN u.name"
     )
-    user = await result.fetch_one()
+    user = result.rows[0] if result.rows else None
     assert user['u.name'] == 'Test'
 
 @pytest.mark.asyncio
@@ -612,11 +612,11 @@ async def test_friendship():
     """)
 
     # Verify
-    result = await client.query("""
+    result, _ = await client.query("""
         MATCH (a:User {id: 1})-[:KNOWS]->(b)
         RETURN b.name
     """)
-    friend = await result.fetch_one()
+    friend = result.rows[0] if result.rows else None
     assert friend['b.name'] == 'Bob'
 ```
 

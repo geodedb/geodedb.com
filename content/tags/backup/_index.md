@@ -398,7 +398,8 @@ async def create_application_consistent_backup():
     await app.pause_writes()
 
     # Step 2: Flush pending transactions
-    async with geode_client.transaction() as tx:
+    async with geode_client.connection() as tx:
+        await tx.begin()
         await tx.execute("CALL dbms.checkpoint()")
 
     # Step 3: Create backup

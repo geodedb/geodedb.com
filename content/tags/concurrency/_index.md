@@ -167,13 +167,14 @@ RETURN account;
 
 **Python implementation**:
 ```python
-from geode_client import GeodeClient, ConcurrentModificationError
+from geode_client import Client, ConcurrentModificationError
 
 async def update_account_balance(account_id, amount):
-    async with GeodeClient("localhost", 3141) as client:
+    client = Client(host="localhost", port=3141)
+    async with client.connection() as conn:
         while True:  # Retry loop
             # Read current state
-            result = await client.execute("""
+            result, _ = await conn.query("""
                 MATCH (a:Account {id: $id})
                 RETURN a.balance AS balance, a.version AS version
             """, {"id": account_id})
@@ -183,7 +184,7 @@ async def update_account_balance(account_id, amount):
 
             # Attempt update with version check
             try:
-                await client.execute("""
+                await conn.execute("""
                     MATCH (a:Account {id: $id})
                     WHERE a.version = $version
                     SET a.balance = $new_balance,
@@ -221,10 +222,14 @@ Group operations to reduce transaction overhead:
 
 ```python
 async def process_orders_batch(orders):
-    async with GeodeClient("localhost", 3141) as client:
-        async with client.transaction(isolation_level="SERIALIZABLE"):
+    client = Client(host="localhost", port=3141)
+    async with client.connection() as conn:
+        # Isolation is configured server-side
+        await conn.begin()
+        try:
             for order in orders:
-                await client.execute("""
+                await conn.execute(
+                    """
                     MATCH (p:Product {id: $product_id})
                     WHERE p.stock >= $quantity
                     SET p.stock = p.stock - $quantity
@@ -234,12 +239,17 @@ async def process_orders_batch(orders):
                         quantity: $quantity,
                         timestamp: timestamp()
                     })
-                """, {
-                    "product_id": order.product_id,
-                    "quantity": order.quantity,
-                    "order_id": order.id
-                })
-            # All operations commit together
+                    """,
+                    {
+                        "product_id": order.product_id,
+                        "quantity": order.quantity,
+                        "order_id": order.id,
+                    },
+                )
+            await conn.commit()
+        except Exception:
+            await conn.rollback()
+            raise
 ```
 
 ### Pattern 4: Pessimistic Locking When Necessary
@@ -278,28 +288,44 @@ Deadlocks occur when transactions wait for each other circularly:
 3. **Retry hints**: Client receives error indicating retry-able failure
 
 ```python
-from geode_client import DeadlockError
+from geode_client import QueryError
 
 async def transfer_funds_with_retry(from_account, to_account, amount, max_retries=3):
     for attempt in range(max_retries):
         try:
-            async with GeodeClient("localhost", 3141) as client:
-                async with client.transaction(isolation_level="SERIALIZABLE"):
+            client = Client(host="localhost", port=3141)
+            async with client.connection() as conn:
+                # Isolation is configured server-side
+                await conn.begin()
+                try:
                     # Debit from account
-                    await client.execute("""
+                    await conn.execute(
+                        """
                         MATCH (a:Account {id: $id})
                         WHERE a.balance >= $amount
                         SET a.balance = a.balance - $amount
-                    """, {"id": from_account, "amount": amount})
+                        """,
+                        {"id": from_account, "amount": amount},
+                    )
 
                     # Credit to account
-                    await client.execute("""
+                    await conn.execute(
+                        """
                         MATCH (a:Account {id: $id})
                         SET a.balance = a.balance + $amount
-                    """, {"id": to_account, "amount": amount})
+                        """,
+                        {"id": to_account, "amount": amount},
+                    )
+
+                    await conn.commit()
+                except QueryError:
+                    await conn.rollback()
+                    raise
 
             return  # Success
-        except DeadlockError:
+        except QueryError as exc:
+            if "DEADLOCK" not in str(exc):
+                raise
             if attempt == max_retries - 1:
                 raise  # Final attempt failed
             await asyncio.sleep(0.1 * (attempt + 1))  # Exponential backoff
@@ -341,7 +367,7 @@ async def concurrent_queries(user_ids):
 
 async def query_user(user_id):
     async with pool.acquire() as client:
-        result = await client.execute("""
+        result, _ = await client.query("""
             MATCH (u:User {id: $id})
             RETURN u
         """, {"id": user_id})
@@ -357,9 +383,10 @@ MVCC excels for read-heavy patterns:
 ```python
 # Efficient concurrent reads (no locking)
 async def analytics_query():
-    async with GeodeClient("localhost", 3141) as client:
+    client = Client(host="localhost", port=3141)
+    async with client.connection() as conn:
         # Large analytical query doesn't block writes
-        result = await client.execute("""
+        result, _ = await conn.query("""
             MATCH (u:User)-[:PURCHASED]->(p:Product)
             RETURN p.category, count(u) AS buyers
             ORDER BY buyers DESC
@@ -368,8 +395,9 @@ async def analytics_query():
 
 # Concurrent writes continue unblocked
 async def record_purchase(user_id, product_id):
-    async with GeodeClient("localhost", 3141) as client:
-        await client.execute("""
+    client = Client(host="localhost", port=3141)
+    async with client.connection() as conn:
+        await conn.execute("""
             MATCH (u:User {id: $user_id}), (p:Product {id: $product_id})
             CREATE (u)-[:PURCHASED {timestamp: timestamp()}]->(p)
         """, {"user_id": user_id, "product_id": product_id})
@@ -385,8 +413,10 @@ async def record_page_view(page_id, user_id):
     # Use time-based partitioning
     partition_key = f"{page_id}_{datetime.now().hour}"
 
-    async with GeodeClient("localhost", 3141) as client:
-        await client.execute("""
+    client = Client(host="localhost", port=3141)
+
+    async with client.connection() as conn:
+        await conn.execute("""
             MERGE (counter:PageViewCounter {key: $key})
             ON CREATE SET counter.views = 1
             ON MATCH SET counter.views = counter.views + 1
@@ -394,8 +424,9 @@ async def record_page_view(page_id, user_id):
 
 # BAD: Single hot counter (high contention)
 async def record_page_view_bad(page_id):
-    async with GeodeClient("localhost", 3141) as client:
-        await client.execute("""
+    client = Client(host="localhost", port=3141)
+    async with client.connection() as conn:
+        await conn.execute("""
             MATCH (page:Page {id: $id})
             SET page.view_count = page.view_count + 1
         """, {"id": page_id})
@@ -504,23 +535,38 @@ Serializable isolation prevents write skew anomalies:
 
 ```python
 # Classic write skew example: on-call doctors
-async def assign_on_call_shift(doctor_id):
-    async with client.transaction(isolation_level="SERIALIZABLE"):
-        # Check if at least one doctor will remain on call
-        result = await client.execute("""
-            MATCH (d:Doctor {on_call: true})
-            WHERE d.id != $doctor_id
-            RETURN COUNT(d) AS on_call_count
-        """, {"doctor_id": doctor_id})
+async def assign_on_call_shift(client, doctor_id):
+    async with client.connection() as conn:
+        # Isolation is configured server-side
+        await conn.begin()
+        try:
+            # Check if at least one doctor will remain on call
+            result, _ = await conn.query(
+                """
+                MATCH (d:Doctor {on_call: true})
+                WHERE d.id != $doctor_id
+                RETURN COUNT(d) AS on_call_count
+                """,
+                {"doctor_id": doctor_id},
+            )
 
-        if result.bindings[0]['on_call_count'] >= 1:
-            # Safe to go off call
-            await client.execute("""
-                MATCH (d:Doctor {id: $doctor_id})
-                SET d.on_call = false
-            """, {"doctor_id": doctor_id})
-        else:
-            raise Exception("Cannot go off call - no other doctors available")
+            on_call_count = result.rows[0]["on_call_count"].as_int if result.rows else 0
+            if on_call_count >= 1:
+                # Safe to go off call
+                await conn.execute(
+                    """
+                    MATCH (d:Doctor {id: $doctor_id})
+                    SET d.on_call = false
+                    """,
+                    {"doctor_id": doctor_id},
+                )
+                await conn.commit()
+            else:
+                await conn.rollback()
+                raise Exception("Cannot go off call - no other doctors available")
+        except Exception:
+            await conn.rollback()
+            raise
 
 # Without SERIALIZABLE, two doctors could simultaneously check and both go off call
 # With SERIALIZABLE, one transaction aborts with serialization error
@@ -554,14 +600,15 @@ This provides:
 
 ```python
 # Process market data updates with high concurrency
-from geode_client import ConnectionPool, SerializationError
+from geode_client import ConnectionPool, QueryError
 import asyncio
+import random
 
 pool = ConnectionPool(
     host="localhost",
     port=3141,
-    min_connections=50,
-    max_connections=200
+    min_size=50,
+    max_size=200,
 )
 
 async def update_order_book(symbol, price, quantity):
@@ -569,43 +616,60 @@ async def update_order_book(symbol, price, quantity):
     max_retries = 10
     for attempt in range(max_retries):
         try:
-            async with pool.acquire() as client:
-                async with client.transaction(isolation_level="SERIALIZABLE"):
+            async with pool.acquire() as conn:
+                # Isolation is configured server-side
+                await conn.begin()
+                try:
                     # Read current order book version
-                    result = await client.execute("""
+                    result, _ = await conn.query(
+                        """
                         MATCH (book:OrderBook {symbol: $symbol})
                         RETURN book.version AS version,
                                book.bids AS bids,
                                book.asks AS asks
-                    """, {"symbol": symbol})
+                        """,
+                        {"symbol": symbol},
+                    )
 
-                    current = result.bindings[0]
+                    current = result.rows[0] if result.rows else None
+                    if not current:
+                        await conn.rollback()
+                        return
 
                     # Update order book (business logic)
                     updated_bids, updated_asks = merge_order(
-                        current['bids'],
-                        current['asks'],
+                        current["bids"].as_array,
+                        current["asks"].as_array,
                         price,
-                        quantity
+                        quantity,
                     )
 
                     # Write with version check
-                    await client.execute("""
+                    await conn.execute(
+                        """
                         MATCH (book:OrderBook {symbol: $symbol})
                         WHERE book.version = $version
                         SET book.bids = $bids,
                             book.asks = $asks,
                             book.version = $version + 1,
                             book.last_update = timestamp()
-                    """, {
-                        "symbol": symbol,
-                        "version": current['version'],
-                        "bids": updated_bids,
-                        "asks": updated_asks
-                    })
+                        """,
+                        {
+                            "symbol": symbol,
+                            "version": current["version"].as_int,
+                            "bids": updated_bids,
+                            "asks": updated_asks,
+                        },
+                    )
 
-                return  # Success
-        except SerializationError:
+                    await conn.commit()
+                    return  # Success
+                except Exception:
+                    await conn.rollback()
+                    raise
+        except QueryError as exc:
+            if "SERIALIZATION" not in str(exc):
+                raise
             if attempt == max_retries - 1:
                 raise
             # Exponential backoff with jitter
@@ -630,48 +694,59 @@ async def main():
 # Generate personalized feeds with concurrent reads
 async def generate_user_feed(user_id, limit=50):
     """Generate feed by reading from multiple sources concurrently"""
-    async with pool.acquire() as client:
-        # Start transaction with REPEATABLE READ (consistent snapshot)
-        async with client.transaction(isolation_level="REPEATABLE_READ"):
-            # Concurrent queries for feed components
-            following_posts, trending, ads = await asyncio.gather(
-                # Posts from followed users
-                client.execute("""
-                    MATCH (u:User {id: $user_id})-[:FOLLOWS]->(f:User)
-                    MATCH (f)-[:POSTED]->(p:Post)
-                    WHERE p.created_at > datetime().minusDays(7)
-                    RETURN p
-                    ORDER BY p.created_at DESC
-                    LIMIT 30
-                """, {"user_id": user_id}),
-
-                # Trending posts
-                client.execute("""
-                    MATCH (p:Post)
-                    WHERE p.created_at > datetime().minusHours(24)
-                    RETURN p
-                    ORDER BY p.engagement_score DESC
-                    LIMIT 10
-                """),
-
-                # Targeted ads
-                client.execute("""
-                    MATCH (u:User {id: $user_id})-[:INTERESTED_IN]->(i:Interest)
-                    MATCH (a:Ad)-[:TARGETS]->(i)
-                    WHERE NOT (u)-[:DISMISSED]->(a)
-                    RETURN a
-                    LIMIT 5
-                """, {"user_id": user_id})
+    async with pool.acquire() as conn:
+        # Isolation is configured server-side
+        await conn.begin()
+        try:
+            # Posts from followed users
+            following_posts, _ = await conn.query(
+                """
+                MATCH (u:User {id: $user_id})-[:FOLLOWS]->(f:User)
+                MATCH (f)-[:POSTED]->(p:Post)
+                WHERE p.created_at > datetime().minusDays(7)
+                RETURN p
+                ORDER BY p.created_at DESC
+                LIMIT 30
+                """,
+                {"user_id": user_id},
             )
 
-            # Merge and rank results (all from consistent snapshot)
-            feed = merge_feed_items(
-                following_posts.bindings,
-                trending.bindings,
-                ads.bindings
+            # Trending posts
+            trending, _ = await conn.query(
+                """
+                MATCH (p:Post)
+                WHERE p.created_at > datetime().minusHours(24)
+                RETURN p
+                ORDER BY p.engagement_score DESC
+                LIMIT 10
+                """
             )
 
-            return feed[:limit]
+            # Targeted ads
+            ads, _ = await conn.query(
+                """
+                MATCH (u:User {id: $user_id})-[:INTERESTED_IN]->(i:Interest)
+                MATCH (a:Ad)-[:TARGETS]->(i)
+                WHERE NOT (u)-[:DISMISSED]->(a)
+                RETURN a
+                LIMIT 5
+                """,
+                {"user_id": user_id},
+            )
+
+            await conn.commit()
+        except Exception:
+            await conn.rollback()
+            raise
+
+    # Merge and rank results (all from consistent snapshot)
+    feed = merge_feed_items(
+        following_posts.rows,
+        trending.rows,
+        ads.rows,
+    )
+
+    return feed[:limit]
 ```
 
 ### Inventory Management with Reservations
@@ -680,20 +755,26 @@ async def generate_user_feed(user_id, limit=50):
 # Handle concurrent product reservations
 async def reserve_inventory(product_id, quantity, order_id):
     """Reserve inventory with pessimistic locking for critical section"""
-    async with pool.acquire() as client:
-        async with client.transaction(isolation_level="SERIALIZABLE"):
+    async with pool.acquire() as conn:
+        # Isolation is configured server-side
+        await conn.begin()
+        try:
             # Lock product row for update
-            result = await client.execute("""
+            result, _ = await conn.query(
+                """
                 MATCH (p:Product {id: $product_id})
                 WHERE p.available_quantity >= $quantity
                 RETURN p.available_quantity AS available
-            """, {"product_id": product_id, "quantity": quantity})
+                """,
+                {"product_id": product_id, "quantity": quantity},
+            )
 
-            if not result.bindings:
+            if not result.rows:
                 raise InsufficientInventoryError("Not enough inventory")
 
             # Create reservation
-            await client.execute("""
+            await conn.execute(
+                """
                 MATCH (p:Product {id: $product_id})
                 SET p.available_quantity = p.available_quantity - $quantity
 
@@ -705,25 +786,34 @@ async def reserve_inventory(product_id, quantity, order_id):
                     expires_at: timestamp().plusMinutes(15)
                 })
                 CREATE (p)-[:HAS_RESERVATION]->(r)
-            """, {
-                "product_id": product_id,
-                "quantity": quantity,
-                "order_id": order_id
-            })
+                """,
+                {
+                    "product_id": product_id,
+                    "quantity": quantity,
+                    "order_id": order_id,
+                },
+            )
+
+            await conn.commit()
+        except Exception:
+            await conn.rollback()
+            raise
 
 # Background task to release expired reservations
 async def release_expired_reservations():
     """Periodic cleanup of expired reservations"""
     while True:
-        async with pool.acquire() as client:
-            await client.execute("""
+        async with pool.acquire() as conn:
+            await conn.execute(
+                """
                 MATCH (p:Product)-[rel:HAS_RESERVATION]->(r:Reservation)
                 WHERE r.expires_at < timestamp()
 
                 SET p.available_quantity = p.available_quantity + r.quantity
 
                 DELETE rel, r
-            """)
+                """
+            )
 
         await asyncio.sleep(60)  # Check every minute
 ```

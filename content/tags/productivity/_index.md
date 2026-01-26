@@ -99,23 +99,28 @@ The Python client provides full async/await support, enabling high-performance c
 
 ```python
 import asyncio
-from geode_client import GeodeClient
+from geode_client import ConnectionPool
 
 async def fetch_user_network(user_id: str):
-    async with GeodeClient("localhost", 3141) as client:
-        # Concurrent queries for improved performance
-        profile_task = client.execute_gql(
-            "MATCH (u:User {id: $id}) RETURN u",
-            {"id": user_id}
-        )
+    pool = ConnectionPool(host="localhost", port=3141, min_size=2, max_size=10)
+    async with pool:
+        async def fetch_profile():
+            async with pool.acquire() as conn:
+                result, _ = await conn.query(
+                    "MATCH (u:User {id: $id}) RETURN u",
+                    {"id": user_id},
+                )
+                return result.rows
 
-        friends_task = client.execute_gql(
-            "MATCH (u:User {id: $id})-[:FRIENDS_WITH]->(f) RETURN f",
-            {"id": user_id}
-        )
+        async def fetch_friends():
+            async with pool.acquire() as conn:
+                result, _ = await conn.query(
+                    "MATCH (u:User {id: $id})-[:FRIENDS_WITH]->(f) RETURN f",
+                    {"id": user_id},
+                )
+                return result.rows
 
-        # Execute concurrently
-        profile, friends = await asyncio.gather(profile_task, friends_task)
+        profile, friends = await asyncio.gather(fetch_profile(), fetch_friends())
         return profile, friends
 ```
 
@@ -126,24 +131,26 @@ Connection pooling maximizes throughput by reducing connection overhead; actual 
 The Rust client provides compile-time safety and zero-cost abstractions:
 
 ```rust
-use geode_client::{GeodeClient, GeodeValue};
+use geode_client::{Client, Value};
+use std::collections::HashMap;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let client = GeodeClient::new("localhost", 3141).await?;
+    let client = Client::new("localhost", 3141);
+    let mut conn = client.connect().await?;
 
     // Type-safe query builders prevent runtime errors
-    let results = client
-        .query("MATCH (p:Product) WHERE p.price < $max RETURN p")
-        .bind("max", GeodeValue::Float(100.0))
-        .execute()
+    let mut params = HashMap::new();
+    params.insert("max".to_string(), Value::int(100));
+    let (page, _) = conn
+        .query_with_params("MATCH (p:Product) WHERE p.price < $max RETURN p", &params)
         .await?;
 
-    for row in results {
+    for row in &page.rows {
         // Compile-time checked field access
-        let price: f64 = row.get("p.price")?;
-        let name: String = row.get("p.name")?;
-        println!("{}: ${:.2}", name, price);
+        let price = row.get("p.price").unwrap().as_int()?;
+        let name = row.get("p.name").unwrap().as_string()?;
+        println!("{}: ${}", name, price);
     }
 
     Ok(())
@@ -266,7 +273,7 @@ db.SetConnMaxLifetime(time.Hour)
 
 **Python Example:**
 ```python
-client = GeodeClient("localhost", 3141, pool_size=50)
+client = Client("localhost", 3141, pool_size=50)
 ```
 
 Pooling eliminates connection overhead, typically reducing latency by 50-80% for high-frequency queries.
@@ -300,16 +307,16 @@ Comprehensive error reporting accelerates debugging and reduces troubleshooting 
 Geode provides detailed error information aligned with GQL status codes:
 
 ```python
+import geode_client
+
 try:
-    await client.execute_gql(
-        "MATCH (u:User {id: $id}) SET u.balance = u.balance + $amount",
-        {"id": "user123", "amount": 100}
-    )
-except GeodeError as e:
-    print(f"Error code: {e.code}")
-    print(f"Message: {e.message}")
-    print(f"Query: {e.query}")
-    print(f"Position: {e.position}")
+    async with client.connection() as conn:
+        await conn.execute(
+            "MATCH (u:User {id: $id}) SET u.balance = u.balance + $amount",
+            {"id": "user123", "amount": 100},
+        )
+except geode_client.QueryError as e:
+    print(f"Query error: {e}")
 ```
 
 Error codes follow ISO standards:
@@ -323,18 +330,25 @@ Error codes follow ISO standards:
 Savepoint support enables granular error recovery:
 
 ```python
-async with client.transaction() as tx:
-    await tx.execute("CREATE (:User {id: 'user456'})")
+import geode_client
 
-    await tx.savepoint("before_update")
+async with client.connection() as conn:
+    await conn.begin()
     try:
-        await tx.execute("SET invalid syntax here")
-    except GeodeError:
-        await tx.rollback_to_savepoint("before_update")
-        # Continue with corrected query
-        await tx.execute("MATCH (u:User {id: 'user456'}) SET u.active = true")
+        await conn.execute("CREATE (:User {id: 'user456'})")
 
-    await tx.commit()
+        sp = await conn.savepoint("before_update")
+        try:
+            await conn.execute("SET invalid syntax here")
+        except geode_client.QueryError:
+            await conn.rollback_to(sp)
+            # Continue with corrected query
+            await conn.execute("MATCH (u:User {id: 'user456'}) SET u.active = true")
+
+        await conn.commit()
+    except Exception:
+        await conn.rollback()
+        raise
 ```
 
 This allows testing complex multi-step operations without full transaction rollback.
@@ -444,13 +458,18 @@ MATCH (u:User {email: 'user@example.com'}) RETURN u
 Group related operations to reduce network round-trips:
 
 ```python
-async with client.transaction() as tx:
-    for user_data in batch:
-        await tx.execute(
-            "CREATE (:User {id: $id, name: $name})",
-            user_data
-        )
-    await tx.commit()
+async with client.connection() as conn:
+    await conn.begin()
+    try:
+        for user_data in batch:
+            await conn.execute(
+                "CREATE (:User {id: $id, name: $name})",
+                user_data,
+            )
+        await conn.commit()
+    except Exception:
+        await conn.rollback()
+        raise
 ```
 
 ### Leverage Concurrent Queries
@@ -458,11 +477,21 @@ async with client.transaction() as tx:
 Execute independent queries concurrently:
 
 ```python
-results = await asyncio.gather(
-    client.execute_gql(query1, params1),
-    client.execute_gql(query2, params2),
-    client.execute_gql(query3, params3)
-)
+from geode_client import ConnectionPool
+import asyncio
+
+pool = ConnectionPool(host="localhost", port=3141, min_size=3, max_size=10)
+async with pool:
+    async def run(query, params):
+        async with pool.acquire() as conn:
+            result, _ = await conn.query(query, params)
+            return result.rows
+
+    results = await asyncio.gather(
+        run(query1, params1),
+        run(query2, params2),
+        run(query3, params3),
+    )
 ```
 
 ### Profile Before Optimizing

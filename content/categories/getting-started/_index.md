@@ -187,12 +187,13 @@ geode ping
 **Python**:
 ```python
 import asyncio
-from geode_client import GeodeClient
+from geode_client import Client
 
 async def main():
-    async with GeodeClient("localhost:3141") as client:
-        result = await client.execute("RETURN 'Hello, Geode!' as message")
-        async for row in result:
+    client = Client(host="localhost", port=3141)
+    async with client.connection() as conn:
+        result, _ = await conn.query("RETURN 'Hello, Geode!' as message")
+        for row in result.rows:
             print(row["message"])
 
 asyncio.run(main())
@@ -406,7 +407,7 @@ Parameterized queries are safer and more efficient:
 
 **Python**:
 ```python
-result = await client.execute("""
+result, _ = await client.query("""
     MATCH (p:Person {name: $name})
     RETURN p
 """, {"name": "Alice"})
@@ -469,12 +470,13 @@ DETACH DELETE p;  -- Deletes node and all relationships
 
 ```python
 # Bad: No transaction for multi-step operation
-await client.execute("CREATE (p:Person {id: 'user1'})")
-await client.execute("CREATE (p:Person {id: 'user2'})")
+await tx.execute("CREATE (p:Person {id: 'user1'})")
+await tx.execute("CREATE (p:Person {id: 'user2'})")
 # If second fails, first is still committed
 
 # Good: Use transaction
-async with client.transaction() as tx:
+async with client.connection() as tx:
+    await tx.begin()
     await tx.execute("CREATE (p:Person {id: 'user1'})")
     await tx.execute("CREATE (p:Person {id: 'user2'})")
     await tx.commit()  # Both or neither

@@ -218,26 +218,27 @@ Peak Memory: 1.2MB
 
 ### Benchmark Individual Queries
 
+<!-- CANARY: REQ=REQ-CLIENT-PY-001; FEATURE="PythonClientConnection"; ASPECT=HelloHandshake; STATUS=IMPL; OWNER=clients; UPDATED=2025-02-14 -->
+
 ```python
-# Python script - Query benchmarking
-from geode_client import GeodeClient
-import time
+# Python script - Query benchmarking (async)
+import asyncio
 import statistics
+import time
+from geode_client import Client
 
-client = GeodeClient("localhost:3141")
-
-def benchmark_query(query, params=None, iterations=100):
+async def benchmark_query(conn, query, params=None, iterations=100):
     """Benchmark a single query"""
     times = []
 
     # Warmup
     for _ in range(10):
-        client.execute(query, params)
+        await conn.query(query, params)
 
     # Measure
     for _ in range(iterations):
         start = time.perf_counter()
-        client.execute(query, params)
+        await conn.query(query, params)
         end = time.perf_counter()
         times.append((end - start) * 1000)  # Convert to ms
 
@@ -251,24 +252,28 @@ def benchmark_query(query, params=None, iterations=100):
         'stdev': statistics.stdev(times)
     }
 
-# Example usage
-query = """
-MATCH (p:Person)
-WHERE p.age > 30
-RETURN p.name, p.age
-ORDER BY p.age DESC
-LIMIT 10
-"""
+async def main():
+    client = Client(host="localhost", port=3141)
+    async with client.connection() as conn:
+        query = """
+        MATCH (p:Person)
+        WHERE p.age > 30
+        RETURN p.name, p.age
+        ORDER BY p.age DESC
+        LIMIT 10
+        """
 
-results = benchmark_query(query, iterations=1000)
+        results = await benchmark_query(conn, query, iterations=1000)
 
-print(f"Query Performance (1000 iterations):")
-print(f"  Mean: {results['mean']:.2f}ms")
-print(f"  Median: {results['median']:.2f}ms")
-print(f"  P95: {results['p95']:.2f}ms")
-print(f"  P99: {results['p99']:.2f}ms")
-print(f"  Range: {results['min']:.2f}ms - {results['max']:.2f}ms")
-print(f"  StdDev: {results['stdev']:.2f}ms")
+        print("Query Performance (1000 iterations):")
+        print(f"  Mean: {results['mean']:.2f}ms")
+        print(f"  Median: {results['median']:.2f}ms")
+        print(f"  P95: {results['p95']:.2f}ms")
+        print(f"  P99: {results['p99']:.2f}ms")
+        print(f"  Range: {results['min']:.2f}ms - {results['max']:.2f}ms")
+        print(f"  StdDev: {results['stdev']:.2f}ms")
+
+asyncio.run(main())
 ```
 
 ## Load Testing with Locust
@@ -284,7 +289,8 @@ pip install locust geode-client
 ```python
 # locustfile.py
 from locust import User, task, between
-from geode_client import GeodeClient
+from geode_client import Client
+import asyncio
 import random
 
 class GeodeUser(User):
@@ -292,33 +298,43 @@ class GeodeUser(User):
 
     def on_start(self):
         """Initialize connection"""
-        self.client = GeodeClient("localhost:3141")
+        self.loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(self.loop)
+        self.client = Client(host="localhost", port=3141)
+        self.conn = self.loop.run_until_complete(self.client.connect())
+
+    def on_stop(self):
+        self.loop.run_until_complete(self.conn.close())
+        self.loop.close()
+
+    def _run(self, coro):
+        return self.loop.run_until_complete(coro)
 
     @task(weight=70)
     def read_person(self):
         """Read operation (70% of requests)"""
         name = f"Person_{random.randint(1, 1000)}"
-        self.client.execute("""
+        self._run(self.conn.query("""
             MATCH (p:Person {name: $name})
             RETURN p
-        """, {'name': name})
+        """, {'name': name}))
 
     @task(weight=20)
     def search_by_age(self):
         """Range query (20% of requests)"""
         min_age = random.randint(20, 60)
-        self.client.execute("""
+        self._run(self.conn.query("""
             MATCH (p:Person)
             WHERE p.age >= $min_age
             RETURN p.name, p.age
             LIMIT 10
-        """, {'min_age': min_age})
+        """, {'min_age': min_age}))
 
     @task(weight=10)
     def create_person(self):
         """Write operation (10% of requests)"""
         person_id = random.randint(1, 10000)
-        self.client.execute("""
+        self._run(self.conn.query("""
             MERGE (p:Person {id: $id})
             SET p.name = $name,
                 p.age = $age
@@ -326,7 +342,7 @@ class GeodeUser(User):
             'id': person_id,
             'name': f"Person_{person_id}",
             'age': random.randint(18, 80)
-        })
+        }))
 ```
 
 ### Run Load Test
@@ -453,19 +469,37 @@ watch -n 1 'ps aux | grep geode | head -1'
 ```python
 # OLTP benchmark
 from locust import User, task, between
-from geode_client import GeodeClient
+from geode_client import Client
+import asyncio
 import random
+import time
 
-class OLTPUser(User):
+class BaseGeodeUser(User):
+    wait_time = between(0.01, 0.1)
+
+    def on_start(self):
+        self.loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(self.loop)
+        self.client = Client(host="localhost", port=3141)
+        self.conn = self.loop.run_until_complete(self.client.connect())
+
+    def on_stop(self):
+        self.loop.run_until_complete(self.conn.close())
+        self.loop.close()
+
+    def _run(self, coro):
+        return self.loop.run_until_complete(coro)
+
+class OLTPUser(BaseGeodeUser):
     wait_time = between(0.01, 0.1)  # Very short wait
 
     @task(weight=50)
     def read_account(self):
         account_id = random.randint(1, 100000)
-        self.client.execute("""
+        self._run(self.conn.query("""
             MATCH (a:Account {id: $id})
             RETURN a.balance
-        """, {'id': account_id})
+        """, {'id': account_id}))
 
     @task(weight=30)
     def transfer_funds(self):
@@ -473,33 +507,33 @@ class OLTPUser(User):
         to_id = random.randint(1, 100000)
         amount = random.randint(10, 1000)
 
-        self.client.execute("START TRANSACTION")
+        self._run(self.conn.begin())
         try:
-            self.client.execute("""
+            self._run(self.conn.query("""
                 MATCH (from:Account {id: $from_id})
                 SET from.balance = from.balance - $amount
-            """, {'from_id': from_id, 'amount': amount})
+            """, {'from_id': from_id, 'amount': amount}))
 
-            self.client.execute("""
+            self._run(self.conn.query("""
                 MATCH (to:Account {id: $to_id})
                 SET to.balance = to.balance + $amount
-            """, {'to_id': to_id, 'amount': amount})
+            """, {'to_id': to_id, 'amount': amount}))
 
-            self.client.execute("COMMIT")
-        except:
-            self.client.execute("ROLLBACK")
+            self._run(self.conn.commit())
+        except Exception:
+            self._run(self.conn.rollback())
             raise
 
     @task(weight=20)
     def get_balance_history(self):
         account_id = random.randint(1, 100000)
-        self.client.execute("""
+        self._run(self.conn.query("""
             MATCH (a:Account {id: $id})-[:TRANSACTION]->(t:Transaction)
             WHERE t.timestamp > $start_time
             RETURN t
             ORDER BY t.timestamp DESC
             LIMIT 10
-        """, {'id': account_id, 'start_time': int(time.time()) - 86400})
+        """, {'id': account_id, 'start_time': int(time.time()) - 86400}))
 ```
 
 ### Scenario 2: Graph Analytics
@@ -508,42 +542,42 @@ class OLTPUser(User):
 
 ```python
 # Analytics benchmark
-class AnalyticsUser(User):
+class AnalyticsUser(BaseGeodeUser):
     wait_time = between(1, 3)  # Longer wait for analytical queries
 
     @task(weight=40)
     def find_influencers(self):
         """PageRank-style influence analysis"""
-        self.client.execute("""
+        self._run(self.conn.query("""
             MATCH (p:Person)-[:FOLLOWS]->(other:Person)
             WITH other, count(p) AS follower_count
             RETURN other.name, follower_count
             ORDER BY follower_count DESC
             LIMIT 20
-        """)
+        """))
 
     @task(weight=30)
     def community_detection(self):
         """Find communities"""
-        self.client.execute("""
+        self._run(self.conn.query("""
             CALL graph.louvain('SocialNetwork', {
                 relationship_type: 'FOLLOWS'
             })
             YIELD node, community
             RETURN community, count(node) AS size
             ORDER BY size DESC
-        """)
+        """))
 
     @task(weight=30)
     def shortest_path(self):
         """Find connection between random users"""
         user1 = random.randint(1, 1000)
         user2 = random.randint(1, 1000)
-        self.client.execute("""
+        self._run(self.conn.query("""
             MATCH (a:Person {id: $id1}), (b:Person {id: $id2}),
                   path = shortestPath((a)-[:FOLLOWS*]-(b))
             RETURN length(path) AS degrees_of_separation
-        """, {'id1': user1, 'id2': user2})
+        """, {'id1': user1, 'id2': user2}))
 ```
 
 ### Scenario 3: Vector Search
@@ -556,7 +590,7 @@ from sentence_transformers import SentenceTransformer
 
 model = SentenceTransformer('all-MiniLM-L6-v2')
 
-class VectorSearchUser(User):
+class VectorSearchUser(BaseGeodeUser):
     wait_time = between(0.1, 0.5)
 
     @task
@@ -573,14 +607,14 @@ class VectorSearchUser(User):
         query_text = random.choice(queries)
         query_vec = model.encode(query_text).tolist()
 
-        self.client.execute("""
+        self._run(self.conn.query("""
             MATCH (p:Product)
             WHERE vector_distance_cosine(p.embedding, $query_vec) < 0.5
             RETURN p.name,
                    vector_distance_cosine(p.embedding, $query_vec) AS similarity
             ORDER BY similarity ASC
             LIMIT 10
-        """, {'query_vec': query_vec})
+        """, {'query_vec': query_vec}))
 ```
 
 ## Performance Tuning

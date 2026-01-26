@@ -435,7 +435,7 @@ result, err := conn.Query("MATCH (p:Person {name: $name}) RETURN p.age",
 
 ```python
 # Python
-result = await conn.query(
+result, _ = await conn.query(
     "MATCH (p:Person {name: $name}) RETURN p.age",
     parameters={"name": "Alice"}
 )
@@ -491,16 +491,17 @@ pip install geode-client
 
 ```python
 import asyncio
-from geode_client import GeodeClient
+from geode_client import Client
 
 async def main():
-    async with GeodeClient("localhost:3141") as client:
-        result = await client.query(
+    client = Client(host="localhost", port=3141)
+    async with client.connection() as conn:
+        result, _ = await conn.query(
             "MATCH (p:Person {name: $name}) RETURN p.age, p.city",
             parameters={"name": "Alice"}
         )
 
-        async for row in result:
+        for row in result.rows:
             print(f"Age: {row['p.age']}, City: {row['p.city']}")
 
 asyncio.run(main())
@@ -514,19 +515,27 @@ geode-client = "0.1"
 ```
 
 ```rust
-use geode_client::GeodeClient;
+use geode_client::{Client, Value};
+use std::collections::HashMap;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let client = GeodeClient::connect("localhost:3141").await?;
+    let client = Client::from_dsn("localhost:3141")?;
+    let mut conn = client.connect().await?;
 
-    let mut result = client.query(
-        "MATCH (p:Person {name: $name}) RETURN p.age, p.city",
-        &[("name", "Alice".into())]
-    ).await?;
+    let mut params = HashMap::new();
+    params.insert("name".to_string(), Value::string("Alice"));
+    let (page, _) = conn
+        .query_with_params(
+            "MATCH (p:Person {name: $name}) RETURN p.age, p.city",
+            &params,
+        )
+        .await?;
 
-    while let Some(row) = result.next().await? {
-        println!("Age: {}, City: {}", row["p.age"], row["p.city"]);
+    for row in &page.rows {
+        let age = row.get("p.age").unwrap().as_int()?;
+        let city = row.get("p.city").unwrap().as_string()?;
+        println!("Age: {}, City: {}", age, city);
     }
 
     Ok(())

@@ -249,7 +249,7 @@ pool = await ConnectionPool.create(
 
 # Execute queries (async)
 async with pool.acquire() as conn:
-    result = await conn.query("MATCH (n:Person) RETURN n LIMIT 10")
+    result, _ = await conn.query("MATCH (n:Person) RETURN n LIMIT 10")
 
 # Cleanup
 await pool.close()
@@ -260,43 +260,18 @@ await pool.close()
 #### Rust Client Pooling
 
 ```rust
-use geode_client::{ConnectionPool, PoolConfig};
+use geode_client::ConnectionPool;
 
-// Create connection pool
-let pool = ConnectionPool::new(PoolConfig {
-    address: "localhost:3141".to_string(),
-    min_connections: 10,
-    max_connections: 100,
-    idle_timeout: Duration::from_secs(600),
-    connect_timeout: Duration::from_secs(30),
-    max_lifetime: Duration::from_secs(3600),
-}).await?;
-
-// Execute queries
-let result = pool.query("MATCH (n:Person) RETURN n LIMIT 10").await?;
+let pool = ConnectionPool::new("localhost", 3141, 10).skip_verify(true);
+let mut conn = pool.acquire().await?;
+let (page, _) = conn.query("MATCH (n:Person) RETURN n LIMIT 10").await?;
 ```
 
 **Performance**: Throughput depends on workload, network, and server limits; pooling reduces connection overhead
 
 #### Zig Client Pooling
 
-```zig
-const geode = @import("geode_client");
-
-// Create connection pool
-var pool = try geode.ConnectionPool.init(allocator, .{
-    .address = "localhost:3141",
-    .min_connections = 5,
-    .max_connections = 50,
-    .idle_timeout_ms = 600_000,  // 10 minutes
-    .max_lifetime_ms = 3_600_000, // 1 hour
-});
-defer pool.deinit();
-
-// Execute queries
-const result = try pool.query("MATCH (n:Person) RETURN n LIMIT 10");
-defer result.deinit();
-```
+The Zig client exposes low-level protocol primitives. Build pooling at the application layer or wrap `GeodeClient` with your own pool implementation.
 
 ### Server-Side Configuration
 
@@ -431,8 +406,9 @@ COMMIT
 Sessions are created automatically on first connection:
 
 ```go
-// Go: Connect creates session
-conn, err := geode.Connect("localhost:3141")
+// Go: database/sql creates sessions on first use
+db, err := sql.Open("geode", "localhost:3141")
+_ = db.Ping()
 // Session ID assigned automatically
 ```
 
@@ -461,7 +437,7 @@ Session state persists until:
 **Graceful Cleanup**:
 ```go
 // Go: Explicit cleanup
-defer conn.Close()
+defer db.Close()
 ```
 
 ```python
@@ -712,15 +688,16 @@ logging:
    ticker := time.NewTicker(5 * time.Minute)
    go func() {
        for range ticker.C {
-           conn.Query(ctx, "RETURN 1")  // Keep-alive
+           _, _ = db.QueryContext(ctx, "RETURN 1")  // Keep-alive
        }
    }()
    ```
 
 3. Re-establish connection on timeout:
    ```go
-   if err == geode.ErrSessionExpired {
-       conn, err = geode.Connect(address)
+   if errors.Is(err, geode.ErrBadConn) {
+       db, err = sql.Open("geode", address)
+       _ = db.Ping()
    }
    ```
 

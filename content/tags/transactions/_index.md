@@ -320,28 +320,29 @@ geode.register_hook('after_commit', on_commit)
 Geode's default isolation level provides the strongest guarantees:
 
 ```python
-from geode_client import GeodeClient, IsolationLevel
+from geode_client import Client
 
 async def ssi_example():
-    async with GeodeClient("localhost", 3141) as client:
-        # Explicit SSI (default)
-        async with client.transaction(isolation=IsolationLevel.SERIALIZABLE):
-            # Read snapshot taken at transaction start
-            result1 = await client.execute("""
+    client = Client(host="localhost", port=3141)
+    async with client.connection() as conn:
+        # Default SSI behavior
+        await conn.begin()
+        result1, _ = await conn.query("""
+            MATCH (account:Account {id: $id})
+            RETURN account.balance AS balance
+        """, {'id': 'acc_123'})
+
+        balance = result1.rows[0]["balance"].raw_value if result1.rows else 0
+
+        # Concurrent transaction cannot modify our snapshot
+        if balance >= 100:
+            await conn.execute("""
                 MATCH (account:Account {id: $id})
-                RETURN account.balance
+                SET account.balance = account.balance - 100
             """, {'id': 'acc_123'})
 
-            balance = (await result1.fetch_one())['balance']
-
-            # Concurrent transaction cannot modify our snapshot
-            if balance >= 100:
-                await client.execute("""
-                    MATCH (account:Account {id: $id})
-                    SET account.balance = account.balance - 100
-                """, {'id': 'acc_123'})
-
-            # Commits only if no conflicts detected
+        # Commits only if no conflicts detected
+        await conn.commit()
 ```
 
 ### Read Committed Isolation
@@ -350,22 +351,23 @@ Lower isolation for higher concurrency:
 
 ```python
 async def read_committed_example():
-    async with GeodeClient("localhost", 3141) as client:
-        async with client.transaction(isolation=IsolationLevel.READ_COMMITTED):
-            # Can see committed changes from concurrent transactions
-            result1 = await client.execute("""
-                MATCH (product:Product {sku: $sku})
-                RETURN product.stock
-            """, {'sku': 'PROD-123'})
+    client = Client(host="localhost", port=3141)
+    async with client.connection() as conn:
+        # If your deployment enables READ COMMITTED, the same flow applies
+        await conn.begin()
+        result1, _ = await conn.query("""
+            MATCH (product:Product {sku: $sku})
+            RETURN product.stock AS stock
+        """, {'sku': 'PROD-123'})
 
-            # Another transaction commits here - we'll see the change
+        # Another transaction commits here - you'll see the change
 
-            result2 = await client.execute("""
-                MATCH (product:Product {sku: $sku})
-                RETURN product.stock
-            """, {'sku': 'PROD-123'})
+        result2, _ = await conn.query("""
+            MATCH (product:Product {sku: $sku})
+            RETURN product.stock AS stock
+        """, {'sku': 'PROD-123'})
 
-            # stock value may differ between reads
+        await conn.commit()
 ```
 
 ## Advanced Transaction Patterns
@@ -406,9 +408,9 @@ class DistributedTransaction:
 
 # Usage
 async def distributed_transfer():
-    coordinator = GeodeClient("coordinator:3141")
-    shard1 = GeodeClient("shard1:3141")
-    shard2 = GeodeClient("shard2:3141")
+    coordinator = Client("coordinator:3141")
+    shard1 = Client("shard1:3141")
+    shard2 = Client("shard2:3141")
 
     tx = DistributedTransaction(coordinator, [shard1, shard2])
 
@@ -522,12 +524,12 @@ async def optimistic_update(client, sku, quantity, max_retries=3):
     """Update with optimistic locking and retry."""
     for attempt in range(max_retries):
         # Read current version
-        result = await client.execute("""
+        result, _ = await client.query("""
             MATCH (product:Product {sku: $sku})
             RETURN product.version AS version, product.stock AS stock
         """, {'sku': sku})
 
-        row = await result.fetch_one()
+        row = result.rows[0] if result.rows else None
         if not row:
             raise ProductNotFound(sku)
 
@@ -539,7 +541,7 @@ async def optimistic_update(client, sku, quantity, max_retries=3):
 
         # Attempt update with version check
         try:
-            update_result = await client.execute("""
+            update_result, _ = await client.query("""
                 MATCH (product:Product {sku: $sku})
                 WHERE product.version = $expected_version
                 SET product.stock = product.stock - $quantity,
@@ -551,7 +553,7 @@ async def optimistic_update(client, sku, quantity, max_retries=3):
                 'quantity': quantity
             })
 
-            updated_row = await update_result.fetch_one()
+            updated_row = update_result.rows[0] if update_result.rows else None
             if updated_row:
                 return updated_row['new_version']
             else:
@@ -580,19 +582,25 @@ async def bulk_insert_with_batching(client, items, batch_size=1000):
     for i in range(0, len(items), batch_size):
         batch = items[i:i + batch_size]
 
-        async with client.transaction():
-            await client.execute("""
-                UNWIND $batch AS item
-                CREATE (p:Product {
-                    sku: item.sku,
-                    name: item.name,
-                    price: item.price,
-                    created_at: datetime()
-                })
-            """, {'batch': batch})
+        async with client.connection() as conn:
+            await conn.begin()
+            try:
+                await conn.execute("""
+                    UNWIND $batch AS item
+                    CREATE (p:Product {
+                        sku: item.sku,
+                        name: item.name,
+                        price: item.price,
+                        created_at: datetime()
+                    })
+                """, {'batch': batch})
 
-            total_inserted += len(batch)
-            print(f"Inserted {total_inserted}/{len(items)} items")
+                total_inserted += len(batch)
+                print(f"Inserted {total_inserted}/{len(items)} items")
+                await conn.commit()
+            except Exception:
+                await conn.rollback()
+                raise
 
     return total_inserted
 ```
@@ -617,12 +625,17 @@ class TransactionPool:
         """Execute transaction using pooled connection."""
         conn = await self.pool.acquire()
         try:
-            async with conn.transaction():
+            await conn.begin()
+            try:
                 results = []
                 for query, params in operations:
-                    result = await conn.execute(query, params)
-                    results.append([row async for row in result])
+                    result, _ = await conn.query(query, params)
+                    results.append([row for row in result.rows])
+                await conn.commit()
                 return results
+            except Exception:
+                await conn.rollback()
+                raise
         finally:
             await self.pool.release(conn)
 
@@ -650,17 +663,23 @@ async def transaction_with_timeout(client, timeout_seconds=30):
     """Execute transaction with explicit timeout."""
     try:
         async with asyncio.timeout(timeout_seconds):
-            async with client.transaction():
-                # Long-running operations
-                await client.execute("""
-                    MATCH (n:Node)
-                    SET n.processed = true
-                """)
+            async with client.connection() as conn:
+                await conn.begin()
+                try:
+                    # Long-running operations
+                    await conn.execute("""
+                        MATCH (n:Node)
+                        SET n.processed = true
+                    """)
 
-                # More operations...
+                    # More operations...
+                    await conn.commit()
+                except Exception:
+                    await conn.rollback()
+                    raise
 
     except asyncio.TimeoutError:
-        # Transaction automatically rolled back
+        # Explicit rollback happens on exception
         logger.error(f"Transaction exceeded {timeout_seconds}s timeout")
         raise
 ```
@@ -678,7 +697,7 @@ class TransactionMonitor:
 
     async def list_active_transactions(self):
         """List all currently active transactions."""
-        result = await self.client.execute("""
+        result, _ = await self.client.query("""
             CALL dbms.transactions.list()
             YIELD transactionId, username, database,
                   elapsedTime, lockCount, status
@@ -690,18 +709,18 @@ class TransactionMonitor:
             ORDER BY elapsedTime DESC
         """)
 
-        return [row async for row in result]
+        return [row for row in result.rows]
 
     async def find_blocked_transactions(self):
         """Identify transactions waiting on locks."""
-        result = await self.client.execute("""
+        result, _ = await self.client.query("""
             CALL dbms.transactions.list()
             YIELD transactionId, status, waitingOn
             WHERE status = 'BLOCKED'
             RETURN transactionId, waitingOn
         """)
 
-        return [row async for row in result]
+        return [row for row in result.rows]
 
     async def kill_long_running_transaction(self, tx_id):
         """Terminate a specific transaction."""
@@ -751,9 +770,15 @@ async def instrumented_transaction(client, operations, isolation=None):
     start_time = time.time()
 
     try:
-        async with client.transaction(isolation=isolation):
-            for query, params in operations:
-                await client.execute(query, params)
+        async with client.connection() as conn:
+            await conn.begin()
+            try:
+                for query, params in operations:
+                    await conn.execute(query, params)
+                await conn.commit()
+            except Exception:
+                await conn.rollback()
+                raise
 
         duration = time.time() - start_time
         transaction_total.labels(
@@ -829,7 +854,7 @@ async def cross_shard_transfer(amount, from_account, to_account):
 ```python
 async def detect_deadlock_cycle():
     """Identify circular wait dependencies."""
-    result = await client.execute("""
+    result, _ = await client.query("""
         CALL dbms.transactions.graph()
         YIELD transaction, waitingFor
         WITH collect({tx: transaction, waits: waitingFor}) AS dependencies
@@ -842,7 +867,7 @@ async def detect_deadlock_cycle():
         RETURN DISTINCT d1.tx AS tx1, d2.tx AS tx2
     """)
 
-    cycles = [row async for row in result]
+    cycles = [row for row in result.rows]
     if cycles:
         print("Deadlock detected!")
         for cycle in cycles:
@@ -858,7 +883,7 @@ async def analyze_transaction_conflicts():
     """Analyze conflict patterns to reduce abort rate."""
 
     # Identify hot spots (frequently conflicted entities)
-    result = await client.execute("""
+    result, _ = await client.query("""
         CALL dbms.conflicts.summary()
         YIELD entity, conflictCount, avgRetries
         WHERE conflictCount > 100
@@ -867,7 +892,7 @@ async def analyze_transaction_conflicts():
         LIMIT 20
     """)
 
-    hotspots = [row async for row in result]
+    hotspots = [row for row in result.rows]
 
     # Recommendations
     for hotspot in hotspots:

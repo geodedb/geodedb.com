@@ -248,19 +248,21 @@ SSI prevents concurrent hires from violating budget constraints.
 Ensure transactions see their own writes:
 
 ```python
-async with client.transaction(isolation='SERIALIZABLE') as tx:
+async with client.connection() as tx:
+    # Isolation is configured server-side
+    await tx.begin()
     # Write
     await tx.execute("""
         CREATE (u:User {id: $id, name: $name})
     """, {"id": 123, "name": "Alice"})
 
     # Read own write
-    result = await tx.execute("""
+    result, _ = await tx.query("""
         MATCH (u:User {id: $id})
         RETURN u.name
     """, {"id": 123})
 
-    assert result[0]['u.name'] == "Alice"  # Always true
+    assert result.rows[0]['u.name'] == "Alice"  # Always true
 ```
 
 ### Monotonic Reads
@@ -274,11 +276,13 @@ snapshot_time = None
 async def read_consistent(client, query):
     global snapshot_time
 
-    async with client.transaction(isolation='SERIALIZABLE') as tx:
+    async with client.connection() as tx:
+        # Isolation is configured server-side
+        await tx.begin()
         if snapshot_time:
             await tx.execute(f"SET TRANSACTION SNAPSHOT '{snapshot_time}'")
 
-        result = await tx.execute(query)
+        result, _ = await tx.query(query)
 
         if not snapshot_time:
             snapshot_time = await tx.get_snapshot_timestamp()
@@ -301,8 +305,10 @@ from tenacity import retry, stop_after_attempt, wait_exponential
 )
 async def execute_with_retry(client, query, params=None):
     """Execute query with automatic retry on serialization failures"""
-    async with client.transaction(isolation='SERIALIZABLE') as tx:
-        result = await tx.execute(query, params)
+    async with client.connection() as tx:
+        # Isolation is configured server-side
+        await tx.begin()
+        result, _ = await tx.query(query, params)
         await tx.commit()
         return result
 
@@ -322,7 +328,9 @@ Keep transactions short to reduce conflicts:
 
 ```python
 # ANTI-PATTERN: Long transaction with non-critical work
-async with client.transaction(isolation='SERIALIZABLE') as tx:
+async with client.connection() as tx:
+    # Isolation is configured server-side
+    await tx.begin()
     # External API call (slow!)
     customer_data = await fetch_customer_from_api(customer_id)
 
@@ -337,7 +345,9 @@ customer_data = await fetch_customer_from_api(customer_id)
 recommendations = compute_recommendations(customer_data)
 
 # Short transaction for critical section
-async with client.transaction(isolation='SERIALIZABLE') as tx:
+async with client.connection() as tx:
+    # Isolation is configured server-side
+    await tx.begin()
     await tx.execute("CREATE (o:Order {data: $data})", {"data": recommendations})
 ```
 
@@ -348,7 +358,9 @@ Access data in consistent order to reduce deadlocks:
 ```python
 # ANTI-PATTERN: Random access order
 async def transfer_random_order(from_id, to_id, amount):
-    async with client.transaction(isolation='SERIALIZABLE') as tx:
+    async with client.connection() as tx:
+        # Isolation is configured server-side
+        await tx.begin()
         await tx.execute("""
             MATCH (from:Account {id: $from_id})
             SET from.balance = from.balance - $amount
@@ -364,7 +376,9 @@ async def transfer_ordered(from_id, to_id, amount):
     # Always access accounts in ID order
     first_id, second_id = (from_id, to_id) if from_id < to_id else (to_id, from_id)
 
-    async with client.transaction(isolation='SERIALIZABLE') as tx:
+    async with client.connection() as tx:
+        # Isolation is configured server-side
+        await tx.begin()
         await tx.execute("""
             MATCH (a1:Account {id: $id1}), (a2:Account {id: $id2})
             SET a1.balance = CASE WHEN $id1 = $from THEN a1.balance - $amt ELSE a1.balance + $amt END,
@@ -377,6 +391,7 @@ async def transfer_ordered(from_id, to_id, amount):
 Track serialization failures:
 
 ```python
+from geode_client import QueryError
 from prometheus_client import Counter, Histogram
 
 serialization_failures = Counter('geode_serialization_failures', 'Total serialization failures')
@@ -386,11 +401,15 @@ async def monitored_transaction(client, operation):
     start_time = time.time()
 
     try:
-        async with client.transaction(isolation='SERIALIZABLE') as tx:
+        async with client.connection() as tx:
+            # Isolation is configured server-side
+            await tx.begin()
             result = await operation(tx)
             await tx.commit()
             return result
-    except SerializationFailure:
+    except QueryError as exc:
+        if "SERIALIZATION" not in str(exc):
+            raise
         serialization_failures.inc()
         raise
     finally:
@@ -413,16 +432,12 @@ class AdaptiveIsolation:
 
         failures = self.failure_counts.get(key, 0)
 
-        # Use SERIALIZABLE if recent failures
-        if failures > 3:
-            isolation = 'SERIALIZABLE'
-        else:
-            isolation = 'SNAPSHOT_ISOLATION'
-
         try:
-            async with self.client.transaction(isolation=isolation) as tx:
-                result = await tx.execute(query, params)
-                await tx.commit()
+            async with self.client.connection() as conn:
+                # Isolation is configured server-side
+                await conn.begin()
+                result, _ = await conn.query(query, params)
+                await conn.commit()
 
             # Success - decay failure count
             if key in self.failure_counts:
@@ -430,7 +445,9 @@ class AdaptiveIsolation:
 
             return result
 
-        except SerializationFailure:
+        except QueryError as exc:
+            if "SERIALIZATION" not in str(exc):
+                raise
             # Increment failure count
             self.failure_counts[key] = self.failure_counts.get(key, 0) + 1
             raise
@@ -446,18 +463,23 @@ class AdaptiveIsolation:
 ```python
 # Check abort rate
 async def check_abort_rate(client):
-    stats = await client.execute("""
-        SELECT
-            COUNT(*) FILTER (WHERE status = 'aborted') AS aborted,
-            COUNT(*) FILTER (WHERE status = 'committed') AS committed,
-            COUNT(*) FILTER (WHERE status = 'aborted') * 100.0 / COUNT(*) AS abort_rate
-        FROM system.transaction_log
-        WHERE timestamp > now() - interval '1 hour'
-    """)
+    async with client.connection() as conn:
+        stats, _ = await conn.query(
+            """
+            SELECT
+                COUNT(*) FILTER (WHERE status = 'aborted') AS aborted,
+                COUNT(*) FILTER (WHERE status = 'committed') AS committed,
+                COUNT(*) FILTER (WHERE status = 'aborted') * 100.0 / COUNT(*) AS abort_rate
+            FROM system.transaction_log
+            WHERE timestamp > now() - interval '1 hour'
+            """
+        )
 
-    abort_rate = stats[0]['abort_rate']
-    if abort_rate > 5.0:
-        print(f"WARNING: High abort rate: {abort_rate:.2f}%")
+    row = stats.rows[0] if stats.rows else None
+    if row:
+        abort_rate = float(row["abort_rate"].as_decimal)
+        if abort_rate > 5.0:
+            print(f"WARNING: High abort rate: {abort_rate:.2f}%")
 ```
 
 **Solutions**:
@@ -491,18 +513,21 @@ Monitor commit latency:
 import matplotlib.pyplot as plt
 
 async def plot_commit_latency(client):
-    stats = await client.execute("""
-        SELECT
-            date_trunc('minute', timestamp) AS minute,
-            AVG(commit_duration_ms) AS avg_latency,
-            MAX(commit_duration_ms) AS max_latency,
-            PERCENTILE_CONT(0.95) WITHIN GROUP (ORDER BY commit_duration_ms) AS p95_latency
-        FROM system.transaction_log
-        WHERE timestamp > now() - interval '1 hour'
-          AND status = 'committed'
-        GROUP BY minute
-        ORDER BY minute
-    """)
+    async with client.connection() as conn:
+        stats, _ = await conn.query(
+            """
+            SELECT
+                date_trunc('minute', timestamp) AS minute,
+                AVG(commit_duration_ms) AS avg_latency,
+                MAX(commit_duration_ms) AS max_latency,
+                PERCENTILE_CONT(0.95) WITHIN GROUP (ORDER BY commit_duration_ms) AS p95_latency
+            FROM system.transaction_log
+            WHERE timestamp > now() - interval '1 hour'
+              AND status = 'committed'
+            GROUP BY minute
+            ORDER BY minute
+            """
+        )
 
     minutes = [row['minute'] for row in stats]
     avg = [row['avg_latency'] for row in stats]

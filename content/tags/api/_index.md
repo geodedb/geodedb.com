@@ -79,19 +79,20 @@ Async Python client built on aioquic:
 
 ```python
 import asyncio
-from geode_client import GeodeClient
+from geode_client import Client
 
 async def main():
     # Connect to database
-    async with GeodeClient("localhost", 3141, use_tls=True) as client:
+    client = Client("localhost", 3141, use_tls=True)
+    async with client.connection() as client:
         # Execute query
-        result = await client.execute(
+        result, _ = await client.query(
             "MATCH (p:Person) WHERE p.age > $age RETURN p",
             {"age": 18}
         )
         
         # Process results
-        async for row in result:
+        for row in result.rows:
             print(f"Person: {row['p']}")
 
 asyncio.run(main())

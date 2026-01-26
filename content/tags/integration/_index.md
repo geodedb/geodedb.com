@@ -107,24 +107,28 @@ The Python client provides async/await integration with modern Python applicatio
 
 ```python
 import asyncio
-from geode_client import GeodeClient
+import geode_client
+import geode_client
+from geode_client import Client
 from datetime import datetime
 
 async def integrate_geode():
     # Async context manager for automatic cleanup
-    async with GeodeClient("localhost:3141") as client:
+    client = Client(host="localhost", port=3141)
+    async with client.connection() as conn:
         # Execute queries with async/await
-        result = await client.execute("""
+        result, _ = await conn.query("""
             MATCH (u:User)-[:PURCHASED]->(p:Product)
             WHERE u.id = $user_id
             RETURN p.name, p.price, p.category
         """, {"user_id": 12345})
 
-        for row in result:
+        for row in result.rows:
             print(f"{row['p.name']} (${row['p.price']}) - {row['p.category']}")
 
         # Transaction support
-        async with client.transaction() as tx:
+        async with client.connection() as tx:
+            await tx.begin()
             await tx.execute("""
                 CREATE (u:User {
                     id: $id,
@@ -168,9 +172,9 @@ async def get_client():
 @app.get("/users/{user_id}/purchases")
 async def get_user_purchases(
     user_id: int,
-    client: GeodeClient = Depends(get_client)
+    client: Client = Depends(get_client)
 ) -> List[dict]:
-    result = await client.execute("""
+    result, _ = await client.query("""
         MATCH (u:User {id: $user_id})-[:PURCHASED]->(p:Product)
         RETURN p.name, p.price, p.category
     """, {"user_id": user_id})
@@ -189,53 +193,51 @@ async def get_user_purchases(
 The Rust client provides zero-cost abstractions with tokio integration:
 
 ```rust
-use geode_client::{Client, Error};
-use tokio;
-use serde::{Deserialize, Serialize};
+use geode_client::{Client, Value};
+use rust_decimal::Decimal;
+use serde::Deserialize;
+use std::collections::HashMap;
 
 #[derive(Debug, Deserialize)]
 struct Purchase {
     name: String,
-    price: f64,
+    price: Decimal,
     category: String,
 }
 
 #[tokio::main]
-async fn main() -> Result<(), Error> {
-    // Connect with connection pooling
-    let client = Client::builder()
-        .url("localhost:3141")
-        .max_connections(100)
-        .connect()
-        .await?;
+async fn main() -> geode_client::Result<()> {
+    let client = Client::new("localhost", 3141).skip_verify(true);
+    let mut conn = client.connect().await?;
 
     // Execute query
-    let results = client.execute::<Purchase>(
+    let mut params = HashMap::new();
+    params.insert("user_id".to_string(), Value::int(12345));
+    let (page, _) = conn.query_with_params(
         "MATCH (u:User {id: $user_id})-[:PURCHASED]->(p:Product)
          RETURN p.name, p.price, p.category",
-        &[("user_id", &12345i64)]
+        &params,
     ).await?;
 
-    for purchase in results {
+    for row in &page.rows {
         println!("{} (${}) - {}",
-            purchase.name,
-            purchase.price,
-            purchase.category
+            row.get("name").unwrap().as_string()?,
+            row.get("price").unwrap().as_decimal()?,
+            row.get("category").unwrap().as_string()?
         );
     }
 
     // Transaction support
-    let mut tx = client.transaction().await?;
-
-    tx.execute(
+    conn.begin().await?;
+    let mut tx_params = HashMap::new();
+    tx_params.insert("id".to_string(), Value::int(99999));
+    tx_params.insert("email".to_string(), Value::string("user@example.com"));
+    conn.query_with_params(
         "CREATE (u:User {id: $id, email: $email})",
-        &[
-            ("id", &99999i64),
-            ("email", &"user@example.com")
-        ]
+        &tx_params,
     ).await?;
 
-    tx.commit().await?;
+    conn.commit().await?;
 
     Ok(())
 }
@@ -249,20 +251,31 @@ async fn get_purchases(
     user_id: web::Path<i64>,
     client: web::Data<Arc<Client>>
 ) -> ActixResult<web::Json<Vec<Purchase>>> {
-    let results = client.execute::<Purchase>(
+    let mut conn = client.connect().await
+        .map_err(actix_web::error::ErrorInternalServerError)?;
+
+    let mut params = HashMap::new();
+    params.insert("user_id".to_string(), Value::int(user_id.into_inner()));
+    let (page, _) = conn.query_with_params(
         "MATCH (u:User {id: $user_id})-[:PURCHASED]->(p:Product)
          RETURN p.name, p.price, p.category",
-        &[("user_id", &user_id.into_inner())]
+        &params
     ).await
     .map_err(actix_web::error::ErrorInternalServerError)?;
 
-    Ok(web::Json(results))
+    let purchases = page.rows.iter().map(|row| Purchase {
+        name: row.get("name").unwrap().as_string().unwrap().to_string(),
+        price: row.get("price").unwrap().as_decimal().unwrap(),
+        category: row.get("category").unwrap().as_string().unwrap().to_string(),
+    }).collect();
+
+    Ok(web::Json(purchases))
 }
 
 #[tokio::main]
 async fn server() -> std::io::Result<()> {
     let client = Arc::new(
-        Client::connect("localhost:3141").await.unwrap()
+        Client::new("localhost", 3141).skip_verify(true)
     );
 
     HttpServer::new(move || {
@@ -387,14 +400,15 @@ class GeodeClient {
 }
 
 // Usage
-const client = new GeodeClient('https://geode.example.com', 'token_abc123');
+const { createClient } = require('@geode/client');
+const client = await createClient('geode://geode.example.com:3141');
 
-const result = await client.query(`
+const rows = await client.queryAll(`
     MATCH (u:User {id: $user_id})-[:PURCHASED]->(p:Product)
     RETURN p.name, p.price
-`, { user_id: 12345 });
+`, { params: { user_id: 12345 } });
 
-console.log(result.data);
+console.log(rows);
 ```
 
 ## Data Pipeline Integration
@@ -404,7 +418,7 @@ console.log(result.data);
 Stream changes from Geode to Kafka using Change Data Capture (CDC):
 
 ```python
-from geode_client import GeodeClient, CDCStream
+from geode_client import Client
 from kafka import KafkaProducer
 import json
 import asyncio
@@ -415,21 +429,31 @@ async def geode_to_kafka():
         value_serializer=lambda v: json.dumps(v).encode('utf-8')
     )
 
-    async with GeodeClient("localhost:3141") as client:
-        # Subscribe to CDC stream
-        async with client.cdc_stream(
-            patterns=["(n:User)", "(n:Product)", "()-[r:PURCHASED]->()"],
-            include_operations=["CREATE", "UPDATE", "DELETE"]
-        ) as stream:
-            async for change in stream:
-                # Forward to Kafka
-                topic = f"geode.{change['label']}"
+    client = Client(host="localhost", port=3141)
+    last_seen = None
+
+    async with client.connection() as conn:
+        while True:
+            result, _ = await conn.query(
+                """
+                MATCH (n)
+                WHERE n.updated_at > $since
+                RETURN labels(n) AS labels, n AS node, n.updated_at AS updated_at
+                ORDER BY updated_at
+                """,
+                {"since": last_seen or "1970-01-01T00:00:00Z"},
+            )
+
+            for row in result.rows:
+                topic = f\"geode.{row['labels'].raw_value[0]}\"
                 producer.send(topic, {
-                    'operation': change['operation'],
-                    'timestamp': change['timestamp'],
-                    'data': change['data'],
-                    'metadata': change['metadata']
+                    "operation": "UPSERT",
+                    "timestamp": row["updated_at"].raw_value,
+                    "data": row["node"].raw_value,
                 })
+                last_seen = row["updated_at"].raw_value
+
+            await asyncio.sleep(1)
 
 asyncio.run(geode_to_kafka())
 ```
@@ -439,7 +463,7 @@ asyncio.run(geode_to_kafka())
 Integrate Geode with data transformation pipelines:
 
 ```python
-from geode_client import GeodeClient
+from geode_client import Client
 from airflow import DAG
 from airflow.operators.python import PythonOperator
 from datetime import datetime, timedelta
@@ -455,10 +479,13 @@ def extract_from_postgres(**context):
 async def load_to_geode(**context):
     users = context['task_instance'].xcom_pull(task_ids='extract')
 
-    async with GeodeClient("localhost:3141") as client:
-        async with client.transaction() as tx:
+    client = Client(host="localhost", port=3141)
+
+    async with client.connection() as conn:
+        await conn.begin()
+        try:
             for user_id, name, email in users:
-                await tx.execute("""
+                await conn.execute("""
                     MERGE (u:User {id: $id})
                     SET u.name = $name, u.email = $email, u.synced_at = $timestamp
                 """, {
@@ -467,7 +494,10 @@ async def load_to_geode(**context):
                     "email": email,
                     "timestamp": datetime.now()
                 })
-            await tx.commit()
+            await conn.commit()
+        except Exception:
+            await conn.rollback()
+            raise
 
 with DAG(
     'postgres_to_geode',
@@ -578,7 +608,7 @@ Import Geode dashboards for visualization:
 Integrate Geode with OAuth2 identity providers:
 
 ```python
-from geode_client import GeodeClient
+from geode_client import Client
 from authlib.integrations.httpx_client import AsyncOAuth2Client
 import asyncio
 
@@ -593,12 +623,12 @@ async def geode_with_oauth():
     token = await oauth.fetch_token()
     access_token = token['access_token']
 
-    # Connect to Geode with token
-    async with GeodeClient(
-        "localhost:3141",
-        auth_token=access_token
-    ) as client:
-        result = await client.execute("""
+    # Map OAuth identity to a Geode user and login
+    client = Client(host="localhost", port=3141)
+    async with client.connection() as conn:
+        auth = geode_client.AuthClient(conn)
+        await auth.login("service_user", "service_password")
+        result, _ = await conn.query("""
             MATCH (u:User {email: $email})
             RETURN u
         """, {"email": "user@example.com"})
@@ -611,7 +641,7 @@ asyncio.run(geode_with_oauth())
 Authenticate Geode users against LDAP:
 
 ```python
-from geode_client import GeodeClient
+from geode_client import Client
 import ldap3
 
 def authenticate_ldap(username, password):
@@ -623,21 +653,16 @@ def authenticate_ldap(username, password):
     )
     return conn.bind()
 
-async def connect_with_ldap(username, password):
+async def run_query_with_ldap(username, password, query, params=None):
     if not authenticate_ldap(username, password):
         raise ValueError("Authentication failed")
 
-    # Generate Geode session token after LDAP auth
-    async with GeodeClient("localhost:3141") as admin_client:
-        result = await admin_client.execute("""
-            CALL create_session($username, $duration)
-        """, {"username": username, "duration": 3600})
-
-        session_token = result[0]['token']
-
-    # Connect with session token
-    client = GeodeClient("localhost:3141", auth_token=session_token)
-    return client
+    client = Client(host="localhost", port=3141)
+    async with client.connection() as conn:
+        auth = geode_client.AuthClient(conn)
+        await auth.login(username, password)
+        result, _ = await conn.query(query, params)
+        return result.rows
 ```
 
 ## Container Orchestration Integration
@@ -707,16 +732,19 @@ spec:
 Application integration with Kubernetes service:
 
 ```python
-from geode_client import GeodeClient
+import geode_client
 import os
 
 async def connect_k8s():
     # Use Kubernetes service DNS
     geode_url = os.getenv("GEODE_SERVICE", "geode.default.svc.cluster.local:3141")
 
-    async with GeodeClient(geode_url) as client:
-        result = await client.execute("MATCH (n) RETURN COUNT(n)")
-        print(f"Total nodes: {result[0]['COUNT(n)']}")
+    client = geode_client.open_database(f"geode://{geode_url}")
+
+    async with client.connection() as conn:
+        result, _ = await conn.query("MATCH (n) RETURN COUNT(n) AS total")
+        total = result.rows[0]["total"] if result.rows else 0
+        print(f"Total nodes: {total}")
 ```
 
 ## Best Practices
@@ -748,7 +776,7 @@ async def connect_k8s():
 
 ## Performance Considerations
 
-- **Native Clients**: Use native QUIC clients (Go, Python, Rust, Zig) for best performance
+- **Native Clients**: Use native QUIC clients (Go, Python, Rust, Node.js, Zig) for best performance
 - **Batch Operations**: Group related operations in transactions for efficiency
 - **Connection Reuse**: Maintain persistent connections and connection pools
 - **Query Optimization**: Use EXPLAIN to optimize queries at integration points
@@ -764,8 +792,9 @@ async def connect_k8s():
 
 ## Further Reading
 
-- [Go Client Documentation](/docs/clients/go/) - Complete Go integration guide
-- [Python Client Documentation](/docs/clients/python/) - Python client reference
-- [Rust Client Documentation](/docs/clients/rust/) - Rust client guide
+- [Go Client Documentation](/docs/client-libraries/go-client/) - Complete Go integration guide
+- [Python Client Documentation](/docs/client-libraries/python-client/) - Python client reference
+- [Rust Client Documentation](/docs/client-libraries/rust-client/) - Rust client guide
+- [Node.js Client Documentation](/docs/client-libraries/nodejs-client/) - Node.js client guide
 - [REST API Reference](/docs/api/rest/) - HTTP API documentation
 - [Integration Examples](/docs/examples/integration/) - Real-world integration patterns

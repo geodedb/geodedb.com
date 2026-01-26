@@ -407,10 +407,10 @@ RETURN device, accounts;
 ### Python Client - Real-Time Scoring
 
 ```python
-from geode_client import GeodeClient
+from geode_client import Client
 
 async def check_transaction_fraud(client, account_id, amount, device_id, ip_address):
-    result = await client.execute("""
+    result, _ = await client.query("""
         MATCH (account:Account {id: $account_id})
         OPTIONAL MATCH (account)-[:USES]->(device:Device {id: $device_id})
         OPTIONAL MATCH (account)-[:FROM_IP]->(ip:IPAddress {address: $ip_address})

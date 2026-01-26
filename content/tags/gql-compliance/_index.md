@@ -406,9 +406,16 @@ USING (tenant_id = current_setting('app.tenant_id'))
 ### Change Data Capture
 
 ```python
-# CDC streaming (extension)
-async for change in client.cdc_stream():
-    process_change(change)
+# CDC polling (extension)
+async with client.connection() as conn:
+    result, _ = await conn.query("""
+        MATCH (e:ChangeLog)
+        WHERE e.emitted_at > $since
+        RETURN e.after AS after
+        ORDER BY e.emitted_at
+    """, {"since": last_seen})
+    for row in result.rows:
+        process_change(row["after"].raw_value)
 ```
 
 ## Verification and Certification
@@ -740,12 +747,13 @@ Geode uses ISO SQL error codes (SQLSTATE):
 
 ```python
 # ISO-compliant error structure
-from geode_client import GeodeClient, GQLError
+from geode_client import Client, GQLError
 
 async def handle_errors():
-    async with GeodeClient("localhost", 3141) as client:
+    client = Client(host="localhost", port=3141)
+    async with client.connection() as conn:
         try:
-            await client.execute("""
+            await conn.execute("""
                 MATCH (p:Person {id: $id})
                 SET p.age = $age
             """, {'id': 123, 'age': -5})
@@ -781,7 +789,7 @@ Test suite validates migration compatibility:
 ```python
 # Migration test from another GQL database
 import pytest
-from geode_client import GeodeClient
+from geode_client import Client
 
 @pytest.mark.migration
 async def test_query_portability():
@@ -804,11 +812,13 @@ async def test_query_portability():
         """,
     ]
 
-    async with GeodeClient("localhost", 3141) as client:
+    client = Client(host="localhost", port=3141)
+
+    async with client.connection() as conn:
         for query in portable_queries:
-            result = await client.execute(query)
+            result, _ = await conn.query(query)
             # Should not raise errors
-            rows = [row async for row in result]
+            rows = [row for row in result.rows]
 ```
 
 ## Performance Impact of Compliance
@@ -820,12 +830,13 @@ ISO compliance has minimal performance cost:
 ```python
 # Benchmark: Compliance overhead measurement
 import time
-from geode_client import GeodeClient
+from geode_client import Client
 
 async def benchmark_compliance():
-    async with GeodeClient("localhost", 3141) as client:
+    client = Client(host="localhost", port=3141)
+    async with client.connection() as conn:
         # Create test data
-        await client.execute("""
+        await conn.execute("""
             UNWIND range(1, 10000) AS id
             CREATE (:TestNode {id: id, value: id * 2})
         """)
@@ -833,7 +844,7 @@ async def benchmark_compliance():
         # Benchmark: Type checking overhead
         start = time.time()
         for _ in range(1000):
-            await client.execute("""
+            await conn.execute("""
                 MATCH (n:TestNode {id: $id})
                 RETURN n.value
             """, {'id': 5000})
@@ -842,7 +853,7 @@ async def benchmark_compliance():
         # Benchmark: NULL handling overhead
         start = time.time()
         for _ in range(1000):
-            await client.execute("""
+            await conn.execute("""
                 MATCH (n:TestNode)
                 WHERE n.optional_field IS NULL
                 RETURN count(n)

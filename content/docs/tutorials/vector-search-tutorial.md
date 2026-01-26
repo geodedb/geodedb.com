@@ -54,7 +54,7 @@ pip install geode-client sentence-transformers
 
 # Or if using requirements file
 cat > requirements.txt <<EOF
-geode-client>=0.18.0
+geode-client>=0.1.0
 sentence-transformers>=2.2.0
 numpy>=1.21.0
 EOF
@@ -64,16 +64,30 @@ pip install -r requirements.txt
 
 ### Import Libraries
 
+<!-- CANARY: REQ=REQ-CLIENT-PY-001; FEATURE="PythonClientConnection"; ASPECT=HelloHandshake; STATUS=IMPL; OWNER=clients; UPDATED=2025-02-14 -->
+
 ```python
-from geode_client import GeodeClient
+import asyncio
+from geode_client import Client
 from sentence_transformers import SentenceTransformer
 import numpy as np
 
-# Connect to Geode
-client = GeodeClient("localhost:3141")
+# Create client (use an async connection for queries)
+client = Client(host="localhost", port=3141)
 
 # Load embedding model (downloads on first use, ~80MB)
 model = SentenceTransformer('all-MiniLM-L6-v2')
+```
+
+All Python steps below assume you are inside an async context, for example:
+
+```python
+async def main():
+    async with client.connection() as conn:
+        # Run the steps below with await conn.execute(...) / await conn.query(...)
+        ...
+
+asyncio.run(main())
 ```
 
 ### Verify Setup
@@ -151,11 +165,11 @@ for movie in movies:
 
 ```python
 # Create graph
-client.execute("CREATE GRAPH MovieSearch; USE MovieSearch;")
+await conn.execute("CREATE GRAPH MovieSearch; USE MovieSearch;")
 
 # Insert movies with embeddings
 for movie in movies:
-    client.execute("""
+    await conn.execute("""
         CREATE (:Movie {
             id: $id,
             title: $title,
@@ -190,7 +204,7 @@ In Python:
 
 ```python
 # Create vector index
-client.execute("""
+await conn.execute("""
     CREATE INDEX movie_embedding_idx ON Movie(embedding) USING vector
 """)
 
@@ -201,7 +215,7 @@ print("✓ Created HNSW vector index")
 
 ```python
 # Advanced: Configure HNSW parameters
-client.execute("""
+await conn.execute("""
     CREATE INDEX movie_embedding_advanced_idx ON Movie(embedding) USING vector
     WITH {
         m: 16,              -- Max connections per layer (default: 16)
@@ -226,7 +240,7 @@ query_text = "space exploration adventure"
 query_embedding = model.encode(query_text).tolist()
 
 # Find similar movies using cosine distance
-result = client.execute("""
+page, _ = await conn.query("""
     MATCH (m:Movie)
     WHERE vector_distance_cosine(m.embedding, $query_vec) < 0.5
     RETURN m.title,
@@ -238,9 +252,12 @@ result = client.execute("""
 
 print(f"\nQuery: '{query_text}'")
 print("\nMost similar movies:")
-for i, row in enumerate(result, 1):
-    print(f"{i}. {row['m.title']} (distance: {row['distance']:.3f})")
-    print(f"   {row['m.description'][:80]}...")
+for i, row in enumerate(page.rows, 1):
+    title = row["m.title"].raw_value
+    distance = row["distance"].raw_value
+    description = row["m.description"].raw_value
+    print(f"{i}. {title} (distance: {distance:.3f})")
+    print(f"   {description[:80]}...")
 ```
 
 **Expected output**:
@@ -265,7 +282,7 @@ Most similar movies:
 # Range: [0, 2], where 0 = identical, 2 = opposite
 # Best for: Text embeddings (direction matters more than magnitude)
 
-result = client.execute("""
+page, _ = await conn.query("""
     MATCH (m:Movie)
     RETURN m.title,
            vector_distance_cosine(m.embedding, $query_vec) AS cosine_dist
@@ -281,7 +298,7 @@ result = client.execute("""
 # Range: [0, ∞], where 0 = identical
 # Best for: When magnitude matters (e.g., image embeddings)
 
-result = client.execute("""
+page, _ = await conn.query("""
     MATCH (m:Movie)
     RETURN m.title,
            vector_distance_l2(m.embedding, $query_vec) AS l2_dist
@@ -297,7 +314,7 @@ result = client.execute("""
 # Range: [-∞, ∞], where higher = more similar
 # Best for: When embeddings are normalized
 
-result = client.execute("""
+page, _ = await conn.query("""
     MATCH (m:Movie)
     RETURN m.title,
            vector_inner_product(m.embedding, $query_vec) AS similarity
@@ -315,7 +332,7 @@ result = client.execute("""
 query_text = "mind-bending reality"
 query_embedding = model.encode(query_text).tolist()
 
-result = client.execute("""
+page, _ = await conn.query("""
     MATCH (m:Movie)
     WHERE m.genre = 'Sci-Fi'
       AND vector_distance_cosine(m.embedding, $query_vec) < 0.6
@@ -326,15 +343,17 @@ result = client.execute("""
 """, {'query_vec': query_embedding})
 
 print(f"\nQuery: '{query_text}' (Genre: Sci-Fi)")
-for row in result:
-    print(f"• {row['m.title']} (distance: {row['distance']:.3f})")
+for row in page.rows:
+    title = row["m.title"].raw_value
+    distance = row["distance"].raw_value
+    print(f"• {title} (distance: {distance:.3f})")
 ```
 
 ### Weighted Combination
 
 ```python
 # Combine vector similarity with rating score
-result = client.execute("""
+page, _ = await conn.query("""
     MATCH (m:Movie)
     WITH m,
          vector_distance_cosine(m.embedding, $query_vec) AS vec_dist,
@@ -363,7 +382,7 @@ queries = [
 for query_text in queries:
     query_emb = model.encode(query_text).tolist()
 
-    result = client.execute("""
+    page, _ = await conn.query("""
         MATCH (m:Movie)
         RETURN m.title,
                vector_distance_cosine(m.embedding, $query_vec) AS distance
@@ -372,15 +391,17 @@ for query_text in queries:
     """, {'query_vec': query_emb})
 
     print(f"\nQuery: '{query_text}'")
-    for row in result:
-        print(f"  • {row['m.title']} ({row['distance']:.3f})")
+    for row in page.rows:
+        title = row["m.title"].raw_value
+        distance = row["distance"].raw_value
+        print(f"  • {title} ({distance:.3f})")
 ```
 
 ### Find Items Similar to an Existing Item
 
 ```python
 # "More like this" - Find movies similar to The Matrix
-result = client.execute("""
+page, _ = await conn.query("""
     MATCH (ref:Movie {title: 'The Matrix'})
     MATCH (similar:Movie)
     WHERE similar <> ref
@@ -392,8 +413,10 @@ result = client.execute("""
 """)
 
 print("\nMovies similar to 'The Matrix':")
-for row in result:
-    print(f"• {row['similar.title']} (distance: {row['distance']:.3f})")
+for row in page.rows:
+    title = row["similar.title"].raw_value
+    distance = row["distance"].raw_value
+    print(f"• {title} (distance: {distance:.3f})")
 ```
 
 ### Clustering Similar Items
@@ -403,14 +426,14 @@ for row in result:
 from sklearn.cluster import KMeans
 
 # Get all embeddings
-result = client.execute("""
+page, _ = await conn.query("""
     MATCH (m:Movie)
     RETURN m.id, m.title, m.embedding
 """)
 
-embeddings = np.array([row['m.embedding'] for row in result])
-movie_ids = [row['m.id'] for row in result]
-titles = [row['m.title'] for row in result]
+embeddings = np.array([row["m.embedding"].raw_value for row in page.rows])
+movie_ids = [row["m.id"].raw_value for row in page.rows]
+titles = [row["m.title"].raw_value for row in page.rows]
 
 # Cluster into 2 groups
 kmeans = KMeans(n_clusters=2, random_state=42)
@@ -418,7 +441,7 @@ clusters = kmeans.fit_predict(embeddings)
 
 # Store cluster assignments
 for movie_id, cluster in zip(movie_ids, clusters):
-    client.execute("""
+    await conn.execute("""
         MATCH (m:Movie {id: $id})
         SET m.cluster = $cluster
     """, {'id': movie_id, 'cluster': int(cluster)})
@@ -437,7 +460,7 @@ for cluster_id in range(2):
 
 ```python
 # Profile query performance
-result = client.execute("""
+page, _ = await conn.query("""
     PROFILE
     MATCH (m:Movie)
     WHERE vector_distance_cosine(m.embedding, $query_vec) < 0.5
@@ -454,9 +477,9 @@ result = client.execute("""
 
 ```python
 # Rebuild index with different parameters for better recall
-client.execute("DROP INDEX movie_embedding_idx")
+await conn.execute("DROP INDEX movie_embedding_idx")
 
-client.execute("""
+await conn.execute("""
     CREATE INDEX movie_embedding_idx ON Movie(embedding) USING vector
     WITH {
         m: 32,              -- More connections = better recall
@@ -472,7 +495,7 @@ client.execute("""
 
 ```python
 # Pre-filter with fast index before vector search
-result = client.execute("""
+page, _ = await conn.query("""
     MATCH (m:Movie)
     WHERE m.genre = 'Sci-Fi'  -- Fast index lookup first
       AND vector_distance_cosine(m.embedding, $query_vec) < 0.5
@@ -498,7 +521,7 @@ text = "example text"
 embedding = model.encode(text)
 normalized_emb = normalize_embedding(embedding)
 
-client.execute("""
+await conn.execute("""
     CREATE (:Item {
         text: $text,
         embedding: $embedding
@@ -510,7 +533,7 @@ client.execute("""
 
 ```python
 # Gracefully handle items without embeddings
-result = client.execute("""
+page, _ = await conn.query("""
     MATCH (m:Movie)
     WHERE m.embedding IS NOT NULL
       AND vector_distance_cosine(m.embedding, $query_vec) < 0.5
@@ -555,13 +578,13 @@ products = [
 ]
 
 # Generate and store embeddings
-client.execute("CREATE GRAPH ProductRecommendations; USE ProductRecommendations;")
+await conn.execute("CREATE GRAPH ProductRecommendations; USE ProductRecommendations;")
 
 for product in products:
     text = f"{product['name']}. {product['desc']}"
     embedding = model.encode(text).tolist()
 
-    client.execute("""
+    await conn.execute("""
         CREATE (:Product {
             id: $id,
             name: $name,
@@ -572,13 +595,13 @@ for product in products:
     """, {**product, 'embedding': embedding})
 
 # Create index
-client.execute("CREATE INDEX product_emb_idx ON Product(embedding) USING vector")
+await conn.execute("CREATE INDEX product_emb_idx ON Product(embedding) USING vector")
 
 # User query: "fitness gadget for running"
 query = "fitness gadget for running"
 query_emb = model.encode(query).tolist()
 
-result = client.execute("""
+page, _ = await conn.query("""
     MATCH (p:Product)
     WHERE vector_distance_cosine(p.embedding, $query_vec) < 0.7
     RETURN p.name,
@@ -589,8 +612,11 @@ result = client.execute("""
 """, {'query_vec': query_emb})
 
 print(f"\nRecommendations for: '{query}'")
-for i, row in enumerate(result, 1):
-    print(f"{i}. {row['p.name']} - ${row['p.price']} (score: {1-row['relevance']:.2f})")
+for i, row in enumerate(page.rows, 1):
+    name = row["p.name"].raw_value
+    price = row["p.price"].raw_value
+    relevance = row["relevance"].raw_value
+    print(f"{i}. {name} - ${price} (score: {1-relevance:.2f})")
 
 # Expected output:
 # Recommendations for: 'fitness gadget for running'
@@ -608,13 +634,13 @@ for i, row in enumerate(result, 1):
 **Solutions**:
 ```python
 # 1. Verify index exists
-client.execute("SHOW INDEXES ON Movie")
+await conn.query("SHOW INDEXES ON Movie")
 
 # 2. Check index is ready
 # (Index builds asynchronously)
 
 # 3. Use EXPLAIN to verify
-client.execute("""
+await conn.query("""
     EXPLAIN
     MATCH (m:Movie)
     WHERE vector_distance_cosine(m.embedding, $vec) < 0.5
@@ -640,13 +666,13 @@ client.execute("""
 **Solutions**:
 ```python
 # Increase ef_search parameter
-client.execute("""
+await conn.execute("""
     CREATE INDEX better_recall_idx ON Movie(embedding) USING vector
     WITH {ef_search: 300}  -- Higher = better recall
 """)
 
 # Increase distance threshold
-result = client.execute("""
+page, _ = await conn.query("""
     MATCH (m:Movie)
     WHERE vector_distance_cosine(m.embedding, $query_vec) < 0.8  -- More lenient
     RETURN m.title

@@ -601,8 +601,10 @@ configure_azure_monitor(
     connection_string="InstrumentationKey=..."
 )
 
-async with geode_client.connect() as conn:
-    result = await conn.execute("MATCH (u:User) RETURN COUNT(u)")
+client = geode_client.open_database()
+
+async with client.connection() as conn:
+    result, _ = await conn.query("MATCH (u:User) RETURN COUNT(u)")
 ```
 
 ### Metrics Dashboards

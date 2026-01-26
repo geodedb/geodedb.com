@@ -143,7 +143,7 @@ Iterative algorithm for ranking node importance:
 
 ```python
 # Python implementation using Geode client
-from geode_client import GeodeClient
+from geode_client import Client
 
 async def pagerank(client, damping=0.85, iterations=20):
     # Initialize PageRank scores
@@ -154,7 +154,7 @@ async def pagerank(client, damping=0.85, iterations=20):
 
     for i in range(iterations):
         # Update PageRank scores
-        result = await client.query("""
+        result, _ = await client.query("""
             MATCH (source:Page)-[:LINKS]->(target:Page)
             WITH target, source, COUNT(*) AS out_degree
             MATCH (source)-[:LINKS]->()
@@ -166,7 +166,7 @@ async def pagerank(client, damping=0.85, iterations=20):
         # Commit new scores
         await client.query("MATCH (n:Page) SET n.pagerank = n.new_pagerank")
 
-        if result[0]['delta'] < 0.0001:
+        if result.rows[0]['delta'] < 0.0001:
             break
 
     return await client.query("""
@@ -262,7 +262,7 @@ Measure similarity using property vectors:
 ```python
 # Python implementation with embeddings
 async def cosine_similarity(client, user_id, limit=10):
-    result = await client.query("""
+    result, _ = await client.query("""
         MATCH (u1:User {id: $user_id})
         MATCH (u2:User) WHERE u2.id <> $user_id
         WITH u1, u2,
@@ -412,7 +412,7 @@ class GraphAlgorithms:
                 RETURN m.id AS next_id
             """, {"id": node_id})
 
-            for row in result:
+            for row in result.rows:
                 await dfs(row['next_id'], path + [node_id])
 
             stack.remove(node_id)
@@ -514,7 +514,7 @@ async def k_shortest_paths(client, start_id, end_id, k=5):
     paths = []
 
     # Find first shortest path
-    result = await client.execute("""
+    result, _ = await client.query("""
         MATCH path = shortestPath((start {id: $start})-[*]-(end {id: $end}))
         RETURN path
     """, {"start": start_id, "end": end_id})
@@ -522,7 +522,7 @@ async def k_shortest_paths(client, start_id, end_id, k=5):
     if not result:
         return paths
 
-    paths.append(result[0]['path'])
+    paths.append(result.rows[0]['path'])
 
     # Find k-1 additional paths
     for _ in range(k - 1):
@@ -596,14 +596,14 @@ async def eigenvector_centrality(client, iterations=100, tolerance=1e-6):
     """Compute eigenvector centrality using power iteration"""
 
     # Get adjacency matrix
-    nodes = await client.execute("MATCH (n) RETURN n.id AS id ORDER BY id")
+    nodes, _ = await client.query("MATCH (n) RETURN n.id AS id ORDER BY id")
     node_ids = [row['id'] for row in nodes]
     n = len(node_ids)
     id_to_index = {node_id: i for i, node_id in enumerate(node_ids)}
 
     # Build adjacency matrix
     adj = np.zeros((n, n))
-    edges = await client.execute("""
+    edges, _ = await client.query("""
         MATCH (a)-[:CONNECTED]->(b)
         RETURN a.id AS source, b.id AS target
     """)
@@ -694,7 +694,7 @@ async def louvain_algorithm(client, resolution=1.0):
         iteration += 1
 
         # For each node, try moving to neighbor's community
-        nodes = await client.execute("MATCH (n) RETURN n.id AS id")
+        nodes, _ = await client.query("MATCH (n) RETURN n.id AS id")
 
         for node in nodes:
             node_id = node['id']
@@ -703,7 +703,7 @@ async def louvain_algorithm(client, resolution=1.0):
             current_modularity = await compute_modularity(client)
 
             # Try each neighbor's community
-            neighbors = await client.execute("""
+            neighbors, _ = await client.query("""
                 MATCH (n {id: $id})-[:CONNECTED]-(neighbor)
                 RETURN DISTINCT neighbor.community AS community
             """, {"id": node_id})
@@ -762,7 +762,7 @@ async def tarjan_scc(client):
     """Tarjan's algorithm for strongly connected components"""
 
     # Get all nodes
-    nodes = await client.execute("MATCH (n) RETURN n.id AS id")
+    nodes, _ = await client.query("MATCH (n) RETURN n.id AS id")
     node_list = [n['id'] for n in nodes]
 
     index = 0
@@ -782,7 +782,7 @@ async def tarjan_scc(client):
         on_stack.add(node_id)
 
         # Get successors
-        successors = await client.execute("""
+        successors, _ = await client.query("""
             MATCH (n {id: $id})-[:EDGE]->(successor)
             RETURN successor.id AS id
         """, {"id": node_id})
@@ -824,7 +824,7 @@ Iterative similarity based on neighborhood:
 async def simrank(client, decay=0.8, max_iterations=10):
     """SimRank similarity algorithm"""
 
-    nodes = await client.execute("MATCH (n) RETURN n.id AS id")
+    nodes, _ = await client.query("MATCH (n) RETURN n.id AS id")
     node_list = [n['id'] for n in nodes]
     n = len(node_list)
 
@@ -900,11 +900,11 @@ async def generate_embeddings(client, dimensions=128):
     # Export graph to NetworkX
     G = nx.Graph()
 
-    nodes = await client.execute("MATCH (n) RETURN n.id AS id")
+    nodes, _ = await client.query("MATCH (n) RETURN n.id AS id")
     for node in nodes:
         G.add_node(node['id'])
 
-    edges = await client.execute("""
+    edges, _ = await client.query("""
         MATCH (a)-[:CONNECTED]-(b)
         RETURN a.id AS source, b.id AS target
     """)
@@ -993,11 +993,11 @@ async def parallel_centrality_computation(client, node_ids):
     """Compute centrality for nodes in parallel"""
 
     async def compute_node_centrality(node_id):
-        result = await client.execute("""
+        result, _ = await client.query("""
             MATCH (n {id: $id})-[r]-()
             RETURN COUNT(r) AS degree
         """, {"id": node_id})
-        return node_id, result[0]['degree']
+        return node_id, result.rows[0]['degree']
 
     # Create tasks for all nodes
     tasks = [compute_node_centrality(nid) for nid in node_ids]
@@ -1039,7 +1039,7 @@ async def incremental_pagerank(client, new_edge):
     """Update PageRank incrementally after edge addition"""
 
     # Only recompute affected nodes
-    affected = await client.execute("""
+    affected, _ = await client.query("""
         MATCH path = (source {id: $source})-[:CONNECTED*0..2]-(affected)
         RETURN DISTINCT affected.id AS id
     """, {"source": new_edge['source']})
@@ -1071,7 +1071,7 @@ async def profile_algorithm(algorithm_func, *args, **kwargs):
 
     print(f"Execution time: {end_time - start_time:.2f}s")
     print(f"Memory used: {end_memory - start_memory:.2f}MB")
-    print(f"Results: {len(result)} items")
+    print(f"Results: {len(result.rows)} items")
 
     return result
 ```
@@ -1090,7 +1090,7 @@ async def visualize_communities(client):
     G = nx.Graph()
 
     # Load graph with community labels
-    edges = await client.execute("""
+    edges, _ = await client.query("""
         MATCH (a)-[:CONNECTED]-(b)
         RETURN a.id AS source, b.id AS target,
                a.community AS comm_a, b.community AS comm_b
@@ -1100,7 +1100,7 @@ async def visualize_communities(client):
         G.add_edge(edge['source'], edge['target'])
 
     # Color by community
-    communities = await client.execute("""
+    communities, _ = await client.query("""
         MATCH (n)
         RETURN n.id AS id, n.community AS community
     """)

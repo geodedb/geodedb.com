@@ -117,12 +117,14 @@ Every tutorial provides working code in multiple languages, demonstrating idioma
 
 ```python
 import asyncio
-from geode_client import GeodeClient
+from geode_client import Client
 
 async def social_graph_example():
-    async with GeodeClient("localhost:3141") as client:
+    client = Client(host="localhost", port=3141)
+    async with client.connection() as conn:
         # Create users with a transaction
-        async with client.transaction() as tx:
+        async with client.connection() as tx:
+            await tx.begin()
             await tx.execute("""
                 CREATE (alice:Person {name: 'Alice', age: 30})
                 CREATE (bob:Person {name: 'Bob', age: 25})
@@ -130,13 +132,13 @@ async def social_graph_example():
             """)
 
         # Query friends of friends
-        result = await client.execute("""
+        result, _ = await conn.query("""
             MATCH (a:Person {name: 'Alice'})-[:KNOWS*1..2]->(friend)
             RETURN DISTINCT friend.name, friend.age
             ORDER BY friend.name
         """)
 
-        async for row in result:
+        for row in result.rows:
             print(f"Friend: {row['friend.name']}, Age: {row['friend.age']}")
 
 asyncio.run(social_graph_example())

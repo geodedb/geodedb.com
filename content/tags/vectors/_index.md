@@ -120,7 +120,7 @@ Generate embeddings using external models before storing:
 **Python Example with SentenceTransformers:**
 ```python
 from sentence_transformers import SentenceTransformer
-from geode_client import GeodeClient
+from geode_client import Client
 
 model = SentenceTransformer('all-MiniLM-L6-v2')
 
@@ -129,19 +129,20 @@ async def store_document_with_embedding(client, doc_id, title, content):
     embedding = model.encode(content).tolist()
 
     # Store in Geode
-    await client.execute_gql("""
-        CREATE (:Document {
-            id: $id,
-            title: $title,
-            content: $content,
-            embedding: $embedding
+    async with client.connection() as conn:
+        await conn.execute("""
+            CREATE (:Document {
+                id: $id,
+                title: $title,
+                content: $content,
+                embedding: $embedding
+            })
+        """, {
+            "id": doc_id,
+            "title": title,
+            "content": content,
+            "embedding": embedding
         })
-    """, {
-        "id": doc_id,
-        "title": title,
-        "content": content,
-        "embedding": embedding
-    })
 ```
 
 **Go Example with OpenAI:**
@@ -377,17 +378,23 @@ async def update_document_embedding(client, doc_id, new_content):
     new_embedding = model.encode(new_content).tolist()
 
     # Update in transaction
-    async with client.transaction() as tx:
-        await tx.execute("""
-            MATCH (d:Document {id: $doc_id})
-            SET d.content = $content,
-                d.embedding = $embedding,
-                d.updated_at = current_timestamp()
-        """, {
-            "doc_id": doc_id,
-            "content": new_content,
-            "embedding": new_embedding
-        })
+    async with client.connection() as conn:
+        await conn.begin()
+        try:
+            await conn.execute("""
+                MATCH (d:Document {id: $doc_id})
+                SET d.content = $content,
+                    d.embedding = $embedding,
+                    d.updated_at = current_timestamp()
+            """, {
+                "doc_id": doc_id,
+                "content": new_content,
+                "embedding": new_embedding
+            })
+            await conn.commit()
+        except Exception:
+            await conn.rollback()
+            raise
 ```
 
 ### Batch Reindexing
@@ -397,12 +404,17 @@ Regenerate all embeddings when upgrading models:
 ```python
 async def reindex_all_documents(client, batch_size=100):
     # Fetch documents without embeddings or old model
-    docs = await client.execute_gql("""
-        MATCH (d:Document)
-        WHERE d.embedding IS NULL
-           OR d.embedding_model <> $current_model
-        RETURN d.id, d.content
-    """, {"current_model": "all-MiniLM-L6-v2"})
+    async with client.connection() as conn:
+        result, _ = await conn.query("""
+            MATCH (d:Document)
+            WHERE d.embedding IS NULL
+               OR d.embedding_model <> $current_model
+            RETURN d.id, d.content
+        """, {"current_model": "all-MiniLM-L6-v2"})
+        docs = [
+            {"id": row["d.id"].raw_value, "content": row["d.content"].raw_value}
+            for row in result.rows
+        ]
 
     # Process in batches
     for i in range(0, len(docs), batch_size):
@@ -413,17 +425,23 @@ async def reindex_all_documents(client, batch_size=100):
         embeddings = model.encode(contents).tolist()
 
         # Update in transaction
-        async with client.transaction() as tx:
-            for doc, embedding in zip(batch, embeddings):
-                await tx.execute("""
-                    MATCH (d:Document {id: $doc_id})
-                    SET d.embedding = $embedding,
-                        d.embedding_model = $model
-                """, {
-                    "doc_id": doc['id'],
-                    "embedding": embedding,
-                    "model": "all-MiniLM-L6-v2"
-                })
+        async with client.connection() as conn:
+            await conn.begin()
+            try:
+                for doc, embedding in zip(batch, embeddings):
+                    await conn.execute("""
+                        MATCH (d:Document {id: $doc_id})
+                        SET d.embedding = $embedding,
+                            d.embedding_model = $model
+                    """, {
+                        "doc_id": doc['id'],
+                        "embedding": embedding,
+                        "model": "all-MiniLM-L6-v2"
+                    })
+                await conn.commit()
+            except Exception:
+                await conn.rollback()
+                raise
 ```
 
 ## Real-World Applications

@@ -651,7 +651,7 @@ async def test_audit_trigger(client):
     """)
 
     # Verify audit log created
-    result = await client.execute("""
+    result, _ = await client.query("""
         MATCH (a:AuditLog)
         WHERE a.action = 'user_created'
           AND a.record_id = 123
@@ -672,7 +672,7 @@ async def test_validation_trigger(client):
         """)
 
     # Verify no record created
-    result = await client.execute("""
+    result, _ = await client.query("""
         MATCH (p:Person {id: 456}) RETURN p
     """)
     assert len(result.bindings) == 0
@@ -699,7 +699,7 @@ async def test_bidirectional_friendship(client):
     """)
 
     # Verify both directions exist
-    result = await client.execute("""
+    result, _ = await client.query("""
         MATCH (a:User {id: 1})-[:FRIEND]->(b:User {id: 2}),
               (b)-[:FRIEND]->(a)
         RETURN a.name, b.name
