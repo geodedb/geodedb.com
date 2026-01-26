@@ -1,8 +1,8 @@
 ---
 title: "Claude Code Plugin"
-description: "Claude Code plugin for Geode GQL with LSP support and slash commands"
+description: "Claude Code plugin for Geode GQL with LSP, MCP, and slash commands"
 weight: 4
-tags: ["claude", "plugin", "lsp", "gql", "ai"]
+tags: ["claude", "plugin", "lsp", "mcp", "gql", "ai"]
 categories: ["plugins", "documentation"]
 keywords:
   - Geode Claude plugin
@@ -10,15 +10,50 @@ keywords:
   - developer tooling
   - Geode integrations
   - AI assistant
+  - MCP tools
 ---
 
-<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-26 -->
 
 # Claude Code Plugin for Geode
 
-Language Server Protocol (LSP) support and slash commands for Geode GQL in Claude Code.
+Language Server Protocol (LSP) support, Model Context Protocol (MCP) tools, and slash commands for Geode GQL in Claude Code.
 
 ## Features
+
+### MCP Tools (via `geode mcp serve`)
+
+The MCP server provides Claude with direct access to Geode:
+
+| Tool | Description |
+|------|-------------|
+| `query` | Execute GQL queries against Geode |
+| `schema` | Get graph schema information |
+| `explain` | Get query execution plans |
+| `catalogs` | List available catalogs |
+| `graphs` | List available graphs |
+| `validate` | Validate GQL query syntax |
+| `complete` | Get code completions for GQL |
+| `hover` | Get hover information for tokens |
+| `diagnostics` | Get diagnostics for queries |
+
+### MCP Resources
+
+| Resource URI | Description |
+|--------------|-------------|
+| `geode://default/default/schema` | Graph schema |
+| `geode://default/default/stats` | Database statistics |
+| `geode://config` | Server configuration |
+
+### MCP Prompts
+
+Pre-built prompts for common graph operations:
+- `find_nodes` - Generate queries to find nodes
+- `find_relationships` - Generate relationship search queries
+- `create_node` / `create_relationship` - Generate creation queries
+- `shortest_path` - Generate shortest path queries
+- `graph_analysis` - Generate graph analysis queries
+- `pattern_match` - Generate pattern matching queries
 
 ### LSP Features
 
@@ -30,10 +65,11 @@ Language Server Protocol (LSP) support and slash commands for Geode GQL in Claud
 
 ### Slash Commands
 
-- `/geode-lsp:status` - Check LSP installation and capabilities
-- `/geode-lsp:examples` - Show GQL query examples
-- `/geode-lsp:syntax` - Quick reference for syntax and keywords
-- `/geode-lsp:query` - Help draft, debug, or optimize GQL queries
+- `/geode:status` - Check LSP and MCP installation and capabilities
+- `/geode:mcp-status` - Detailed MCP server status and available tools
+- `/geode:examples` - Show GQL query examples
+- `/geode:syntax` - Quick reference for syntax and keywords
+- `/geode:query` - Help draft, debug, or optimize GQL queries
 
 ## Supported File Extensions
 
@@ -49,7 +85,7 @@ Language Server Protocol (LSP) support and slash commands for Geode GQL in Claud
 Geode must be installed and available in your PATH:
 
 ```bash
-git clone https://github.com/geode-db/geode.git
+git clone https://gitlab.com/devnw/codepros/geode/geode.git
 cd geode && make build
 export PATH="$PWD/zig-out/bin:$PATH"
 ```
@@ -57,13 +93,13 @@ export PATH="$PWD/zig-out/bin:$PATH"
 ### Test Plugin Locally
 
 ```bash
-claude --plugin-dir ./claude-code-lsp-plugin
+claude --plugin-dir ./geode-claude-plugin
 ```
 
 ### Install from Marketplace (when published)
 
 ```bash
-claude /plugin install geode-lsp@<marketplace-name>
+claude /plugin install geode@<marketplace-name>
 ```
 
 ## Usage
@@ -71,12 +107,13 @@ claude /plugin install geode-lsp@<marketplace-name>
 LSP features start automatically when you open a supported file. Use slash commands for quick references:
 
 ```
-/geode-lsp:status
-/geode-lsp:examples
-/geode-lsp:examples vector
-/geode-lsp:syntax
-/geode-lsp:syntax aggregation
-/geode-lsp:query
+/geode:status
+/geode:mcp-status
+/geode:examples
+/geode:examples vector
+/geode:syntax
+/geode:syntax aggregation
+/geode:query
 ```
 
 ## LSP Capabilities
@@ -92,12 +129,14 @@ LSP features start automatically when you open a supported file. Use slash comma
 ## Plugin Structure
 
 ```
-claude-code-lsp-plugin/
+geode-claude-plugin/
 ├── .claude-plugin/
 │   └── plugin.json
 ├── .lsp.json
+├── .mcp.json
 ├── commands/
 │   ├── status.md
+│   ├── mcp-status.md
 │   ├── examples.md
 │   ├── syntax.md
 │   └── query.md
@@ -121,4 +160,4 @@ Completions trigger on `.` for properties, `:` for labels, and `$` for parameter
 
 ## Repository
 
-- GitLab: [devnw/geode/geode-claude-code-lsp-plugin](https://gitlab.com/devnw/geode/geode-claude-code-lsp-plugin)
+- GitLab: [devnw/codepros/geode/geode-claude-plugin](https://gitlab.com/devnw/codepros/geode/geode-claude-plugin)

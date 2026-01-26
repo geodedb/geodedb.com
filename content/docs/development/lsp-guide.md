@@ -796,14 +796,15 @@ let g:ale_fixers = {
 
 Complete editor integration packages are available:
 
-**Claude Code Plugin** (`claude-code-lsp-plugin/`):
+**Claude Code Plugin** (`geode-claude-plugin/`):
 ```bash
-claude /plugin install /path/to/claude-code-lsp-plugin
+claude /plugin install /path/to/geode-claude-plugin
 ```
 
 Features:
 - Automatic LSP integration for Claude Code
-- File extension mapping for .gql, .gcypher, .cypher
+- MCP tools for direct Geode access
+- File extension mapping for .gql, .gcypher, .cypher, .pgql
 - Auto-installation hooks
 
 **VS Code Extension** (`editors/vscode/`):
