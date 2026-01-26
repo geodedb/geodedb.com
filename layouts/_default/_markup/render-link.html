@@ -1,0 +1,97 @@
+{{- /* Override theme link render hook with internal path validation. */ -}}
+{{- $originalDest := trim .Destination " " -}}
+{{- $rawDest := $originalDest -}}
+
+{{- $isAnchorOnly := strings.HasPrefix $rawDest "#" -}}
+{{- if $isAnchorOnly -}}
+  {{- $rawDest = printf "%s%s" .Page.Permalink $rawDest -}}
+{{- end -}}
+
+{{- $u := urls.Parse $rawDest -}}
+{{- $destHost := $u.Host -}}
+{{- $destScheme := lower $u.Scheme -}}
+{{- $siteHost := (urls.Parse site.BaseURL).Host -}}
+
+{{- $isExternal := and
+  (in (slice "http" "https") $destScheme)
+  (ne $destHost "")
+  (ne $destHost $siteHost)
+-}}
+
+{{- $isSpecial := in (slice "mailto" "tel" "data" "ftp" "javascript") $destScheme -}}
+{{- $shouldCheck := and (not $isExternal) (not $isSpecial) (not $isAnchorOnly) -}}
+
+{{- if and $shouldCheck (ne $u.Path "") -}}
+  {{- $path := $u.Path -}}
+  {{- $ext := lower (path.Ext $path) -}}
+  {{- $assetExts := slice
+    ".png" ".jpg" ".jpeg" ".gif" ".webp" ".svg" ".ico"
+    ".pdf" ".zip" ".gz" ".tgz" ".bz2" ".xz" ".7z" ".tar"
+    ".mp4" ".webm" ".mp3" ".wav" ".flac" ".ogg"
+    ".json" ".csv" ".tsv" ".txt" ".yaml" ".yml" ".toml"
+    ".xml" ".css" ".js" ".map"
+  -}}
+  {{- $isAsset := and (ne $ext "") (in $assetExts $ext) -}}
+
+  {{- if not $isAsset -}}
+    {{- $lookup := $path -}}
+    {{- if strings.HasSuffix $lookup "/" -}}
+      {{- $lookup = strings.TrimSuffix $lookup "/" -}}
+    {{- end -}}
+
+    {{- $isRelative := or (strings.HasPrefix $lookup "../") (strings.HasPrefix $lookup "./") -}}
+    {{- if and (not $isRelative) (not (strings.HasPrefix $lookup "/")) -}}
+      {{- $lookup = printf "/%s" $lookup -}}
+    {{- end -}}
+
+    {{- $page := "" -}}
+    {{- if $isRelative -}}
+      {{- $page = .Page.GetPage $lookup -}}
+    {{- end -}}
+    {{- if not $page -}}
+      {{- $page = site.GetPage $lookup -}}
+    {{- end -}}
+    {{- if not $page -}}
+      {{- $page = .Page.GetPage $lookup -}}
+    {{- end -}}
+
+    {{- if and (not $page) (or (strings.HasSuffix $lookup ".html") (strings.HasSuffix $lookup ".htm")) -}}
+      {{- $trimmed := strings.TrimSuffix $lookup ".html" -}}
+      {{- $trimmed = strings.TrimSuffix $trimmed ".htm" -}}
+      {{- $page = site.GetPage $trimmed -}}
+      {{- if not $page -}}
+        {{- $page = .Page.GetPage $trimmed -}}
+      {{- end -}}
+    {{- end -}}
+
+    {{- if not $page -}}
+      {{- $pageFile := "" -}}
+      {{- with .Page.File -}}
+        {{- $pageFile = .Path -}}
+      {{- else -}}
+        {{- $pageFile = .Page.Path | default .Page.Permalink -}}
+      {{- end -}}
+      {{- errorf "Invalid internal link %q in %s" $originalDest $pageFile -}}
+    {{- end -}}
+  {{- end -}}
+{{- end -}}
+
+{{- $aria := "" -}}
+{{- if $isExternal -}}
+  {{- $aria = printf "%s – %s"
+    (.Text | plainify)
+    (i18n "ExternalWindow" | default "opens in new window")
+  -}}
+{{- end -}}
+
+<a
+  href="{{ $rawDest | safeURL }}"
+  {{ with .Title }}title="{{ . | html }}"{{ end }}
+  {{ if $aria }}aria-label="{{ $aria }}"{{ end }}
+  {{ if $isExternal }}target="_blank" rel="noopener noreferrer"{{ end }}
+>
+  {{- .Text | safeHTML -}}
+  {{- if $isExternal }}
+    <span aria-hidden="true" class="external-icon">↗</span>
+  {{ end -}}
+</a>

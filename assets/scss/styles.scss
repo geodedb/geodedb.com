@@ -787,10 +787,20 @@ dropdown {
   .breadcrumb {
     background-color: #f8f9fa !important; /* Light grey */
     color: #231f20 !important; /* CP Black */
+    gap: 0.35rem 0;
   }
 
   .breadcrumb .breadcrumb-item a {
     color: #2894e5 !important; /* Lightest - Links */
+  }
+
+  .breadcrumb .breadcrumb-item a:hover {
+    color: #1961af !important; /* Mid for hover */
+  }
+
+  .breadcrumb-item + .breadcrumb-item::before {
+    padding: 0 0.5rem 0 0.25rem;
+    color: rgba(35, 31, 32, 0.35);
   }
 
   /* Search Page & Section */
@@ -1113,10 +1123,20 @@ dropdown {
   .breadcrumb {
     background-color: transparent !important;
     color: #94a3b8 !important;
+    gap: 0.35rem 0;
   }
 
   .breadcrumb .breadcrumb-item a {
+    color: #7dd3fc !important;
+  }
+
+  .breadcrumb .breadcrumb-item a:hover {
     color: #38bdf8 !important;
+  }
+
+  .breadcrumb-item + .breadcrumb-item::before {
+    padding: 0 0.5rem 0 0.25rem;
+    color: rgba(148, 163, 184, 0.7);
   }
 
   /* Search Box & Search Bar - More specific selectors */

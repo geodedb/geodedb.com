@@ -864,7 +864,7 @@ LIMIT 10
 - [Query Performance Tuning](/docs/query/performance-tuning)
 - [EXPLAIN/PROFILE Commands](/docs/query/explain-profile)
 - [Full-Text Search](/docs/query/full-text-search)
-- [Indexing Reference](/docs/reference/indexes)
+- [Indexing Reference](/docs/query/indexing-and-optimization/)
 
 ---
 

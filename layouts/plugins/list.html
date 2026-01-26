@@ -8,7 +8,7 @@
 
 {{ $container := partial "helpers/container.html" (dict "Page" .) }}
 
-<div class="docs-shell">
+<div class="docs-shell docs-shell--plugins">
   {{/* Section header */}}
   <header class="docs-header bg-gradient pt-2 pb-3 border-bottom" role="banner">
     <div class="{{ $container }} docs-header-inner">
@@ -48,7 +48,9 @@
           <article class="docs-section-intro mb-5">
             <div class="card border-0 shadow-sm docs-panel">
               <div class="card-body">
-                {{ . }}
+                <div class="docs-intro-content docs-intro-content--bullets">
+                  {{ . }}
+                </div>
               </div>
             </div>
           </article>
@@ -58,6 +60,7 @@
         {{ $allPages := .Pages }}
         {{ $sections := slice }}
         {{ $regularPages := slice }}
+        {{ $hasIntro := gt (len (plainify .Content)) 0 }}
         
         {{ range $allPages }}
           {{ if eq .Kind "section" }}
@@ -77,7 +80,7 @@
             <div class="row g-4">
               {{ range $sections.ByWeight }}
                 <div class="col-md-6 col-xl-4">
-                  <div class="card h-100 border-0 shadow-sm hover-lift docs-panel">
+                  <div class="card h-100 border-0 shadow-sm hover-lift docs-panel docs-card">
                     <div class="card-body">
                       <h3 class="card-title h5 mb-2">
                         <a href="{{ .Permalink }}" class="text-decoration-none stretched-link">
@@ -86,6 +89,13 @@
                       </h3>
                       {{ with .Description }}
                         <p class="card-text text-muted small mb-2">{{ . }}</p>
+                      {{ end }}
+                      {{ with .Params.tags }}
+                        <div class="docs-card-tags">
+                          {{ range first 3 . }}
+                            <span class="badge rounded-pill">{{ . }}</span>
+                          {{ end }}
+                        </div>
                       {{ end }}
                     </div>
                   </div>
@@ -123,7 +133,7 @@
         {{ end }}
 
         {{/* Empty state */}}
-        {{ if and (eq (len $regularPages) 0) (eq (len $sections) 0) }}
+        {{ if and (eq (len $regularPages) 0) (eq (len $sections) 0) (not $hasIntro) }}
           <div class="alert alert-info d-flex align-items-center" role="alert">
             <wa-icon name="circle-info" class="me-2 flex-shrink-0" aria-hidden="true"></wa-icon>
             <div>No plugins available yet.</div>

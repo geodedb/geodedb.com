@@ -320,7 +320,7 @@ Typical release cadence:
 - **GitHub Releases**: Watch the repository for release notifications
 - **Mailing List**: Subscribe to geode-announce@codepros.org
 - **RSS Feed**: https://geodedb.com/docs/changelog/feed.xml
-- **Changelog RSS**: https://geodedb.com/docs/changelog.rss
+- **Changelog RSS**: /docs/releases/index.xml
 
 ### Testing Pre-Release Versions
 

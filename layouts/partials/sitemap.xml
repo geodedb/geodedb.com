@@ -20,7 +20,7 @@
     {{- else if eq .Section "services" }}
       {{- $changeFreq = "monthly" }}
       {{- $priority = 0.9 }}
-    {{- else if or (eq .Section "articles") (eq .Section "blog") }}
+    {{- else if eq .Section "articles" }}
       {{- $changeFreq = "weekly" }}
       {{- $priority = 0.8 }}
     {{- else if or (eq .Section "about") (eq .Section "contact") }}

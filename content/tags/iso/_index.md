@@ -328,7 +328,7 @@ ISO compliance enables fair benchmarks:
 ### Standards Process
 
 - [ISO/IEC JTC 1/SC 32/WG 3](https://www.iso.org/committee/45342.html) - Working group
-- [GQL Standards Blog](/blog/gql-standards/) - Updates and commentary
+- [GQL Standards Blog](https://codepros.org/blog/gql-standards/) - Updates and commentary
 - [Contributing to GQL](/docs/contributing-to-gql/) - Participating in standards work
 
 ## Advanced Standards Compliance Features

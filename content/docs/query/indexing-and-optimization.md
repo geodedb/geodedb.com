@@ -166,7 +166,7 @@ LIMIT 10;
 
 **BM25 Scoring**: Balances term frequency (TF) and inverse document frequency (IDF) for relevance ranking.
 
-**See also**: [BM25 Integration](/docs/query/bm25-integration) for tuning parameters (k1, b).
+**See also**: [BM25 Integration](/docs/query/full-text-search/) for tuning parameters (k1, b).
 
 ### Spatial Indexes
 
@@ -530,8 +530,8 @@ RETURN p.name, friend.name;
 
 ## Next Steps
 
-- **[EXPLAIN and PROFILE Reference](/docs/reference/explain-profile)** - Detailed operator reference
+- **[EXPLAIN and PROFILE Reference](/docs/query/explain-profile/)** - Detailed operator reference
 - **[Performance and Scalability](/docs/architecture/performance-and-scaling)** - Architecture and scaling patterns
-- **[BM25 Integration](/docs/query/bm25-integration)** - Full-text search tuning
+- **[BM25 Integration](/docs/query/full-text-search/)** - Full-text search tuning
 - **[Data Model and Types](/docs/model/data-model-and-types)** - Type-specific indexing guidance
 - **[Tutorials](/docs/tutorials/overview)** - Performance tuning tutorial

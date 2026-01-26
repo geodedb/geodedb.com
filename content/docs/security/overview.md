@@ -504,6 +504,6 @@ See `docs/SECURITY_PROGRESS.md` for detailed status matrix.
 
 - **[Deployment Guide](/docs/ops/deployment)** - Production security setup (Vault, Nginx, TLS)
 - **[Monitoring and Telemetry](/docs/ops/observability)** - Audit log analysis
-- **[User Authentication](/docs/reference/user-auth)** - Detailed AuthN reference
-- **[RLS Implementation](/docs/kb/rls-implementation)** - Deep dive into RLS evaluation
-- **[KMS Provider System](/docs/reference/kms-providers)** - KMS configuration guide
+- **[User Authentication](/docs/security/password-hashing/)** - Detailed AuthN reference
+- **[RLS Implementation](/docs/security/overview/#enhanced-row-level-security-rls)** - Deep dive into RLS evaluation
+- **[KMS Provider System](/docs/security/kms-integration/)** - KMS configuration guide

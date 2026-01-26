@@ -446,7 +446,7 @@ Handle partitions gracefully:
 - [Architecture](/tags/architecture) - System architecture patterns
 - [Replication](/tags/replication) - Data replication strategies
 - [Scalability](/tags/scalability) - Horizontal scaling approaches
-- [High Availability](/tags/high-availability) - Availability patterns
+- [High Availability](/tags/availability/) - Availability patterns
 
 ## Production Deployment Patterns
 

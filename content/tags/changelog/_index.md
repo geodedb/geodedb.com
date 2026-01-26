@@ -171,7 +171,7 @@ geode changelog --category security
 
 **Web Documentation**:
 
-Visit https://geodedb.com/changelog for interactive changelog with:
+Visit /docs/reference/changelog/ for interactive changelog with:
 - Filterable change categories
 - Version comparison
 - Migration guide links

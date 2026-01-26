@@ -445,5 +445,5 @@ author: CURRENT_USER() → track creator
 - [Constraints](/tags/constraints) - NOT NULL and CHECK constraints that work with defaults
 - [Nullable](/tags/nullable) - Understanding NULL vs default value behavior
 - [Validation](/tags/validation) - Validating default values meet business rules
-- [Schemas](/tags/schemas) - Schema design with default values
-- [Migrations](/tags/migrations) - Adding defaults in schema migrations
+- [Schemas](/tags/schema/) - Schema design with default values
+- [Migrations](/tags/migration/) - Adding defaults in schema migrations

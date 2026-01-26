@@ -400,7 +400,7 @@ ORDER BY a.risk_score DESC;
 
 ## Next Steps
 
-- [Real-Time Analytics](/docs/analytics/real-time) - CDC and streaming integration
+- [Real-Time Analytics](/docs/analytics/real-time-analytics/) - CDC and streaming integration
 - [Graph Algorithms](/docs/analytics/graph-algorithms) - Centrality and embeddings
 - [Security Guide](/docs/security/overview) - RLS and audit logging
 - [Indexing and Optimization](/docs/query/indexing-and-optimization) - Performance tuning

@@ -523,5 +523,5 @@ INSERT (issue:DataQualityIssue {
 - [Constraints](/tags/constraints) - Schema constraint enforcement
 - [ETL](/tags/etl) - Data integration quality
 - [Monitoring](/tags/monitoring) - System monitoring
-- [Data Governance](/tags/data-governance) - Governance policies
+- [Data Governance](/tags/governance/) - Governance policies
 - [Testing](/tags/testing) - Quality testing strategies

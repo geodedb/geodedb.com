@@ -526,4 +526,4 @@ ORDER BY avg_age DESC;
 - **[Indexing and Optimization](/docs/query/indexing-and-optimization)** - Speed up queries with indexes
 - **[API Reference](/docs/reference/cli-and-api)** - Complete keyword/function reference
 - **[Tutorials](/docs/tutorials/overview)** - Step-by-step learning paths
-- **[GQL Compliance](/docs/gql-reference/compliance)** - Detailed conformance notes
+- **[GQL Compliance](/docs/gql/conformance-profile/)** - Detailed conformance notes

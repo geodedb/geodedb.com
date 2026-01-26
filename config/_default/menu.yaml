@@ -17,7 +17,7 @@ main:
     weight: 4
   - identifier: blog
     name: Blog
-    url: /blog/
+    url: https://codepros.org/blog
     weight: 5
 
 footer:

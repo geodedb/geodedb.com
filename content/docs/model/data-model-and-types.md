@@ -151,7 +151,7 @@ MATCH (p:Person)
 RETURN p.name + " <" + p.email + ">" AS display;
 ```
 
-**See also**: [Unicode Support](/docs/reference/unicode) for identifier and string handling.
+**See also**: [Unicode Support](/docs/reference/unicode-support/) for identifier and string handling.
 
 ### Numeric Types
 

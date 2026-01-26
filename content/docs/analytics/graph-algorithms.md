@@ -549,4 +549,4 @@ cdc:
 - **[Indexing and Optimization](/docs/query/indexing-and-optimization)** - HNSW vector indexes
 - **[Use Case: Recommendations](/docs/use-cases/recommendations)** - End-to-end recommendation system
 - **[Use Case: Fraud Detection](/docs/use-cases/fraud-detection)** - Anomaly detection with algorithms
-- **[Graph Algorithm Reference](/docs/reference/graph-algorithms)** - Complete algorithm catalog
+- **[Graph Algorithm Reference](/docs/analytics/graph-algorithms/)** - Complete algorithm catalog

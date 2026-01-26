@@ -655,7 +655,7 @@ Engage with the Geode community for update assistance.
 
 ### Update Assistance Channels
 
-- **Documentation:** https://geodedb.com/docs/updates
+- **Documentation:** /docs/releases/
 - **Community Forum:** https://community.geodedb.com
 - **GitHub Issues:** https://github.com/geodedb/geode/issues
 - **Discord:** https://discord.gg/geodedb

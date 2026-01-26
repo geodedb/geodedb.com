@@ -378,5 +378,5 @@ ORDER BY score DESC;
 
 - [Graph Algorithms](/docs/analytics/graph-algorithms) - Embedding generation
 - [Indexing and Optimization](/docs/query/indexing-and-optimization) - Vector indexes
-- [Real-Time Analytics](/docs/analytics/real-time) - CDC integration
+- [Real-Time Analytics](/docs/analytics/real-time-analytics/) - CDC integration
 - [Data Model and Types](/docs/model/data-model-and-types) - Vector types

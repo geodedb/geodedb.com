@@ -44,14 +44,14 @@
         >
       {{- end }}
       <changefreq
-        >{{ if or (eq .Section "articles") (eq .Section "blog") }}
+        >{{ if eq .Section "articles" }}
           weekly
         {{ else }}
           monthly
         {{ end }}</changefreq
       >
       <priority
-        >{{ if or (eq .Section "articles") (eq .Section "blog") }}
+        >{{ if eq .Section "articles" }}
           0.8
         {{ else }}
           0.7

@@ -605,6 +605,6 @@ async def resilient_etl(pg_pool, geode_client):
 - [Import](/tags/import) - Data import utilities
 - [Migration](/tags/migration) - Schema and data migration
 - [Data Quality](/tags/data-quality) - Quality checks in ETL
-- [Batch Processing](/tags/batch-processing) - Batch operation patterns
+- [Batch Processing](/tags/import/) - Batch operation patterns
 - [Transactions](/tags/transactions) - Transactional loading
 - [Performance](/tags/performance) - ETL performance optimization

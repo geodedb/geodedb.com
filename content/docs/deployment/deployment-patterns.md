@@ -1907,9 +1907,9 @@ After successful deployment:
 
 **Related Documentation**:
 - [Performance Tuning Guide](/docs/tutorials/index-optimization) - Query optimization with EXPLAIN
-- [Security Configuration](/docs/security/authentication) - Advanced security features
-- [Monitoring Setup](/docs/operations/monitoring) - Metrics and alerting
-- [Backup Strategies](/docs/operations/backup-restore) - Backup and recovery procedures
+- [Security Configuration](/docs/security/overview/) - Advanced security features
+- [Monitoring Setup](/docs/ops/observability/) - Metrics and alerting
+- [Backup Strategies](/docs/guides/backup-automation/) - Backup and recovery procedures
 - [Client Libraries](/docs/client-libraries/client-comparison) - Client configuration for production
 
 ---

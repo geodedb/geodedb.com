@@ -483,5 +483,5 @@ def is_adult(person):
 - [Constraints](/tags/constraints) - NOT NULL constraints and schema rules
 - [Validation](/tags/validation) - Validating optional vs required data
 - [Data Quality](/tags/data-quality) - Managing data completeness
-- [Schemas](/tags/schemas) - Schema design with nullability
+- [Schemas](/tags/schema/) - Schema design with nullability
 - [GQL](/tags/gql) - GQL standard three-valued logic semantics

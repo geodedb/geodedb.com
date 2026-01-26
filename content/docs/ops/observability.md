@@ -569,4 +569,4 @@ scrape_configs:
 - **[Deployment Guide](/docs/ops/deployment)** - Production stack setup
 - **[Security Guide](/docs/security/overview)** - Audit logging and integrity
 - **[Performance and Scaling](/docs/architecture/performance-and-scaling)** - Performance metrics interpretation
-- **[Telemetry Reference](/docs/reference/telemetry)** - Complete telemetry documentation
+- **[Telemetry Reference](/docs/ops/telemetry-advanced/)** - Complete telemetry documentation

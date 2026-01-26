@@ -544,5 +544,5 @@ COMMIT;
 - **[GQL Guide](/docs/gql/guide)** - Transaction syntax and examples
 - **[Security Guide](/docs/security/overview)** - Audit logging and integrity
 - **[Deployment Guide](/docs/ops/deployment)** - Backup and recovery procedures
-- **[Enhanced Transaction Isolation](/docs/architecture/transaction-isolation)** - Deep dive into MVCC + SSI
-- **[Session Management](/docs/reference/session-management)** - Session lifecycle and state
+- **[Enhanced Transaction Isolation](/docs/transactions/advanced-patterns/)** - Deep dive into MVCC + SSI
+- **[Session Management](/docs/security/session-management/)** - Session lifecycle and state

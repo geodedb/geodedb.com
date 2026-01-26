@@ -861,7 +861,7 @@ RETURN p.name, p.friends[1].name AS second_friend;
 
 - [GQL Compliance](/docs/gql/conformance-profile/) - ISO/IEC 39075:2024 standard adherence
 - [EXPLAIN and PROFILE](/docs/query/explain-profile/) - Analyze operator execution
-- [Data Types Reference](/docs/data-types/_index.md) - Complete type system
+- [Data Types Reference](/docs/data-types/) - Complete type system
 - [Advanced GQL Patterns](/docs/gql/advanced-patterns/) - Complex query patterns
 
 ---

@@ -129,7 +129,7 @@ Geode's architecture is designed for performance and reliability:
 - **Security Layer**: Policy-driven RLS evaluation with encryption
 - **Transport**: QUIC+TLS for secure, multiplexed connections (no TCP fallback)
 
-For architectural details, see the [Architecture](/docs/architecture/overview) pages.
+For architectural details, see the [Architecture](/docs/architecture/) pages.
 
 ## When to Choose Geode
 
@@ -166,7 +166,7 @@ Geode may not be the best fit for:
 
 Ready to get started?
 
-- **[Installation & Quick Start](/docs/get-started/install)** - Get Geode running in minutes
+- **[Installation & Quick Start](/docs/get-started/)** - Get Geode running in minutes
 - **[GQL Guide](/docs/gql/guide)** - Learn the query language with executable examples
 - **[Data Model and Types](/docs/model/data-model-and-types)** - Understand the property graph model
 - **[Security Guide](/docs/security/overview)** - Configure authentication and encryption

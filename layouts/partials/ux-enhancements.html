@@ -26,7 +26,7 @@
 </button>
 
 {{/* Reading Progress Bar (for documentation and blog posts) */}}
-{{ if or (eq .Section "docs") (eq .Section "blog") }}
+{{ if eq .Section "docs" }}
   <div
     id="readingProgress"
     class="reading-progress"

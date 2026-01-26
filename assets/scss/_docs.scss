@@ -258,14 +258,15 @@
    ---------------------------------------------------------------------------- */
 
 .breadcrumb-nav {
-  padding: 0.75rem 0;
-  margin-bottom: 1rem;
+  padding: 0.85rem 0;
+  margin-bottom: 1.1rem;
   border-bottom: 1px dashed rgba(15, 23, 42, 0.12);
 }
 
 .breadcrumb {
   display: flex;
   flex-wrap: wrap;
+  gap: 0.35rem 0;
   padding: 0;
   margin-bottom: 0;
   list-style: none;
@@ -281,7 +282,7 @@
 
 .breadcrumb-item + .breadcrumb-item::before {
   content: '/';
-  padding: 0 0.5rem;
+  padding: 0 0.5rem 0 0.25rem;
   color: rgba(15, 23, 42, 0.35);
 }
 
@@ -299,6 +300,26 @@
 .breadcrumb-item.active {
   color: var(--docs-ink);
   font-weight: 500;
+}
+
+[data-bs-theme="dark"] .docs-shell .breadcrumb-nav {
+  border-bottom: 1px dashed rgba(148, 163, 184, 0.35);
+}
+
+[data-bs-theme="dark"] .docs-shell .breadcrumb-item {
+  color: rgba(148, 163, 184, 0.85);
+}
+
+[data-bs-theme="dark"] .docs-shell .breadcrumb-item + .breadcrumb-item::before {
+  color: rgba(148, 163, 184, 0.7);
+}
+
+[data-bs-theme="dark"] .docs-shell .breadcrumb-item a {
+  color: var(--docs-accent-bright) !important;
+}
+
+[data-bs-theme="dark"] .docs-shell .breadcrumb-item a:hover {
+  color: var(--docs-accent) !important;
 }
 
 /* ----------------------------------------------------------------------------
@@ -804,6 +825,132 @@ h6[id] {
 
 .docs-list-item:hover {
   background-color: rgba(15, 118, 110, 0.05);
+}
+
+/* ----------------------------------------------------------------------------
+   Guides / Clients / Plugins Index Enhancements
+   ---------------------------------------------------------------------------- */
+
+.docs-intro-content {
+  color: var(--docs-ink);
+}
+
+.docs-intro-content > p:first-child {
+  font-size: 1.05rem;
+}
+
+.docs-intro-content h2 {
+  font-family: var(--docs-font-display);
+  font-size: 1.35rem;
+  margin-top: 2rem;
+  margin-bottom: 0.75rem;
+  letter-spacing: -0.01em;
+}
+
+.docs-intro-content h2:first-of-type {
+  margin-top: 0;
+}
+
+.docs-intro-content--bullets ul {
+  list-style: none;
+  padding-left: 0;
+  margin: 0.75rem 0 1.5rem;
+  display: grid;
+  gap: 0.75rem 1.5rem;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.docs-intro-content--bullets li {
+  position: relative;
+  padding-left: 1.5rem;
+  color: var(--docs-muted);
+}
+
+.docs-intro-content--bullets li::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0.45rem;
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 999px;
+  background: var(--docs-accent);
+  box-shadow: 0 0 0 4px rgba(var(--bs-primary-rgb), 0.12);
+}
+
+.docs-intro-content--guides h2 + ul {
+  list-style: none;
+  padding-left: 0;
+  margin: 0.75rem 0 1.75rem;
+  display: grid;
+  gap: 0.9rem;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+}
+
+.docs-intro-content--guides h2 + ul li {
+  border: 1px solid var(--docs-border);
+  border-radius: 0.9rem;
+  background: var(--docs-surface);
+  box-shadow: var(--docs-shadow-soft);
+  padding: 0.9rem 1rem;
+  color: var(--docs-muted);
+}
+
+.docs-intro-content--guides h2 + ul li a {
+  font-weight: 600;
+  color: var(--docs-ink);
+  text-decoration: none;
+}
+
+.docs-intro-content--guides h2 + ul li a:hover {
+  color: var(--docs-accent-strong);
+}
+
+.docs-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.docs-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    160px circle at 100% 0%,
+    rgba(var(--bs-primary-rgb), 0.18),
+    transparent 60%
+  );
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.docs-card .card-body {
+  position: relative;
+  z-index: 1;
+}
+
+.docs-card-tags {
+  margin-top: 0.75rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.docs-card-tags .badge {
+  background: var(--docs-surface-3);
+  color: var(--docs-muted);
+  border: 1px solid var(--docs-border);
+  font-size: 0.7rem;
+  font-weight: 600;
+}
+
+.docs-card-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-top: 0.35rem;
+  color: var(--docs-muted);
+  font-size: 0.85rem;
 }
 
 /* ----------------------------------------------------------------------------

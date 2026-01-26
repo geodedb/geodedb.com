@@ -40,6 +40,13 @@ test:
   rules:
     - if: $CI_COMMIT_BRANCH && $CI_COMMIT_BRANCH != $CI_DEFAULT_BRANCH
 
+link-check:
+  stage: test
+  script:
+    - hugo -b https://geodedb.com --minify --gc --panicOnWarning
+  rules:
+    - if: $CI_COMMIT_BRANCH
+
 pages:
   stage: deploy
   script:

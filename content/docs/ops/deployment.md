@@ -93,7 +93,7 @@ cd geode
 make docker-up-distributed
 ```
 
-**See**: [Distributed Query Coordination](/docs/architecture/distributed-queries) for topology details.
+**See**: [Distributed Query Coordination](/docs/architecture/distributed-architecture/) for topology details.
 
 ### Containerized Production Stack
 
@@ -431,7 +431,7 @@ cdc:
 - **Cache invalidation**: Clear application caches on data change
 - **Fraud detection**: Trigger anomaly detection on new transactions
 
-**See**: [Real-Time Analytics](/docs/analytics/real-time) for complete CDC workflow
+**See**: [Real-Time Analytics](/docs/analytics/real-time-analytics/) for complete CDC workflow
 
 ## Client Integration
 

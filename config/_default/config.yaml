@@ -12,7 +12,6 @@ pagination:
 permalinks:
   docs: /docs/:slug/
   guides: /guides/:slug/
-  blog: /blog/:slug/
   tag: /tags/:slug/
   category: /categories/:slug/
 

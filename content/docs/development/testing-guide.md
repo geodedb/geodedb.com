@@ -1659,8 +1659,8 @@ After mastering Geode testing:
 5. **Improve Coverage** - Work toward higher test coverage in untested areas
 
 **Related Documentation**:
-- [Development Workflow](/docs/development/contributing) - Contributing guidelines
-- [CI/CD Pipeline](/docs/development/ci-cd) - Continuous integration setup
+- [Development Workflow](/docs/contribute/) - Contributing guidelines
+- [CI/CD Pipeline](/docs/development/testing-guide/#ci-cd-integration) - Continuous integration setup
 - [Performance Testing](/docs/tutorials/index-optimization) - Query optimization testing
 - [Deployment Testing](/docs/deployment/deployment-patterns) - Production validation
 - [Client Testing](/docs/client-libraries/client-comparison) - Client library testing

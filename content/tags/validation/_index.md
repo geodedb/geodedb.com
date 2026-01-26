@@ -527,6 +527,6 @@ CONSTRAINT check_stock CHECK (quantity_ordered <= quantity_available)
 - [Constraints](/tags/constraints) - Schema-level constraint enforcement
 - [Data Quality](/tags/data-quality) - Overall data quality management
 - [Security](/tags/security) - Security best practices
-- [Sanitization](/tags/sanitization) - Input sanitization techniques
+- [Sanitization](/tags/security/) - Input sanitization techniques
 - [Transactions](/tags/transactions) - Transactional validation
-- [Error Handling](/tags/error-handling) - Handling validation errors
+- [Error Handling](/tags/troubleshooting/) - Handling validation errors
