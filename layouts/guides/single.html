@@ -1,0 +1,217 @@
+{{/* ──────────────────────────────────────────────────────────────
+  Guides Single Page Layout - Matches docs layout for consistency
+  - 3-column responsive layout: nav sidebar, content, TOC sidebar
+  - Related guides section at bottom showing 2 similar articles
+  ────────────────────────────────────────────────────────────────
+*/}}
+
+{{ define "main" }}
+
+{{ $container := partial "helpers/container.html" (dict "Page" .) }}
+
+<div class="docs-shell docs-shell--guides">
+  {{/* Clean documentation header */}}
+  <header class="docs-header bg-gradient pt-2 pb-3 border-bottom" role="banner">
+    <div class="{{ $container }} docs-header-inner">
+      <div class="row">
+        <div class="col-12">
+          {{/* Breadcrumb navigation at top for better context */}}
+          {{ partial "docs/breadcrumbs" . }}
+
+          {{/* Page title and description */}}
+          <div class="mt-2">
+            <h1 class="display-5 fw-bold mb-2" itemprop="headline">{{ .Title }}</h1>
+            {{ with .Description }}
+              <p class="lead text-muted mb-0">{{ . }}</p>
+            {{ end }}
+
+            {{/* Reading time indicator */}}
+            {{ if gt .ReadingTime 0 }}
+              <div class="text-muted small mt-2">
+                <wa-icon name="clock" class="me-1" aria-hidden="true"></wa-icon>
+                {{ .ReadingTime }} {{ i18n "min_read" | default "min read" }}
+              </div>
+            {{ end }}
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  {{/* Main content area */}}
+  <div class="{{ $container }} pt-3 pb-4 docs-main">
+    <div class="row">
+
+    {{/* ─────────────────────────────────────────────────────────────
+      LEFT SIDEBAR: Navigation Catalog (persistent, collapsible on mobile)
+      ───────────────────────────────────────────────────────────────
+    */}}
+    <aside class="col-12 col-lg-3 col-xl-2 order-0 mb-4 mb-lg-0" role="navigation" aria-label="Guides navigation">
+      {{/* Mobile toggle button */}}
+      <div class="d-lg-none mb-3">
+        <button
+          class="btn btn-outline-secondary w-100 d-flex align-items-center justify-content-between"
+          type="button"
+          data-bs-toggle="collapse"
+          data-bs-target="#guidesNav"
+          aria-expanded="false"
+          aria-controls="guidesNav"
+        >
+          <span>
+            <wa-icon name="bars" class="me-2" aria-hidden="true"></wa-icon>
+            {{ i18n "guides_menu" | default "Guides Menu" }}
+          </span>
+          <wa-icon name="chevron-down" aria-hidden="true"></wa-icon>
+        </button>
+      </div>
+
+      {{/* Navigation catalog - collapsible on mobile, always visible on desktop */}}
+      <div class="collapse d-lg-block" id="guidesNav">
+        <div class="docs-sidebar-nav position-sticky">
+          {{/* Search box */}}
+          {{ partial "docs/search-box" . }}
+
+          {{/* Navigation catalog */}}
+          {{ partial "docs/catalog-enhanced" . }}
+        </div>
+      </div>
+    </aside>
+
+    {{/* ─────────────────────────────────────────────────────────────
+      MAIN CONTENT: Guide article
+      ───────────────────────────────────────────────────────────────
+    */}}
+    <div class="col-12 col-lg-6 col-xl-7 order-1">
+      <article
+        class="docs-content"
+        itemscope
+        itemtype="https://schema.org/TechnicalArticle"
+      >
+        {{/* Main content */}}
+        <div class="article-body" itemprop="articleBody">
+          {{ .Content }}
+        </div>
+
+        {{/* References section (if any) */}}
+        {{ partial "post/references" . }}
+
+        {{/* Previous/Next navigation */}}
+        {{ if or .PrevInSection .NextInSection }}
+          <nav
+            class="docs-nav mt-5 pt-4 border-top"
+            aria-label="{{ i18n "page_navigation" | default "Page navigation" }}"
+          >
+            <div class="row g-3">
+              {{ with .PrevInSection }}
+                <div class="col-md-6">
+                  <a
+                    href="{{ .Permalink }}"
+                    class="btn btn-outline-primary w-100 text-start d-flex align-items-center"
+                    rel="prev"
+                  >
+                    <div class="flex-shrink-0 me-2">
+                      <wa-icon name="arrow-left" aria-hidden="true"></wa-icon>
+                    </div>
+                    <div class="flex-grow-1 text-start">
+                      <div class="small text-muted">
+                        {{ i18n "previous" | default "Previous" }}
+                      </div>
+                      <div class="fw-semibold">{{ .Title }}</div>
+                    </div>
+                  </a>
+                </div>
+              {{ end }}
+              {{ with .NextInSection }}
+                <div class="col-md-6{{ if not $.PrevInSection }} offset-md-6{{ end }}">
+                  <a
+                    href="{{ .Permalink }}"
+                    class="btn btn-outline-primary w-100 text-end d-flex align-items-center"
+                    rel="next"
+                  >
+                    <div class="flex-grow-1 text-end">
+                      <div class="small text-muted">
+                        {{ i18n "next" | default "Next" }}
+                      </div>
+                      <div class="fw-semibold">{{ .Title }}</div>
+                    </div>
+                    <div class="flex-shrink-0 ms-2">
+                      <wa-icon name="arrow-right" aria-hidden="true"></wa-icon>
+                    </div>
+                  </a>
+                </div>
+              {{ end }}
+            </div>
+          </nav>
+        {{ end }}
+
+        {{/* Related Guides section - shows 2 similar articles */}}
+        {{ $related := .Site.RegularPages.Related . | first 2 }}
+        {{ with $related }}
+          <section class="docs-related mt-5 pt-4 border-top">
+            <h2 class="h5 mb-4 d-flex align-items-center">
+              <wa-icon name="book-open" class="me-2 text-primary" aria-hidden="true"></wa-icon>
+              {{ i18n "related_guides" | default "Related Guides" }}
+            </h2>
+            <div class="row g-3">
+              {{ range . }}
+                <div class="col-md-6">
+                  <div class="card h-100 border-0 shadow-sm hover-lift docs-panel docs-card">
+                    <div class="card-body">
+                      <h3 class="card-title h6 mb-2">
+                        <a href="{{ .Permalink }}" class="text-decoration-none stretched-link">
+                          {{ .Title }}
+                        </a>
+                      </h3>
+                      {{ with .Description }}
+                        <p class="card-text text-muted small mb-0">{{ . | truncate 100 }}</p>
+                      {{ end }}
+                    </div>
+                  </div>
+                </div>
+              {{ end }}
+            </div>
+          </section>
+        {{ end }}
+
+      </article>
+    </div>
+
+    {{/* ─────────────────────────────────────────────────────────────
+      RIGHT SIDEBAR: Table of Contents (sticky, hidden on mobile)
+      ───────────────────────────────────────────────────────────────
+    */}}
+    <aside class="col-lg-3 order-2 d-none d-lg-block" role="complementary" aria-label="Table of contents">
+      <div class="docs-toc position-sticky" style="top: 1rem; max-height: calc(100vh - 2rem); overflow-y: auto;">
+        {{/* Enhanced table of contents for docs */}}
+        {{ partial "docs/toc-enhanced" . }}
+      </div>
+    </aside>
+
+    </div>
+  </div>
+</div>
+
+{{/* Structured data for SEO - TechnicalArticle schema */}}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "TechnicalArticle",
+  "headline": {{ .Title | jsonify }},
+  "description": {{ .Description | jsonify }},
+  "author": {
+    "@type": "Organization",
+    "name": {{ .Site.Title | jsonify }}
+  },
+  "datePublished": {{ .Date.Format "2006-01-02T15:04:05Z07:00" | jsonify }},
+  "dateModified": {{ .Lastmod.Format "2006-01-02T15:04:05Z07:00" | jsonify }},
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": {{ .Permalink | jsonify }}
+  }
+  {{ with .Params.image }},
+  "image": {{ . | absURL | jsonify }}
+  {{ end }}
+}
+</script>
+
+{{ end }}
