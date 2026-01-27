@@ -1,6 +1,6 @@
 {{/* ───────────────────────── Enhanced Footer ───────────────────────── */}}
 
-<footer class="footer-modern bg-dark text-white" role="contentinfo">
+<footer class="footer-modern text-white" role="contentinfo">
   <div class="container-fluid px-4">
     {{/* Main footer content */}}
     <div class="footer-content py-5">
@@ -118,7 +118,7 @@
     </div>
 
     {{/* Bottom bar */}}
-    <div class="footer-bottom border-top border-secondary py-4">
+    <div class="footer-bottom border-top py-4">
       <div class="row align-items-center">
         <div class="col-md-6 mb-3 mb-md-0">
           <p class="small text-white-50 mb-0">
@@ -145,9 +145,10 @@
 </footer>
 
 <style>
-  /* Enhanced footer styles */
+  /* Enhanced footer styles - matches header theme */
   .footer-modern {
-    background: linear-gradient(180deg, #1f2937 0%, #111827 100%);
+    background: linear-gradient(135deg, #4a148c 0%, #6a1b9a 100%);
+    border-top: 3px solid #9c4dff;
   }
 
   .footer-links {
@@ -159,7 +160,7 @@
   }
 
   .footer-links a {
-    color: var(--color-neutral-300);
+    color: #ce93d8;
     text-decoration: none;
     transition: color var(--duration-fast) var(--ease-out);
     display: inline-flex;
@@ -168,7 +169,7 @@
   }
 
   .footer-links a:hover {
-    color: white;
+    color: #d4a5ff;
     text-decoration: none;
   }
 
@@ -179,59 +180,73 @@
     width: 2.5rem;
     height: 2.5rem;
     border-radius: var(--radius-lg);
-    background: rgba(255, 255, 255, 0.1);
-    color: white;
+    background: rgba(156, 77, 255, 0.2);
+    color: #f3e5f5;
     text-decoration: none;
     transition: all var(--duration-fast) var(--ease-out);
     font-size: var(--text-lg);
   }
 
   .social-link:hover {
-    background: rgba(255, 255, 255, 0.2);
-    color: white;
+    background: rgba(156, 77, 255, 0.4);
+    color: #d4a5ff;
     transform: translateY(-2px);
   }
 
   .footer-bottom a:hover {
-    color: white !important;
+    color: #d4a5ff !important;
     text-decoration: underline;
   }
 
-  /* Light mode footer adjustments */
+  .footer-bottom {
+    border-top-color: rgba(156, 77, 255, 0.3) !important;
+  }
+
+  /* Light mode footer adjustments - matches header theme */
   [data-bs-theme="light"] .footer-modern {
-    background: linear-gradient(180deg, #f8fafc 0%, #eef2f7 100%);
-    color: #0e2a6e;
-    border-top: 1px solid rgba(15, 23, 42, 0.08);
+    background: linear-gradient(135deg, #4a148c 0%, #6a1b9a 100%);
+    color: #f3e5f5 !important;
+    border-top: 3px solid #9c4dff;
   }
 
   [data-bs-theme="light"] .footer-modern h3,
-  [data-bs-theme="light"] .footer-modern h4 {
-    color: #0e2a6e;
+  [data-bs-theme="light"] .footer-modern h4,
+  [data-bs-theme="light"] .footer-modern .h4,
+  [data-bs-theme="light"] .footer-modern .h6 {
+    color: #f3e5f5 !important;
   }
 
+  [data-bs-theme="light"] .footer-modern p,
+  [data-bs-theme="light"] .footer-modern span,
+  [data-bs-theme="light"] .footer-modern .text-white,
   [data-bs-theme="light"] .footer-modern .text-white-50 {
-    color: rgba(14, 42, 110, 0.65) !important;
+    color: rgba(243, 229, 245, 0.85) !important;
   }
 
   [data-bs-theme="light"] .footer-modern .footer-links a {
-    color: #0e2a6e;
+    color: #ce93d8 !important;
   }
 
   [data-bs-theme="light"] .footer-modern .footer-links a:hover {
-    color: #1961af;
+    color: #ffffff !important;
   }
 
   [data-bs-theme="light"] .footer-modern .social-link {
-    background: rgba(14, 42, 110, 0.08);
-    color: #0e2a6e;
+    background: rgba(255, 255, 255, 0.1);
+    color: #f3e5f5 !important;
   }
 
   [data-bs-theme="light"] .footer-modern .social-link:hover {
-    background: rgba(14, 42, 110, 0.16);
-    color: #0e2a6e;
+    background: rgba(255, 255, 255, 0.2);
+    color: #ffffff !important;
+  }
+
+  [data-bs-theme="light"] .footer-modern .footer-bottom a,
+  [data-bs-theme="light"] .footer-modern .footer-bottom a.text-white-50 {
+    color: rgba(243, 229, 245, 0.7) !important;
   }
 
   [data-bs-theme="light"] .footer-modern .footer-bottom a:hover {
-    color: #1961af !important;
+    color: #ffffff !important;
   }
 </style>

@@ -28,28 +28,24 @@ This guide will help you get started with Geode in under 5 minutes.
 ### Install by Operating System
 
 {{< tabs >}}
-{{< tab "Linux" >}}
-{{< tabs >}}
-{{< tab "Debian/Ubuntu" >}}
+{{< tab "Linux (Debian/Ubuntu)" >}}
 ```bash
 curl -L -o geode.deb https://gitlab.com/devnw/codepros/geode/geode/-/releases/latest/download/geode-linux-amd64.deb
 sudo apt install ./geode.deb
 ```
 {{< /tab >}}
-{{< tab "RHEL/Fedora" >}}
+{{< tab "Linux (RHEL/Fedora)" >}}
 ```bash
 curl -L -o geode.rpm https://gitlab.com/devnw/codepros/geode/geode/-/releases/latest/download/geode-linux-x86_64.rpm
 sudo rpm -i geode.rpm
 ```
 {{< /tab >}}
-{{< tab "Generic" >}}
+{{< tab "Linux (Generic)" >}}
 ```bash
 curl -L -o geode-linux-amd64 https://gitlab.com/devnw/codepros/geode/geode/-/releases/latest/download/geode-linux-amd64
 chmod +x geode-linux-amd64
 sudo install -m 0755 geode-linux-amd64 /usr/local/bin/geode
 ```
-{{< /tab >}}
-{{< /tabs >}}
 {{< /tab >}}
 {{< tab "macOS" >}}
 ```bash

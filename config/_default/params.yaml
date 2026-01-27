@@ -3,7 +3,7 @@ webawesome:
   version: '3.0.0-beta.4'
   theme: 'premium'
   palette: 'anodized'
-  brand: 'blue'
+  brand: 'purple'
   neutral: 'gray'
   success: 'green'
   warning: 'yellow'
@@ -66,13 +66,13 @@ defaultDescription: |
 sitename: Geode Database
 author: Geode Contributors
 favicons:
-  shortcut_icon: 'images/icons/favicon.ico'
-  icon: 'images/icons/favicon.ico'
-  apple_touch_icon: 'images/icons/apple-touch-icon.png'
-  favicon_32: 'images/icons/favicon-32x32.png'
-  favicon_16: 'images/icons/favicon-16x16.png'
-  favicon_svg: 'images/icons/favicon.svg'
-  favicon_png: 'images/icons/favicon.png'
+  shortcut_icon: '/images/icons/favicon.ico'
+  icon: '/images/icons/favicon.ico'
+  apple_touch_icon: '/images/icons/apple-touch-icon.png'
+  favicon_32: '/images/icons/favicon-32x32.png'
+  favicon_16: '/images/icons/favicon-16x16.png'
+  favicon_png: '/images/icons/favicon.png'
+  favicon_svg: false
 logo: '/images/logo.svg'
 logo_alt: 'Geode Database Logo'
 

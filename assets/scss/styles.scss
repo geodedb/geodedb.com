@@ -3376,3 +3376,47 @@ html, body {
     color: #ddc4ff !important;
   }
 }
+
+/* ============================================================================
+   Light Theme Button Text Color Fix
+   Ensures all primary buttons have white text in light mode
+   ============================================================================ */
+html[data-bs-theme="light"] .btn-primary,
+html[data-bs-theme="light"] .btn-primary:hover,
+html[data-bs-theme="light"] .btn-primary:focus,
+html[data-bs-theme="light"] .btn-primary:active,
+html[data-bs-theme="light"] .btn.btn-primary,
+html[data-bs-theme="light"] .btn.btn-primary:hover,
+html[data-bs-theme="light"] .btn.btn-primary:focus,
+html[data-bs-theme="light"] .btn.btn-primary:active,
+html[data-bs-theme="light"] .btn-primary-modern,
+html[data-bs-theme="light"] .btn-primary-modern:hover,
+html[data-bs-theme="light"] .btn-primary-modern:focus,
+html[data-bs-theme="light"] .btn-primary-modern:active,
+html[data-bs-theme="light"] .btn.btn-primary.btn-primary-modern,
+html[data-bs-theme="light"] .btn.btn-primary.btn-primary-modern:hover,
+html[data-bs-theme="light"] .btn.btn-primary.btn-primary-modern:focus,
+html[data-bs-theme="light"] .btn.btn-primary.btn-primary-modern:active {
+  color: #ffffff !important;
+}
+
+html[data-bs-theme="light"] .btn-primary wa-icon,
+html[data-bs-theme="light"] .btn-primary-modern wa-icon,
+html[data-bs-theme="light"] .btn.btn-primary wa-icon,
+html[data-bs-theme="light"] .btn.btn-primary.btn-primary-modern wa-icon {
+  color: #ffffff !important;
+}
+
+/* Navbar primary button fix - all themes */
+.navbar .btn.btn-primary,
+.navbar .btn.btn-primary:hover,
+.navbar .btn.btn-primary:focus,
+.navbar .btn.btn-primary span,
+.navbar .btn.btn-primary wa-icon,
+.nav-item .btn.btn-primary,
+.nav-item .btn.btn-primary:hover,
+.nav-item .btn.btn-primary:focus,
+.nav-item .btn.btn-primary span,
+.nav-item .btn.btn-primary wa-icon {
+  color: #ffffff !important;
+}

@@ -277,6 +277,18 @@
   font-size: var(--text-lg);
 }
 
+/* Light theme button text color fixes */
+[data-bs-theme="light"] .btn-primary-modern,
+[data-bs-theme="light"] .btn-primary-modern:hover,
+[data-bs-theme="light"] .btn-primary-modern:focus {
+  color: #ffffff !important;
+}
+
+[data-bs-theme="light"] .btn-outline-modern:hover,
+[data-bs-theme="light"] .btn-outline-modern:focus {
+  color: #ffffff !important;
+}
+
 /* ----------------------------------------------------------------------------
    Typography Enhancements
    ---------------------------------------------------------------------------- */
