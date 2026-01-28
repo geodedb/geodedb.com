@@ -274,13 +274,27 @@ LIMIT 10`}}</code></pre>
                 <li class="nav-item" role="presentation">
                   <button
                     class="nav-link active"
+                    id="home-install-docker-tab"
+                    data-bs-toggle="tab"
+                    data-bs-target="#home-install-docker"
+                    type="button"
+                    role="tab"
+                    aria-controls="home-install-docker"
+                    aria-selected="true"
+                  >
+                    Docker
+                  </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                  <button
+                    class="nav-link"
                     id="home-install-linux-tab"
                     data-bs-toggle="tab"
                     data-bs-target="#home-install-linux"
                     type="button"
                     role="tab"
                     aria-controls="home-install-linux"
-                    aria-selected="true"
+                    aria-selected="false"
                   >
                     Linux
                   </button>
@@ -317,30 +331,42 @@ LIMIT 10`}}</code></pre>
               <div class="tab-content border border-top-0 rounded-bottom p-3">
                 <div
                   class="tab-pane fade show active"
+                  id="home-install-docker"
+                  role="tabpanel"
+                  aria-labelledby="home-install-docker-tab"
+                >
+                  <pre class="mb-0"><code class="language-bash">{{`# Pull and run Geode
+docker run -d \
+  -p 3141:3141 \
+  -v geode-data:/var/lib/geode \
+  --name geode \
+  geodedb/geode:latest serve --listen 0.0.0.0:3141
+
+# Connect and query
+docker exec -it geode geode shell
+geode> CREATE (n:Person {name: 'Alice', age: 30})
+geode> MATCH (n:Person) RETURN n`}}</code></pre>
+                </div>
+                <div
+                  class="tab-pane fade"
                   id="home-install-linux"
                   role="tabpanel"
                   aria-labelledby="home-install-linux-tab"
                 >
-                  <pre class="mb-0"><code class="language-bash">{{`# Debian/Ubuntu (.deb)
-curl -L -o geode.deb https://gitlab.com/devnw/codepros/geode/geode/-/releases/latest/download/geode-linux-amd64.deb
-sudo apt install ./geode.deb
+                  <pre class="mb-0"><code class="language-bash">{{`# Debian/Ubuntu - Add APT repository
+curl -fsSL https://apt.geodedb.com/geode.gpg | \
+  sudo gpg --dearmor -o /usr/share/keyrings/geode-archive-keyring.gpg
+echo "deb [signed-by=/usr/share/keyrings/geode-archive-keyring.gpg] https://apt.geodedb.com stable main" | \
+  sudo tee /etc/apt/sources.list.d/geode.list
+sudo apt update && sudo apt install geode
 
-# RHEL/Fedora (.rpm)
+# RHEL/Fedora
 curl -L -o geode.rpm https://gitlab.com/devnw/codepros/geode/geode/-/releases/latest/download/geode-linux-x86_64.rpm
 sudo rpm -i geode.rpm
 
-# Generic binary
-curl -L -o geode-linux-amd64 https://gitlab.com/devnw/codepros/geode/geode/-/releases/latest/download/geode-linux-amd64
-chmod +x geode-linux-amd64
-sudo install -m 0755 geode-linux-amd64 /usr/local/bin/geode
-
-# Start the server
+# Start the server and connect
 geode serve --listen 0.0.0.0:3141
-
-# Connect and query
-geode shell
-geode> CREATE (n:Person {name: 'Alice', age: 30})
-geode> MATCH (n:Person) RETURN n`}}</code></pre>
+geode shell`}}</code></pre>
                 </div>
                 <div
                   class="tab-pane fade"
@@ -368,9 +394,13 @@ geode shell`}}</code></pre>
                   <pre class="mb-0"><code class="language-bash">{{`# Install WSL2 (PowerShell)
 wsl --install -d Ubuntu
 
-# Then inside Ubuntu (WSL)
-curl -L -o geode.deb https://gitlab.com/devnw/codepros/geode/geode/-/releases/latest/download/geode-linux-amd64.deb
-sudo apt install ./geode.deb
+# Then inside Ubuntu (WSL) - Add APT repository
+curl -fsSL https://apt.geodedb.com/geode.gpg | \
+  sudo gpg --dearmor -o /usr/share/keyrings/geode-archive-keyring.gpg
+echo "deb [signed-by=/usr/share/keyrings/geode-archive-keyring.gpg] https://apt.geodedb.com stable main" | \
+  sudo tee /etc/apt/sources.list.d/geode.list
+sudo apt update && sudo apt install geode
+
 geode serve --listen 0.0.0.0:3141
 geode shell`}}</code></pre>
                 </div>
