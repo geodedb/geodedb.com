@@ -5,7 +5,7 @@ DART_SASS_VERSION ?= 1.80.7
 HUGO_BIN ?= /usr/local/bin/hugo
 SASS_BIN ?= /usr/local/bin/sass
 
-.PHONY: help deps deps-check npm build build-dev serve clean deploy deploy-cf update upgrade
+.PHONY: help deps deps-check npm build build-dev serve clean deploy deploy-cf update upgrade check-links link-check test
 
 help:
 	@echo "Geode Documentation - Available targets:"
@@ -16,6 +16,9 @@ help:
 	@echo "  make build-dev   - Build development site (dev.geodedb.com)"
 	@echo "  make serve       - Serve locally for development"
 	@echo "  make clean       - Clean build artifacts"
+	@echo "  make check-links - Check for broken internal links in markdown"
+	@echo "  make link-check  - Full link check (source + built HTML)"
+	@echo "  make test        - Run all validation checks"
 	@echo "  make update      - Update theme submodule"
 	@echo "  make upgrade     - Force upgrade Hugo and Dart Sass to latest versions"
 	@echo "  make deploy      - Deploy to GitLab Pages (dev.geodedb.com)"
@@ -158,3 +161,34 @@ upgrade:
 	echo "Upgrade complete!"; \
 	hugo version; \
 	sass --version
+
+# =============================================================================
+# Link Checking
+# =============================================================================
+
+check-links:
+	@echo "Checking internal links in markdown files..."
+	@./scripts/check-links.sh
+
+check-links-fix:
+	@echo "Checking internal links with suggestions..."
+	@./scripts/check-links.sh --fix
+
+link-check: npm check-links
+	@echo "Building site for full link check..."
+	@rm -f .hugo_build.lock
+	hugo --minify --gc -b https://geodedb.com
+	@echo "Running htmltest..."
+	@if ! command -v htmltest >/dev/null 2>&1; then \
+		echo "Installing htmltest..."; \
+		curl -fsSL https://htmltest.wjdp.uk | bash -s -- -b /usr/local/bin 2>/dev/null || \
+		curl -fsSL https://htmltest.wjdp.uk | sudo bash -s -- -b /usr/local/bin; \
+	fi
+	htmltest --conf .htmltest.yml
+
+# =============================================================================
+# Testing
+# =============================================================================
+
+test: check-links
+	@echo "All validation checks passed!"

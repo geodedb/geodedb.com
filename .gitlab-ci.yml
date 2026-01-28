@@ -123,11 +123,15 @@ link-check:
   extends: .setup
   stage: test
   script:
+    # First, check source markdown files for broken internal links
+    # This catches missing files before the build
+    - echo "Checking markdown source files for broken links..."
+    - ./scripts/check-links.sh
     # Build the site
     - hugo -b https://geodedb.com --minify --gc
     # Install htmltest for link checking
     - curl -fsSL https://htmltest.wjdp.uk | bash -s -- -b /usr/local/bin
-    # Run link checker
+    # Run link checker on built HTML
     - htmltest --conf .htmltest.yml
   rules:
     - if: $CI_COMMIT_BRANCH
