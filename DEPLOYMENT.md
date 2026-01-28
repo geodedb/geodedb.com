@@ -1,265 +1,252 @@
-<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-28 -->
 
 # Deployment Guide for geodedb.com
 
-## GitLab Pages Setup
+## Deployment Strategy
 
-The site is automatically deployed to GitLab Pages when changes are pushed to the `main` branch.
+| Environment | URL | Platform | Trigger |
+|-------------|-----|----------|---------|
+| **Production** | https://geodedb.com | Cloudflare Pages | Tagged releases (`v*.*.*`) - **Automatic** |
+| **Development** | https://dev.geodedb.com | GitLab Pages | Main branch pushes - **Automatic** |
 
-### Pipeline Status
+## How It Works
 
-Check the pipeline status at:
-https://gitlab.com/devnw/codepros/geode/geodedb.com/-/pipelines
+### Development (GitLab Pages) - dev.geodedb.com
 
-### Default GitLab Pages URL
+Every push to the `main` branch automatically deploys to GitLab Pages:
 
-Once deployed, the site will be available at:
-https://devnw.gitlab.io/codepros/geode/geodedb.com/
+1. GitLab CI runs the `pages` job
+2. Hugo builds the site with `baseURL: https://dev.geodedb.com`
+3. Site is deployed to GitLab Pages
+4. DNS record `dev.geodedb.com` points to `devnw.gitlab.io`
 
-## Custom Domain Configuration
+This provides a preview environment for testing changes before production release.
 
-To configure the custom domain `geodedb.com`:
+### Production (Cloudflare Pages) - geodedb.com
 
-### 1. Add Domain in GitLab
+Production deployments are **automatically triggered** by semantic version tags:
 
-1. Go to: https://gitlab.com/devnw/codepros/geode/geodedb.com/-/pages
-2. Click "New Domain"
-3. Add domains:
-   - `geodedb.com`
-   - `www.geodedb.com`
-4. Enable "Automatic certificate management using Let's Encrypt"
+1. Create and push a tag: `git tag v1.0.0 && git push origin v1.0.0`
+2. GitLab CI automatically runs the `cloudflare-pages` job
+3. Hugo builds the site with `baseURL: https://geodedb.com`
+4. Wrangler deploys to Cloudflare Pages
+5. Site is live at https://geodedb.com
 
-### 2. Configure DNS Records
+**Tag Format**: Must match `v*.*.*` (e.g., `v1.0.0`, `v2.1.3`, `v0.18.1`)
 
-Add the following DNS records at your domain registrar:
+### Manual Production Deploy (Emergency)
 
-#### For geodedb.com (root domain):
+For urgent fixes without creating a tag:
 
-```
-Type: A
-Name: @
-Value: 35.185.44.232
-TTL: 3600
-```
+1. Go to GitLab CI/CD > Pipelines
+2. Find the pipeline for main branch
+3. Click "Run" on the `cloudflare-pages-manual` job
 
-```
-Type: AAAA
-Name: @
-Value: 2600:1901:0:26f3::
-TTL: 3600
-```
+## Release Process
 
-#### For www.geodedb.com (subdomain):
-
-```
-Type: CNAME
-Name: www
-Value: devnw.gitlab.io
-TTL: 3600
-```
-
-### 3. Verify Domain
-
-After adding DNS records:
-
-1. Wait for DNS propagation (can take up to 48 hours, usually much faster)
-2. Verify in GitLab Pages settings
-3. Let's Encrypt certificate will be automatically provisioned
-
-### 4. Force HTTPS
-
-In GitLab Pages settings, enable "Force HTTPS" after the certificate is issued.
-
-## DNS Verification
-
-Check DNS propagation:
+### Standard Release
 
 ```bash
-# Check A record
-dig geodedb.com
+# 1. Ensure all changes are committed and pushed to main
+git checkout main
+git pull origin main
 
-# Check AAAA record
-dig geodedb.com AAAA
+# 2. Test on development site
+# Visit https://dev.geodedb.com and verify changes
 
-# Check CNAME record
-dig www.geodedb.com
+# 3. Create a release tag
+git tag v1.0.0
+git push origin v1.0.0
 
-# Check from a specific DNS server
-dig @8.8.8.8 geodedb.com
+# 4. Production deployment starts automatically
+# Monitor at: https://gitlab.com/devnw/codepros/geode/geodedb.com/-/pipelines
+
+# 5. Verify production site
+# Visit https://geodedb.com
 ```
 
-## SSL Certificate
+### Hotfix Release
 
-GitLab Pages automatically provisions Let's Encrypt certificates when:
-1. DNS records are correctly configured
-2. Domain is verified in GitLab
-3. Domain is accessible via HTTP
+```bash
+# 1. Create hotfix branch
+git checkout -b hotfix/critical-fix main
 
-Certificate renewal is automatic.
+# 2. Make and commit fixes
+git add .
+git commit -m "Fix: critical issue"
 
-## Deployment Process
+# 3. Merge to main
+git checkout main
+git merge hotfix/critical-fix
+git push origin main
 
-### Automatic Deployment
+# 4. Wait for dev site deployment, verify fix at dev.geodedb.com
 
-Every push to `main` branch triggers:
+# 5. Create patch release tag
+git tag v1.0.1
+git push origin v1.0.1
+```
 
-1. **Test Stage** (on all branches):
-   - Builds the site
-   - Validates HTML/CSS
-   - Checks for broken links
+## CI/CD Variables
 
-2. **Deploy Stage** (main branch only):
-   - Builds production site
-   - Deploys to GitLab Pages
-   - Site is available within ~2 minutes
+The following variables must be configured in GitLab CI/CD settings:
 
-### Manual Deployment
+| Variable | Description | Required For |
+|----------|-------------|--------------|
+| `CLOUDFLARE_API_TOKEN` | Cloudflare API token with Pages edit permission | Production deploys |
+| `CLOUDFLARE_ACCOUNT_ID` | Cloudflare account ID | Production deploys |
 
-To manually trigger a pipeline:
+### Creating the Cloudflare API Token
+
+1. Go to [Cloudflare Dashboard](https://dash.cloudflare.com/profile/api-tokens)
+2. Click "Create Token"
+3. Use the "Edit Cloudflare Workers" template or create custom:
+   - **Permissions**: Account > Cloudflare Pages > Edit
+   - **Account Resources**: Include > Your Account
+4. Copy the token and add to GitLab CI/CD variables (Settings > CI/CD > Variables)
+
+## Local Development
+
+```bash
+# Install dependencies
+make deps
+make npm
+
+# Start development server (http://localhost:1313)
+make serve
+
+# Build production site locally
+make build
+
+# Build development site locally
+make build-dev
+
+# Deploy to Cloudflare Pages manually (requires CLOUDFLARE_API_TOKEN)
+make deploy-cf
+```
+
+## Initial Cloudflare Pages Setup
+
+If the Cloudflare Pages project doesn't exist yet:
+
+```bash
+# Install wrangler
+npm install -g wrangler
+
+# Login to Cloudflare
+wrangler login
+
+# Create the Pages project
+wrangler pages project create geodedb-com
+
+# Add custom domains in Cloudflare Dashboard:
+# - geodedb.com
+# - www.geodedb.com
+```
+
+## Infrastructure
+
+The DNS and Cloudflare configuration is managed via Terraform in:
+
+```
+~/src/gl/devnw/infra/prod-critical/geodedb_pages.tf
+```
+
+This includes:
+- DNS records for geodedb.com (apex, www, dev)
+- DNS records for geode.run (redirect to geodedb.com)
+- Redirect rules for www and geode.run
+
+## Pipeline Status
+
+### Check Pipeline Status
 
 ```bash
 # Via glab CLI
-glab ci run --repo devnw/codepros/geode/geodedb.com
-
-# Or via GitLab UI
-# Go to CI/CD → Pipelines → Run Pipeline
-```
-
-## Monitoring
-
-### Pipeline Status
-
-```bash
 glab ci status --repo devnw/codepros/geode/geodedb.com
-```
 
-### View Logs
-
-```bash
+# View logs
 glab ci view --repo devnw/codepros/geode/geodedb.com
 ```
 
-### Pages Status
+### Pipeline URLs
 
-Check Pages deployment:
-https://gitlab.com/devnw/codepros/geode/geodedb.com/-/pages
+- **All Pipelines**: https://gitlab.com/devnw/codepros/geode/geodedb.com/-/pipelines
+- **GitLab Pages Settings**: https://gitlab.com/devnw/codepros/geode/geodedb.com/-/pages
 
 ## Troubleshooting
 
-### Pipeline Fails
+### Build Fails
 
-1. Check pipeline logs:
+1. Check Hugo version matches: `hugo version` should show `0.139.4`
+2. Ensure Dart Sass is installed: `sass --version`
+3. Run `make clean` and try again
+
+### Cloudflare Deploy Fails
+
+1. Verify `CLOUDFLARE_API_TOKEN` is set correctly in GitLab CI/CD variables
+2. Check the token has Pages edit permission
+3. Ensure the project name matches: `geodedb-com`
+4. Check wrangler output in pipeline logs
+
+### DNS Issues
+
+1. Check Terraform state:
    ```bash
-   glab ci view
+   cd ~/src/gl/devnw/infra/prod-critical
+   terraform plan
    ```
+2. Verify Cloudflare Pages custom domain is configured
+3. Allow up to 24 hours for DNS propagation
 
-2. Common issues:
-   - Hugo version mismatch
-   - Theme submodule not initialized
-   - Invalid configuration syntax
+### 404 Errors on Production
 
-### Domain Not Accessible
+1. Verify the Cloudflare Pages project exists
+2. Check custom domain is configured in Cloudflare Dashboard
+3. Ensure `_headers` and `_redirects` are in `static/` directory
 
-1. Verify DNS records:
-   ```bash
-   dig geodedb.com
-   ```
+### Development Site Not Updating
 
-2. Check GitLab Pages settings:
-   - Domain verification status
-   - SSL certificate status
+1. Check GitLab Pages deployment status
+2. Verify DNS record for `dev.geodedb.com`
+3. Clear browser cache or try incognito mode
 
-3. Wait for DNS propagation (up to 48 hours)
+## Domain Configuration
 
-### SSL Certificate Issues
+### Production (geodedb.com)
 
-1. Ensure DNS records are correct
-2. Domain must be verified in GitLab
-3. HTTP access must work first
-4. Certificate provisioning takes 1-2 hours
+- **Hosted on**: Cloudflare Pages
+- **Project name**: `geodedb-com`
+- **DNS**: CNAME to `geodedb-com.pages.dev`
 
-### 404 Errors
+### Development (dev.geodedb.com)
 
-1. Check `baseURL` in config matches domain
-2. Verify `public/` directory is generated
-3. Check GitLab Pages access control settings
+- **Hosted on**: GitLab Pages
+- **DNS**: CNAME to `devnw.gitlab.io`
+- **Path**: `/codepros/geode/geodedb.com`
 
-## Performance
+### Alternative Domain (geode.run)
 
-### Site Speed
-
-The site is optimized for performance:
-- Minified HTML/CSS/JS
-- Compressed images (WebP)
-- CDN delivery via GitLab Pages
-- HTTP/2 support
-- Brotli compression
-
-### Monitoring
-
-Use these tools to monitor performance:
-
-- Google PageSpeed Insights
-- GTmetrix
-- WebPageTest
-- Lighthouse CI
-
-## Maintenance
-
-### Update Theme
-
-```bash
-cd themes/ultra
-git pull origin main
-cd ../..
-git add themes/ultra
-git commit -m "Update ultra theme"
-git push
-```
-
-### Update Hugo Version
-
-Update `.gitlab-ci.yml`:
-
-```yaml
-image: registry.gitlab.com/pages/hugo/hugo_extended:0.XXX.X
-```
+- **Redirects to**: geodedb.com
+- **Managed via**: Cloudflare redirect rules
 
 ## Security
 
 ### Access Control
 
-By default, the site is public. To restrict access:
+- Production site is public (required for custom domain)
+- Development site is public for preview access
+- Repository access controlled via GitLab permissions
 
-1. Go to Settings → General → Visibility
-2. Adjust Pages access control
-3. Note: Custom domains require public access
+### SSL/TLS
 
-### Content Security
-
-- All user-contributed content is reviewed
-- Automated link checking prevents broken links
-- Regular security updates for dependencies
-
-## Backup
-
-GitLab provides automatic backups of the repository. To create a manual backup:
-
-```bash
-git clone --mirror git@gitlab.com:devnw/codepros/geode/geodedb.com.git backup-geodedb
-```
+- **Production**: Cloudflare Universal SSL (automatic)
+- **Development**: Let's Encrypt via GitLab Pages (automatic)
 
 ## Support
 
 For issues with:
+- **Cloudflare Pages**: https://developers.cloudflare.com/pages/
 - **GitLab Pages**: https://docs.gitlab.com/ee/user/project/pages/
 - **Hugo**: https://gohugo.io/documentation/
-- **Ultra Theme**: https://gitlab.com/devnw/hugo-modules/ultra
-- **Domain/DNS**: Contact your domain registrar
-
-## Additional Resources
-
-- [GitLab Pages Documentation](https://docs.gitlab.com/ee/user/project/pages/)
-- [Custom Domain Setup](https://docs.gitlab.com/ee/user/project/pages/custom_domains_ssl_tls_certification/)
-- [Hugo Documentation](https://gohugo.io/documentation/)
-- [Ultra Theme Docs](https://gitlab.com/devnw/hugo-modules/ultra)
+- **Infrastructure**: Check `prod-critical` repo Terraform configuration

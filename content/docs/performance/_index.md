@@ -19,24 +19,21 @@ This guide covers performance optimization strategies, configuration tuning, and
 
 ## Performance Overview
 
-### Current Benchmarks
+### Architecture
 
-**Query Performance (server features baselines)**:
-- Read-only throughput: up to 100,000 txn/sec
-- Read-write throughput: 10,000-50,000 txn/sec
-- Write-heavy throughput: 5,000-20,000 txn/sec
-- Vector similarity: <50ns per distance calculation (8D L2)
+**Query Processing**:
+- Cost-based query optimizer with statistics
+- Six specialized index types for different workloads
+- SIMD-accelerated vector distance calculations
 
-**Storage Performance**:
-- Memory-mapped I/O: 13.18x improvement
+**Storage**:
+- Memory-mapped I/O for efficient storage access
 - WAL-based durability with configurable tuning
-- Cache efficiency is workload-dependent (monitor metrics)
+- Page-level caching with LRU eviction
 
 **Scalability**:
-- Nodes: 100M+ (load-test target)
-- Relationships: 1B+ (load-test target)
-- Concurrent connections: 10,000+ per server
-- Shards: Up to 32 with automatic coordination
+- Connection pooling for concurrent clients
+- Distributed deployment with up to 32 shards
 
 ## Query Optimization
 

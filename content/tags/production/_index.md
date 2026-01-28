@@ -39,10 +39,10 @@ Geode is battle-tested for demanding production workloads:
 - TLS 1.3 encryption for all connections
 - Comprehensive audit logging
 
-**Performance at Scale**:
-- Transaction throughput: read-only up to 100,000 txn/sec; read-write 10,000-50,000 txn/sec; write-heavy 5,000-20,000 txn/sec
-- Concurrent connections: 10,000+ supported
-- Point lookup latency: <1ms (typically 100-500us); short path 1-5ms
+**Architecture for Scale**:
+- Memory-mapped I/O for efficient storage access
+- Connection pooling for concurrent clients
+- Distributed deployment with up to 32 shards
 
 ## Architecture Patterns
 

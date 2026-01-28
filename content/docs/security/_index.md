@@ -86,7 +86,6 @@ security:
 
 **Features**:
 - **Algorithm**: AES-256-GCM (authenticated encryption)
-- **Performance**: <1% overhead
 - **Scope**: All pages, indexes, and WAL segments
 - **Key Rotation**: Supported with background re-encryption
 

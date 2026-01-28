@@ -1,0 +1,8 @@
+# Cloudflare Pages Redirects Configuration
+# https://developers.cloudflare.com/pages/configuration/redirects/
+
+# Redirect www to apex (handled by Cloudflare Rules, but backup here)
+# https://www.geodedb.com/* https://geodedb.com/:splat 301
+
+# Legacy URL redirects (add as needed)
+# /old-path /new-path 301

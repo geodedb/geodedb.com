@@ -806,13 +806,11 @@ storage:
 - 5-7 nodes
 - 16 cores, 64GB RAM per node
 - 2TB NVMe SSD per node
-- Throughput: ~100,000 queries/sec
 
 **Large Cluster** (Enterprise):
 - 9+ nodes across 3 regions
 - 32 cores, 256GB RAM per node
 - 10TB NVMe SSD per node
-- Throughput: ~1,000,000 queries/sec
 
 ### Growth Planning
 

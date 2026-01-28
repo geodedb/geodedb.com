@@ -5,19 +5,25 @@ DART_SASS_VERSION ?= 1.80.7
 HUGO_BIN ?= /usr/local/bin/hugo
 SASS_BIN ?= /usr/local/bin/sass
 
-.PHONY: help deps deps-check npm build serve clean deploy update upgrade
+.PHONY: help deps deps-check npm build build-dev serve clean deploy deploy-cf update upgrade
 
 help:
 	@echo "Geode Documentation - Available targets:"
 	@echo "  make deps        - Install Hugo Extended, Dart Sass, and Node.js"
 	@echo "  make deps-check  - Check if dependencies are installed"
 	@echo "  make npm         - Install npm dependencies (PostCSS, etc.)"
-	@echo "  make build       - Build production site"
+	@echo "  make build       - Build production site (geodedb.com)"
+	@echo "  make build-dev   - Build development site (dev.geodedb.com)"
 	@echo "  make serve       - Serve locally for development"
 	@echo "  make clean       - Clean build artifacts"
 	@echo "  make update      - Update theme submodule"
 	@echo "  make upgrade     - Force upgrade Hugo and Dart Sass to latest versions"
-	@echo "  make deploy      - Deploy to GitLab Pages"
+	@echo "  make deploy      - Deploy to GitLab Pages (dev.geodedb.com)"
+	@echo "  make deploy-cf   - Deploy to Cloudflare Pages (geodedb.com)"
+	@echo ""
+	@echo "Deployment Strategy:"
+	@echo "  - Main branch pushes -> GitLab Pages -> dev.geodedb.com"
+	@echo "  - Tagged releases    -> Cloudflare Pages -> geodedb.com"
 
 deps-check:
 	@echo "Checking dependencies..."
@@ -82,9 +88,14 @@ npm:
 	@echo "✓ npm dependencies installed"
 
 build: npm
-	@echo "Building production site..."
+	@echo "Building production site (geodedb.com)..."
 	@rm -f .hugo_build.lock
 	hugo --minify --gc -b https://geodedb.com
+
+build-dev: npm
+	@echo "Building development site (dev.geodedb.com)..."
+	@rm -f .hugo_build.lock
+	hugo --minify --gc -b https://dev.geodedb.com
 
 serve: npm
 	@echo "Starting development server at http://localhost:1313"
@@ -100,9 +111,20 @@ update:
 	git submodule update --init --recursive
 	git submodule update --remote themes/ultra
 
-deploy: build
-	@echo "Site built. Push to main branch to deploy via GitLab CI/CD"
+deploy: build-dev
+	@echo "Development site built. Push to main branch to deploy via GitLab CI/CD"
 	@echo "Run: git push origin main"
+	@echo "Site will be available at: https://dev.geodedb.com"
+
+deploy-cf: build
+	@echo "Deploying to Cloudflare Pages (production)..."
+	@if ! command -v wrangler >/dev/null 2>&1; then \
+		echo "Installing wrangler..."; \
+		npm install -g wrangler; \
+	fi
+	@echo "Ensure CLOUDFLARE_API_TOKEN is set in your environment"
+	wrangler pages deploy public --project-name=geodedb-com --commit-dirty=true
+	@echo "Site deployed to: https://geodedb.com"
 
 upgrade:
 	@echo "Upgrading Hugo to $(HUGO_VERSION) and Dart Sass to $(DART_SASS_VERSION)..."

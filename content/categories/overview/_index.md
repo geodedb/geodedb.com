@@ -212,14 +212,13 @@ Geode excels in scenarios where relationships between entities are first-class c
 
 **Recommendation Engines**: Collaborative filtering, content similarity, and hybrid approaches all leverage graph structure to suggest relevant items.
 
-## Performance Characteristics
+## Architecture Characteristics
 
-Geode's architecture delivers predictable performance:
+Geode's architecture is designed for graph workloads:
 
-- **Query latency**: Point lookup <1ms (typically 100-500us); short path 1-5ms; multi-hop 10-100ms
-- **Throughput**: Read-only up to 100,000 txn/sec; read-write 10,000-50,000 txn/sec; write-heavy 5,000-20,000 txn/sec
+- **Storage**: Memory-mapped I/O with page-level caching
 - **Concurrency**: SSI isolation with MVCC enables high read and write parallelism
-- **Scalability**: Load-test targets 100M+ nodes and 1B+ relationships
+- **Indexes**: Six specialized index types for different access patterns
 - **Memory efficiency**: Zig's explicit allocators minimize overhead and fragmentation
 
 Performance tuning options include indexes, query optimization, connection pooling, and prepared statements.

@@ -75,7 +75,7 @@ Geode is an enterprise-ready graph database with 100% ISO GQL compliance, advanc
 - ✅ HNSW index (Hierarchical Navigable Small World)
 - ✅ 6 distance metrics (L1, L2, cosine, inner product, Hamming, Jaccard)
 - ✅ Up to 65,535 dimensions
-- ✅ <50ns for 8D L2 distance
+- ✅ SIMD-accelerated distance calculations
 - ✅ Approximate nearest neighbor search
 
 **Learn More**: [Vector Search Tutorial](/docs/tutorials/vector-search-tutorial/)
@@ -115,7 +115,7 @@ Geode is an enterprise-ready graph database with 100% ISO GQL compliance, advanc
 - ✅ Page-based storage (8KB pages)
 - ✅ Write-Ahead Logging (WAL)
 - ✅ Configurable page cache (1GB default)
-- ✅ Memory-mapped operations (13.18x I/O improvement)
+- ✅ Memory-mapped operations for efficient I/O
 - ✅ Compression with ZStandard
 
 **Learn More**: [Performance Tuning](/docs/performance/)
@@ -179,7 +179,7 @@ Geode is an enterprise-ready graph database with 100% ISO GQL compliance, advanc
 
 **Encryption at Rest and in Transit**
 
-- ✅ Transparent Data Encryption (TDE) with <1% overhead
+- ✅ Transparent Data Encryption (TDE) with AES-256-GCM
 - ✅ Field-Level Encryption (FLE)
 - ✅ TLS 1.3 for all network connections
 - ✅ QUIC transport with built-in encryption
@@ -225,10 +225,10 @@ Geode is an enterprise-ready graph database with 100% ISO GQL compliance, advanc
 - ✅ Kinesis support
 - ✅ Webhook sinks
 - ✅ File output
-- ✅ Adaptive batching (60-80% latency reduction)
+- ✅ Adaptive batching for reduced latency
 - ✅ Backpressure management
 - ✅ Resume token support
-- ✅ 50,000-100,000 events/sec (Kafka)
+- ✅ Kafka integration
 
 **Learn More**: [Multi-Datacenter Guide](/docs/guides/multi-datacenter/)
 
@@ -264,10 +264,10 @@ Geode is an enterprise-ready graph database with 100% ISO GQL compliance, advanc
 **Multi-Language Support**
 
 - ✅ **Go**: `database/sql` driver, connection pooling
-- ✅ **Python**: Async client with aioquic, 1000+ queries/sec
-- ✅ **Rust**: Tokio runtime, Quinn QUIC, 10,000+ queries/sec
+- ✅ **Python**: Async client with aioquic
+- ✅ **Rust**: Tokio runtime, Quinn QUIC
 - ✅ **Zig**: Production-ready, vendored QUIC
-- ✅ All clients: Full transaction support, prepared statements
+- ✅ All clients: Full transaction support, prepared statements, connection pooling
 
 **Learn More**: [Client Libraries](/docs/client-libraries/)
 
@@ -447,29 +447,19 @@ RETURN b.name, length(path) AS degrees_of_separation;
 
 **Learn More**: [MATCH Basics Tutorial](/docs/tutorials/match-basics/)
 
-## Performance Characteristics
-
-### Throughput
-
-- **Queries/sec**: 10,000+ (Rust client)
-- **Kafka CDC**: 50,000-100,000 events/sec
-- **Concurrent connections**: 10,000+
-- **Shards**: Tested up to 32
-
-### Latency
-
-- **Vector distance**: <50ns (8D L2)
-- **Local query**: <1ms
-- **Cross-datacenter**: <100ms (recommended)
-- **Index lookup**: O(log n)
+## Architecture Characteristics
 
 ### Scalability
 
-- **Nodes**: Billions+
-- **Relationships**: Billions+
-- **Properties**: Unlimited
+- **Shards**: Tested up to 32 shards
 - **Vector dimensions**: Up to 65,535
-- **Horizontal**: Federation with 32+ shards
+- **Horizontal scaling**: Federation across multiple nodes
+
+### Index Complexity
+
+- **B-tree/R-tree/HNSW**: O(log n) lookups
+- **Hash index**: O(1) average case
+- **Full-text**: Varies by query complexity
 
 **Learn More**: [Performance & Scaling](/docs/architecture/performance-and-scaling/)
 

@@ -467,19 +467,10 @@ RETURN drug1.name, drug2.name,
 Real-world Geode deployments demonstrate production-ready performance:
 
 **Query Performance:**
-- 1-2 hop traversals: <10ms
-- 3-4 hop traversals: <50ms
-- 5+ hop traversals: <200ms
-- Aggregations on millions of nodes: <500ms
-
-**Throughput baselines (server features):**
-- Read-only: up to 100,000 txn/sec
-- Read-write: 10,000-50,000 txn/sec
-- Write-heavy: 5,000-20,000 txn/sec
-
-**Scalability targets:**
-- 100M+ nodes and 1B+ relationships in load-test models
-- Horizontal scale-out via federated query coordination
+**Architecture:**
+- Memory-mapped I/O for efficient storage access
+- Six specialized index types for different workloads
+- Horizontal scale-out via federated query coordination with up to 32 shards
 
 ## Implementation Best Practices
 

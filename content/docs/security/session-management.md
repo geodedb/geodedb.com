@@ -742,7 +742,7 @@ logging:
 
 ### Performance Optimization
 
-1. **Reuse connections** via pooling (10-100x faster than creating new connections)
+1. **Reuse connections** via pooling (significantly faster than creating new connections)
 2. **Batch queries** when possible to reduce round-trips
 3. **Use prepared statements** for repeated queries
 4. **Set realistic timeouts** (too short = failures, too long = resource waste)

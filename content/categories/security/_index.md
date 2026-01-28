@@ -124,7 +124,7 @@ Security in Geode isn't an afterthought or optional feature—it's built into th
 - Real-time streaming to SIEM systems
 - Configurable retention policies
 - Compliant log format for regulations
-- Performance impact <1% with async logging
+- Async logging for minimal performance impact
 
 **Compliance Reporting**
 - Pre-built compliance reports (GDPR, SOC 2, HIPAA)

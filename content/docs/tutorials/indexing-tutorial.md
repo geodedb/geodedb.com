@@ -637,11 +637,11 @@ ORDER BY p.rating DESC;
 
 ### Performance Rules of Thumb
 
-- **Indexes speed up reads**: 10-1000x improvement typical
-- **Indexes slow down writes**: 5-20% overhead per index
-- **Composite indexes**: 2-3 columns maximum
-- **Index space**: 5-30% of total data size
-- **Statistics**: Update after >10% data changes
+- **Indexes speed up reads**: Significant improvement for large datasets
+- **Indexes add write overhead**: Consider trade-offs when creating indexes
+- **Composite indexes**: 2-3 columns maximum recommended
+- **Index space**: Varies based on data and index type
+- **Statistics**: Update after significant data changes
 
 ## Practice Exercises
 

@@ -84,7 +84,7 @@ Enterprise security features built-in, not bolted-on:
 
 - **Authentication**: RBAC/ABAC with Argon2id password hashing, MFA support
 - **Enhanced Row-Level Security (RLS)**: Policy-based access control (SELECT/INSERT/UPDATE/DELETE policies)
-- **Transparent Data Encryption (TDE)**: Disk and WAL encryption with <1% overhead
+- **Transparent Data Encryption (TDE)**: Disk and WAL encryption with AES-256-GCM
 - **Field-Level Encryption (FLE)**: Selective encryption with blind indexes for searchable encrypted data
 - **Audit Logging**: Tamper-evident logs with hash chaining, cryptographic signatures, and tracing IDs
 - **KMS Integration**: Multiple provider support (Vault, AWS KMS, environment-based)
@@ -105,7 +105,7 @@ Execute queries across federated graphs and sharded datasets:
 
 ### If you care about...
 
-**Vector similarity search** → Geode supports HNSW vector indexing with SIMD-accelerated distance calculations (<50ns per 8D L2 distance).
+**Vector similarity search** → Geode supports HNSW vector indexing with SIMD-accelerated distance calculations.
 
 **Full-text ranking** → BM25 integration provides relevance scoring with optimizer awareness for efficient query planning.
 
@@ -115,7 +115,7 @@ Execute queries across federated graphs and sharded datasets:
 
 **Data types** → 50+ specialized types including vectors (VectorF32/VectorI32), timestamps with timezone support, JSON/JSONB, binary data (Bytea), network addresses (IpAddr, Subnet), cryptographic hashes, and UUIDs.
 
-**Performance** → Memory-mapped I/O (13.18x improvement over traditional I/O), cost-based query optimization, and SIMD acceleration for hot paths.
+**Performance** → Memory-mapped I/O, cost-based query optimization, and SIMD acceleration for hot paths.
 
 **Compliance and governance** → 1,735 CANARY governance markers tracking 2,190+ requirements with evidence-based development methodology.
 
@@ -156,11 +156,10 @@ Geode may not be the best fit for:
 - **GQL Compliance**: 100% (70/70 ISO tests)
 - **Governance**: 1,735 CANARY markers tracking requirements with evidence
 
-**Performance Metrics**:
-- 10,000-50,000 read-write transactions/sec (throughput range)
-- <50ns per distance calculation (8D L2 vector similarity)
-- 13.18x I/O improvement with memory-mapped storage
-- Load-test targets up to 100M+ nodes and 1B+ edges
+**Architecture**:
+- Memory-mapped I/O for efficient storage access
+- SIMD-accelerated vector distance calculations
+- Cost-based query optimization with statistics
 
 ## Next Steps
 

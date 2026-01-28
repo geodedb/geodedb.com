@@ -45,7 +45,7 @@ Before we dive into installation, understand what makes Geode the right choice f
 
 **Production-Ready**: With 97.4% test coverage, 100% GQL compliance, and battle-tested client libraries, Geode handles production workloads from day one. No "beta" disclaimers or experimental warnings.
 
-**High Performance**: QUIC-based transport with TLS 1.3 supports high-throughput workloads with workload-dependent performance. Server baselines are read-only up to 100,000 txn/sec, read-write 10,000-50,000 txn/sec, and write-heavy 5,000-20,000 txn/sec.
+**Modern Architecture**: QUIC-based transport with TLS 1.3, memory-mapped I/O, and six specialized index types provide a solid foundation for graph workloads.
 
 **Enterprise Security**: Row-level security, field-level encryption, transparent data encryption, and comprehensive audit logging meet compliance requirements for regulated industries.
 
@@ -476,7 +476,7 @@ CREATE INDEX ON Transaction(timestamp);
 PROFILE MATCH (u:User {email: 'alice@example.com'}) RETURN u;
 ```
 
-Index creation typically improves lookup queries by 10-100x.
+Index creation typically improves lookup queries significantly.
 
 ### Use Connection Pooling
 

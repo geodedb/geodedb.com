@@ -49,7 +49,6 @@ Stay current with Geode development by reviewing release notes before upgrading.
 - 97.4% test coverage (1,644/1,688 tests passing)
 - 100% GQL compliance (70/70 ISO tests)
 - 1,735 CANARY markers tracking 2,190+ requirements
-- Transaction throughput (workload-dependent): read-only up to 100,000 txn/sec; read-write 10,000-50,000 txn/sec; write-heavy 5,000-20,000 txn/sec
 
 **Major Features**:
 - Complete ISO/IEC 39075:2024 GQL implementation

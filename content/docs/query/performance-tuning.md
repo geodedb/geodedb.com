@@ -265,7 +265,7 @@ PROFILE MATCH (p:Person) WHERE p.email = '[email protected]' RETURN p;
 | execution_time_ms   | 2     |    ← Fast: index seek!
 ```
 
-**Result**: **25x speedup** with index.
+**Result**: Significant speedup with index.
 
 ---
 
@@ -672,7 +672,7 @@ CREATE INDEX person_email ON Person(email);
 -- Now EXPLAIN shows: IndexSeek
 ```
 
-**Impact**: **10-100x speedup** on large datasets.
+**Impact**: Significant improvement on large datasets.
 
 ---
 
@@ -800,7 +800,7 @@ CREATE INDEX order_customer_id ON Order(customer_id);
 CREATE INDEX customer_id ON Customer(id);
 ```
 
-**Impact**: **100-1000x speedup** by avoiding Cartesian products.
+**Impact**: Avoids expensive Cartesian products.
 
 ---
 

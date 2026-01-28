@@ -410,13 +410,11 @@ From `GRAPH_ALGORITHM_PERFORMANCE_ENHANCEMENTS.md`:
 
 ### SIMD Acceleration
 
-**Vector operations** use SIMD instructions for speed:
+**Vector operations** use SIMD instructions:
 
-- **Distance calculations**: <50ns per 8D L2 distance
-- **Aggregations**: Parallel reduction with AVX2/AVX-512
+- **Distance calculations**: AVX2/AVX-512 vectorized operations
+- **Aggregations**: Parallel reduction
 - **Matrix operations**: BLAS-optimized matrix multiplication
-
-**Performance benefit**: 4-8x speedup on embedding generation and similarity search.
 
 ### Cache-Friendly Access
 
@@ -425,8 +423,6 @@ From `GRAPH_ALGORITHM_PERFORMANCE_ENHANCEMENTS.md`:
 - **CSR format**: Compressed Sparse Row for relationship storage
 - **Locality**: Related nodes stored contiguously
 - **Prefetching**: Predictive memory access
-
-**Performance benefit**: 2-3x reduction in cache misses.
 
 ### Parallelization
 

@@ -17,7 +17,7 @@ Complete version history and release notes for Geode graph database.
 
 **Version**: v0.18.0+ (Production Ready)
 
-Geode has achieved **production-ready status** with industry-leading compliance and performance:
+Geode has achieved **production-ready status** with comprehensive compliance and testing:
 
 - ✅ **97.4% Test Coverage** (1644/1688 tests passing)
 - ✅ **100% GQL Compliance** (70/70 ISO/IEC 39075:2024 official tests)
@@ -40,7 +40,7 @@ This release marks Geode's transition to production-ready status with comprehens
 - Advanced user authentication (RBAC/ABAC with MFA support)
 - KMS provider system for enterprise key management
 - Audit logging with JSON format and rotation
-- Transparent Data Encryption (TDE) with <1% performance overhead
+- Transparent Data Encryption (TDE) with AES-256-GCM
 
 **Advanced Query & Optimization**:
 - Cost-based query optimizer with statistics integration
@@ -58,7 +58,7 @@ This release marks Geode's transition to production-ready status with comprehens
 
 **Storage & Performance**:
 - S3 cloud backup with Digital Ocean Spaces integration
-- Memory-mapped operations with 13.18x I/O improvement
+- Memory-mapped operations for efficient I/O
 - Enhanced transaction isolation (SSI, phantom read prevention)
 - WAL replay for incremental backup recovery
 - Page cache optimization for read-heavy workloads
@@ -67,7 +67,7 @@ This release marks Geode's transition to production-ready status with comprehens
 - Unified CLI architecture (eliminated subprocess spawning)
 - REPL QUIC integration with real-time interactive shell
 - Complete ISO/IEC 39075:2024 compliance (70/70 tests)
-- SIMD acceleration for vector operations (<50ns for 8D L2 distance)
+- SIMD acceleration for vector operations
 - Support for up to 65,535 vector dimensions
 
 #### Completed Development Phases
@@ -145,14 +145,14 @@ All 7 TODO.md phases completed (~13,554+ lines of production code):
 - Audit log rotation and compression
 - Query performance profiling
 
-#### Performance Improvements
+#### Architecture Improvements
 
-- **I/O**: 13.18x improvement via memory-mapped operations
-- **Vector Distance**: <50ns for 8D L2 distance calculations
-- **Graph Algorithms**: 20-90% performance gains across major algorithms
+- **I/O**: Memory-mapped operations for efficient storage access
+- **Vector Distance**: SIMD-accelerated distance calculations
+- **Graph Algorithms**: Optimized implementations across major algorithms
 - **Index Lookups**: Logarithmic scaling with cost-based selection
 - **Cache Hit Rate**: Optimized page cache for read-heavy workloads
-- **Connection Pooling**: Workload-dependent throughput (varies by runtime and server limits)
+- **Connection Pooling**: Workload-dependent throughput
 
 #### Bug Fixes
 
@@ -274,14 +274,13 @@ None. This is a major release with no deprecations.
 
 - **TDE**: Transparent Data Encryption for backups
   - AES-256-GCM with authenticated encryption
-  - <1% performance overhead
   - Compatible with all backup destinations
 
-#### Performance
+#### Optimizations
 
-- Backup compression: 60-70% size reduction with zstd
-- Time-series queries: In-memory optimization for <1ms latency
-- WAL replay: Incremental recovery 10x faster than full restore
+- Backup compression with zstd
+- Time-series queries with in-memory optimization
+- WAL replay for efficient incremental recovery
 
 ---
 

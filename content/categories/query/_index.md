@@ -656,6 +656,5 @@ ORDER BY total DESC
 
 **Query Language**: ISO/IEC 39075:2024 GQL
 **Optimization**: Cost-based optimizer with index awareness
-**Performance**: Read-only up to 100,000 txn/sec; read-write 10,000-50,000 txn/sec; write-heavy 5,000-20,000 txn/sec
 **Last Updated**: January 2026
 **Geode Version**: v0.18.0+

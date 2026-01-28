@@ -15,7 +15,7 @@ params:
 
 <!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
 
-Documentation tagged with **Hierarchical Navigable Small World (HNSW)** in the Geode graph database. HNSW is a state-of-the-art algorithm for approximate nearest neighbor (ANN) search in high-dimensional vector spaces, enabling fast and accurate vector similarity search for machine learning applications.
+Documentation tagged with **Hierarchical Navigable Small World (HNSW)** in the Geode graph database. HNSW is an algorithm for approximate nearest neighbor (ANN) search in high-dimensional vector spaces, enabling efficient vector similarity search for machine learning applications.
 
 ## Introduction to HNSW
 
@@ -443,7 +443,7 @@ RETURN node, similarity;
 - [RAG with Geode](/docs/rag-tutorial/) - Retrieval-Augmented Generation
 - [Original HNSW Paper](https://arxiv.org/abs/1603.09320) - Academic paper
 
-Geode's HNSW implementation brings state-of-the-art vector similarity search to graph databases, enabling powerful AI applications that combine semantic understanding with graph relationships.
+Geode's HNSW implementation brings vector similarity search to graph databases, enabling AI applications that combine semantic understanding with graph relationships.
 
 ## Advanced HNSW Implementation Details
 

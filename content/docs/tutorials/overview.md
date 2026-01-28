@@ -105,7 +105,7 @@ WHERE p.age > 25
 RETURN p.name;
 ```
 
-See execution time improvement (10-1000x faster).
+See execution time improvement with indexes.
 
 See [Indexing and Optimization](/docs/query/indexing-and-optimization) for details.
 

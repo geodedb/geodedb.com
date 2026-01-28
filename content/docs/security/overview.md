@@ -208,7 +208,7 @@ USING (
 
 From `DESIGN_TDE_KMS.md` and `KMS_PROVIDER_SYSTEM.md`:
 
-**TDE encrypts data-at-rest** with minimal performance overhead (<1%).
+**TDE encrypts data-at-rest** transparently.
 
 **Architecture**:
 - **Encryption**: AES-256-GCM
@@ -262,7 +262,7 @@ security:
 
 **Key rotation**: Online key rotation supported (re-encrypts pages with new key).
 
-**Performance**: <1% overhead with memory-mapped I/O and hardware AES acceleration.
+**Performance**: Optimized with memory-mapped I/O and hardware AES acceleration where available.
 
 ### Field-Level Encryption (FLE)
 

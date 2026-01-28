@@ -1,5 +1,11 @@
 # GitLab CI/CD configuration for Geode documentation site
-# Builds and deploys Hugo site to GitLab Pages at geodedb.com
+#
+# Deployment Strategy:
+# - Main branch     -> GitLab Pages   -> dev.geodedb.com (development/preview)
+# - Tagged releases -> Cloudflare Pages -> geodedb.com (production) [AUTOMATIC]
+#
+# This ensures production deployments are intentional (tagged) while
+# development changes are automatically deployed for preview.
 
 image: ubuntu:24.04
 
@@ -10,52 +16,182 @@ variables:
   DART_SASS_VERSION: "1.80.7"
   CI: "true"
   DEBIAN_FRONTEND: noninteractive
+  # Cloudflare Pages project name
+  CLOUDFLARE_PAGES_PROJECT: "geodedb-com"
+  # Vault configuration
+  VAULT_ADDR: "https://pki.devnw.com"
+  VAULT_AUTH_ROLE: devnw-codepros
+  VAULT_SECRET_PATH: ci/devnw/codepros/geode/geodedb.com
 
-before_script:
-  - apt-get update -qq
-  - apt-get install -y -qq wget git ca-certificates nodejs npm
-  - echo "Cloning private submodules with CI token..."
-  - git config --global url."https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.com/".insteadOf "https://gitlab.com/"
-  - git submodule sync --recursive
-  - git submodule update --init --recursive --depth=1
-  - echo "Installing Hugo and Dart Sass..."
-  - make deps 2>&1 | tail -20
-  - export PATH="/usr/local/bin:$PATH"
-  - echo "Verifying installations..."
-  - hugo version
-  - sass --version
-  - node --version
-  - npm --version
-  - echo "Installing npm packages..."
-  - npm install --quiet
-  - echo "Build environment ready!"
+stages:
+  - test
+  - deploy
 
+# =============================================================================
+# Common Setup - Hugo Build Environment
+# =============================================================================
+.setup:
+  before_script:
+    - apt-get update -qq
+    - apt-get install -y -qq wget git ca-certificates nodejs npm
+    - echo "Cloning private submodules with CI token..."
+    - git config --global url."https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.com/".insteadOf "https://gitlab.com/"
+    - git submodule sync --recursive
+    - git submodule update --init --recursive --depth=1
+    - echo "Installing Hugo and Dart Sass..."
+    - make deps 2>&1 | tail -20
+    - export PATH="/usr/local/bin:$PATH"
+    - echo "Verifying installations..."
+    - hugo version
+    - sass --version
+    - node --version
+    - npm --version
+    - echo "Installing npm packages..."
+    - npm install --quiet
+    - echo "Build environment ready!"
+
+# =============================================================================
+# Vault Setup - Fetch Cloudflare credentials from Vault
+# =============================================================================
+.vault_setup: &vault_setup
+  - |
+    # Install dependencies for Vault API calls
+    apt-get install -y -qq curl jq
+
+    # Authenticate to Vault via JWT using API
+    echo "Authenticating to Vault at $VAULT_ADDR with role $VAULT_AUTH_ROLE"
+    AUTH_RESPONSE=$(curl -sS --request POST \
+      --data "{\"role\": \"$VAULT_AUTH_ROLE\", \"jwt\": \"$VAULT_ID_TOKEN\"}" \
+      "$VAULT_ADDR/v1/auth/gitlab-jwt/login")
+
+    VAULT_TOKEN=$(echo "$AUTH_RESPONSE" | jq -r '.auth.client_token')
+
+    if [ -z "$VAULT_TOKEN" ] || [ "$VAULT_TOKEN" = "null" ]; then
+      echo "ERROR: Failed to authenticate to Vault"
+      echo "Response: $AUTH_RESPONSE"
+      exit 1
+    fi
+
+    echo "Successfully authenticated to Vault"
+
+    # Helper function to get secret from Vault
+    get_secret() {
+      local path=$1
+      curl -sS --header "X-Vault-Token: $VAULT_TOKEN" \
+        "$VAULT_ADDR/v1/secret/data/$path" | jq -r '.data.data.value'
+    }
+
+    # Fetch Cloudflare credentials
+    echo "Fetching Cloudflare credentials from Vault..."
+    export CLOUDFLARE_API_TOKEN=$(get_secret ${VAULT_SECRET_PATH}/cloudflare_token)
+    export CLOUDFLARE_ACCOUNT_ID=$(get_secret ${VAULT_SECRET_PATH}/cloudflare_account_id)
+
+    if [ -z "$CLOUDFLARE_API_TOKEN" ] || [ "$CLOUDFLARE_API_TOKEN" = "null" ]; then
+      echo "ERROR: Failed to fetch CLOUDFLARE_API_TOKEN from Vault"
+      exit 1
+    fi
+
+    if [ -z "$CLOUDFLARE_ACCOUNT_ID" ] || [ "$CLOUDFLARE_ACCOUNT_ID" = "null" ]; then
+      echo "ERROR: Failed to fetch CLOUDFLARE_ACCOUNT_ID from Vault"
+      exit 1
+    fi
+
+    echo "Cloudflare credentials retrieved successfully"
+
+# =============================================================================
+# Test Stage
+# =============================================================================
+
+# Test build for merge requests and non-default branches
 test:
+  extends: .setup
   stage: test
   script:
     - hugo -b https://geodedb.com --minify --gc
   artifacts:
     paths:
       - public
+    expire_in: 1 day
   rules:
     - if: $CI_COMMIT_BRANCH && $CI_COMMIT_BRANCH != $CI_DEFAULT_BRANCH
 
+# Link validation for all branches
 link-check:
+  extends: .setup
   stage: test
   script:
     - hugo -b https://geodedb.com --minify --gc --panicOnWarning
   rules:
     - if: $CI_COMMIT_BRANCH
 
+# =============================================================================
+# Deploy Stage - GitLab Pages (Development)
+# =============================================================================
+
+# Deploy to GitLab Pages on main branch -> dev.geodedb.com
 pages:
+  extends: .setup
   stage: deploy
   script:
-    - hugo -b https://geodedb.com --minify --gc
+    # Build with dev subdomain as base URL
+    - hugo -b https://dev.geodedb.com --minify --gc
   artifacts:
     paths:
       - public
   rules:
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+  environment:
+    name: development
+    url: https://dev.geodedb.com
+
+# =============================================================================
+# Deploy Stage - Cloudflare Pages (Production) - AUTOMATIC on tags
+# =============================================================================
+
+# Deploy to Cloudflare Pages on tagged releases -> geodedb.com
+cloudflare-pages:
+  extends: .setup
+  stage: deploy
+  id_tokens:
+    VAULT_ID_TOKEN:
+      aud: https://pki.devnw.com
+  script:
+    # Fetch Cloudflare credentials from Vault
+    - *vault_setup
+    # Build with production base URL
+    - hugo -b https://geodedb.com --minify --gc
+    # Install wrangler for Cloudflare Pages deployment
+    - npm install -g wrangler
+    # Deploy to Cloudflare Pages using Direct Upload
+    - wrangler pages deploy public --project-name=$CLOUDFLARE_PAGES_PROJECT --commit-dirty=true
+  rules:
+    # Automatically deploy on version tags (v1.0.0, v2.1.3, etc.)
+    - if: $CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+$/
+  environment:
+    name: production
+    url: https://geodedb.com
+
+# =============================================================================
+# Manual Production Deploy (for hotfixes without tagging)
+# =============================================================================
+
+# Manual deployment to production (requires explicit trigger)
+cloudflare-pages-manual:
+  extends: .setup
+  stage: deploy
+  id_tokens:
+    VAULT_ID_TOKEN:
+      aud: https://pki.devnw.com
+  script:
+    # Fetch Cloudflare credentials from Vault
+    - *vault_setup
+    - hugo -b https://geodedb.com --minify --gc
+    - npm install -g wrangler
+    - wrangler pages deploy public --project-name=$CLOUDFLARE_PAGES_PROJECT --commit-dirty=true
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+      when: manual
+      allow_failure: true
   environment:
     name: production
     url: https://geodedb.com

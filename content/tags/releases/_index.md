@@ -77,11 +77,10 @@ Examples:
 - Full ACID transaction support
 - Row-Level Security (RLS)
 
-**Performance**:
-- Transaction throughput baselines: read-only up to 100,000 txn/sec; read-write 10,000-50,000 txn/sec; write-heavy 5,000-20,000 txn/sec
-- Point lookup latency: <1ms (typically 100-500us)
-- Efficient connection pooling
-- Optimized query execution plans
+**Architecture**:
+- Memory-mapped I/O with page-level caching
+- Connection pooling
+- Cost-based query optimization
 
 **Protocol**:
 - QUIC + TLS 1.3 (mandatory)

@@ -437,30 +437,14 @@ Reference performance metrics:
 - Multi-hop path (3-5 hops): 10-100ms
 - Large aggregation (1M rows): 100-500ms
 
-**Vector Similarity**:
-- 10k vectors, 10-NN: 1-5ms
-- 1M vectors, 10-NN: 10-50ms
-
-**Transaction Throughput** (workload dependent):
-- Read-only: up to 100,000 txn/sec
-- Read-write: 10,000-50,000 txn/sec
-- Write-heavy: 5,000-20,000 txn/sec
-
-**Write Performance** (with WAL):
-- Node insert: 100-500us
-- Edge insert: 200-800us
-- Bulk writes (batched): 50,000-200,000 writes/sec
-- Group commit: 20-50us per write
-
-**Storage and Cache**:
-- Memory-mapped I/O: 13.18x I/O improvement
-- Cache hit ratio: 60-90% for typical workloads
+**Architecture**:
+- Vector similarity: HNSW indexes with SIMD acceleration
+- Storage: Memory-mapped I/O with page-level caching
+- Indexes: Six specialized index types for different workloads
 
 **Scalability**:
-- Nodes: 100M+ (load-test target)
-- Relationships: 1B+ (load-test target)
-- Concurrent connections: 10,000+ supported
-- Shards: Up to 32 with linear scale-out
+- Distributed deployment with up to 32 shards
+- Connection pooling for concurrent clients
 
 See [Performance Benchmarking](/docs/guides/performance-benchmarking/) for methodology.
 

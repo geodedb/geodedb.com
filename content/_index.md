@@ -25,16 +25,16 @@ Geode achieves **100% compliance** with ISO/IEC 39075:2024 GQL standard:
 ## Enterprise-Grade Security
 
 - **Authentication**: RBAC/ABAC with MFA support
-- **Encryption**: TDE with <1% overhead, FLE with searchable encryption
+- **Encryption**: TDE and FLE with searchable encryption
 - **Audit**: Comprehensive compliance tracking
 - **RLS**: Enhanced row-level security with policy evaluation
 
-## High Performance
+## Architecture
 
-- **Query Performance**: 10,000-50,000 read-write transactions/sec
-- **Vector Search**: <50ns per distance calculation (8D L2)
-- **Storage**: 13.18x I/O improvement
-- **Scalability Targets**: 100M+ nodes, 1B+ edges in load-test models
+- **Storage Engine**: Memory-mapped I/O with page-level caching
+- **Vector Search**: HNSW indexes with SIMD-accelerated distance calculations
+- **Indexes**: Six specialized index types (B-tree, Hash, HNSW, R-tree, Full-text, Patricia Trie)
+- **Transport**: QUIC+TLS for secure, multiplexed connections
 
 ## Client Libraries
 

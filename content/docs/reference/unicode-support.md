@@ -497,21 +497,19 @@ RETURN u.email
 
 **NFC Normalization**:
 - ASCII-only text: <100ns (fast path)
-- Mixed Latin: ~1-2μs per character
-- Complex scripts: ~3-5μs per character
-- Memory: 1.5x input size (worst case)
+- Optimized for common Latin characters
+- Handles complex scripts
+- Memory overhead varies by input
 
 **Case Folding**:
-- ASCII-only: <50ns (simple lowercase)
-- German ß: ~200ns (expansion)
-- Greek: ~150ns (sigma handling)
-- Memory: 1.2x input size (typical)
+- Fast path for ASCII-only strings
+- Handles German ß expansion
+- Correct Greek sigma handling
 
 **UTF-8 ↔ UTF-16**:
-- ASCII: ~100ns per character
-- Multi-byte: ~300ns per character
-- Surrogates: ~500ns (rare)
-- Memory: 2x input size (UTF-16)
+- Efficient ASCII conversion
+- Full multi-byte support
+- Surrogate pair handling for rare characters
 
 **WTF-8 Lossy**:
 - Valid UTF-8: <100ns overhead

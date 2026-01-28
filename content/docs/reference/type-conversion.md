@@ -598,18 +598,17 @@ RETURN toInteger('  123  ') = 123      -- true (whitespace)
 - **Memory**: Allocates new string (minimal)
 
 **toInteger()**:
-- **Parsing**: <100ns for valid integers
-- **Validation**: <50ns for format check
-- **Error Handling**: <10ns for null return
+- Efficient parsing for valid integers
+- Format validation
+- Returns null on invalid input
 
 **toReal()**:
-- **Parsing**: <200ns for decimals
-- **Scientific Notation**: <500ns for exponential format
+- Handles decimal and scientific notation
 - **Precision**: 6 decimal places (standard)
 
 **type()**:
-- **Type Lookup**: <10ns (constant time)
-- **String Return**: <50ns (cached string literals)
+- Constant time type lookup
+- Cached string literals for common types
 
 ## Best Practices
 

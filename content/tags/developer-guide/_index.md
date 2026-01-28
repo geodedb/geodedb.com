@@ -41,10 +41,10 @@ Geode is built on modern, production-ready foundations:
 - Security & Authorization Layer
 - Client Protocol Handler
 
-**Performance Characteristics**:
-- Transaction throughput: read-only up to 100,000 txn/sec; read-write 10,000-50,000 txn/sec; write-heavy 5,000-20,000 txn/sec
-- Point lookup latency: <1ms (typically 100-500us); short path 1-5ms
-- Concurrent connections: 10,000+ supported
+**Architecture Characteristics**:
+- Memory-mapped I/O for efficient storage access
+- SIMD-accelerated vector operations
+- Six specialized index types for different workloads
 
 ## Query Language Reference
 

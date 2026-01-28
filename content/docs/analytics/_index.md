@@ -38,7 +38,7 @@ Geode provides enterprise-grade analytics capabilities designed for both batch a
 
 The analytics subsystem in Geode combines traditional graph algorithms with modern streaming analytics and machine learning techniques. Whether you need to analyze social networks, detect fraud patterns, or identify anomalies in real-time data streams, Geode's analytics engine delivers high-performance results with minimal latency.
 
-Built on top of Geode's high-performance storage engine, analytics operations benefit from memory-mapped I/O (13.18x faster), optimized index structures, and parallel execution capabilities. Real-time analytics leverage Geode's Change Data Capture (CDC) integration and backpressure handling to process streaming data at scale.
+Built on top of Geode's storage engine, analytics operations benefit from memory-mapped I/O, optimized index structures, and parallel execution capabilities. Real-time analytics leverage Geode's Change Data Capture (CDC) integration and backpressure handling to process streaming data at scale.
 
 ## Key Features
 

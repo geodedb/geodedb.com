@@ -33,7 +33,7 @@ Geode implements a multi-layered metrics system built on industry standards:
 
 **Hierarchical Organization**: Metrics are organized by subsystem (queries, transactions, storage, memory, connections) with consistent naming conventions.
 
-**Low Overhead**: Metrics collection uses lock-free data structures and sampling techniques to minimize performance impact (typically <1% overhead).
+**Low Overhead**: Metrics collection uses lock-free data structures and sampling techniques to minimize performance impact.
 
 **Rich Labels**: Metrics include dimensional labels for filtering and aggregation (e.g., query status, client type, operation type).
 

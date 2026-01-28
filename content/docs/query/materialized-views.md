@@ -1,7 +1,7 @@
 ---
 title: "Materialized Views System"
 description: "Enterprise materialized views in Geode with automatic refresh strategies, dependency tracking, and query acceleration for complex analytical queries."
-summary: "Learn how Geode's materialized view system provides 10-100x query speedup through intelligent refresh strategies, dependency tracking, and automatic query optimization."
+summary: "Learn how Geode's materialized view system accelerates query performance through intelligent refresh strategies, dependency tracking, and automatic query optimization."
 slug: "materialized-views"
 url: "/docs/query/materialized-views/"
 date: 2026-01-24
@@ -22,14 +22,14 @@ params:
 
 ## Overview
 
-The Geode Materialized Views System provides comprehensive view management with intelligent refresh strategies, dependency tracking, and query optimization. This system enables 10-100x performance improvements for complex analytical queries by pre-computing and storing query results with enterprise-grade reliability.
+The Geode Materialized Views System provides comprehensive view management with intelligent refresh strategies, dependency tracking, and query optimization. This system improves query performance for complex analytical queries by pre-computing and storing query results with enterprise-grade reliability.
 
 ### What are Materialized Views?
 
 **Materialized Views** are pre-computed query results stored as physical data structures that can be queried like regular tables. Unlike regular views (which re-execute the query each time), materialized views cache results for instant access.
 
 **Key Benefits**:
-- **Query Acceleration**: 10-100x speedup for complex analytical queries
+- **Query Acceleration**: Faster access to pre-computed results
 - **Resource Efficiency**: Compute once, query many times
 - **Automatic Refresh**: Keep data current with configurable strategies
 - **Dependency Tracking**: Automatic updates when source data changes
@@ -57,7 +57,7 @@ MaterializedViewManager
 4. DependencyTracker → Monitor source table changes
 5. RefreshScheduler → Trigger refresh based on strategy
 6. QueryRewriter → Match incoming queries to compatible views
-7. Result → Return cached data (10-100x faster)
+7. Result → Return cached data (faster than re-computing)
 ```
 
 ## Refresh Strategies
@@ -209,11 +209,7 @@ RETURN p.category,
 WITH REFRESH STRATEGY auto_scheduled INTERVAL 3600
 ```
 
-**Performance**:
-```plaintext
-Without View: 2.5 seconds (scan 10M sales)
-With View: 0.02 seconds (125x speedup)
-```
+**Benefit**: Returns pre-computed results instead of scanning source data.
 
 ### Complex Join
 
@@ -758,4 +754,4 @@ geode query "CALL db.view.failed_refreshes()" | \
 **Last Updated**: January 24, 2026
 **Status**: Production Ready
 **Test Coverage**: 23 tests (15 unit + 8 integration)
-**Performance**: 10-100x query speedup, tested with 50+ concurrent views
+**Concurrency**: Tested with 50+ concurrent views

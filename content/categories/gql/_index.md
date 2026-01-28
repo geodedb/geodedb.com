@@ -52,7 +52,7 @@ Geode provides a complete, production-ready GQL implementation:
 - **Query Optimization**: Cost-based optimizer with index-aware execution planning
 - **EXPLAIN/PROFILE**: Visibility into query execution for performance tuning
 - **Error Messages**: Clear, actionable error messages with ISO status codes
-- **Performance**: Optimized execution with transaction baselines (read-only up to 100,000 txn/sec; read-write 10,000-50,000; write-heavy 5,000-20,000; workload dependent)
+- **Performance**: Cost-based optimizer with statistics-driven query planning
 
 ### ISO/IEC 39075:2024 Conformance
 

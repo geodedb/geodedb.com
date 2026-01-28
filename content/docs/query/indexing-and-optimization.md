@@ -207,8 +207,7 @@ RETURN s.name;
 
 **Implementation**: HNSW (Hierarchical Navigable Small World) with SIMD acceleration
 
-**Performance** (from `SERVER_FEATURES.md`):
-- <50ns per distance calculation (8D L2)
+**Characteristics**:
 - SIMD-optimized distance metrics
 - Sub-linear search time O(log N)
 

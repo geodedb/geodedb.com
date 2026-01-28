@@ -11,7 +11,7 @@ canonical: "https://geodedb.com/docs/development/testing-guide"
 
 # Testing Guide
 
-Geode maintains industry-leading test coverage with 97.4% integration test pass rate (1644/1688 tests) and 100% GQL compliance (70/70 ISO tests). This guide covers all testing frameworks, strategies, and best practices.
+Geode maintains comprehensive test coverage with 97.4% integration test pass rate (1644/1688 tests) and 100% GQL compliance (70/70 ISO tests). This guide covers all testing frameworks, strategies, and best practices.
 
 ## Overview
 

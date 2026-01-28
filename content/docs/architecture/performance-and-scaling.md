@@ -29,17 +29,12 @@ Learn how Geode achieves high performance through optimized storage, query plann
 
 From `SERVER_FEATURES.md`:
 
-**Memory-mapped I/O** provides **13.18x improvement** over traditional I/O:
+**Memory-mapped I/O** provides efficient storage access:
 
 - **Direct memory access**: Pages mapped directly into process address space
 - **OS page cache**: Leverage kernel page cache for hot data
 - **Zero-copy reads**: No buffer copying between kernel and user space
 - **Write coalescing**: Batch writes to reduce fsync() calls
-
-**Performance impact**:
-- **Random reads**: 13.18x faster (no read() syscalls)
-- **Sequential scans**: 5-8x faster (prefetching)
-- **Cache efficiency**: Shared cache across processes
 
 ### 2. Query: Cost-Based Optimizer (CBO)
 
@@ -87,12 +82,12 @@ From `SERVER_FEATURES.md`:
 
 **Specialized index implementations**:
 
-| Index Type | Implementation | Performance |
-|------------|----------------|-------------|
+| Index Type | Implementation | Complexity |
+|------------|----------------|------------|
 | **B-tree** | Optimized B+ tree | O(log N) |
 | **Hash** | Chained hash table | O(1) |
-| **Full-text** | Inverted index + BM25 | Sub-second search |
-| **HNSW (vector)** | SIMD-accelerated ANN | <50ns per distance calc |
+| **Full-text** | Inverted index + BM25 | Varies by query |
+| **HNSW (vector)** | SIMD-accelerated ANN | O(log N) |
 | **R-tree (spatial)** | Hilbert curve ordering | O(log N) |
 | **Patricia trie** | IP prefix matching | O(k) where k = prefix length |
 
@@ -102,13 +97,9 @@ From `SERVER_FEATURES.md`:
 
 **Vector similarity** with SIMD:
 
-- **<50ns per distance calculation** (8D L2)
-- **AVX2/AVX-512 instructions**: 4-8x speedup
+- **AVX2/AVX-512 instructions**: Vectorized distance calculations
 - **Batch processing**: Compute multiple distances in parallel
-
-**Benchmark** (10k 128-dimensional vectors):
-- **Query time**: 1-5ms for k=10 neighbors at ~90% recall
-- **Scaling**: Near-linear with cores (up to 8-16 cores)
+- **Multi-core scaling**: Parallel query execution
 
 ### 5. BM25 Full-Text Optimization
 
@@ -119,12 +110,6 @@ From `BM25_INDEX_OPTIMIZER_INTEGRATION.md`:
 - **Index-aware planning**: Use full-text index when `ORDER BY bm25_score()`
 - **Early termination**: Stop after top-K results
 - **Parallel scoring**: Multi-threaded relevance computation
-
-**Performance**:
-- **Single-term query**: ~10-50us
-- **Phrase query**: ~50-200us
-- **Boolean query**: ~100-500us
-- **Index build**: ~1-2ms per 1,000 documents
 
 ## Distributed Scaling Model
 
@@ -216,32 +201,24 @@ RETURN p.name, friend.name;
 
 **No TCP fallback**: Geode requires QUIC (ensure UDP port open).
 
-## Operational Ceilings
+## Scaling Guidelines
 
-From load-test modeling and benchmark targets:
-
-### Single-Node Targets
-
-- **Nodes**: 100M+ (load-test target)
-- **Relationships**: 1B+ (load-test target)
-- **Read-write throughput**: 10,000-50,000 txn/sec
-- **Vector search**: HNSW with SIMD-optimized distance calculations
+### Single-Node Sizing
 
 **Recommended single-node sizing**:
-- **Memory**: 64GB+ (for 10M+ nodes with in-memory cache)
+- **Memory**: 64GB+ (for large datasets with in-memory cache)
 - **CPU**: 8+ cores (for parallel query execution)
-- **Storage**: NVMe SSD (for memory-mapped I/O performance)
+- **Storage**: NVMe SSD (for memory-mapped I/O)
 
-### Distributed Cluster Targets
+### Distributed Cluster
 
 - **Shards**: Up to 32 shards with automatic coordination
-- **Aggregate throughput**: Scales with shard count and query mix
-- **Coordination overhead**: Workload-dependent for federated queries
+- **Vector search**: HNSW with SIMD-optimized distance calculations
 
 **Shard count guidance**:
-- **Small datasets** (<10M nodes): Single node
-- **Medium datasets** (10M-100M nodes): 2-4 shards
-- **Large datasets** (>100M nodes): 8-16 shards
+- **Small datasets**: Single node
+- **Medium datasets**: 2-4 shards
+- **Large datasets**: 8-16 shards
 
 ## How to Benchmark
 
@@ -297,7 +274,7 @@ MATCH (p:Person) WHERE p.email = "[email protected]" RETURN p;
 -- After: Hash index
 CREATE INDEX person_email_idx ON Person(email) USING hash;
 MATCH (p:Person) WHERE p.email = "[email protected]" RETURN p;
--- 100-1000x faster
+-- Uses index for fast lookup
 ```
 
 ### 2. Use Appropriate Index Type

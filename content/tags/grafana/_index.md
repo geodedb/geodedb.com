@@ -19,7 +19,7 @@ params:
 
 <!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
 
-Grafana is the industry-leading open-source platform for metrics visualization, enabling you to create rich, interactive dashboards that transform Geode's operational metrics into actionable insights. With support for Prometheus, Loki, and other data sources, Grafana provides a unified interface for monitoring database health, performance, and resource utilization.
+Grafana is a widely-used open-source platform for metrics visualization, enabling you to create rich, interactive dashboards that transform Geode's operational metrics into actionable insights. With support for Prometheus, Loki, and other data sources, Grafana provides a unified interface for monitoring database health, performance, and resource utilization.
 
 Geode's comprehensive metrics integrate seamlessly with Grafana, allowing you to build dashboards tailored to your monitoring needs—from high-level executive overviews to detailed performance analysis for database administrators and developers.
 

@@ -271,7 +271,7 @@ MATCH (u)-[:PURCHASED]->(p:Product)
 RETURN p
 ```
 
-**Result:** 100x speedup (2s → 20ms)
+**Result:** Significant improvement in query performance
 
 ### Connection Pool Tuning
 

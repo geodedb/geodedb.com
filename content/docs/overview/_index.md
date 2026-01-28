@@ -36,7 +36,7 @@ Geode is an enterprise-ready graph database implementing the ISO/IEC 39075:2024 
 
 Geode is a property graph database that stores data as nodes, relationships, and properties. Unlike traditional relational databases optimized for tabular data, Geode excels at representing and querying highly connected data where relationships between entities are as important as the entities themselves.
 
-Built from the ground up in Zig for performance and memory safety, Geode targets high-throughput workloads with transaction baselines of read-only up to 100,000 txn/sec, read-write 10,000-50,000 txn/sec, and write-heavy 5,000-20,000 txn/sec (workload dependent). The modern QUIC+TLS transport ensures secure, low-latency communication with connection migration support.
+Built from the ground up in Zig for performance and memory safety, Geode is designed for high-throughput workloads. The modern QUIC+TLS transport ensures secure, low-latency communication with connection migration support.
 
 ## Key Features
 
@@ -48,18 +48,17 @@ Built from the ground up in Zig for performance and memory safety, Geode targets
 
 ### Enterprise Security
 
-- **Transparent Data Encryption (TDE)**: AES-256-GCM with <1% overhead
+- **Transparent Data Encryption (TDE)**: AES-256-GCM encryption at rest
 - **Field-Level Encryption (FLE)**: Searchable encryption for sensitive data
 - **Row-Level Security (RLS)**: Fine-grained access control with policy evaluation
 - **Comprehensive Audit Logging**: Full compliance trail for GDPR, SOX, HIPAA, PCI-DSS
 - **MFA Support**: Multi-factor authentication with TOTP
 - **KMS Integration**: HashiCorp Vault for key management
 
-### High Performance
+### Optimized Architecture
 
-- **Throughput Baselines**: Read-only up to 100,000 txn/sec; read-write 10,000-50,000 txn/sec; write-heavy 5,000-20,000 txn/sec (workload dependent)
-- **Memory-Mapped I/O**: 13.18x performance improvement
-- **SIMD Optimization**: 2x+ speedup for vector operations
+- **Memory-Mapped I/O**: Efficient storage with page-level caching
+- **SIMD Optimization**: Vectorized operations for supported workloads
 - **Six Index Types**: B-tree, Hash, HNSW, R-tree, Full-text, Patricia Trie
 
 ### Advanced Features
@@ -67,7 +66,7 @@ Built from the ground up in Zig for performance and memory safety, Geode targets
 - **Distributed Deployment**: Up to 32 shards with Raft consensus
 - **Machine Learning**: Node2Vec, GraphSAGE, DeepWalk embeddings
 - **Real-time Analytics**: Streaming pattern detection with ML anomaly detection
-- **Vector Search**: Approximate K-NN with >90% recall rate
+- **Vector Search**: Approximate K-NN with HNSW indexes
 - **Geospatial**: R-tree indexing with Haversine distance
 - **Full-Text Search**: BM25 ranking with stemming
 
@@ -93,9 +92,9 @@ Geode implements the ISO/IEC 39075:2024 GQL standard, ensuring your queries and 
 
 From encryption at rest (TDE) to fine-grained access control (RLS), Geode provides the security features enterprises require. Comprehensive audit logging supports compliance with major regulations.
 
-### High Performance
+### Optimized for Graph Workloads
 
-Memory-mapped I/O, SIMD optimization, and six specialized index types deliver exceptional performance. Load-test models target 100M+ nodes and 1B+ relationships.
+Memory-mapped I/O, SIMD optimization, and six specialized index types are designed for efficient graph traversal and query execution.
 
 ### Modern Architecture
 
@@ -152,7 +151,7 @@ GQL Parser → Planner (CBO) → Execution Engine → Storage Engine
 
 - **Parser**: 100% ISO/IEC 39075:2024 compliant
 - **Planner**: Cost-based optimization with statistics
-- **Execution**: Throughput aligned with transaction baselines (workload dependent)
+- **Execution**: Optimized for graph traversal patterns
 - **Storage**: Memory-mapped I/O with WAL
 
 ### Storage Engine

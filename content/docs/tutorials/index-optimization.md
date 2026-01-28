@@ -161,7 +161,7 @@ EXPLAIN MATCH (c:Customer {email: 'alice@example.com'}) RETURN c
 **Analysis**:
 - **IndexSeek**: Uses B-tree index for O(log n) lookup
 - **No Filter**: Predicate handled by index
-- **Performance**: 100-1000x faster for large datasets
+- **Benefit**: Significantly faster for large datasets
 
 ### Step 3: Profile Query Performance
 

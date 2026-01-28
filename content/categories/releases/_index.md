@@ -52,13 +52,12 @@ This is the current stable release with 100% ISO/IEC 39075:2024 GQL compliance, 
 - Comprehensive audit logging for compliance
 - Production-ready client libraries for Go, Python, Rust, Node.js, and Zig
 
-**Performance Improvements**:
+**Architecture Improvements**:
 - Query optimizer with cost-based planning
 - Advanced index types (B-tree, HNSW, full-text)
 - Connection pooling in all client libraries
 - Prepared statement caching
 - MVCC for high-concurrency workloads
-- Transaction throughput baselines: read-only up to 100,000 txn/sec; read-write 10,000-50,000 txn/sec; write-heavy 5,000-20,000 txn/sec
 
 **Developer Experience**:
 - Interactive GQL shell with syntax highlighting

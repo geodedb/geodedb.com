@@ -687,7 +687,7 @@ CREATE (u:User)
 SET u = user_data;
 ```
 
-This is 10-100x faster than individual CREATE statements.
+This is more efficient than individual CREATE statements.
 
 **Deferred Index Updates**: For bulk operations:
 
@@ -808,7 +808,7 @@ CALL graph.detect_cycles(
 RETURN cycle;
 ```
 
-Specialized algorithms are 100-1000x faster than generic pattern matching for specific graph problems.
+Specialized algorithms are more efficient than generic pattern matching for specific graph problems.
 
 ## Optimization Tooling
 

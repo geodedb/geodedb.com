@@ -33,7 +33,7 @@ Geode is a production-ready graph database that stores data as nodes (entities) 
 
 **Production-Ready**: With 97.4% test coverage, 100% GQL compliance, and comprehensive client libraries in Python, Go, Rust, and Zig, Geode is battle-tested for demanding production workloads.
 
-**Performance**: QUIC-based transport with TLS 1.3 encryption delivers high-throughput, secure communication. Throughput is workload-dependent; server baselines are read-only up to 100,000 txn/sec, read-write 10,000-50,000 txn/sec, and write-heavy 5,000-20,000 txn/sec.
+**Modern Architecture**: QUIC-based transport with TLS 1.3 encryption, memory-mapped I/O, and six specialized index types.
 
 **ACID Transactions**: Full transactional consistency ensures your data integrity is never compromised, with support for savepoints and isolated concurrent access.
 
@@ -451,7 +451,7 @@ SHOW INDEXES;
 PROFILE MATCH (p:Person {email: 'alice@example.com'}) RETURN p;
 ```
 
-Without indexes, `MATCH (p:Person {email: 'alice@example.com'})` scans every Person node. With an index, Geode jumps directly to matching nodes—often 100-1000x faster.
+Without indexes, `MATCH (p:Person {email: 'alice@example.com'})` scans every Person node. With an index, Geode jumps directly to matching nodes—significantly faster for large datasets.
 
 ### Transaction Patterns for Data Consistency
 

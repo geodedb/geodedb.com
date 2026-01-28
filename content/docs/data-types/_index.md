@@ -264,11 +264,11 @@ Different index types optimize different data types:
 - Canonical forms reduce duplication
 - Compression-friendly layouts
 
-### Query Performance
+### Query Complexity
 
-- **SIMD acceleration**: 2x+ speedup for vector operations
+- **SIMD acceleration**: Vectorized operations for supported types
 - **Patricia trie**: O(32) for IPv4, O(128) for IPv6 lookups
-- **HNSW**: O(log N) approximate K-NN search with >90% recall
+- **HNSW**: O(log N) approximate K-NN search
 - **R-tree**: Sub-linear spatial queries
 
 ## Error Handling

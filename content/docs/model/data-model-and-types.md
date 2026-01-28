@@ -306,7 +306,7 @@ LIMIT 10;
 - `vector_distance_cosine()` - Cosine distance
 - `vector_distance_dot()` - Dot product (inner product)
 
-**Performance**: <50ns per distance calculation (8D L2) with SIMD acceleration
+**Optimization**: SIMD-accelerated distance calculations
 
 **See also**: [Vector Similarity Search](/docs/analytics/graph-algorithms#embeddings)
 

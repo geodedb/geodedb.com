@@ -66,7 +66,7 @@ Geode is an enterprise-ready graph database built with a modular, high-performan
 - Lexer with complete token support
 - Recursive descent parser
 - AST generation
-- **Performance**: Optimized parsing pipeline for low latency
+- **Performance**: Optimized parsing pipeline
 
 **2. Query Planner** (`src/planner/`)
 - Cost-based optimization (CBO)
@@ -80,18 +80,18 @@ Geode is an enterprise-ready graph database built with a modular, high-performan
 - Path evaluation (variable-length paths)
 - Aggregation and grouping
 - Set operations (UNION, INTERSECT, EXCEPT)
-- **Performance**: Workload-dependent throughput aligned with server baselines
+- **Performance**: Optimized for graph traversal patterns
 
 **4. Expression Evaluator** (`src/eval.zig`)
 - Type promotion and coercion
 - Built-in function dispatch
 - NULL propagation semantics
-- **SIMD Optimization**: 2x+ speedup for vector operations
+- **SIMD Optimization**: Vectorized operations for supported workloads
 
 ### Storage Engine
 
 **Page Manager** (`src/storage/`)
-- Memory-mapped I/O: 13.18x performance improvement
+- Memory-mapped I/O with page-level caching
 - 8KB page size (configurable)
 - LRU cache with eviction
 - Lock-free read paths where possible
@@ -123,7 +123,6 @@ Geode is an enterprise-ready graph database built with a modular, high-performan
 3. **HNSW** (Vector index)
    - Approximate K-NN search
    - O(log N) search complexity
-   - >90% recall rate
    - 6 distance metrics: L2, cosine, dot product, Manhattan, Hamming, Jaccard
 
 4. **R-tree** (Spatial index)
@@ -151,7 +150,7 @@ Geode is an enterprise-ready graph database built with a modular, high-performan
 - Session management
 
 **Data Protection**:
-- TDE (Transparent Data Encryption): AES-256-GCM with <1% overhead
+- TDE (Transparent Data Encryption): AES-256-GCM encryption
 - Field-Level Encryption (FLE) with searchable encryption
 - KMS integration (HashiCorp Vault)
 - Audit logging with compliance tracking
@@ -182,7 +181,7 @@ Geode is an enterprise-ready graph database built with a modular, high-performan
 - Modern protocol with multiplexing
 - TLS 1.3 mandatory
 - Connection migration support
-- Low latency (~1-2ms)
+- Low latency transport
 
 **Protocol** (`src/protocol.zig`)
 - JSON line protocol
@@ -240,30 +239,19 @@ src/
 └── ...              # 40+ more modules
 ```
 
-## Performance Characteristics
+## Architecture Characteristics
 
-### Query Performance
+### Query Processing
 
-- **Point lookup**: <1ms (typically 100-500us)
-- **Short path (1-2 hops)**: 1-5ms
-- **Multi-hop path (3-5 hops)**: 10-100ms
-- **Vector search**: <50ns per distance calculation (8D L2)
-- **Transaction throughput**: Read-only up to 100,000 txn/sec; read-write 10,000-50,000 txn/sec; write-heavy 5,000-20,000 txn/sec
-
-### Storage Performance
-
-- **Read-only throughput**: Up to 100,000 txn/sec (workload dependent)
-- **Read-write throughput**: 10,000-50,000 txn/sec
-- **Write-heavy throughput**: 5,000-20,000 txn/sec
-- **Memory-mapped I/O**: 13.18x improvement over traditional I/O
+- **Point lookups**: Optimized via hash indexes
+- **Path traversal**: Efficient multi-hop pattern matching
+- **Vector search**: SIMD-accelerated distance calculations
 - **Indexed lookups**: Optimized via B-tree and hash indexes
 
 ### Scalability
 
-- **Nodes**: 100M+ (load-test target)
-- **Relationships**: 1B+ (load-test target)
-- **Concurrent connections**: 10,000+ with connection pooling
-- **Shards**: Up to 32 shards with linear scale-out
+- **Concurrent connections**: Connection pooling supported
+- **Shards**: Up to 32 shards with distributed coordination
 
 ## Quality Metrics
 

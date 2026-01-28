@@ -343,18 +343,17 @@ ORDER BY affected.criticality DESC;
 
 ### Benchmarks
 
-**Short paths** (1-2 hops): 1-5ms
-**Multi-hop paths** (3-5 hops with filters): 10-100ms
-**Large aggregations** (1M rows): 100-500ms
-**Bulk writes** (batched): 50,000-200,000 writes/sec
+**Query Types**:
+- Short paths (1-2 hops)
+- Multi-hop paths with filters
+- Large aggregations
+- Batched bulk writes
 
 ### Scalability
 
-**Nodes**: 100M+ (load-test target)
-**Relationships**: 1B+ (load-test target)
+**Distributed Deployment**: Up to 32 shards with automatic coordination
+**Concurrent Connections**: Connection pooling supported
 **Properties**: Wide property sets supported (storage dependent)
-**Concurrent connections**: 10,000+ supported
-**Throughput**: Read-only up to 100,000 txn/sec; read-write 10,000-50,000 txn/sec; write-heavy 5,000-20,000 txn/sec
 
 ## Deployment Options
 
@@ -436,7 +435,7 @@ Multi-instance deployment with replication (enterprise feature):
 
 **Python**: `geode-client` (PyPI)
 - Async/await with asyncio
-- Connection pooling (1000+ queries/sec)
+- Connection pooling
 - Type hints
 - RLS policy management
 
@@ -444,7 +443,7 @@ Multi-instance deployment with replication (enterprise feature):
 - Tokio-based async
 - Zero-cost abstractions
 - Type-safe builders
-- 10,000+ queries/sec
+- Connection pooling
 
 **Zig**: Native client library
 - QUIC implementation included
