@@ -20,7 +20,7 @@ variables:
   CLOUDFLARE_PAGES_PROJECT: "geodedb-com"
   # Vault configuration
   VAULT_ADDR: "https://pki.devnw.com"
-  VAULT_AUTH_ROLE: devnw-codepros
+  VAULT_AUTH_ROLE: codepros-geode
   VAULT_SECRET_PATH: ci/devnw/codepros/geode/geodedb.com
 
 stages:
