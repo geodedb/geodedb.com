@@ -384,7 +384,7 @@ From `clients/README.md`:
 **Installation**:
 
 ```bash
-go get go.codepros.org/geode
+go get geodedb.com/geode
 ```
 
 **Usage**:
@@ -392,7 +392,7 @@ go get go.codepros.org/geode
 ```go
 import (
     "database/sql"
-    _ "go.codepros.org/geode"
+    _ "geodedb.com/geode"
 )
 
 func main() {

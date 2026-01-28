@@ -38,7 +38,7 @@ Geode's interactive REPL (Read-Eval-Print Loop) provides professional database s
 
 ### Prerequisites
 
-- Geode installed (see [Installation Guide](/docs/get-started/install/))
+- Geode installed (see [Installation Guide](/guides/installation/))
 - Terminal with color support (optional, for syntax highlighting)
 - Basic familiarity with GQL syntax
 

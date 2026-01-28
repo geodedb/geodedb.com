@@ -381,7 +381,7 @@ logger.info(f"Found {result.rows[0]['count(u)']} users")
 ```go
 import (
     "log"
-    "go.codepros.org/geode"
+    "geodedb.com/geode"
 )
 
 // Enable debug logging
@@ -463,19 +463,15 @@ async with tracer.start_as_current_span("user_query"):
 
 ## Related Topics
 
-- [Testing](/tags/testing/) - Testing strategies
-- [Performance](/categories/performance-and-scaling/) - Performance optimization
 - [Monitoring](/tags/monitoring/) - Production monitoring
-- [Logging](/docs/operations/logging/) - Log management
-- [Troubleshooting](/tags/troubleshooting/) - Common issues
+- [Profiling](/tags/profiling/) - Performance profiling
 
 ## Further Reading
 
-- [EXPLAIN Reference](/docs/gql-reference/explain/) - Query plan analysis
-- [PROFILE Reference](/docs/gql-reference/profile/) - Performance profiling
-- [Error Codes](/docs/reference/errors/) - Error code reference
-- [Logging Guide](/docs/operations/logging/) - Comprehensive logging setup
-- [Performance Tuning](/docs/performance/) - Optimization techniques
+- [Explain and Profile](/docs/query/explain-profile/) - Query plan analysis and profiling
+- [Error Codes](/docs/reference/error-codes/) - Error code reference
+- [Performance Tuning](/docs/query/performance-tuning/) - Optimization techniques
+- [Troubleshooting Guide](/docs/guides/troubleshooting/) - Common issues and solutions
 
 ## Advanced Debugging Techniques
 
@@ -743,7 +739,8 @@ class ErrorAnalyzer:
         error_type = type(error).__name__
         
         if error_type in self.error_patterns:
-            return await self.error_patterns[error_type](error, context)
+            handler = self.error_patterns[error_type]
+            return await handler(error, context)
         
         return {
             'type': 'unknown',

@@ -437,8 +437,6 @@ LIMIT 20;
 
 ## Related Topics
 
-- [HNSW](/tags/hnsw/) - Vector similarity search
-- [Vector Search](/tags/vector-search/) - Semantic search
 - [Search](/tags/search/) - General search capabilities
 - [Text](/tags/text/) - Text processing features
 - [Indexing](/tags/indexing/) - Index management
@@ -446,10 +444,9 @@ LIMIT 20;
 
 ## Further Reading
 
-- [Full-Text Search Guide](/docs/full-text-search/) - Complete BM25 documentation
-- [Hybrid Search Tutorial](/docs/hybrid-search/) - Combining BM25 and vectors
-- [Query Optimization](/docs/query-optimization/) - Performance best practices
-- [BM25 Algorithm Paper](https://www.staff.city.ac.uk/~sbrp622/papers/foundations_bm25_review.pdf) - Academic paper
+- [Full-Text Search Guide](/docs/query/full-text-search/) - Complete BM25 documentation
+- [Vector Search Tutorial](/docs/tutorials/vector-search-tutorial/) - Combining BM25 and vectors
+- [Performance Tuning](/docs/query/performance-tuning/) - Performance best practices
 
 Geode's BM25 implementation provides powerful keyword-based search that integrates seamlessly with graph traversal, enabling rich text search applications combined with relationship-based filtering and ranking.
 

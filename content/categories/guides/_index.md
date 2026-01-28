@@ -637,7 +637,7 @@ import (
     "database/sql"
     "log"
 
-    _ "go.codepros.org/geode/driver"
+    _ "geodedb.com/geode/driver"
 )
 
 func main() {

@@ -763,8 +763,7 @@ ws.onmessage = (event) => {
 
 ## Further Reading
 
-- [REST API Reference](/docs/api/rest/) - Complete endpoint documentation
+- [API Reference](/docs/api-reference/) - Complete API documentation
 - [Authentication Guide](/docs/security/authentication/) - Detailed auth setup
 - [Error Codes](/docs/reference/error-codes/) - Complete error code list
-- [Rate Limiting](/docs/api/rate-limiting/) - Rate limit configuration
-- [API Examples](/docs/examples/rest-api/) - Real-world examples
+- [Wire Protocol](/docs/architecture/wire-protocol/) - Protocol specification

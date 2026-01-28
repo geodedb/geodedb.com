@@ -349,7 +349,7 @@ Complete integration guides for each supported language:
 // Database/sql driver documentation
 import (
     "database/sql"
-    _ "go.codepros.org/geode"
+    _ "geodedb.com/geode"
 )
 
 db, err := sql.Open("geode", "geode://localhost:3141")

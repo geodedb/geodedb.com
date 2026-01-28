@@ -466,5 +466,5 @@ Geode uses ISO-standard GQL error codes:
 - [ISO GQL Specification](/tags/iso-gql/) - Official standard
 - [Protocol Specification](/tags/protocol/) - Wire protocol details
 - [Type System](/docs/reference/types/) - Complete type documentation
-- [Error Handling](/docs/guides/error-handling/) - Error management patterns
+- [Error Handling](/guides/error-handling/) - Error management patterns
 - [Performance Tuning](/docs/performance/) - Optimization techniques

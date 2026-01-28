@@ -567,8 +567,8 @@ SELECT COUNT(*) FROM (/* view definition query */) AS live_data;
 - [Performance](/tags/performance/) - Query optimization techniques
 - [Caching](/tags/caching/) - Data caching strategies
 - [Computed Properties](/tags/computed-properties/) - Dynamic property calculations
-- [Aggregations](/tags/aggregations/) - Aggregation functions
-- [OLAP](/tags/olap/) - Analytical processing patterns
+- [Aggregation](/tags/aggregation/) - Aggregation functions
+- [Analytics](/tags/analytics/) - Analytical processing patterns
 
 ## Further Reading
 

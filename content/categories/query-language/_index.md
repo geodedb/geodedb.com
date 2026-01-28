@@ -978,11 +978,11 @@ RETURN f.name
 
 ## Further Reading
 
-- [GQL Tutorial](/docs/tutorials/gql-basics/) - Step-by-step learning path
+- [GQL Tutorial](/docs/gql-tutorial/) - Step-by-step learning path
 - [API Reference](/docs/api-reference/) - Complete function reference
 - [Examples](/categories/examples/) - Real-world query examples
 - [GQL Specification](/docs/gql-reference/specification/) - ISO standard details
-- [Query Optimization Guide](/docs/performance/query-optimization/) - Performance tuning
+- [Query Optimization Guide](/docs/query/performance-tuning/) - Performance tuning
 - [Advanced Patterns](/docs/gql-reference/advanced-patterns/) - Complex query techniques
 - [Function Reference](/docs/gql-reference/functions/) - Complete function catalog
-- [Best Practices](/docs/best-practices/query-writing/) - Query writing guidelines
+- [Best Practices](/categories/best-practices/) - Query writing guidelines

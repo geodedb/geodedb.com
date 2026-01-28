@@ -502,8 +502,6 @@ Contact compliance@geodedb.com for certification documentation.
 - [Audit Logging](/tags/audit-logging/) - Comprehensive audit logging and compliance tracking
 - [Row-Level Security](/tags/row-level-security/) - Fine-grained access control
 - [Encryption](/tags/encryption/) - Data encryption at rest and in transit
-- [Data Governance](/tags/governance/) - Data governance policies and enforcement
-- [Data Integrity](/tags/data-integrity/) - Ensuring data consistency and accuracy
+- [Governance](/tags/governance/) - Data governance policies and enforcement
 - [Configuration](/tags/configuration/) - Security configuration best practices
-- [Authentication](/docs/security/authentication/) - User authentication systems
-- [Authorization](/docs/security/authorization/) - Access control and permissions
+- [Security Overview](/docs/security/overview/) - Security documentation

@@ -236,7 +236,7 @@ import (
     "fmt"
     "os"
     "strconv"
-    _ "go.codepros.org/geode"
+    _ "geodedb.com/geode"
 )
 
 func batchImport(filename string, batchSize int) error {
@@ -584,7 +584,7 @@ ALTER TABLE Person ENABLE CONSTRAINTS;
 - [Export](/tags/export/) - Data export strategies
 - [Migration](/tags/migration/) - Database migration
 - [ETL](/tags/etl/) - ETL pipelines
-- [Data Integration](/tags/data-integration/) - Integration patterns
+- [Integration](/tags/integration/) - Integration patterns
 
 ## Further Reading
 

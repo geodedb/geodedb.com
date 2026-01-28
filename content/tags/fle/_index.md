@@ -496,10 +496,8 @@ Typical performance impact:
 
 ## Further Reading
 
-- [Field-Level Encryption Guide](/docs/field-level-encryption/) - Complete FLE documentation
-- [Security Best Practices](/docs/security-best-practices/) - Security recommendations
-- [Key Management](/docs/key-management/) - KMS integration guide
-- [Compliance](/docs/compliance/) - Regulatory compliance guides
+- [Field-Level Encryption Guide](/docs/security/field-level-encryption/) - Complete FLE documentation
+- [KMS Integration](/docs/security/kms-integration/) - KMS integration guide
 - [Client Libraries](/docs/client-libraries/) - Language-specific FLE usage
 
 Geode's Field-Level Encryption provides granular protection for sensitive data with queryable encryption support, enabling compliance with PCI-DSS, HIPAA, and GDPR while maintaining application functionality.

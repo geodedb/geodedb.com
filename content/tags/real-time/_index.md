@@ -275,7 +275,7 @@ import (
     "context"
     "log"
     "sync"
-    "go.codepros.org/geode"
+    "geodedb.com/geode"
 )
 
 func main() {

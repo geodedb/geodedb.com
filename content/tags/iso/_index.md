@@ -316,20 +316,18 @@ ISO compliance enables fair benchmarks:
 ### Official Specification
 
 - [ISO/IEC 39075:2024 Overview](https://www.iso.org/standard/76120.html) - Official ISO page
-- [GQL Specification Document](/docs/gql-specification/) - Complete specification
-- [Conformance Requirements](/docs/conformance-requirements/) - Testing and validation
+- [GQL Reference](/docs/gql-reference/) - GQL language reference
+- [GQL Specification](/docs/gql-reference/specification/) - Technical specification details
 
 ### Implementation Guides
 
-- [GQL Implementation Guide](/docs/gql-implementation/) - Building ISO-compliant systems
-- [Migration to GQL](/docs/migration-to-gql/) - Transitioning from other languages
-- [Portable Query Development](/docs/portable-queries/) - Writing cross-platform queries
+- [GQL Guide](/docs/gql/guide/) - GQL language guide
+- [GQL Conformance Profile](/docs/gql/conformance-profile/) - Conformance testing
+- [Migration Guide](/docs/guides/migration-guide/) - Transitioning from other languages
 
 ### Standards Process
 
 - [ISO/IEC JTC 1/SC 32/WG 3](https://www.iso.org/committee/45342.html) - Working group
-- [GQL Standards Blog](https://codepros.org/blog/gql-standards/) - Updates and commentary
-- [Contributing to GQL](/docs/contributing-to-gql/) - Participating in standards work
 
 ## Advanced Standards Compliance Features
 
@@ -773,4 +771,3 @@ class ISOCompliantOptimizer:
         return True
 ```
 
-- [Contributing to GQL](/docs/contributing-to-gql/) - Participating in standards work

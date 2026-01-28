@@ -278,8 +278,6 @@ The tag system is continuously improved:
 ### Additional Resources
 
 - **[Documentation Home](/docs/)**: Full documentation index
-- **[Search](/search/)**: Full-text search across all content
-- **[Sitemap](/sitemap.xml)**: Complete site structure
 - **[GitHub](https://github.com/codeprosorg/geode)**: Source code and issues
 
 ## Conclusion

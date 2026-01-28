@@ -41,14 +41,17 @@ Use this section when you need precise details about specific functionality, err
 
 ## Topics in This Section
 
-- **[Complete API Reference](api-reference-complete/)** - Comprehensive API documentation covering all functions, methods, and interfaces
-- **[CLI and API](cli-and-api/)** - Command-line interface reference including all CLI commands and options
-- **[Error Codes](error-codes/)** - Complete error code reference with descriptions and resolution steps
-- **[Status Codes](status-codes/)** - GQL status codes following ISO/IEC 39075:2024 standard
-- **[Operators](operators/)** - All supported operators including comparison, arithmetic, logical, and pattern operators
-- **[Type Conversion](type-conversion/)** - Type conversion rules, coercion, and promotion specifications
-- **[Unicode Support](unicode-support/)** - Unicode normalization, collation, and string handling
-- **[Changelog](changelog/)** - Version history with detailed changes, features, and bug fixes
+- **[Complete API Reference](/docs/reference/api-reference-complete/)** - Comprehensive API documentation covering all functions, methods, and interfaces
+- **[CLI and API](/docs/reference/cli-and-api/)** - Command-line interface reference including all CLI commands and options
+- **[Data Types](/docs/reference/types/)** - All 50+ data types with constructors and storage characteristics
+- **[Index Types](/docs/reference/indexes/)** - B-tree, Hash, Full-text, Spatial, Vector, and specialized indexes
+- **[Statistics and Metrics](/docs/reference/statistics/)** - Query statistics, storage metrics, and Prometheus integration
+- **[Error Codes](/docs/reference/error-codes/)** - Complete error code reference with descriptions and resolution steps
+- **[Status Codes](/docs/reference/status-codes/)** - GQL status codes following ISO/IEC 39075:2024 standard
+- **[Operators](/docs/reference/operators/)** - All supported operators including comparison, arithmetic, logical, and pattern operators
+- **[Type Conversion](/docs/reference/type-conversion/)** - Type conversion rules, coercion, and promotion specifications
+- **[Unicode Support](/docs/reference/unicode-support/)** - Unicode normalization, collation, and string handling
+- **[Changelog](/docs/reference/changelog/)** - Version history with detailed changes, features, and bug fixes
 
 ## Quick Reference
 
@@ -81,7 +84,7 @@ distance(point1, point2)
 point({latitude: 47.6, longitude: -122.3})
 ```
 
-See [API Reference](api-reference-complete/) for complete function list.
+See [API Reference](/docs/reference/api-reference-complete/) for complete function list.
 
 ### Common Operators
 
@@ -108,7 +111,7 @@ STARTS WITH, ENDS WITH, CONTAINS
 =~  -- Regular expression match
 ```
 
-See [Operators](operators/) for complete reference.
+See [Operators](/docs/reference/operators/) for complete reference.
 
 ### CLI Commands
 
@@ -133,7 +136,7 @@ geode restore            # Restore backup
 geode validate           # Validate data
 ```
 
-See [CLI and API](cli-and-api/) for complete CLI reference.
+See [CLI and API](/docs/reference/cli-and-api/) for complete CLI reference.
 
 ## Error Code Categories
 
@@ -164,7 +167,7 @@ Authentication and authorization errors:
 - **60003**: Session expired
 - **60004**: Invalid credentials
 
-See [Error Codes](error-codes/) for complete list with resolution steps.
+See [Error Codes](/docs/reference/error-codes/) for complete list with resolution steps.
 
 ## Status Codes (ISO GQL)
 
@@ -177,7 +180,7 @@ GQL status codes following ISO/IEC 39075:2024:
 - **23xxx**: Integrity constraint violation
 - **42xxx**: Syntax error or access violation
 
-See [Status Codes](status-codes/) for ISO compliance details.
+See [Status Codes](/docs/reference/status-codes/) for ISO compliance details.
 
 ## Type System Reference
 
@@ -224,7 +227,7 @@ MONEY
 CIDR
 ```
 
-See [Type Conversion](type-conversion/) for conversion rules.
+See [Type Conversion](/docs/reference/type-conversion/) for conversion rules.
 
 ## Unicode Support
 
@@ -235,7 +238,7 @@ Geode provides comprehensive Unicode support:
 - **Case Folding**: Unicode case-insensitive comparison
 - **Grapheme Clusters**: Proper string length and indexing
 
-See [Unicode Support](unicode-support/) for details.
+See [Unicode Support](/docs/reference/unicode-support/) for details.
 
 ## Version Information
 
@@ -246,7 +249,7 @@ Key metrics:
 - **GQL Compliance**: 100% (70/70 ISO tests)
 - **CANARY Markers**: 1,735 tracking 2,190+ requirements
 
-See [Changelog](changelog/) for version history.
+See [Changelog](/docs/reference/changelog/) for version history.
 
 ## API Categories
 
@@ -317,7 +320,7 @@ async with client.connection() as conn:
     print(session.token)
 ```
 
-See [API Reference](api-reference-complete/) for complete API documentation.
+See [API Reference](/docs/reference/api-reference-complete/) for complete API documentation.
 
 ## Command-Line Interface
 
@@ -354,7 +357,7 @@ geode query -f queries.gql --format json
 geode query "MATCH (n) WHERE n.id = \$id RETURN n" --params '{"id": 123}'
 ```
 
-See [CLI and API](cli-and-api/) for complete command reference.
+See [CLI and API](/docs/reference/cli-and-api/) for complete command reference.
 
 ## Configuration Reference
 

@@ -276,7 +276,7 @@ Explore related GQL concepts and features:
 
 - [GQL Quick Reference](/docs/quick-reference/) - Syntax cheat sheet
 - [API Reference](/docs/api-reference/) - Complete API documentation
-- [Query Optimization Guide](/docs/query-optimization/) - Performance best practices
+- [Query Optimization](/tags/query-optimization/) - Performance best practices
 - [GQL Tutorial Series](/tags/tutorial/) - Step-by-step learning path
 
 ### Specifications
@@ -600,7 +600,7 @@ import (
     "fmt"
     "time"
 
-    _ "go.codepros.org/geode"
+    _ "geodedb.com/geode"
 )
 
 func advancedQueries() error {

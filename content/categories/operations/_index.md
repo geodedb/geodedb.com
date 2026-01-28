@@ -519,8 +519,8 @@ print(f"Capacity Report: {report}")
 
 ## Further Reading
 
-- [Operations Guide](/docs/operations-guide/) - Complete operational documentation
-- [Monitoring Setup](/docs/monitoring-setup/) - Setting up monitoring
-- [Backup Configuration](/docs/backup-configuration/) - Backup procedures
-- [Troubleshooting Guide](/docs/troubleshooting-guide/) - Problem resolution
-- [Performance Tuning](/docs/performance-tuning/) - Optimization guides
+- [Operations Documentation](/docs/ops/) - Complete operational documentation
+- [Observability](/docs/ops/observability/) - Setting up monitoring
+- [Backup Automation](/docs/guides/backup-automation/) - Backup procedures
+- [Troubleshooting](/docs/guides/troubleshooting/) - Problem resolution
+- [Performance Tuning](/docs/query/performance-tuning/) - Optimization guides

@@ -341,7 +341,7 @@ import (
     "go.opentelemetry.io/otel"
     "go.opentelemetry.io/otel/attribute"
     "go.opentelemetry.io/otel/trace"
-    "go.codepros.org/geode"
+    "geodedb.com/geode"
 )
 
 var tracer = otel.Tracer("myapp")

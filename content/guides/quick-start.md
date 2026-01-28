@@ -839,7 +839,7 @@ Now that you have Geode running:
 1. **Learn GQL**: Read the [GQL Reference](/docs/gql-reference/) to master the query language
 2. **Design Your Schema**: Follow the [Graph Modeling Guide](/guides/graph-modeling/)
 3. **Optimize Performance**: Check out [Query Optimization](/guides/query-performance/)
-4. **Build an Application**: See [Example Applications](/docs/examples/)
+4. **Build an Application**: See [Example Applications](/docs/tutorials/)
 5. **Deploy to Production**: Review [Production Deployment](/guides/production-deployment/)
 
 ## Troubleshooting
@@ -882,7 +882,7 @@ geode check query.gql
 - [Full Documentation](/docs/)
 - [GQL Reference](/docs/gql-reference/)
 - [Client Libraries](/clients/)
-- [Example Queries](/docs/examples/)
+- [Use Cases](/docs/use-cases/)
 - [Community Forum](https://forum.geodedb.com)
 
 ## Get Help

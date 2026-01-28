@@ -1485,7 +1485,7 @@ Key takeaways:
 
 - [Graph Modeling Guide](/guides/graph-modeling/)
 - [Constraints and Indexes Guide](/guides/constraints-indexes/)
-- [Backup and Recovery](/docs/operations/backup/)
+- [Backup and Restore Guide](/guides/backup-restore/)
 - [Production Deployment](/guides/production-deployment/)
 
 ---

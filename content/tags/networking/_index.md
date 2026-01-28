@@ -102,7 +102,7 @@ client = Client("geode.example.com:3141",
 In Go:
 
 ```go
-import "go.codepros.org/geode"
+import "geodedb.com/geode"
 
 // Basic connection
 db, err := sql.Open("geode", "geode://localhost:3141/graph")
@@ -299,7 +299,7 @@ In Go with database/sql:
 ```go
 import (
     "database/sql"
-    _ "go.codepros.org/geode"
+    _ "geodedb.com/geode"
 )
 
 db, err := sql.Open("geode", "geode://localhost:3141/graph")
@@ -638,7 +638,7 @@ wireshark geode-quic.pcap
 ## Further Reading
 
 - [QUIC Protocol Specification](https://www.rfc-editor.org/rfc/rfc9000.html) - IETF RFC 9000
-- [Network Configuration Guide](/docs/administration/network-config/) - Detailed network setup
-- [Security Best Practices](/docs/security/network-security/) - Network security guidelines
-- [Load Balancing Guide](/docs/deployment/load-balancing/) - Load balancer configuration
-- [Performance Tuning](/docs/performance/network-optimization/) - Network performance optimization
+- [Server Configuration](/docs/configuration/server-configuration/) - Detailed server and network setup
+- [Security Best Practices](/docs/security/overview/) - Security guidelines
+- [Deployment Patterns](/docs/deployment/deployment-patterns/) - Load balancer and deployment configuration
+- [Performance Tuning](/docs/query/performance-tuning/) - Performance optimization

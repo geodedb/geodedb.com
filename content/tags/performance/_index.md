@@ -317,7 +317,7 @@ for _ in range(10000):
 
 **Go Client Connection Management**:
 ```go
-import "go.codepros.org/geode"
+import "geodedb.com/geode"
 
 // Connection pool configured automatically
 db, err := sql.Open("geode", "geode://localhost:3141/mydb")

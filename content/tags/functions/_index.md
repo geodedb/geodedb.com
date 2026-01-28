@@ -847,10 +847,10 @@ RETURN p;
 
 - **[GQL Operators](/tags/operators/)**: Operators work alongside functions in expressions
 - **[Data Types](/tags/types/)**: Understand type compatibility for function arguments
-- **[Query Optimization](/tags/optimization/)**: Optimize function usage for performance
+- **[Query Optimization](/tags/query-optimization/)**: Optimize function usage for performance
 - **[Aggregation](/tags/aggregation/)**: Deep dive into aggregation patterns
 - **[GQL Reference](/tags/gql-reference/)**: Complete function documentation
-- **[User-Defined Functions](/tags/udf/)**: Creating custom functions
+- **[Stored Procedures](/tags/stored-procedures/)**: Creating custom functions
 - **[Graph Algorithms](/tags/graph-algorithms/)**: Algorithm implementations
 
 ## Further Reading

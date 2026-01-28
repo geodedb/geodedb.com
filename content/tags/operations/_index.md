@@ -932,7 +932,7 @@ Operational excellence requires understanding related areas:
 - **[DevOps](/tags/devops/)**: Automation and infrastructure management practices
 - **[Monitoring](/tags/monitoring/)**: Comprehensive system observability strategies
 - **[High Availability](/tags/high-availability/)**: HA deployment patterns
-- **[Disaster Recovery](/tags/disaster-recovery/)**: Backup and recovery procedures
+- **[Recovery](/tags/recovery/)**: Backup and recovery procedures
 
 ## Resources
 

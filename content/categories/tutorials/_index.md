@@ -718,11 +718,9 @@ After completing tutorials, verify your knowledge:
 
 - [Documentation Index](/docs/) - Complete documentation
 - [API Reference](/docs/api-reference/) - API documentation
-- [Quick Reference](/docs/quick-reference/) - Syntax cheat sheet
-- [Video Tutorials](/videos/) - Video learning content
-- [Community Forum](/community/) - Get help and share knowledge
-- [Example Projects](/examples/) - Sample applications and code
-- [Best Practices Guide](/docs/best-practices/) - Development guidelines
-- [Production Deployment](/docs/deployment/) - Going to production
-- [Performance Tuning](/docs/performance/) - Optimization techniques
-- [Security Hardening](/docs/security/) - Security configuration
+- [GQL Reference](/docs/gql-reference/) - Syntax reference
+- [Getting Started](/docs/getting-started/) - Get started with Geode
+- [Use Cases](/docs/use-cases/) - Sample applications and use cases
+- [Deployment](/docs/deployment/) - Going to production
+- [Performance](/docs/performance/) - Optimization techniques
+- [Security](/docs/security/) - Security configuration

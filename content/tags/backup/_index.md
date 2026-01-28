@@ -650,20 +650,11 @@ geode recover \
 
 ## Related Topics
 
-- **[WAL](/tags/wal/)**: Write-Ahead Logging for continuous archiving
-- **[MVCC](/tags/mvcc/)**: Multi-Version Concurrency Control for consistent snapshots
-- **[Server Configuration](/tags/server/)**: Server settings for backup operations
-- **[Data Integrity](/tags/data-integrity/)**: Ensuring data consistency and reliability
-- **[Disaster Recovery](/tags/production/)**: Production deployment and disaster planning
-- **[High Availability](/tags/high-availability/)**: HA architectures
-- **[Monitoring](/tags/monitoring/)**: Backup monitoring and alerting
-- **[Security](/tags/security/)**: Backup encryption and access control
+- [Server Configuration](/tags/server/) - Server settings for backup operations
+- [Monitoring](/tags/monitoring/) - Backup monitoring and alerting
+- [Encryption](/tags/encryption/) - Backup encryption and access control
 
 ## Further Reading
 
-- **[Backup Administration Guide](/docs/administration/backup/)**: Detailed backup procedures
-- **[Recovery Procedures](/docs/administration/recovery/)**: Step-by-step recovery guides
-- **[High Availability Architecture](/docs/deployment/high-availability/)**: HA configurations
-- **[Disaster Recovery Planning](/docs/operations/disaster-recovery/)**: DR strategies
-- **[Backup Performance Tuning](/docs/performance/backup-optimization/)**: Optimization techniques
-- **[Compliance Guide](/docs/compliance/backup-requirements/)**: Regulatory backup requirements
+- [Backup Automation Guide](/docs/guides/backup-automation/) - Detailed backup procedures
+- [Deployment Patterns](/docs/deployment/deployment-patterns/) - Production deployment strategies

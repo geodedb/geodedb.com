@@ -661,7 +661,7 @@ export AWS_MAX_BANDWIDTH=100MB/s
 - **[Migration Guide](/docs/guides/migration-guide/)** - Backup and restore procedures
 - **[Server Configuration](/docs/configuration/server-configuration/)** - Backup configuration options
 - **[Troubleshooting Guide](/docs/guides/troubleshooting/)** - Backup troubleshooting
-- **[Disaster Recovery](/docs/ops/disaster-recovery/)** - Complete DR procedures
+- **[Disaster Recovery](/docs/recovery/)** - Complete DR procedures
 
 ## Summary
 

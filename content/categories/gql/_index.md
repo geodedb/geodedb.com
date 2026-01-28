@@ -206,18 +206,18 @@ Complete GQL syntax reference including all clauses, operators, functions, and l
 **[Query Language Documentation](/categories/query/)**
 Broader query language category with optimization, EXPLAIN/PROFILE, indexing, and performance tuning.
 
-**[Quick Reference](/docs/quick-reference/)**
-GQL syntax cheat sheet for quick lookup of common patterns and operations.
+**[Reference Documentation](/docs/reference/)**
+Reference documentation including operators and API details.
 
 ### Tutorials and Examples
 
-**[GQL Basics Tutorial](/tutorials/gql-basics/)**
+**[MATCH Basics Tutorial](/docs/tutorials/match-basics/)**
 Step-by-step introduction to GQL with hands-on examples and exercises.
 
-**[Pattern Matching Tutorial](/tutorials/pattern-matching/)**
+**[GQL Advanced Patterns](/docs/gql/advanced-patterns/)**
 Deep dive into graph pattern matching with progressive complexity.
 
-**[Query Examples](/categories/examples/)**
+**[Use Cases](/docs/use-cases/)**
 Practical GQL examples across various use cases and domains.
 
 ## Common GQL Use Cases

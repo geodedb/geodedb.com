@@ -34,7 +34,7 @@ Geode provides two powerful commands for understanding and optimizing query exec
 
 ### Prerequisites
 
-- Geode server running (see [Installation Guide](/docs/get-started/install/))
+- Geode server running (see [Installation Guide](/guides/installation/))
 - Basic familiarity with [GQL syntax](/docs/gql/guide/)
 - Understanding of [graph data models](/docs/model/data-model-and-types/)
 

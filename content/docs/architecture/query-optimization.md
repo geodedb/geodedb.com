@@ -345,11 +345,11 @@ LIMIT 100
 ## Performance Tuning
 
 See also:
-- [Performance Tuning Guide](/docs/guides/performance-tuning/)
+- [Performance Tuning Guide](/docs/query/performance-tuning/)
 - [Index Optimization Tutorial](/docs/tutorials/index-optimization/)
 
 ## Next Steps
 
-- [Storage Engine](../storage-engine/) - Understand data storage
-- [Distributed Systems](../distributed-systems/) - Multi-node query execution
-- [Query Execution](../query-execution/) - Execution pipeline details
+- [Storage Engine](/docs/architecture/storage-engine/) - Understand data storage
+- [Distributed Systems](/docs/architecture/distributed-systems/) - Multi-node query execution
+- [Query Execution](/docs/architecture/query-execution/) - Execution pipeline details

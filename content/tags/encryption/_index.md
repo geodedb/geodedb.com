@@ -449,10 +449,10 @@ geode key-rotate --rollback \
 ## Related Topics
 
 - [Compliance](/tags/compliance/) - Regulatory compliance requirements
-- [Data Integrity](/tags/data-integrity/) - Ensuring data consistency and authenticity
 - [Audit Logging](/tags/audit-logging/) - Comprehensive security audit trails
 - [Row-Level Security](/tags/row-level-security/) - Fine-grained access control
 - [Configuration](/tags/configuration/) - Security configuration best practices
 - [Connections](/tags/connections/) - Secure connection management
-- [Authentication](/docs/security/authentication/) - User authentication and identity
-- [Backup and Recovery](/docs/operations/backup/) - Encrypted backup strategies
+- [Security Overview](/docs/security/overview/) - Security documentation
+- [Field-Level Encryption](/docs/security/field-level-encryption/) - Fine-grained encryption
+- [KMS Integration](/docs/security/kms-integration/) - Key management service integration

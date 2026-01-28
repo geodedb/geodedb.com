@@ -174,7 +174,7 @@ let (page, _) = conn.query("MATCH (p:Person) RETURN p.name AS name").await?;
 
 ## Next Steps
 
-- [Installation Guide](/docs/installation/) - Detailed installation options
+- [Installation Guide](/guides/installation/) - Detailed installation options
 - [Configuration](/docs/configuration/) - Configure your instance
-- [GQL Tutorial](/docs/gql-tutorial/) - Learn the query language
+- [GQL Guide](/docs/gql/guide/) - Learn the query language
 - [Client Libraries](/clients/) - Language-specific guides

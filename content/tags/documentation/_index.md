@@ -460,9 +460,9 @@ Documentation extensively cross-references related topics:
 
 ```markdown
 See also:
-- [Performance Tuning Guide](/docs/operations/tuning/) for optimization techniques
+- [Performance Tuning Guide](/docs/query/performance-tuning/) for optimization techniques
 - [GQL Reference](/docs/gql/) for complete language specification
-- [Troubleshooting Guide](/docs/support/troubleshooting/) for common issues
+- [Troubleshooting Guide](/docs/guides/troubleshooting/) for common issues
 ```
 
 ### Version Information

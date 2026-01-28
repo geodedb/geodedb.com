@@ -512,8 +512,7 @@ Check that:
 
 - [Compliance](/tags/compliance/) - Regulatory compliance with RLS
 - [Audit Logging](/tags/audit-logging/) - Track RLS policy enforcement
-- [Data Governance](/tags/governance/) - Governance policies and RLS
-- [Multi-Tenancy](/docs/patterns/multi-tenancy/) - Multi-tenant application patterns
 - [Authentication](/docs/security/authentication/) - User authentication and identity
 - [Authorization](/docs/security/authorization/) - Role-based access control
 - [Performance](/docs/performance/) - Optimizing RLS policy performance
+- [Security Overview](/docs/security/) - Security best practices

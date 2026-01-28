@@ -276,7 +276,7 @@ import (
     "context"
     "database/sql"
     "fmt"
-    "go.codepros.org/geode"
+    "geodedb.com/geode"
 )
 
 func analyzeUserData(ctx context.Context, db *geode.DB) error {

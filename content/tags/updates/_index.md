@@ -85,7 +85,7 @@ Check version from client libraries:
 
 **Go:**
 ```go
-import "go.codepros.org/geode"
+import "geodedb.com/geode"
 
 version := geode.Version()
 fmt.Printf("Client version: %s\n", version)
@@ -508,13 +508,13 @@ Keep client libraries synchronized with server versions.
 
 ```bash
 # Update to specific version
-go get go.codepros.org/geode@v0.18.0
+go get geodedb.com/geode@v0.18.0
 
 # Update to latest
-go get -u go.codepros.org/geode
+go get -u geodedb.com/geode
 
 # Verify version
-go list -m go.codepros.org/geode
+go list -m geodedb.com/geode
 ```
 
 ### Updating Python Client

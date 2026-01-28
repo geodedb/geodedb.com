@@ -300,7 +300,7 @@ Check your current version:
 geode --version
 
 # Client library version (example: Go)
-go list -m go.codepros.org/geode
+go list -m geodedb.com/geode
 ```
 
 ## Rollback Procedures

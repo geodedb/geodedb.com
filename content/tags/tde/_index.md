@@ -774,17 +774,13 @@ groups:
 - **[Compliance](/tags/compliance/)**: Regulatory compliance
 - **[Authentication](/tags/authentication/)**: Access control
 - **[Audit Logging](/tags/audit-logging/)**: Security audit trails
-- **[Key Management](/tags/key-management/)**: KMS integration
 - **[Backup](/tags/backup/)**: Encrypted backup strategies
 
 ## Further Reading
 
 - **[Security Guide](/docs/security/)**: Complete security documentation
-- **[Encryption Best Practices](/docs/encryption-best-practices/)**: Detailed recommendations
-- **[Key Management](/docs/key-management/)**: KMS integration guide
-- **[Compliance](/docs/compliance/)**: Regulatory compliance guides
-- **[Performance Tuning](/docs/performance-tuning/)**: TDE performance optimization
-- **[HSM Integration](/docs/security/hsm-integration/)**: Hardware security module setup
+- **[KMS Integration](/docs/security/kms-integration/)**: Key management service integration
+- **[Performance Tuning](/docs/query/performance-tuning/)**: TDE performance optimization
 - **[Disaster Recovery](/docs/operations/disaster-recovery/)**: TDE-encrypted backup recovery
 
 Geode's Transparent Data Encryption provides enterprise-grade protection for data at rest with minimal performance overhead and zero application changes—essential for regulated industries and security-conscious deployments.

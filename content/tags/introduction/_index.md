@@ -446,7 +446,7 @@ result, _ = await conn.query(
 ### Go
 
 ```bash
-go get go.codepros.org/geode
+go get geodedb.com/geode
 ```
 
 ```go
@@ -456,7 +456,7 @@ import (
     "context"
     "fmt"
     "log"
-    "go.codepros.org/geode"
+    "geodedb.com/geode"
 )
 
 func main() {

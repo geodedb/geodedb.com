@@ -403,7 +403,7 @@ Client libraries emit telemetry for end-to-end visibility.
 ### Go Client Metrics
 
 ```go
-import "go.codepros.org/geode/telemetry"
+import "geodedb.com/geode/telemetry"
 
 // Enable Prometheus metrics
 telemetry.EnablePrometheus(":9091")

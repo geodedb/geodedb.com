@@ -342,6 +342,6 @@ CALL db.cluster.replicationLag()
 
 ## Next Steps
 
-- [Distributed Architecture](../distributed-architecture/) - Detailed implementation
-- [Query Optimization](../query-optimization/) - Distributed query planning
-- [Security Architecture](../security-architecture/) - Cluster security
+- [Query Optimization](/docs/architecture/query-optimization/) - Distributed query planning
+- [Security Architecture](/docs/architecture/security-architecture/) - Cluster security
+- [Storage Engine](/docs/architecture/storage-engine/) - Data persistence layer

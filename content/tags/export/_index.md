@@ -276,7 +276,7 @@ import (
     "encoding/csv"
     "fmt"
     "os"
-    _ "go.codepros.org/geode"
+    _ "geodedb.com/geode"
 )
 
 func streamingExport() error {
@@ -576,7 +576,7 @@ RETURN n;
 - [Migration](/tags/migration/) - Database migration tools
 - [Backup](/tags/backup/) - Backup and recovery
 - [ETL](/tags/etl/) - ETL pipeline integration
-- [Data Integration](/tags/data-integration/) - Integration patterns
+- [Integration](/tags/integration/) - Integration patterns
 
 ## Further Reading
 

@@ -2802,7 +2802,6 @@ performance-tests:
 
 ## Resources
 
-- [Integration Testing Guide](/guides/integration-testing/)
 - [Error Handling Guide](/guides/error-handling/)
 - [Performance Guide](/docs/performance/)
 - [Client Libraries](/clients/)

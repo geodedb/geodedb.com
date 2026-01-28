@@ -345,7 +345,7 @@ src/
 
 ## Next Steps
 
-- [Storage Engine Details](storage-engine/) - Deep dive into storage
-- [Query Optimization](query-optimization/) - CBO and index selection
-- [Distributed Systems](distributed-systems/) - Federation and Raft
-- [Security Architecture](security-architecture/) - Security features
+- [Storage Engine Details](/docs/architecture/storage-engine/) - Deep dive into storage
+- [Query Optimization](/docs/architecture/query-optimization/) - CBO and index selection
+- [Distributed Systems](/docs/architecture/distributed-systems/) - Federation and Raft
+- [Security Architecture](/docs/architecture/security-architecture/) - Security features

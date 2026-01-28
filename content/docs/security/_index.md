@@ -63,12 +63,12 @@ Geode implements multiple layers of security:
 
 ## Topics in This Section
 
-- **[Security Overview](overview/)** - Comprehensive security architecture overview including threat model, security controls, and best practices
-- **[Field-Level Encryption](field-level-encryption/)** - Searchable encryption for sensitive fields with key rotation and performance optimization
-- **[KMS Integration](kms-integration/)** - Key Management Service integration with HashiCorp Vault for secure key storage and rotation
-- **[Password Hashing](password-hashing/)** - Secure password storage with Argon2id, bcrypt, and PBKDF2 algorithms
-- **[Post-Quantum Readiness](post-quantum-readiness/)** - Cryptographic architecture for the Post-Quantum era including forward secrecy and algorithmic choices
-- **[Session Management](session-management/)** - Secure session handling including session tokens, timeout, and revocation
+- **[Security Overview](/docs/security/overview/)** - Comprehensive security architecture overview including threat model, security controls, and best practices
+- **[Field-Level Encryption](/docs/security/field-level-encryption/)** - Searchable encryption for sensitive fields with key rotation and performance optimization
+- **[KMS Integration](/docs/security/kms-integration/)** - Key Management Service integration with HashiCorp Vault for secure key storage and rotation
+- **[Password Hashing](/docs/security/password-hashing/)** - Secure password storage with Argon2id, bcrypt, and PBKDF2 algorithms
+- **[Post-Quantum Readiness](/docs/security/post-quantum-readiness/)** - Cryptographic architecture for the Post-Quantum era including forward secrecy and algorithmic choices
+- **[Session Management](/docs/security/session-management/)** - Secure session handling including session tokens, timeout, and revocation
 
 ## Encryption
 
@@ -89,7 +89,7 @@ security:
 - **Scope**: All pages, indexes, and WAL segments
 - **Key Rotation**: Supported with background re-encryption
 
-**See**: [Security Overview](overview/#transparent-data-encryption)
+**See**: [Security Overview](/docs/security/overview/#transparent-data-encryption)
 
 ### Field-Level Encryption (FLE)
 
@@ -115,7 +115,7 @@ RETURN p.name;
 - **Order-Preserving Encryption**: Range queries on encrypted data
 - **Key Rotation**: Re-encrypt data with new keys
 
-**See**: [Field-Level Encryption](field-level-encryption/)
+**See**: [Field-Level Encryption](/docs/security/field-level-encryption/)
 
 ### Encryption in Transit
 
@@ -175,7 +175,7 @@ security:
     user_search_base: "ou=users,dc=example,dc=com"
 ```
 
-**See**: [Security Overview](overview/#authentication)
+**See**: [Security Overview](/docs/security/overview/#authentication)
 
 ### Password Security
 
@@ -196,7 +196,7 @@ security:
 - **bcrypt**: Industry standard, slower but secure
 - **PBKDF2**: NIST approved, configurable iterations
 
-**See**: [Password Hashing](password-hashing/)
+**See**: [Password Hashing](/docs/security/password-hashing/)
 
 ## Authorization
 
@@ -248,7 +248,7 @@ ENABLE POLICY customer_isolation;
 - **Composable**: Multiple policies combine with AND logic
 - **Audit**: Policy evaluations logged
 
-**See**: [Security Overview](overview/#row-level-security)
+**See**: [Security Overview](/docs/security/overview/#row-level-security)
 
 ## Key Management
 
@@ -273,7 +273,7 @@ security:
 - **Audit**: All key access logged
 - **High Availability**: Vault's HA capabilities
 
-**See**: [KMS Integration](kms-integration/)
+**See**: [KMS Integration](/docs/security/kms-integration/)
 
 ### Key Rotation
 
@@ -310,7 +310,7 @@ security:
 - **Revocation**: Immediate session termination
 - **Single Sign-On**: Integration with SSO providers
 
-**See**: [Session Management](session-management/)
+**See**: [Session Management](/docs/security/session-management/)
 
 ## Compliance
 
@@ -454,7 +454,7 @@ security:
 ## Security Resources
 
 - **Security Advisories**: Monitor for security updates
-- **Best Practices Guide**: [Security Overview](overview/)
+- **Best Practices Guide**: [Security Overview](/docs/security/overview/)
 - **Compliance Documentation**: Regulation-specific guides
 - **Security Checklist**: Pre-deployment security review
 

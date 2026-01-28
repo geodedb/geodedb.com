@@ -728,7 +728,7 @@ security:
 
 - [Field-Level Encryption](/docs/security/field-level-encryption/) - Selective field encryption
 - [Security Overview](/docs/security/overview/) - Complete security architecture
-- [Transparent Data Encryption](/docs/security/tde/) - TDE implementation details
+- [Field-Level Encryption](/docs/security/field-level-encryption/) - TDE and field-level encryption details
 - [Backup Automation](/docs/guides/backup-automation/) - Backup integration with KMS
 - [Server Configuration](/docs/configuration/server-configuration/) - KMS configuration options
 

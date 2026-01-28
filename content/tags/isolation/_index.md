@@ -482,6 +482,5 @@ If isolation causing performance issues:
 - [Data Integrity](/tags/data-integrity/) - Ensuring data consistency
 - [Sessions](/tags/sessions/) - Session management and connection settings
 - [Configuration](/tags/configuration/) - Transaction configuration options
-- [Performance](/docs/performance/) - Performance tuning and optimization
-- [Concurrency](/docs/advanced/concurrency/) - Concurrency control mechanisms
-- [ACID Guarantees](/docs/fundamentals/acid/) - ACID transaction properties
+- [Performance](/tags/performance/) - Performance tuning and optimization
+- [Transaction Patterns](/docs/transactions/advanced-patterns/) - Advanced transaction patterns

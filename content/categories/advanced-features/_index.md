@@ -99,7 +99,7 @@ package main
 import (
     "context"
     "fmt"
-    "go.codepros.org/geode"
+    "geodedb.com/geode"
 )
 
 func main() {
@@ -418,22 +418,30 @@ async def update_with_optimistic_locking(client, node_id, version):
 ### Saga Pattern for Distributed Transactions
 
 ```python
-async def execute_saga(client, steps):
+from dataclasses import dataclass
+from typing import Callable, Any
+
+@dataclass
+class SagaStep:
+    forward: Callable
+    compensate: Callable
+
+async def execute_saga(client, steps: list[SagaStep]):
     """Execute multi-step saga with compensation."""
     completed_steps = []
 
     try:
-        async with client.connection() as tx:
-            await tx.begin()
+        async with client.connection() as conn:
+            await conn.begin()
             for step in steps:
-                await step['forward'](tx)
+                await step.forward(conn)
                 completed_steps.append(step)
-            await tx.commit()
+            await conn.commit()
     except Exception as e:
         # Compensate completed steps in reverse order
         for step in reversed(completed_steps):
             try:
-                await step['compensate'](client)
+                await step.compensate(client)
             except Exception as comp_error:
                 logger.error(f"Compensation failed: {comp_error}")
         raise
@@ -441,14 +449,14 @@ async def execute_saga(client, steps):
 # Example saga
 async def transfer_money_saga(from_account, to_account, amount):
     steps = [
-        {
-            'forward': lambda tx: debit_account(tx, from_account, amount),
-            'compensate': lambda c: credit_account(c, from_account, amount)
-        },
-        {
-            'forward': lambda tx: credit_account(tx, to_account, amount),
-            'compensate': lambda c: debit_account(c, to_account, amount)
-        }
+        SagaStep(
+            forward=lambda conn: debit_account(conn, from_account, amount),
+            compensate=lambda c: credit_account(c, from_account, amount)
+        ),
+        SagaStep(
+            forward=lambda conn: credit_account(conn, to_account, amount),
+            compensate=lambda c: debit_account(c, to_account, amount)
+        )
     ]
     await execute_saga(client, steps)
 ```
@@ -864,15 +872,14 @@ async with manager.get_connection("tenant1") as conn:
 
 ## Further Reading
 
-- [Vector Search Guide](/tags/vector-search/) - HNSW implementation details
-- [BM25 Full-Text Search](/tags/bm25/) - Text search and ranking
-- [Row-Level Security](/tags/authentication/) - RLS policies and implementation
+- [Vector Search Tutorial](/docs/tutorials/vector-search-tutorial/) - HNSW implementation details
+- [Full-Text Search](/docs/query/full-text-search/) - BM25 text search and ranking
+- [Row-Level Security](/tags/row-level-security/) - RLS policies and implementation
 - [Change Data Capture](/tags/cdc/) - CDC streams and patterns
-- [Distributed Architecture](/tags/distributed/) - Scaling and deployment
-- [MVCC and Transactions](/tags/mvcc/) - Time-travel queries
+- [Distributed Architecture](/docs/architecture/distributed-architecture/) - Scaling and deployment
+- [Transactions](/docs/transactions/) - MVCC and time-travel queries
 - [Performance Optimization](/categories/performance/) - Tuning advanced features
 - [Security and Compliance](/categories/security/) - TDE, FLE, and encryption
-- [Graph Machine Learning](/docs/advanced/graph-ml/) - ML integration patterns
-- [Stream Processing](/docs/advanced/streaming/) - Real-time data pipelines
-- [Multi-Tenancy Guide](/docs/architecture/multi-tenancy/) - Tenant isolation strategies
-- [Advanced Indexing](/docs/performance/indexing-strategies/) - Index optimization
+- [Graph Algorithms](/docs/analytics/graph-algorithms/) - Graph algorithm patterns
+- [Real-Time Analytics](/docs/analytics/real-time-analytics/) - Real-time data pipelines
+- [Indexing and Optimization](/docs/query/indexing-and-optimization/) - Index optimization

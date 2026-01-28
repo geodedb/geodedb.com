@@ -522,14 +522,9 @@ geode cluster export-config --output=cluster-config.yaml
 - [Consistency](/tags/consistency/) - Data consistency models in distributed systems
 - [Partitioning](/tags/partitioning/) - Graph partitioning techniques
 - [Scalability](/tags/scalability/) - Horizontal scaling strategies
-- [High Availability](/tags/high-availability/) - Building resilient systems
-- [Distributed](/tags/distributed/) - Distributed systems architecture
 
 ## Further Reading
 
-- [Clustering Architecture Guide](/docs/architecture/clustering/)
-- [Distributed Transactions](/docs/features/distributed-transactions/)
-- [Cluster Operations Manual](/docs/operations/cluster-management/)
-- [Performance Tuning for Clusters](/docs/performance/clustering/)
-- [Consensus Protocols in Geode](/docs/architecture/consensus/)
-- [Production Deployment Guide](/docs/deployment/production/)
+- [Distributed Architecture](/docs/architecture/distributed-architecture/) - Distributed systems design
+- [Distributed Systems](/docs/architecture/distributed-systems/) - Distributed systems architecture
+- [Deployment Patterns](/docs/deployment/deployment-patterns/) - Production deployment strategies

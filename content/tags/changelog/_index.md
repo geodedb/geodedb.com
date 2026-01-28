@@ -196,7 +196,7 @@ Each major and significant minor release includes a migration guide:
 3. **Update Client Libraries**:
    ```bash
    # Go
-   go get -u go.codepros.org/geode@v1.0.0
+   go get -u geodedb.com/geode@v1.0.0
 
    # Python
    pip install --upgrade geode-client==1.0.0

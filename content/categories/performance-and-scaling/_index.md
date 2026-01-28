@@ -270,7 +270,7 @@ scrape_configs:
 Client libraries provide automatic connection pooling:
 
 ```go
-import "go.codepros.org/geode"
+import "geodedb.com/geode"
 
 // Create connection pool
 pool, err := geode.NewPool(geode.PoolConfig{

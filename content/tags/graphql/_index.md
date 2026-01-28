@@ -686,4 +686,4 @@ const resolvers = {
 - [Apollo Server Documentation](https://www.apollographql.com/docs/apollo-server/)
 - [Graphene Documentation](https://docs.graphene-python.org/)
 - [DataLoader Pattern](https://github.com/graphql/dataloader)
-- [Geode Client Libraries](/docs/clients/) - Client integration guides
+- [Geode Client Libraries](/docs/client-libraries/) - Client integration guides

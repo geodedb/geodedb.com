@@ -108,8 +108,7 @@ Write-Ahead Logging (WAL) ensures durability with point-in-time recovery.
 
 ## Topics in This Section
 
-- **[Transaction Overview](overview/)** - Complete transaction guide covering ACID properties, MVCC architecture, and transaction lifecycle
-- **[Advanced Patterns](advanced-patterns/)** - Advanced transaction patterns including savepoints, nested transactions, and optimistic concurrency control
+- **[Advanced Patterns](/docs/transactions/advanced-patterns/)** - Advanced transaction patterns including savepoints, nested transactions, and optimistic concurrency control
 
 ## Isolation Levels
 
@@ -220,7 +219,7 @@ Multi-Version Concurrency Control enables high concurrency:
 - **No Deadlocks**: For read-only transactions
 - **Time-Travel**: Historical queries possible
 
-**See**: [Transaction Overview](overview/#mvcc-architecture)
+**See**: [Advanced Patterns](/docs/transactions/advanced-patterns/)
 
 ## Transaction Lifecycle
 
@@ -306,7 +305,7 @@ COMMIT;
 - Nested transaction simulation
 - Complex multi-step operations
 
-**See**: [Advanced Patterns](advanced-patterns/#savepoints)
+**See**: [Advanced Patterns](/docs/transactions/advanced-patterns/#savepoints)
 
 ## Transaction Patterns
 
@@ -386,7 +385,7 @@ COMMIT;
 -- Repeat until all processed
 ```
 
-**See**: [Advanced Patterns](advanced-patterns/) for more patterns.
+**See**: [Advanced Patterns](/docs/transactions/advanced-patterns/) for more patterns.
 
 ## Error Handling
 
@@ -501,8 +500,7 @@ SELECT avg(duration) FROM system.completed_transactions;
 
 ## Learn More
 
-- [Transaction Overview](overview/) - Complete transaction guide
-- [Advanced Patterns](advanced-patterns/) - Savepoints and advanced patterns
+- [Advanced Patterns](/docs/transactions/advanced-patterns/) - Savepoints and advanced patterns
 - [Architecture: Transaction Management](/docs/architecture/#storage-engine) - MVCC implementation
 - [Performance Tuning](/docs/query/performance-tuning/) - Optimize transaction performance
 - [Client Libraries](/docs/client-libraries/) - Language-specific transaction APIs
@@ -561,7 +559,6 @@ COMMIT;
 
 ## Next Steps
 
-1. **[Read Transaction Overview](overview/)** - Understand transaction fundamentals
-2. **[Learn Advanced Patterns](advanced-patterns/)** - Master savepoints and patterns
-3. **[Practice with Tutorials](/docs/tutorials/transaction-patterns-tutorial/)** - Hands-on examples
-4. **[Optimize Performance](/docs/query/performance-tuning/)** - Transaction performance tuning
+1. **[Learn Advanced Patterns](/docs/transactions/advanced-patterns/)** - Master savepoints and patterns
+2. **[Practice with Tutorials](/docs/tutorials/transaction-patterns-tutorial/)** - Hands-on examples
+3. **[Optimize Performance](/docs/query/performance-tuning/)** - Transaction performance tuning

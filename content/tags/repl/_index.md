@@ -811,10 +811,8 @@ geode shell --execute "
 
 ## Further Reading
 
-- [REPL User Guide](/docs/repl-user-guide/) - Complete REPL documentation
+- [REPL Advanced Guide](/docs/development/repl-advanced/) - Complete REPL documentation
 - [GQL Quick Reference](/docs/quick-reference/) - GQL syntax cheat sheet
-- [Meta-Commands Reference](/docs/meta-commands/) - All REPL commands
-- [Query Development Best Practices](/docs/query-development/) - Development workflow
-- [Interactive Query Tutorial](/tutorials/interactive-queries/) - Hands-on REPL tutorial
+- [REPL Basics Tutorial](/docs/tutorials/repl-basics/) - Hands-on REPL tutorial
 - [Readline Documentation](https://tiswww.case.edu/php/chet/readline/rluserman.html) - Keyboard shortcuts
 - [PostgreSQL psql](https://www.postgresql.org/docs/current/app-psql.html) - Inspiration for meta-commands

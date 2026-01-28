@@ -385,7 +385,7 @@ QUIC resource consumption is modest:
 ## Further Reading
 
 - [QUIC Specification (RFC 9000)](https://datatracker.ietf.org/doc/html/rfc9000) - Official IETF specification
-- [Geode Wire Protocol](/docs/wire-protocol/) - JSON line protocol over QUIC
-- [Connection Configuration](/docs/connection-configuration/) - Client configuration options
-- [Performance Tuning](/docs/performance-tuning/) - Optimizing QUIC connections
-- [Network Architecture](/docs/network-architecture/) - Geode network design
+- [Wire Protocol](/docs/architecture/wire-protocol/) - JSON line protocol over QUIC
+- [Server Configuration](/docs/configuration/server-configuration/) - Server and connection configuration options
+- [Performance Tuning](/docs/query/performance-tuning/) - Optimizing connections and queries
+- [Protocol Documentation](/docs/protocol/) - Geode protocol design

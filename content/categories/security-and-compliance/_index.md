@@ -496,8 +496,7 @@ Monitor for:
 
 ## Further Reading
 
-- [Security Architecture](/docs/architecture/security/) - Detailed security design
-- [Deployment Security](/docs/deployment/security/) - Production hardening
-- [Backup Security](/docs/operations/backup/) - Secure backup practices
-- [Compliance Guide](/docs/guides/compliance/) - Meeting regulatory requirements
-- [Security Checklist](/docs/security/checklist/) - Pre-deployment verification
+- [Security Architecture](/docs/architecture/security-architecture/) - Detailed security design
+- [Deployment Patterns](/docs/deployment/deployment-patterns/) - Production deployment and hardening
+- [Backup and Restore](/guides/backup-restore/) - Secure backup practices
+- [Security Overview](/docs/security/overview/) - Security features and best practices

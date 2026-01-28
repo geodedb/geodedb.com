@@ -751,8 +751,6 @@ geode admin cache-stats
 
 ## Further Reading
 
-- [Server Administration Guide](/docs/administration/server/) - Comprehensive server management
-- [Production Deployment](/docs/deployment/production/) - Production best practices
-- [Performance Tuning](/docs/performance/tuning/) - Detailed performance optimization
-- [Security Hardening](/docs/security/hardening/) - Security configuration guide
-- [Configuration Reference](/docs/reference/configuration/) - Complete configuration options
+- [Deployment Guide](/docs/deployment/) - Deployment patterns and strategies
+- [Performance Optimization](/docs/performance/) - Performance tuning guide
+- [Security Overview](/docs/security/) - Security configuration guide

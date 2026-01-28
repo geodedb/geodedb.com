@@ -569,7 +569,5 @@ async def robust_algorithm_execution(client, query, params):
 - [Vector Search](/tags/vector-search/) - Similarity search and embeddings
 - [Query Profiling](/tags/profiling/) - Understanding algorithm performance
 - [Best Practices](/categories/best-practices/) - Optimization techniques
-- [Machine Learning Integration](/docs/advanced/ml-integration/) - Detailed ML workflows
-- [Performance Tuning](/docs/performance/query-optimization/) - Query optimization guide
+- [Performance Tuning](/docs/query/performance-tuning/) - Query optimization guide
 - [Temporal Graphs](/tags/temporal/) - Time-aware graph analytics
-- [Graph Visualization](/docs/tools/visualization/) - Visualization tools and techniques

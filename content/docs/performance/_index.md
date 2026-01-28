@@ -467,6 +467,6 @@ grep page_cache_size /etc/geode/geode.yaml
 
 ## Next Steps
 
-- [Configuration Reference](../configuration/) - Complete config options
-- [Monitoring Guide](../monitoring/) - Set up monitoring
-- [Distributed Setup](../distributed/) - Scale horizontally
+- [Configuration Reference](/docs/configuration/) - Complete config options
+- [Observability Guide](/docs/ops/observability/) - Set up monitoring
+- [Distributed Architecture](/docs/architecture/distributed-architecture/) - Scale horizontally

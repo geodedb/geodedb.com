@@ -350,15 +350,12 @@ regions:
 
 - [Clustering](/tags/clustering/) - Cluster setup and management
 - [Replication](/tags/replication/) - Data replication strategies
-- [Distributed](/tags/distributed/) - Distributed systems architecture
 - [Monitoring](/tags/monitoring/) - Observability and metrics
 
 ## Further Reading
 
-- [High Availability Guide](/docs/operations/high-availability/)
-- [Cluster Configuration](/docs/configuration/cluster/)
-- [Failover Procedures](/docs/operations/failover/)
-- [Disaster Recovery](/docs/operations/disaster-recovery/)
+- [Distributed Architecture](/docs/architecture/distributed-architecture/) - Distributed systems design
+- [Deployment Patterns](/docs/deployment/deployment-patterns/) - Production deployment strategies
 
 ## Advanced High Availability Patterns
 

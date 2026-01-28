@@ -234,7 +234,7 @@ async with client.connection() as conn:
 ### Installation
 
 ```bash
-go get go.codepros.org/geode
+go get geodedb.com/geode
 ```
 
 ### Connection Management
@@ -242,7 +242,7 @@ go get go.codepros.org/geode
 ```go
 import (
     "database/sql"
-    _ "go.codepros.org/geode"
+    _ "geodedb.com/geode"
 )
 
 // Open connection
@@ -396,7 +396,7 @@ for _, id := range []int64{1, 2, 3, 4, 5} {
 ### Error Handling
 
 ```go
-import "go.codepros.org/geode/geoderr"
+import "geodedb.com/geode/geoderr"
 
 rows, err := db.Query("MATCH (u:User) WHERE invalid")
 if err != nil {

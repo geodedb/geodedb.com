@@ -158,7 +158,7 @@ import (
     "context"
     "database/sql"
     "fmt"
-    _ "go.codepros.org/geode"
+    _ "geodedb.com/geode"
 )
 
 func main() {
@@ -795,8 +795,8 @@ services:
 
 You now understand Geode fundamentals. Continue your journey:
 
-- **[Advanced Queries](/tags/advanced-queries/)**: Complex pattern matching and optimization
-- **[Performance Tuning](/tags/performance/)**: Maximize throughput and minimize latency  
+- **[Query Optimization](/tags/query-optimization/)**: Complex pattern matching and optimization
+- **[Performance Tuning](/tags/performance/)**: Maximize throughput and minimize latency
 - **[Security](/tags/security/)**: Enterprise security features
 - **[Production Deployment](/tags/deployment/)**: High availability architectures
 - **[Monitoring](/tags/monitoring/)**: Observability and alerting

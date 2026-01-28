@@ -75,7 +75,7 @@ GQL: ISO/IEC 39075:2024
 **Client Library Versions**:
 ```bash
 # Go
-go.codepros.org/geode v1.0.0
+geodedb.com/geode v1.0.0
 
 # Python
 geode-client==1.0.0
@@ -134,7 +134,7 @@ geode version --json
 
 ```bash
 # Go
-go list -m go.codepros.org/geode
+go list -m geodedb.com/geode
 
 # Python
 pip show geode-client
@@ -170,7 +170,7 @@ module myapp
 go 1.24
 
 require (
-    go.codepros.org/geode v1.0.0  // Exact version
+    geodedb.com/geode v1.0.0  // Exact version
 )
 
 # Python - requirements.txt
@@ -359,8 +359,8 @@ cargo tree -p geode-client
 
 ```bash
 # Go - go.sum
-go.codepros.org/geode v1.0.0 h1:abc123...
-go.codepros.org/geode v1.0.0/go.mod h1:def456...
+geodedb.com/geode v1.0.0 h1:abc123...
+geodedb.com/geode v1.0.0/go.mod h1:def456...
 
 # Python - poetry.lock or Pipfile.lock
 [[package]]

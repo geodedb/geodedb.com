@@ -603,4 +603,3 @@ rows, err := db.Query("MATCH (u:User {name: $name}) RETURN u", "Alice")
 - [Rust SDK Documentation](/docs/client-libraries/rust-client/) - Rust guide
 - [Node.js SDK Documentation](/docs/client-libraries/nodejs-client/) - Node.js guide
 - [Zig SDK Documentation](/docs/client-libraries/zig-client/) - Zig reference
-- [SDK Examples](/docs/examples/sdk/) - Real-world examples

@@ -525,7 +525,7 @@ pub fn main() !void {
 - [Development](/categories/development/) - Development workflows
 - [Contributing](/categories/contributing/) - Contribution guidelines
 - [Architecture](/docs/architecture/) - Geode's system architecture
-- [Building from Source](/docs/development/building/) - Detailed build instructions
+- [Development Guide](/docs/development/) - Building and development instructions
 - [Testing](/tags/testing/) - Testing strategies
 
 ## Further Reading
@@ -533,5 +533,4 @@ pub fn main() !void {
 - [Zig Language Guide](https://ziglang.org/learn/) - Official learning resources
 - [Geode Architecture](/docs/architecture/) - How Geode is structured
 - [Contributing Guide](/docs/contribute/) - Detailed contribution process
-- [Build System](/docs/development/build-system/) - Zig build.zig documentation
-- [Memory Safety](/docs/development/memory-safety/) - Memory management patterns
+- [Testing Guide](/docs/development/testing-guide/) - Testing strategies and patterns

@@ -82,7 +82,7 @@ import (
     "database/sql"
     "log"
 
-    _ "go.codepros.org/geode"
+    _ "geodedb.com/geode"
 )
 
 db, err := sql.Open("geode", "geode://geode.example.com:3141")
@@ -594,4 +594,4 @@ geode sessions analyze --metric=query-latency
 - [Audit Logging](/tags/audit-logging/) - Session activity auditing
 - [Security](/docs/security/) - Session security best practices
 - [Monitoring](/docs/operations/monitoring/) - Monitoring session health
-- [Client Libraries](/docs/clients/) - Language-specific session management
+- [Client Libraries](/docs/client-libraries/) - Language-specific session management

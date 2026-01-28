@@ -870,6 +870,4 @@ class QueryCache:
 - [Examples](/categories/examples/) - Code examples
 - [Architecture](/docs/architecture/) - System design patterns
 - [Performance](/categories/performance-and-scaling/) - Optimization techniques
-- [Industry Solutions](/docs/solutions/) - Vertical-specific guides
-- [Case Studies](/docs/case-studies/) - Real-world implementations
 - [Graph Algorithms](/categories/graph-algorithms-and-analytics/) - Analytics for use cases

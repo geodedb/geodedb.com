@@ -1005,7 +1005,7 @@ CALL db.transactions();
 ## Getting Help
 
 ### Check Documentation
-- [Installation Guide](/docs/get-started/install/)
+- [Installation Guide](/guides/installation/)
 - [Configuration Reference](/docs/configuration/server-configuration/)
 - [GQL Guide](/docs/gql/guide/)
 - [Performance Tuning](/docs/query/performance-tuning/)

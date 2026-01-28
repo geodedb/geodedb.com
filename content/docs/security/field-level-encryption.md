@@ -610,7 +610,7 @@ Future support for PQC:
 
 - [KMS Integration](/docs/security/kms-integration/) - External key management
 - [Security Overview](/docs/security/overview/) - Complete security architecture
-- [RBAC Guide](/docs/security/rbac/) - Role-based access control
+- [Authorization Guide](/docs/security/authorization/) - Role-based access control
 - [Audit Logging](/docs/ops/audit-logging/) - Encryption audit trail
 - [Server Configuration](/docs/configuration/server-configuration/) - Encryption settings
 

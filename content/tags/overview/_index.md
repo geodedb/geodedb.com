@@ -427,7 +427,7 @@ Multi-instance deployment with replication (enterprise feature):
 
 ### Supported Languages
 
-**Go**: `go.codepros.org/geode`
+**Go**: `geodedb.com/geode`
 - database/sql driver interface
 - Connection pooling
 - Prepared statements
@@ -460,7 +460,7 @@ import (
     "context"
     "fmt"
     "log"
-    _ "go.codepros.org/geode"
+    _ "geodedb.com/geode"
     "database/sql"
 )
 

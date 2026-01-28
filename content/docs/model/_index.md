@@ -84,7 +84,7 @@ This simple graph represents:
 
 ## Topics in This Section
 
-- **[Data Model and Types](data-model-and-types/)** - Comprehensive guide to the property graph model, type system, and all 50+ supported data types
+- **[Data Model and Types](/docs/model/data-model-and-types/)** - Comprehensive guide to the property graph model, type system, and all 50+ supported data types
 
 ## Type System
 
@@ -119,7 +119,7 @@ RETURN timestamp('2024-01-01')
 RETURN [1, 2] + [3, 4]  -- Returns [1, 2, 3, 4]
 ```
 
-See [Data Model and Types](data-model-and-types/) for complete type reference.
+See [Data Model and Types](/docs/model/data-model-and-types/) for complete type reference.
 
 ## Modeling Patterns
 
@@ -242,7 +242,7 @@ FOR (p:Person)
 REQUIRE (p.ssn) IS NODE KEY
 ```
 
-See [Data Model and Types](data-model-and-types/) for constraint details.
+See [Data Model and Types](/docs/model/data-model-and-types/) for constraint details.
 
 ## Learn More
 
@@ -302,6 +302,6 @@ CREATE (customer)-[:PLACED]->(o)
 
 ## Next Steps
 
-- [Data Model and Types](data-model-and-types/) - Complete reference
+- [Data Model and Types](/docs/model/data-model-and-types/) - Complete reference
 - [GQL Guide](/docs/gql/guide/) - Learn to query your model
 - [Tutorials](/docs/tutorials/) - Hands-on modeling exercises

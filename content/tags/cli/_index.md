@@ -571,12 +571,10 @@ geode admin repair --backup-first --verify-after
 - [Server Configuration](/tags/server/) - Server management
 - [Backup](/tags/backup/) - Backup and recovery
 - [Monitoring](/tags/monitoring/) - Monitoring and metrics
-- [Scripting](/tags/automation/) - Automation workflows
 
 ## Further Reading
 
-- [CLI Reference](/docs/cli/) - Complete command reference
-- [Shell Guide](/docs/cli/shell/) - Interactive shell documentation
-- [Scripting Guide](/docs/guides/automation/) - Automation patterns
-- [Administration Guide](/docs/administration/) - Database administration
-- [Query Optimization](/docs/performance/query-optimization/) - Performance tuning
+- [CLI and API Reference](/docs/reference/cli-and-api/) - Complete command reference
+- [CLI Design](/docs/architecture/cli-design/) - CLI architecture documentation
+- [REPL Basics](/docs/tutorials/repl-basics/) - Interactive shell tutorial
+- [Performance Tuning](/docs/query/performance-tuning/) - Performance optimization

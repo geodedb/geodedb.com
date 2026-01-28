@@ -512,5 +512,5 @@ RETURN DISTINCT related.name, related.description;
 - [Data Integrity](/tags/data-integrity/) - Data consistency and validation
 - [Encryption](/tags/encryption/) - Data protection with encryption
 - [Configuration](/tags/configuration/) - Governance configuration settings
-- [Schema Management](/docs/schema/) - Schema design and constraints
-- [Access Control](/docs/security/access-control/) - Permission management
+- [Schema](/tags/schema/) - Schema design and constraints
+- [Authorization](/docs/security/authorization/) - Permission management

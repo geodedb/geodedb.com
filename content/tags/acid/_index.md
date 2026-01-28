@@ -424,19 +424,12 @@ CALL dbms.monitor.durability.lag() YIELD seconds;
 
 ## Related Topics
 
-- [Multi-Version Concurrency Control (MVCC)](/tags/mvcc/) - Isolation mechanism
-- [Serializable Snapshot Isolation (SSI)](/tags/ssi/) - Highest isolation level
-- [Write-Ahead Logging (WAL)](/tags/wal/) - Durability mechanism
 - [Transactions](/tags/transactions/) - Transaction management
 - [Isolation Levels](/tags/isolation/) - Isolation guarantees
-- [Concurrency Control](/tags/concurrency/) - Concurrent access management
 
 ## Further Reading
 
 - [Transaction Guide](/docs/transactions/) - Complete transaction documentation
-- [Durability and Recovery](/docs/recovery/) - Crash recovery mechanisms
-- [Performance Tuning](/docs/performance-tuning/) - ACID performance optimization
 - [Architecture Overview](/docs/architecture/) - System architecture
-- [Distributed Transactions](/tags/distributed/) - ACID in distributed systems
 
 Geode's full ACID implementation ensures your graph data remains consistent, reliable, and durable—essential for production applications where correctness cannot be compromised.

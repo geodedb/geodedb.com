@@ -43,13 +43,13 @@ These guides complement the reference documentation by focusing on how-to rather
 
 ## Topics in This Section
 
-- **[Backup Automation](backup-automation/)** - Automated backup strategies including WAL archiving, point-in-time recovery, and backup validation
-- **[Migration Guide](migration-guide/)** - Migrate from other databases (Neo4j, Neptune, JanusGraph) with schema mapping and data transfer strategies
-- **[Multi-Datacenter Deployment](multi-datacenter/)** - Deploy Geode across multiple datacenters with replication, consistency, and failover strategies
-- **[Performance Benchmarking](performance-benchmarking/)** - Benchmark Geode performance with realistic workloads and interpret results
-- **[Schema Design](schema-design/)** - Best practices for property graph schema design including label strategies, property modeling, and normalization
-- **[Testing Strategies](testing-strategies/)** - Comprehensive testing approaches including unit tests, integration tests, and production testing
-- **[Troubleshooting](troubleshooting/)** - Diagnose and resolve common issues including connection problems, query performance, and system errors
+- **[Backup Automation](/docs/guides/backup-automation/)** - Automated backup strategies including WAL archiving, point-in-time recovery, and backup validation
+- **[Migration Guide](/docs/guides/migration-guide/)** - Migrate from other databases (Neo4j, Neptune, JanusGraph) with schema mapping and data transfer strategies
+- **[Multi-Datacenter Deployment](/docs/guides/multi-datacenter/)** - Deploy Geode across multiple datacenters with replication, consistency, and failover strategies
+- **[Performance Benchmarking](/docs/guides/performance-benchmarking/)** - Benchmark Geode performance with realistic workloads and interpret results
+- **[Schema Design](/docs/guides/schema-design/)** - Best practices for property graph schema design including label strategies, property modeling, and normalization
+- **[Testing Strategies](/docs/guides/testing-strategies/)** - Comprehensive testing approaches including unit tests, integration tests, and production testing
+- **[Troubleshooting](/docs/guides/troubleshooting/)** - Diagnose and resolve common issues including connection problems, query performance, and system errors
 
 ## Common Scenarios
 
@@ -57,31 +57,31 @@ These guides complement the reference documentation by focusing on how-to rather
 
 Ensure data durability with automated backup strategies that support point-in-time recovery, incremental backups, and backup verification. Learn how to configure WAL archiving, schedule backups, and test recovery procedures.
 
-**See**: [Backup Automation](backup-automation/)
+**See**: [Backup Automation](/docs/guides/backup-automation/)
 
 ### Migrating from Another Database
 
 Migrate your existing graph data from Neo4j, Amazon Neptune, or JanusGraph to Geode. Includes schema mapping strategies, data transformation scripts, and validation approaches to ensure a smooth transition.
 
-**See**: [Migration Guide](migration-guide/)
+**See**: [Migration Guide](/docs/guides/migration-guide/)
 
 ### Multi-Region Deployment
 
 Deploy Geode across multiple datacenters or cloud regions for global scale, disaster recovery, or regulatory compliance. Covers replication strategies, consistency models, and failover procedures.
 
-**See**: [Multi-Datacenter Deployment](multi-datacenter/)
+**See**: [Multi-Datacenter Deployment](/docs/guides/multi-datacenter/)
 
 ### Optimizing Query Performance
 
 Identify performance bottlenecks and optimize query execution with EXPLAIN/PROFILE analysis, index strategies, and query rewriting techniques. Includes real-world examples and performance benchmarks.
 
-**See**: [Performance Benchmarking](performance-benchmarking/), [Query Performance Tuning](/docs/query/performance-tuning/)
+**See**: [Performance Benchmarking](/docs/guides/performance-benchmarking/), [Query Performance Tuning](/docs/query/performance-tuning/)
 
 ### Designing Effective Schemas
 
 Learn graph schema design patterns that optimize for both query performance and maintainability. Covers label strategies, property modeling, relationship patterns, and denormalization trade-offs.
 
-**See**: [Schema Design](schema-design/)
+**See**: [Schema Design](/docs/guides/schema-design/)
 
 ## Related Documentation
 
@@ -148,7 +148,7 @@ Learn graph schema design patterns that optimize for both query performance and 
 
 If you encounter issues not covered in these guides:
 
-1. **Check the [Troubleshooting Guide](troubleshooting/)** for common problems and solutions
+1. **Check the [Troubleshooting Guide](/docs/guides/troubleshooting/)** for common problems and solutions
 2. **Review the [Error Codes Reference](/docs/reference/error-codes/)** for specific error messages
 3. **Search the documentation** for relevant topics
 4. **Review the [Architecture Documentation](/docs/architecture/)** for system design context

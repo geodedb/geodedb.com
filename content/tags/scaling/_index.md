@@ -146,7 +146,7 @@ geode serve \
 
 ```go
 // Go client with read replicas
-import "go.codepros.org/geode"
+import "geodedb.com/geode"
 
 // Configure connection pool with read replicas
 config := &geode.Config{

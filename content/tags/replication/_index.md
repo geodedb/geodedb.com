@@ -655,15 +655,13 @@ geode replication test-failover \
 - [Clustering](/tags/clustering/) - Database clustering and multi-node deployment
 - [Consistency](/tags/consistency/) - Data consistency models
 - [High Availability](/tags/high-availability/) - Building resilient systems
-- [Disaster Recovery](/tags/disaster-recovery/) - Backup and recovery strategies
+- [Backup and Recovery](/tags/backup/) - Backup and recovery strategies
 - [Scalability](/tags/scalability/) - Horizontal scaling approaches
-- [Distributed](/tags/distributed/) - Distributed systems architecture
+- [Distributed Systems](/tags/distributed-systems/) - Distributed systems architecture
 
 ## Further Reading
 
-- [Replication Architecture Guide](/docs/architecture/replication/)
-- [Failover and High Availability](/docs/operations/failover/)
-- [Replication Performance Tuning](/docs/performance/replication/)
-- [Multi-Region Deployment](/docs/deployment/multi-region/)
-- [Replication Best Practices](/docs/guides/replication-best-practices/)
-- [Disaster Recovery Planning](/docs/operations/disaster-recovery/)
+- [Distributed Architecture](/docs/architecture/distributed-architecture/) - Distributed systems overview
+- [High Availability Guide](/guides/high-availability/) - Building resilient systems
+- [Backup and Restore](/guides/backup-restore/) - Data protection guide
+- [Multi-Datacenter Deployment](/docs/guides/multi-datacenter/) - Geographic distribution

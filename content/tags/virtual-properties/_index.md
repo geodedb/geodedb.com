@@ -811,9 +811,8 @@ VIRTUAL full_address STRING AS (
 
 - [Computed Properties](/tags/computed-properties/) - Stored calculated properties
 - [Materialized Views](/tags/materialized-views/) - Cached query results
-- [Property Types](/tags/property-types/) - Property type definitions
+- [Types](/tags/types/) - Type definitions
 - [Performance](/tags/performance/) - Query optimization
-- [Formatting](/tags/formatting/) - Data formatting patterns
 
 ## Further Reading
 

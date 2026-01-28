@@ -61,9 +61,9 @@ Geode achieves **100% compliance** with the ISO GQL standard:
 
 ## Topics in This Section
 
-- **[GQL Guide](guide/)** - Comprehensive guide to GQL syntax, patterns, and query structure with examples
-- **[Advanced Patterns](advanced-patterns/)** - Advanced GQL patterns including recursive queries, complex path expressions, and optimization techniques
-- **[Conformance Profile](conformance-profile/)** - Detailed ISO/IEC 39075:2024 conformance profile and compliance documentation
+- **[GQL Guide](/docs/gql/guide/)** - Comprehensive guide to GQL syntax, patterns, and query structure with examples
+- **[Advanced Patterns](/docs/gql/advanced-patterns/)** - Advanced GQL patterns including recursive queries, complex path expressions, and optimization techniques
+- **[Conformance Profile](/docs/gql/conformance-profile/)** - Detailed ISO/IEC 39075:2024 conformance profile and compliance documentation
 
 ## Quick Start
 
@@ -188,7 +188,7 @@ RETURN a.id, b.id, c.id, t1.amount, t2.amount
 
 ## Next Steps
 
-- [GQL Guide](guide/) - Start with the comprehensive GQL guide
+- [GQL Guide](/docs/gql/guide/) - Start with the comprehensive GQL guide
 - [Tutorials](/docs/tutorials/) - Hands-on tutorials for common patterns
 - [API Reference](/docs/reference/api-reference-complete/) - Complete function and operator reference
 - [REPL Basics](/docs/tutorials/repl-basics/) - Interactive query development

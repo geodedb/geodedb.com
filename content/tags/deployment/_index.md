@@ -562,16 +562,14 @@ sudo systemctl start geode
 
 ## Related Topics
 
-- [Docker](/tags/docker/) - Container deployment
+- [Containers](/tags/containers/) - Container deployment
 - [Kubernetes](/tags/kubernetes/) - Orchestration
 - [Monitoring](/tags/monitoring/) - Observability
 - [Backup](/tags/backup/) - Data protection
-- [Security](/categories/security-and-compliance/) - Hardening
 - [Configuration](/tags/configuration/) - Server configuration
 
 ## Further Reading
 
-- [Installation Guide](/docs/installation/) - Initial setup
-- [Operations Guide](/docs/operations/) - Day-to-day operations
-- [Performance Tuning](/categories/performance-and-scaling/) - Optimization
-- [High Availability](/docs/deployment/ha/) - HA configurations
+- [Installation from Source](/docs/installation/from-source/) - Building and installing
+- [Docker Deployment](/docs/ops/docker-deployment/) - Container deployment guide
+- [Deployment Patterns](/docs/deployment/deployment-patterns/) - Production deployment strategies

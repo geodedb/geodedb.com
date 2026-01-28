@@ -345,7 +345,7 @@ async with client.connection() as conn:
 
 ```go
 // Go client example
-import "go.codepros.org/geode"
+import "geodedb.com/geode"
 
 func executeWithRetry(db *sql.DB, query string, maxRetries int) error {
     for i := 0; i < maxRetries; i++ {

@@ -740,9 +740,6 @@ YIELD query_text, shard_count, frequency;
 
 ## Further Reading
 
-- [Sharding Architecture Guide](/docs/architecture/sharding/)
-- [Shard Key Selection Guide](/docs/guides/shard-key-selection/)
-- [Resharding Operations](/docs/operations/resharding/)
-- [Cross-Shard Query Optimization](/docs/performance/cross-shard-queries/)
-- [Shard Management Best Practices](/docs/guides/shard-management/)
-- [Multi-Tenancy with Sharding](/docs/architecture/multi-tenancy/)
+- [Distributed Architecture](/docs/architecture/distributed-architecture/) - Distributed systems design
+- [Performance and Scaling](/docs/architecture/performance-and-scaling/) - Scaling strategies
+- [Schema Design Guide](/docs/guides/schema-design/) - Data modeling best practices

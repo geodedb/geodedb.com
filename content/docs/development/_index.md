@@ -57,10 +57,10 @@ Comprehensive testing infrastructure with unit tests, integration tests, and cro
 
 ## Topics in This Section
 
-- **[LSP Guide](lsp-guide/)** - Language Server Protocol integration for editor support including installation, configuration, and feature overview
-- **[REPL Advanced](repl-advanced/)** - Advanced REPL features including multi-line editing, history search, custom commands, and query debugging
-- **[Testing Guide](testing-guide/)** - Complete testing guide covering unit tests, integration tests, test harness, and CI/CD best practices
-- **[Governance](governance/)** - Evidence-based development methodology with CANARY markers, requirement tracking, and quality metrics
+- **[LSP Guide](/docs/development/lsp-guide/)** - Language Server Protocol integration for editor support including installation, configuration, and feature overview
+- **[REPL Advanced](/docs/development/repl-advanced/)** - Advanced REPL features including multi-line editing, history search, custom commands, and query debugging
+- **[Testing Guide](/docs/development/testing-guide/)** - Complete testing guide covering unit tests, integration tests, test harness, and CI/CD best practices
+- **[Governance](/docs/development/governance/)** - Evidence-based development methodology with CANARY markers, requirement tracking, and quality metrics
 
 ## Evidence-Based Development
 

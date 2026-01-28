@@ -245,7 +245,7 @@ import (
     "context"
     "fmt"
     "github.com/go-playground/validator/v10"
-    "go.codepros.org/geode"
+    "geodedb.com/geode"
 )
 
 type Person struct {

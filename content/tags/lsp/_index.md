@@ -865,9 +865,7 @@ Results:
 ## Further Reading
 
 - [LSP Specification](https://microsoft.github.io/language-server-protocol/) - Official LSP documentation
-- [Geode LSP Setup Guide](/docs/lsp-setup/) - Installation and configuration
-- [Editor Integration Guide](/docs/editor-integration/) - Editor-specific setup
+- [Geode LSP Guide](/docs/development/lsp-guide/) - Installation and configuration
 - [GQL Language Reference](/docs/gql-reference/) - Complete GQL documentation
-- [Developer Tools Overview](/docs/developer-tools/) - Geode development tooling
+- [REPL Advanced Guide](/docs/development/repl-advanced/) - Advanced REPL usage
 - [Language Server Implementation Guide](https://code.visualstudio.com/api/language-extensions/language-server-extension-guide) - VS Code LSP guide
-- [Tree-sitter GQL Grammar](https://github.com/tree-sitter/tree-sitter-gql) - Parser implementation

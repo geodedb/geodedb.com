@@ -561,6 +561,6 @@ geode repair --apply
 - [Compliance](/tags/compliance/) - Regulatory compliance and data integrity
 - [Data Governance](/tags/governance/) - Data quality and governance
 - [Audit Logging](/tags/audit-logging/) - Tracking data modifications
-- [Schema Management](/docs/schema/) - Schema design and constraints
-- [Error Handling](/docs/development/error-handling/) - Handling integrity errors
+- [Schema Design](/docs/guides/schema-design/) - Schema design and constraints
+- [Error Codes](/docs/reference/error-codes/) - Error code reference for integrity errors
 - [Backup and Recovery](/docs/operations/backup/) - Data protection and recovery

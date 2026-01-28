@@ -80,7 +80,7 @@ Built from the ground up in Zig for performance and memory safety, Geode is desi
 
 ## Topics in This Section
 
-- **[Introduction](introduction/)** - Detailed introduction to Geode including architecture overview, feature highlights, and comparison with other graph databases
+- **[Introduction](/docs/overview/introduction/)** - Detailed introduction to Geode including architecture overview, feature highlights, and comparison with other graph databases
 
 ## Why Choose Geode?
 
@@ -235,7 +235,7 @@ Geode is licensed under the Apache License 2.0.
 
 ## Learn More
 
-- **[Introduction](introduction/)** - Detailed introduction and feature overview
+- **[Introduction](/docs/overview/introduction/)** - Detailed introduction and feature overview
 - **[Installation Guide](/docs/get-started/)** - Get Geode running
 - **[GQL Guide](/docs/gql/guide/)** - Learn the query language
 - **[Data Model](/docs/model/data-model-and-types/)** - Understand property graphs

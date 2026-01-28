@@ -618,7 +618,7 @@ geode> \commit
 **For Beginners**:
 - [GQL Guide](/docs/gql/guide/) - Query language fundamentals
 - [Data Model](/docs/model/data-model-and-types/) - Graph concepts
-- [Getting Started](/docs/get-started/install/) - Installation guide
+- [Getting Started](/guides/installation/) - Installation guide
 
 **For Developers**:
 - [Advanced REPL Features](/docs/development/repl-advanced/) - Scripting, automation

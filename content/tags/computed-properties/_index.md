@@ -703,8 +703,8 @@ LIMIT 20;
 - [Virtual Properties](/tags/virtual-properties/) - On-demand non-stored calculations
 - [Materialized Views](/tags/materialized-views/) - Cached pre-computed results
 - [Indexes](/tags/indexes/) - Indexing strategies for computed properties
-- [Property Types](/tags/property-types/) - Property type definitions
-- [Aggregations](/tags/aggregations/) - Aggregation functions and patterns
+- [Types](/tags/types/) - Property type definitions
+- [Aggregation](/tags/aggregation/) - Aggregation functions and patterns
 - [Performance](/tags/performance/) - Query optimization techniques
 
 ## Further Reading

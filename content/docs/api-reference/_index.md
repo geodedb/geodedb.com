@@ -555,5 +555,4 @@ Geode follows ISO/IEC SQL error code standards:
 
 - [GQL Reference](../gql-reference/) - Query language syntax
 - [Data Types](../data-types/) - Complete type system reference
-- [Functions Reference](functions/) - Detailed function documentation
 - [Performance Tuning](../performance/) - Optimize queries

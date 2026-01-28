@@ -536,7 +536,7 @@ Install client libraries for your application language.
 
 ```bash
 # In your Go project
-go get go.codepros.org/geode
+go get geodedb.com/geode
 
 # Verify installation
 go mod tidy

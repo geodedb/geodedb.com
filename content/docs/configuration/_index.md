@@ -645,6 +645,6 @@ geode serve --dry-run --config geode.yaml
 ## Next Steps
 
 - [Performance Tuning](../performance/) - Optimize for your workload
-- [Security Guide](../features/security/) - Secure your deployment
-- [Monitoring](../monitoring/) - Set up monitoring and alerts
-- [Backup and Recovery](../features/backup/) - Implement backup strategy
+- [Security Guide](/docs/security/overview/) - Secure your deployment
+- [Observability](/docs/ops/observability/) - Set up monitoring and alerts
+- [Backup and Recovery](/docs/guides/backup-automation/) - Implement backup strategy

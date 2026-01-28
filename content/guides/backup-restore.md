@@ -1497,12 +1497,12 @@ geode restore \
 
 - [Data Import Guide](/guides/data-import/) - Import data into Geode
 - [Data Export Guide](/guides/data-export/) - Export your data
-- [High Availability Guide](/docs/high-availability/) - Configure HA
+- [High Availability Guide](/guides/high-availability/) - Configure HA
 - [Performance Guide](/docs/performance/) - Optimize performance
 
 ## Resources
 
-- [CLI Reference](/docs/cli-reference/)
+- [CLI Reference](/docs/reference/cli-and-api/)
 - [Configuration Reference](/docs/configuration/)
 - [API Reference](/docs/api-reference/)
 - [Community Forum](https://forum.geodedb.com)

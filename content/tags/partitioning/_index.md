@@ -721,9 +721,8 @@ geode partition export \
 
 ## Further Reading
 
-- [Graph Partitioning Guide](/docs/architecture/partitioning/)
-- [Partition Algorithms](/docs/concepts/partition-algorithms/)
-- [Performance Tuning for Partitioned Graphs](/docs/performance/partitioning/)
-- [Distributed Query Execution](/docs/architecture/distributed-queries/)
-- [Partition Management Operations](/docs/operations/partition-management/)
-- [Partitioning Best Practices](/docs/guides/partitioning-best-practices/)
+- [Distributed Architecture](/docs/architecture/distributed-architecture/) - Distributed systems including partitioning
+- [Performance and Scaling](/docs/architecture/performance-and-scaling/) - Scaling and partition strategies
+- [Query Execution](/docs/architecture/query-execution/) - Distributed query execution
+- [Deployment Patterns](/docs/deployment/deployment-patterns/) - Production deployment and operations
+- [Multi-Datacenter Guide](/docs/guides/multi-datacenter/) - Partitioning across datacenters

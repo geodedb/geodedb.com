@@ -79,11 +79,11 @@ Write queries that leverage indexes and minimize work:
 
 ## Topics in This Section
 
-- **[EXPLAIN and PROFILE](explain-profile/)** - Understand query execution plans, analyze performance bottlenecks, and interpret optimizer decisions
-- **[Indexing and Optimization](indexing-and-optimization/)** - Complete indexing guide covering all six index types, creation strategies, and optimization techniques
-- **[Performance Tuning](performance-tuning/)** - Query performance tuning best practices including query rewriting, schema optimization, and system tuning
-- **[Full-Text Search](full-text-search/)** - Full-text search capabilities with BM25 ranking, tokenization, stemming, and search optimization
-- **[Materialized Views](materialized-views/)** - Materialized view patterns including creation, refresh strategies, and query rewriting
+- **[EXPLAIN and PROFILE](/docs/query/explain-profile/)** - Understand query execution plans, analyze performance bottlenecks, and interpret optimizer decisions
+- **[Indexing and Optimization](/docs/query/indexing-and-optimization/)** - Complete indexing guide covering all six index types, creation strategies, and optimization techniques
+- **[Performance Tuning](/docs/query/performance-tuning/)** - Query performance tuning best practices including query rewriting, schema optimization, and system tuning
+- **[Full-Text Search](/docs/query/full-text-search/)** - Full-text search capabilities with BM25 ranking, tokenization, stemming, and search optimization
+- **[Materialized Views](/docs/query/materialized-views/)** - Materialized view patterns including creation, refresh strategies, and query rewriting
 
 ## Query Performance Basics
 
@@ -123,7 +123,7 @@ Output includes:
 - Rows processed at each stage
 - Cache hit ratios
 
-See [EXPLAIN and PROFILE](explain-profile/) for detailed usage.
+See [EXPLAIN and PROFILE](/docs/query/explain-profile/) for detailed usage.
 
 ## Index Optimization
 
@@ -179,7 +179,7 @@ USING FULLTEXT;
 - CIDR prefix matching
 - Longest Prefix Match (LPM)
 
-See [Indexing and Optimization](indexing-and-optimization/) for comprehensive guidance.
+See [Indexing and Optimization](/docs/query/indexing-and-optimization/) for comprehensive guidance.
 
 ## Query Tuning Techniques
 
@@ -252,7 +252,7 @@ RETURN p.name, p.age;
 EXECUTE find_person(email='alice@example.com');
 ```
 
-See [Performance Tuning](performance-tuning/) for advanced techniques.
+See [Performance Tuning](/docs/query/performance-tuning/) for advanced techniques.
 
 ## Materialized Views
 
@@ -279,7 +279,7 @@ Refresh strategies:
 - **DEFERRED**: Batch updates on schedule (periodic)
 - **ON DEMAND**: Manual refresh (controlled)
 
-See [Materialized Views](materialized-views/) for details.
+See [Materialized Views](/docs/query/materialized-views/) for details.
 
 ## Full-Text Search
 
@@ -303,7 +303,7 @@ Features:
 - Stemming support
 - Multi-field search
 
-See [Full-Text Search](full-text-search/) for comprehensive coverage.
+See [Full-Text Search](/docs/query/full-text-search/) for comprehensive coverage.
 
 ## Performance Monitoring
 
@@ -419,8 +419,8 @@ See [Troubleshooting Guide](/docs/guides/troubleshooting/) for more scenarios.
 
 ## Next Steps
 
-1. **[Learn EXPLAIN/PROFILE](explain-profile/)** - Master query analysis
-2. **[Create Indexes](indexing-and-optimization/)** - Optimize your schema
-3. **[Tune Queries](performance-tuning/)** - Apply optimization techniques
-4. **[Use Materialized Views](materialized-views/)** - Cache expensive queries
+1. **[Learn EXPLAIN/PROFILE](/docs/query/explain-profile/)** - Master query analysis
+2. **[Create Indexes](/docs/query/indexing-and-optimization/)** - Optimize your schema
+3. **[Tune Queries](/docs/query/performance-tuning/)** - Apply optimization techniques
+4. **[Use Materialized Views](/docs/query/materialized-views/)** - Cache expensive queries
 5. **[Monitor Performance](/docs/ops/observability/)** - Track query metrics

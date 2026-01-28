@@ -153,7 +153,7 @@ import (
     "context"
     "database/sql"
     "fmt"
-    _ "go.codepros.org/geode"
+    _ "geodedb.com/geode"
 )
 
 func main() {

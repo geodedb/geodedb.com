@@ -203,7 +203,7 @@ import (
     "database/sql"
     "log"
 
-    _ "go.codepros.org/geode"
+    _ "geodedb.com/geode"
 )
 
 type Product struct {
@@ -897,11 +897,8 @@ volumes:
 
 - [Getting Started Guide](/docs/getting-started/) - Initial setup and first queries
 - [Client Library Documentation](/docs/client-libraries/) - SDK references
-- [REPL User Guide](/docs/repl-user-guide/) - Interactive shell documentation
-- [LSP Setup Guide](/docs/lsp-setup/) - IDE integration
+- [REPL Basics Tutorial](/docs/tutorials/repl-basics/) - Interactive shell documentation
+- [LSP Guide](/docs/development/lsp-guide/) - IDE integration
 - [API Reference](/docs/api-reference/) - Complete API documentation
-- [Development Best Practices](/docs/development-best-practices/) - Coding guidelines
-- [Testing Strategies](/docs/testing/integration-tests/) - Test patterns
-- [CI/CD Integration](/docs/operations/ci-cd/) - Automation workflows
-- [Error Handling Guide](/docs/development/error-handling/) - Error strategies
-- [Performance Monitoring](/docs/operations/monitoring/) - Observability setup
+- [Testing Guide](/docs/development/testing-guide/) - Coding and testing guidelines
+- [Observability](/docs/ops/observability/) - Monitoring and observability setup

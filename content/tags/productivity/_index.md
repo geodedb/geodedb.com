@@ -68,7 +68,7 @@ The Go client integrates with the standard `database/sql` package, enabling deve
 ```go
 import (
     "database/sql"
-    _ "go.codepros.org/geode"
+    _ "geodedb.com/geode"
 )
 
 db, err := sql.Open("geode", "geode://localhost:3141")
@@ -389,7 +389,7 @@ Automated testing in continuous integration pipelines:
 Telemetry integration with standard observability platforms:
 
 ```go
-import "go.codepros.org/geode/telemetry"
+import "geodedb.com/geode/telemetry"
 
 // Export metrics to Prometheus
 telemetry.EnablePrometheus(":9090")
@@ -414,7 +414,7 @@ Language-specific quick starts get developers running in minutes:
 
 ```bash
 # Go quick start
-go get go.codepros.org/geode
+go get geodedb.com/geode
 # Copy example code, run immediately
 
 # Python quick start

@@ -306,10 +306,13 @@ zig run scripts/generate_badges.zig -- \
   --out badges/evidence.svg
 ```
 
-**Badge Display**:
-```markdown
-![Evidence Coverage](badges/evidence.svg)
+**Badge Display** (in your project README):
+
+```text
+![Evidence Coverage]\(badges/evidence.svg)
 ```
+
+*Note: The badge path is relative to your project root, not this documentation site. Remove the backslash before the opening parenthesis when using.*
 
 **Color Thresholds**:
 | Coverage | Color | Hex |

@@ -488,19 +488,16 @@ LIMIT 5
 
 ## Related Topics
 
-- **Graph Modeling**: Design schemas optimized for algorithmic analysis
-- **Query Optimization**: Tune GQL queries for algorithm performance
-- **Indexing**: Create indexes to accelerate algorithm execution
-- **Performance Tuning**: Optimize database configuration for graph algorithms
-- **GQL Functions**: Use built-in functions in algorithm implementations
+- [Graph Algorithms](/tags/graph-algorithms/) - Graph algorithm implementations
+- [Query Optimization](/tags/query-optimization/) - Tune GQL queries for algorithm performance
+- [Indexing](/tags/indexing/) - Create indexes to accelerate algorithm execution
+- [Performance](/tags/performance/) - Optimize database configuration for graph algorithms
 
 ## Further Reading
 
-- [Pathfinding Queries](/tags/queries/) - Path pattern matching in GQL
-- [Performance Optimization](/tags/performance/) - Optimize algorithm execution
-- [Graph Modeling](/tags/modeling/) - Design graphs for efficient algorithms
-- [GQL Reference](/tags/gql-reference/) - Complete language documentation
-- [Client Libraries](/tags/client-libraries/) - Implement algorithms in Python, Go, Rust, Zig
+- [Graph Algorithms Tutorial](/docs/tutorials/graph-algorithms-tutorial/) - Complete graph algorithms tutorial
+- [GQL Reference](/docs/gql-reference/) - Complete language documentation
+- [Client Libraries](/docs/client-libraries/) - Implement algorithms in Python, Go, Rust, Zig
 
 ## Advanced Pathfinding Algorithms
 

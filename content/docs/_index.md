@@ -22,9 +22,8 @@ Welcome to the complete documentation for Geode, an enterprise-ready graph datab
 ### Getting Started
 
 - **[Installation](installation/)** - Install Geode from source or Docker
-  - [From Source](installation/from-source/) - Build with Zig compiler
+  - [From Source](/docs/installation/from-source/) - Build with Zig compiler
 - **[Getting Started](getting-started/)** - First steps with Geode
-- **[Quick Start Guide](getting-started/quickstart/)** - 5-minute introduction
 
 ### Core Documentation
 
@@ -41,9 +40,9 @@ Welcome to the complete documentation for Geode, an enterprise-ready graph datab
 ### Client Libraries
 
 - **[Client Libraries](client-libraries/)** - Official libraries for Go, Python, Rust, Node.js, and Zig
-  - [Go Client](client-libraries/go-client/) - Production-ready database/sql driver
-  - [Python Client](client-libraries/python-client/) - Async Python with type hints
-  - [Rust Client](client-libraries/rust-client/) - High-performance type-safe client
+  - [Go Client](/docs/client-libraries/go-client/) - Production-ready database/sql driver
+  - [Python Client](/docs/client-libraries/python-client/) - Async Python with type hints
+  - [Rust Client](/docs/client-libraries/rust-client/) - High-performance type-safe client
 
 ## Key Features
 

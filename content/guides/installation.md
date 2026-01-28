@@ -939,7 +939,7 @@ Now that Geode is installed:
 
 - [Full Documentation](/docs/)
 - [Client Library APIs](/clients/)
-- [Example Applications](/docs/examples/)
+- [Use Cases](/docs/use-cases/)
 - [Community Forum](https://forum.geodedb.com)
 - [GitLab Repository](https://gitlab.com/devnw/codepros/geode)
 

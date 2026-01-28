@@ -295,7 +295,7 @@ Each release provides:
 - Debian-based full image
 
 **Client Libraries**:
-- Go module: `go.codepros.org/geode@v0.18.0`
+- Go module: `geodedb.com/geode@v0.18.0`
 - Python package: `pip install geode-client==0.18.0`
 - Rust crate: `geode-client = "0.18.0"`
 - Zig package
@@ -348,9 +348,6 @@ Upcoming features planned for future releases:
 ## Related Topics
 
 - [Changelog](/tags/changelog/) - Detailed change listings
-- [Upgrade Guides](/docs/operations/upgrades/) - Version-specific migration instructions
-- [Breaking Changes](/docs/releases/breaking-changes/) - Compatibility information
-- [Deprecations](/docs/releases/deprecations/) - Features being phased out
 - [Versioning](/tags/versions/) - Version numbering scheme
 
 ## Detailed Version Comparison
@@ -497,11 +494,7 @@ async def migrate_v017_to_v018():
 
 ## Further Reading
 
-- [Installation Guide](/docs/installation/) - Installing specific versions
+- [Installation Guide](/guides/installation/) - Installing specific versions
 - [Deployment](/docs/deployment/) - Production deployment strategies
-- [Backup and Restore](/docs/operations/backup/) - Data protection
-- [Migration Guide](/docs/operations/migration/) - Moving from other databases
-- [Support Policy](/docs/releases/support-policy/) - Support timelines and commitments
-- [Migration Tools](/docs/tools/migration/) - Automated migration utilities
-- [Beta Program](/docs/community/beta-testing/) - Early access program
-- [Release Calendar](/docs/releases/calendar/) - Upcoming release schedule
+- [Backup and Restore](/guides/backup-restore/) - Data protection
+- [Migration Guide](/docs/guides/migration-guide/) - Moving from other databases

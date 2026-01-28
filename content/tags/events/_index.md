@@ -560,7 +560,8 @@ class SagaOrchestrator:
         })
         
         # Execute step action
-        await step['execute'](conn)
+        execute_fn = step['execute']
+        await execute_fn(conn)
         
         # Store compensation
         self.compensations.append(step.get('compensate'))

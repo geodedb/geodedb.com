@@ -28,7 +28,7 @@ The Geode Go client is a `database/sql` driver that uses QUIC + TLS 1.3. It supp
 import (
     "database/sql"
 
-    _ "go.codepros.org/geode"
+    _ "geodedb.com/geode"
 )
 
 db, err := sql.Open("geode", "localhost:3141")

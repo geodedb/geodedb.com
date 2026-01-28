@@ -700,7 +700,6 @@ $$;
 ## Related Topics
 
 - [Functions](/tags/functions/) - User-defined functions
-- [Triggers](/tags/triggers/) - Event-driven procedures
 - [Transactions](/tags/transactions/) - Transaction management
 - [Security](/tags/security/) - Access control and authorization
 - [Performance](/tags/performance/) - Query optimization

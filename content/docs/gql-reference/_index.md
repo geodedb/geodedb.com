@@ -89,17 +89,23 @@ GROUP BY p.city
 ORDER BY population DESC
 ```
 
-## Detailed Topics
+## Reference Topics
 
-For comprehensive GQL coverage, see:
+Detailed reference documentation for GQL:
+
+- **[GQL Specification](/docs/gql-reference/specification/)** - ISO/IEC 39075:2024 standard reference
+- **[Advanced Pattern Matching](/docs/gql-reference/advanced-patterns/)** - Variable-length paths, shortest path, pattern predicates
+- **[Built-in Functions](/docs/gql-reference/functions/)** - All 80+ functions by category
+
+## Related Documentation
+
+For comprehensive GQL coverage, see also:
 
 - **[GQL Guide](/docs/gql/guide/)** - Complete query language guide
-- **[Data Types Reference](/docs/data-types/)** - All 50+ supported types
-- **[API Reference](/docs/api-reference/)** - Functions and operators
+- **[Data Types Reference](/docs/reference/types/)** - All 50+ supported types
+- **[Operators Reference](/docs/reference/operators/)** - All operators with examples
 - **[Query Performance Tuning](/docs/query/performance-tuning/)** - Optimization guide
 - **[Troubleshooting Guide](/docs/guides/troubleshooting/)** - Common query issues
-
-> **Note**: Additional detailed GQL reference pages (pattern matching, path expressions, aggregations, etc.) will be added in future updates.
 
 ## ISO/IEC 39075:2024 Compliance
 
@@ -141,6 +147,7 @@ LIMIT 10
 
 ## Next Steps
 
-- [Pattern Matching Guide](pattern-matching/) - Learn about graph patterns
-- [Data Types Reference](../data-types/) - Explore Geode's type system
-- [API Reference](../api-reference/) - Complete function documentation
+- [GQL Specification](/docs/gql-reference/specification/) - ISO standard reference
+- [Advanced Patterns](/docs/gql-reference/advanced-patterns/) - Complex pattern matching
+- [Functions Reference](/docs/gql-reference/functions/) - Built-in functions
+- [GQL Guide](/docs/gql/guide/) - Query language tutorial

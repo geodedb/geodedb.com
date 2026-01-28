@@ -391,7 +391,7 @@ Most failures are non-critical edge cases or known limitations documented in iss
 
 - **Getting Started**: [Installation Guide](/docs/get-started/)
 - **Configuration**: [Server Configuration](/docs/configuration/server-configuration/)
-- **Migration**: [Upgrade Guide](/docs/guides/migration/)
+- **Migration**: [Upgrade Guide](/docs/guides/migration-guide/)
 - **API Changes**: [API Reference](/docs/api-reference/)
 - **Performance**: [Performance Tuning](/docs/performance/)
 

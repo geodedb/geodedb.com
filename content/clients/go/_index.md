@@ -29,7 +29,7 @@ The official Go client for Geode provides a `database/sql` driver implementation
 ## Installation
 
 ```bash
-go get go.codepros.org/geode
+go get geodedb.com/geode
 ```
 
 **Requirements**: Go 1.24.0+
@@ -44,7 +44,7 @@ import (
     "fmt"
     "log"
 
-    _ "go.codepros.org/geode"
+    _ "geodedb.com/geode"
 )
 
 func main() {
@@ -282,4 +282,4 @@ See the [examples directory](https://gitlab.com/devnw/codepros/geode/geode-clien
 ## Repository
 
 - GitLab: [devnw/codepros/geode/geode-client-go](https://gitlab.com/devnw/codepros/geode/geode-client-go)
-- Module: `go.codepros.org/geode`
+- Module: `geodedb.com/geode`

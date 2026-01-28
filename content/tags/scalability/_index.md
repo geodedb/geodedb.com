@@ -696,17 +696,15 @@ geode cluster simulate-scaling \
 ## Related Topics
 
 - [Clustering](/tags/clustering/) - Database clustering strategies
-- [Partitioning](/tags/partitioning/) - Graph partitioning techniques
 - [Sharding](/tags/sharding/) - Data sharding and distribution
 - [Replication](/tags/replication/) - Data replication for availability
 - [Performance](/tags/performance/) - Query performance optimization
-- [Distributed](/tags/distributed/) - Distributed systems architecture
+- [Distributed Systems](/tags/distributed-systems/) - Distributed systems architecture
 
 ## Further Reading
 
-- [Scalability Architecture Guide](/docs/architecture/scalability/)
-- [Capacity Planning Guide](/docs/operations/capacity-planning/)
-- [Auto-Scaling Configuration](/docs/configuration/auto-scaling/)
-- [Performance at Scale](/docs/performance/large-scale/)
-- [Distributed Query Optimization](/docs/performance/distributed-queries/)
-- [Production Scaling Best Practices](/docs/guides/scaling-best-practices/)
+- [Performance and Scaling](/docs/architecture/performance-and-scaling/) - Scalability architecture guide
+- [Distributed Architecture](/docs/architecture/distributed-architecture/) - Distributed systems overview
+- [Server Configuration](/docs/configuration/server-configuration/) - Configuration options
+- [Production Deployment](/guides/production-deployment/) - Production best practices
+- [Query Performance Tuning](/docs/query/performance-tuning/) - Optimization techniques

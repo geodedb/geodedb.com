@@ -67,12 +67,12 @@ Choose graph databases when:
 
 ## Topics in This Section
 
-- **[Use Cases Overview](overview/)** - Introduction to graph database use cases with pattern examples
-- **[Social Networks](social-networks/)** - Friend networks, activity feeds, community detection, and influence analysis
-- **[Fraud Detection](fraud-detection/)** - Transaction networks, pattern detection, and fraud ring identification
-- **[Knowledge Graphs](knowledge-graphs/)** - Enterprise knowledge management, semantic search, and relationship discovery
-- **[Recommendation Engines](recommendations/)** - Collaborative filtering, content-based recommendations, and hybrid approaches
-- **[Supply Chain](supply-chain/)** - Supplier networks, logistics optimization, and disruption analysis
+- **[Use Cases Overview](/docs/use-cases/overview/)** - Introduction to graph database use cases with pattern examples
+- **[Social Networks](/docs/use-cases/social-networks/)** - Friend networks, activity feeds, community detection, and influence analysis
+- **[Fraud Detection](/docs/use-cases/fraud-detection/)** - Transaction networks, pattern detection, and fraud ring identification
+- **[Knowledge Graphs](/docs/use-cases/knowledge-graphs/)** - Enterprise knowledge management, semantic search, and relationship discovery
+- **[Recommendation Engines](/docs/use-cases/recommendations/)** - Collaborative filtering, content-based recommendations, and hybrid approaches
+- **[Supply Chain](/docs/use-cases/supply-chain/)** - Supplier networks, logistics optimization, and disruption analysis
 
 ## Use Case Highlights
 
@@ -99,7 +99,7 @@ ORDER BY mutual_friends DESC;
 
 **Why Graphs**: Social networks are inherently graphs. Graph databases make queries like "friend of friend" natural and performant, while relational databases require complex self-joins that degrade quickly.
 
-**See**: [Social Networks Use Case](social-networks/)
+**See**: [Social Networks Use Case](/docs/use-cases/social-networks/)
 
 ### Fraud Detection
 
@@ -123,7 +123,7 @@ RETURN path, [tx in t | tx.amount] AS amounts;
 
 **Why Graphs**: Fraud patterns often involve networks of accounts and transactions. Graph queries naturally express patterns like "circular transfers" or "layered transactions" that are difficult in relational databases.
 
-**See**: [Fraud Detection Use Case](fraud-detection/)
+**See**: [Fraud Detection Use Case](/docs/use-cases/fraud-detection/)
 
 ### Knowledge Graphs
 
@@ -151,7 +151,7 @@ LIMIT 10;
 
 **Why Graphs**: Knowledge graphs represent how information connects across domains. Graph traversals enable discovery of indirect relationships and context that traditional search misses.
 
-**See**: [Knowledge Graphs Use Case](knowledge-graphs/)
+**See**: [Knowledge Graphs Use Case](/docs/use-cases/knowledge-graphs/)
 
 ### Recommendation Engines
 
@@ -180,7 +180,7 @@ LIMIT 10;
 
 **Why Graphs**: Recommendations rely on understanding relationships between users, items, and behaviors. Graph databases make collaborative filtering queries natural and efficient.
 
-**See**: [Recommendation Engines Use Case](recommendations/)
+**See**: [Recommendation Engines Use Case](/docs/use-cases/recommendations/)
 
 ### Supply Chain Optimization
 
@@ -207,7 +207,7 @@ ORDER BY total_lead_time, supply_chain_depth;
 
 **Why Graphs**: Supply chains are networks of suppliers, manufacturers, and distributors. Graph queries efficiently analyze multi-tier dependencies and alternative routes.
 
-**See**: [Supply Chain Use Case](supply-chain/)
+**See**: [Supply Chain Use Case](/docs/use-cases/supply-chain/)
 
 ## Industry Applications
 

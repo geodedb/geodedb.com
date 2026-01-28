@@ -994,13 +994,9 @@ RETURN distribution,
 
 ## Related Topics
 
-- [Pathfinding Algorithms](/tags/pathfinding/)
-- [Centrality Measures](/tags/centrality/)
-- [Community Detection](/tags/community-detection/)
-- [PageRank](/tags/pagerank/)
-- [Network Flow](/tags/flow-algorithms/)
-- [Graph Theory](/tags/graph-theory/)
+- [Pattern Matching](/tags/pattern-matching/)
+- [Query Optimization](/tags/query-optimization/)
 - [Performance Optimization](/tags/performance/)
-- [Parallel Processing](/tags/parallel/)
+- [Analytics](/tags/analytics/)
 
 Browse the tagged content below to discover documentation, tutorials, and guides for implementing graph algorithms in your Geode applications.

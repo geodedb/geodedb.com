@@ -313,8 +313,8 @@ Created 1 node
 **Solution**: How to resolve
 
 ## Next Steps
-- [Related Guide](/docs/guides/related/)
-- [Tutorial](/docs/tutorials/tutorial/)
+- [Related Guide](/docs/guides/)
+- [Tutorial](/docs/tutorials/)
 ```
 
 ### Documentation PR

@@ -345,7 +345,7 @@ import (
     "context"
     "fmt"
     "log"
-    "go.codepros.org/geode"
+    "geodedb.com/geode"
 )
 
 func main() {
@@ -410,10 +410,10 @@ Configure client libraries to connect to Geode.
 
 ```bash
 # Install Go client
-go get go.codepros.org/geode
+go get geodedb.com/geode
 
 # Import in your application
-import "go.codepros.org/geode"
+import "geodedb.com/geode"
 ```
 
 ### Python Client Setup

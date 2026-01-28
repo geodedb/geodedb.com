@@ -102,7 +102,7 @@ Client libraries automatically handle QUIC complexity, providing simple async/aw
 
 ```go
 // Go client example
-import "go.codepros.org/geode"
+import "geodedb.com/geode"
 
 ctx := context.Background()
 client, err := geode.Connect(ctx, "localhost:3141")
@@ -710,9 +710,8 @@ Geode welcomes contributions following evidence-based development:
 - [ACID Transactions](/tags/acid/) - Transaction guarantees
 - [MVCC](/tags/mvcc/) - Concurrency control architecture
 - [QUIC Protocol](/tags/quic/) - Modern network transport
-- [Zig Programming](/categories/zig/) - Implementation language details
-- [Storage Engine](/docs/internals/storage/) - Storage architecture details
-- [Query Planner](/docs/internals/query-planner/) - Optimization internals
-- [Data Modeling Guide](/docs/guides/data-modeling/) - Schema design patterns
-- [Migration Guide](/docs/operations/migration/) - Moving from other databases
-- [Production Checklist](/docs/operations/production-checklist/) - Deployment guide
+- [Storage Engine](/docs/architecture/storage-engine/) - Storage architecture details
+- [Query Optimization](/docs/architecture/query-optimization/) - Optimization internals
+- [Schema Design](/docs/guides/schema-design/) - Schema design patterns
+- [Migration Guide](/docs/guides/migration-guide/) - Moving from other databases
+- [Deployment Patterns](/docs/deployment/deployment-patterns/) - Deployment guide

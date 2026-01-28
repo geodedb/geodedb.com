@@ -106,7 +106,7 @@ package main
 import (
     "context"
     "fmt"
-    "go.codepros.org/geode"
+    "geodedb.com/geode"
 )
 
 func createUser(ctx context.Context, db *geode.DB, email string) error {

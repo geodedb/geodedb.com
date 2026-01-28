@@ -16,25 +16,25 @@ Geode provides official client libraries for multiple programming languages. All
 
 ## Available Libraries
 
-- **Go** - `database/sql` driver (`go.codepros.org/geode`) - [Go client docs](go-client/)
-- **Python** - Async client (`geode-client`) - [Python client docs](python-client/)
-- **Rust** - tokio + Quinn client (`geode-client`) - [Rust client docs](rust-client/)
-- **Node.js** - TypeScript-first client (`@geode/client`) - [Node.js client docs](nodejs-client/)
-- **Zig** - Low-level QUIC client - [Zig client docs](zig-client/)
+- **Go** - `database/sql` driver (`geodedb.com/geode`) - [Go client docs](/docs/client-libraries/go-client/)
+- **Python** - Async client (`geode-client`) - [Python client docs](/docs/client-libraries/python-client/)
+- **Rust** - tokio + Quinn client (`geode-client`) - [Rust client docs](/docs/client-libraries/rust-client/)
+- **Node.js** - TypeScript-first client (`@geode/client`) - [Node.js client docs](/docs/client-libraries/nodejs-client/)
+- **Zig** - Low-level QUIC client - [Zig client docs](/docs/client-libraries/zig-client/)
 
 ## Quick Start
 
 ### Go
 
 ```bash
-go get go.codepros.org/geode
+go get geodedb.com/geode
 ```
 
 ```go
 import (
     "database/sql"
 
-    _ "go.codepros.org/geode"
+    _ "geodedb.com/geode"
 )
 
 db, err := sql.Open("geode", "localhost:3141")
@@ -102,5 +102,5 @@ All clients speak the same protocol messages (`HELLO`, `RUN_GQL`, `PULL`, `BEGIN
 
 ## Next Steps
 
-- Review the [client comparison](client-comparison/)
+- Review the [client comparison](/docs/client-libraries/client-comparison/)
 - Jump to the language-specific API guides above

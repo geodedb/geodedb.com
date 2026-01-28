@@ -184,7 +184,7 @@ async with client.connection() as tx:
 ```go
 import (
     "database/sql"
-    _ "go.codepros.org/geode"
+    _ "geodedb.com/geode"
 )
 
 // Open connection
@@ -409,7 +409,7 @@ SET index_cache_size = '2GB';
 
 - [GQL Reference](/tags/gql-reference/) - Complete GQL documentation
 - [Python Client](/tags/python/) - Python-specific API details
-- [Go Client](/tags/golang/) - Go client documentation
+- [Go Client](/tags/go/) - Go client documentation
 - [Rust Client](/tags/rust/) - Rust client documentation
 - [Protocol](/tags/protocol/) - Wire protocol specification
 
@@ -669,7 +669,7 @@ result, _ = await client.query(query, {"min_age": 25, "city": "Seattle"})
 import (
     "context"
     "time"
-    "go.codepros.org/geode"
+    "geodedb.com/geode"
 )
 
 // Query with timeout

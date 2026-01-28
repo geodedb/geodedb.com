@@ -271,20 +271,20 @@ RETURN metric, value
 ### Documentation
 
 - [Transaction Guide](/docs/transactions/) - Complete transaction documentation
-- [Concurrency Control](/docs/concurrency/) - Detailed concurrency mechanisms
-- [Performance Tuning](/docs/performance-tuning/) - MVCC optimization techniques
+- [Concurrency Control](/tags/concurrency/) - Detailed concurrency mechanisms
+- [Performance Tuning](/docs/query/performance-tuning/) - MVCC optimization techniques
 
 ### Implementation Details
 
 - [Architecture Overview](/docs/architecture/) - System architecture including MVCC
-- [Storage Engine](/docs/storage/) - Version storage and indexing
+- [Storage Engine](/tags/storage/) - Version storage and indexing
 - [Recovery and Durability](/docs/recovery/) - WAL integration with MVCC
 
 ### Advanced Topics
 
 - [Distributed MVCC](/tags/distributed/) - MVCC in distributed environments
-- [Garbage Collection](/docs/gc/) - Version cleanup strategies
-- [Time-Travel Queries](/docs/time-travel/) - Historical query capabilities
+- [Garbage Collection](/tags/performance/) - Version cleanup strategies
+- [Temporal Queries](/tags/temporal/) - Historical query capabilities
 
 ## MVCC Implementation Deep Dive
 

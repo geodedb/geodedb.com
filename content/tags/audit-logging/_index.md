@@ -403,8 +403,6 @@ cat audit.log | jq -c 'select(.user.username == "suspect@example.com")'
 
 - [Compliance](/tags/compliance/) - Regulatory compliance frameworks (GDPR, HIPAA, SOC2)
 - [Row-Level Security](/tags/row-level-security/) - Fine-grained access control with audit integration
-- [Data Governance](/tags/governance/) - Data governance policies and enforcement
+- [Governance](/tags/governance/) - Data governance policies and enforcement
 - [Encryption](/tags/encryption/) - Data encryption at rest and in transit
-- [Sessions](/tags/sessions/) - Session management and tracking
-- [Authentication](/docs/security/authentication/) - User authentication and identity management
-- [Authorization](/docs/security/authorization/) - Access control and permissions
+- [Security Overview](/docs/security/overview/) - Security documentation

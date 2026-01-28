@@ -497,6 +497,6 @@ openssl rsa -noout -modulus -in server-key.pem | openssl md5
 ## Next Steps
 
 - [Configuration Reference](../configuration/) - Configure Geode
-- [Docker Deployment](../docker/) - Run with Docker
-- [Getting Started Guide](../../getting-started/) - First steps with Geode
-- [Client Libraries](../../client-libraries/) - Connect from your application
+- [Docker Deployment](/docs/ops/docker-deployment/) - Run with Docker
+- [Getting Started Guide](/docs/getting-started/) - First steps with Geode
+- [Client Libraries](/docs/client-libraries/) - Connect from your application

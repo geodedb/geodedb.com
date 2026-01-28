@@ -81,7 +81,7 @@ Choose your language:
 pip install geode-client
 
 # Go
-go get go.codepros.org/geode
+go get geodedb.com/geode
 
 # Rust
 cargo add geode-client
@@ -127,7 +127,7 @@ package main
 import (
     "database/sql"
     "fmt"
-    _ "go.codepros.org/geode"
+    _ "geodedb.com/geode"
 )
 
 func main() {
@@ -571,7 +571,7 @@ You've successfully installed Geode, executed queries, and learned the fundament
 **Immediate Next Steps** (Today):
 - Read the [Getting Started Guide](/tags/getting-started/) for deeper understanding
 - Explore [Example Code](/tags/examples/) in your preferred language
-- Try the [Interactive Shell](/tags/shell/) for ad-hoc queries
+- Try the [Interactive REPL](/tags/repl/) for ad-hoc queries
 
 **This Week**:
 - Learn [Transaction Management](/tags/transactions/) for ACID guarantees
@@ -579,7 +579,7 @@ You've successfully installed Geode, executed queries, and learned the fundament
 - Practice [Performance Optimization](/tags/performance/) techniques
 
 **This Month**:
-- Master [Advanced GQL Patterns](/tags/advanced-queries/) for complex queries
+- Master [Advanced GQL Patterns](/tags/advanced/) for complex queries
 - Implement [Row-Level Security](/tags/row-level-security/) for multi-tenancy
 - Set Up [High Availability](/tags/high-availability/) for production resilience
 

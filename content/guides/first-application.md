@@ -3371,7 +3371,7 @@ Now that you've built your first application:
 2. **Optimize Performance**: Read [Query Optimization](/guides/query-performance/)
 3. **Design Better Schemas**: Review the [Graph Modeling Guide](/guides/graph-modeling/)
 4. **Deploy to Production**: See [Production Deployment](/guides/production-deployment/)
-5. **Explore Examples**: Check out [Example Applications](/docs/examples/)
+5. **Explore Examples**: Check out [Use Cases](/docs/use-cases/)
 
 ---
 

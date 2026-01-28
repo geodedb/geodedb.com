@@ -1046,15 +1046,13 @@ async def ab_test_models(client, model_a_id, model_b_id, traffic_split=0.5):
 - **[Embeddings](/tags/embeddings/)**: Vector storage and similarity search
 - **[Vector Search](/tags/vector-search/)**: HNSW-based embedding retrieval
 - **[Analytics](/tags/analytics/)**: Feature engineering patterns
-- **[PageRank](/tags/pagerank/)**: Importance-based features
 - **[Graph Algorithms](/tags/graph-algorithms/)**: Graph algorithm implementations
-- **[Data Science](/tags/data-science/)**: Data science workflows
 - **[Python Client](/tags/python/)**: Python integration patterns
+- **[Real-Time Analytics](/tags/real-time-analytics/)**: Real-time data processing
 
 ## Further Reading
 
-- **ML Integration Guide**: `/docs/machine-learning/integration/`
-- **Feature Engineering**: `/docs/machine-learning/feature-engineering/`
-- **GNN Implementations**: `/docs/machine-learning/graph-neural-networks/`
-- **Model Deployment**: `/docs/machine-learning/deployment/`
-- **Feature Store**: `/docs/machine-learning/feature-store/`
+- **Graph Algorithms**: `/docs/analytics/graph-algorithms/`
+- **Real-Time Analytics**: `/docs/analytics/real-time-analytics/`
+- **Python Client**: `/docs/client-libraries/python-client/`
+- **Vector Search Tutorial**: `/docs/tutorials/vector-search-tutorial/`

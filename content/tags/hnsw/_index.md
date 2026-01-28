@@ -437,10 +437,10 @@ RETURN node, similarity;
 
 ## Further Reading
 
-- [Vector Search Guide](/docs/vector-search/) - Complete vector search documentation
-- [Embeddings Tutorial](/docs/embeddings-tutorial/) - Working with embeddings
-- [Performance Tuning](/docs/performance-tuning/) - HNSW optimization
-- [RAG with Geode](/docs/rag-tutorial/) - Retrieval-Augmented Generation
+- [Vector Search](/tags/vector-search/) - Complete vector search documentation
+- [Embeddings](/tags/embeddings/) - Working with embeddings
+- [Performance](/docs/performance/) - Performance optimization
+- [AI Integration](/tags/ai/) - AI and machine learning integration
 - [Original HNSW Paper](https://arxiv.org/abs/1603.09320) - Academic paper
 
 Geode's HNSW implementation brings vector similarity search to graph databases, enabling AI applications that combine semantic understanding with graph relationships.

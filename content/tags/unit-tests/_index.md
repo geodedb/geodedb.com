@@ -840,8 +840,6 @@ class CoverageAnalyzer:
 - **[Continuous Integration](/tags/continuous-integration/)**: Build automation
 - **[Deployment](/tags/deployment/)**: Deployment strategies
 - **[Testing](/tags/testing/)**: General testing practices
-- **[Code Quality](/tags/code-quality/)**: Code quality standards
-- **[TDD](/tags/tdd/)**: Test-driven development
 
 ## Further Reading
 

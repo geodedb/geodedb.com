@@ -44,31 +44,31 @@ Each tutorial includes complete working examples, expected outputs, and exercise
 
 ### Beginner Path
 
-1. **[REPL Basics](repl-basics/)** - Get comfortable with the interactive shell
-2. **[MATCH Basics](match-basics/)** - Learn fundamental graph queries
-3. **[Tutorial Overview](overview/)** - Understand the tutorial structure
+1. **[REPL Basics](/docs/tutorials/repl-basics/)** - Get comfortable with the interactive shell
+2. **[MATCH Basics](/docs/tutorials/match-basics/)** - Learn fundamental graph queries
+3. **[Tutorial Overview](/docs/tutorials/overview/)** - Understand the tutorial structure
 
 ### Intermediate Path
 
-4. **[Transaction Patterns](transaction-patterns-tutorial/)** - Master ACID transactions
-5. **[Indexing Tutorial](indexing-tutorial/)** - Optimize query performance
-6. **[Index Optimization](index-optimization/)** - Advanced index strategies
+4. **[Transaction Patterns](/docs/tutorials/transaction-patterns-tutorial/)** - Master ACID transactions
+5. **[Indexing Tutorial](/docs/tutorials/indexing-tutorial/)** - Optimize query performance
+6. **[Index Optimization](/docs/tutorials/index-optimization/)** - Advanced index strategies
 
 ### Advanced Path
 
-7. **[Vector Search](vector-search-tutorial/)** - Implement similarity search
-8. **[Graph Algorithms](graph-algorithms-tutorial/)** - Apply graph algorithms
+7. **[Vector Search](/docs/tutorials/vector-search-tutorial/)** - Implement similarity search
+8. **[Graph Algorithms](/docs/tutorials/graph-algorithms-tutorial/)** - Apply graph algorithms
 
 ## Topics in This Section
 
-- **[Tutorial Overview](overview/)** - Introduction to the tutorial series with learning objectives and prerequisites
-- **[REPL Basics](repl-basics/)** - Interactive shell fundamentals including commands, query execution, and meta commands
-- **[MATCH Basics](match-basics/)** - Core pattern matching concepts with node patterns, relationship patterns, and filtering
-- **[Transaction Patterns](transaction-patterns-tutorial/)** - ACID transactions with BEGIN/COMMIT/ROLLBACK, savepoints, and error handling
-- **[Indexing Tutorial](indexing-tutorial/)** - Index creation and usage covering all six index types
-- **[Index Optimization](index-optimization/)** - Advanced index optimization including EXPLAIN analysis and performance tuning
-- **[Vector Search Tutorial](vector-search-tutorial/)** - Similarity search with HNSW indexes, embeddings, and K-NN queries
-- **[Graph Algorithms Tutorial](graph-algorithms-tutorial/)** - Practical guide to PageRank, community detection, shortest paths, and centrality
+- **[Tutorial Overview](/docs/tutorials/overview/)** - Introduction to the tutorial series with learning objectives and prerequisites
+- **[REPL Basics](/docs/tutorials/repl-basics/)** - Interactive shell fundamentals including commands, query execution, and meta commands
+- **[MATCH Basics](/docs/tutorials/match-basics/)** - Core pattern matching concepts with node patterns, relationship patterns, and filtering
+- **[Transaction Patterns](/docs/tutorials/transaction-patterns-tutorial/)** - ACID transactions with BEGIN/COMMIT/ROLLBACK, savepoints, and error handling
+- **[Indexing Tutorial](/docs/tutorials/indexing-tutorial/)** - Index creation and usage covering all six index types
+- **[Index Optimization](/docs/tutorials/index-optimization/)** - Advanced index optimization including EXPLAIN analysis and performance tuning
+- **[Vector Search Tutorial](/docs/tutorials/vector-search-tutorial/)** - Similarity search with HNSW indexes, embeddings, and K-NN queries
+- **[Graph Algorithms Tutorial](/docs/tutorials/graph-algorithms-tutorial/)** - Practical guide to PageRank, community detection, shortest paths, and centrality
 
 ## Tutorial Format
 
@@ -138,7 +138,7 @@ RETURN p.name;
 Suggested follow-up learning:
 
 ```
-Next: Learn about relationship patterns in [MATCH Basics](match-basics/)
+Next: Learn about relationship patterns in [MATCH Basics](/docs/tutorials/match-basics/)
 ```
 
 ## Quick Start Tutorial
@@ -219,7 +219,7 @@ Master the interactive shell:
 - **Transaction Control**: `\begin`, `\commit`, `\rollback`
 - **History**: Command history and search
 
-**See**: [REPL Basics](repl-basics/)
+**See**: [REPL Basics](/docs/tutorials/repl-basics/)
 
 ### MATCH Basics Tutorial
 
@@ -231,7 +231,7 @@ Learn pattern matching:
 - **Filtering**: WHERE clauses with complex conditions
 - **Aggregation**: COUNT, SUM, AVG, MIN, MAX
 
-**See**: [MATCH Basics](match-basics/)
+**See**: [MATCH Basics](/docs/tutorials/match-basics/)
 
 ### Transaction Patterns Tutorial
 
@@ -243,7 +243,7 @@ Master ACID transactions:
 - **Error Handling**: Retry logic for serialization errors
 - **Patterns**: Optimistic concurrency, pessimistic locking
 
-**See**: [Transaction Patterns](transaction-patterns-tutorial/)
+**See**: [Transaction Patterns](/docs/tutorials/transaction-patterns-tutorial/)
 
 ### Indexing Tutorial
 
@@ -255,7 +255,7 @@ Optimize query performance:
 - **Performance**: Before/after index benchmarks
 - **Maintenance**: Index statistics and rebuilding
 
-**See**: [Indexing Tutorial](indexing-tutorial/)
+**See**: [Indexing Tutorial](/docs/tutorials/indexing-tutorial/)
 
 ### Index Optimization Tutorial
 
@@ -267,7 +267,7 @@ Advanced index strategies:
 - **Partial Indexes**: Filtered indexes for subsets
 - **Index Selection**: When to use each index type
 
-**See**: [Index Optimization](index-optimization/)
+**See**: [Index Optimization](/docs/tutorials/index-optimization/)
 
 ### Vector Search Tutorial
 
@@ -279,7 +279,7 @@ Implement similarity search:
 - **Distance Metrics**: L2, cosine, dot product
 - **Hybrid Search**: Combine vector and keyword search
 
-**See**: [Vector Search Tutorial](vector-search-tutorial/)
+**See**: [Vector Search Tutorial](/docs/tutorials/vector-search-tutorial/)
 
 ### Graph Algorithms Tutorial
 
@@ -291,7 +291,7 @@ Apply graph algorithms:
 - **Centrality**: Betweenness, closeness, degree
 - **Practical Examples**: Social networks, recommendations
 
-**See**: [Graph Algorithms Tutorial](graph-algorithms-tutorial/)
+**See**: [Graph Algorithms Tutorial](/docs/tutorials/graph-algorithms-tutorial/)
 
 ## Sample Datasets
 
@@ -461,11 +461,11 @@ After completing tutorials:
 
 Start your learning journey:
 
-1. **[Begin with REPL Basics](repl-basics/)** - Get comfortable with the shell
-2. **[Learn MATCH Patterns](match-basics/)** - Master graph queries
-3. **[Practice Transactions](transaction-patterns-tutorial/)** - Ensure data consistency
-4. **[Optimize with Indexes](indexing-tutorial/)** - Improve performance
-5. **[Explore Advanced Topics](graph-algorithms-tutorial/)** - Apply algorithms
+1. **[Begin with REPL Basics](/docs/tutorials/repl-basics/)** - Get comfortable with the shell
+2. **[Learn MATCH Patterns](/docs/tutorials/match-basics/)** - Master graph queries
+3. **[Practice Transactions](/docs/tutorials/transaction-patterns-tutorial/)** - Ensure data consistency
+4. **[Optimize with Indexes](/docs/tutorials/indexing-tutorial/)** - Improve performance
+5. **[Explore Advanced Topics](/docs/tutorials/graph-algorithms-tutorial/)** - Apply algorithms
 
 ## Contributing Tutorials
 

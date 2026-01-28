@@ -168,7 +168,7 @@ import (
     "log"
     "time"
 
-    _ "go.codepros.org/geode"
+    _ "geodedb.com/geode"
 )
 
 db, err := sql.Open("geode", "geode://geode.example.com:3141")
@@ -553,10 +553,6 @@ geode connection-pool warmup --size=50 \
 ## Related Topics
 
 - [Encryption](/tags/encryption/) - Data encryption in transit and at rest
-- [Authentication](/docs/security/authentication/) - User authentication methods
-- [Sessions](/tags/sessions/) - Session management and configuration
 - [Configuration](/tags/configuration/) - Server and client configuration
-- [Performance](/docs/performance/) - Performance tuning and optimization
-- [Monitoring](/docs/operations/monitoring/) - Monitoring and observability
-- [High Availability](/docs/deployment/ha/) - Cluster configuration and load balancing
-- [Client Libraries](/docs/clients/) - Language-specific client documentation
+- [Security Overview](/docs/security/overview/) - Security documentation
+- [Client Libraries](/docs/client-libraries/) - Language-specific client documentation

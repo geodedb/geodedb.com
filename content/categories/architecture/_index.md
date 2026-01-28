@@ -544,13 +544,11 @@ geode/src/
 
 ## Related Tags
 
-- **[Architecture](/tags/architecture/)** - Architectural topics
 - **[MVCC](/tags/mvcc/)** - Multi-Version Concurrency Control
-- **[SSI](/tags/ssi/)** - Serializable Snapshot Isolation
-- **[WAL](/tags/wal/)** - Write-Ahead Log
+- **[ACID](/tags/acid/)** - ACID transaction guarantees
 - **[QUIC](/tags/quic/)** - QUIC protocol
-- **[Query Engine](/tags/query/)** - Query execution
-- **[Storage](/tags/storage/)** - Storage architecture
+- **[Query Optimization](/tags/query-optimization/)** - Query execution
+- **[Indexing](/tags/indexing/)** - Index architecture
 
 ## Architectural Resources
 

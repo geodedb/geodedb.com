@@ -517,8 +517,8 @@ Sometimes structural changes help:
 
 ## Further Reading
 
-- [Cost-Based Optimization](/docs/architecture/query-optimizer/) - Planner internals
+- [Query Execution](/docs/architecture/query-execution/) - Planner internals
 - [Index Types](/docs/reference/indexes/) - Index implementation details
 - [Statistics](/docs/reference/statistics/) - Statistics system
-- [Query Tuning Guide](/docs/performance/query-tuning/) - Advanced techniques
-- [Benchmarking](/docs/performance/benchmarking/) - Performance testing
+- [Performance Tuning](/docs/query/performance-tuning/) - Advanced techniques
+- [Performance Benchmarking](/docs/guides/performance-benchmarking/) - Performance testing

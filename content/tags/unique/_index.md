@@ -529,7 +529,6 @@ DELETE p2;
 
 - [Constraints](/tags/constraints/) - All constraint types
 - [Indexes](/tags/indexes/) - Index optimization
-- [Primary Keys](/tags/primary-keys/) - Primary key design
 - [Data Integrity](/tags/data-integrity/) - Data quality
 
 ## Further Reading

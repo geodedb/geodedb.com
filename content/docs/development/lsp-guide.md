@@ -36,7 +36,7 @@ Geode provides a complete Language Server Protocol (LSP) implementation for GQL 
 
 ### Prerequisites
 
-- Geode installed (see [Installation Guide](/docs/get-started/install/))
+- Geode installed (see [Installation Guide](/guides/installation/))
 - Basic familiarity with your IDE's plugin/extension system
 - For VS Code: Node.js and npm
 - For Neovim: nvim-lspconfig plugin

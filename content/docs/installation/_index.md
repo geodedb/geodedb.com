@@ -61,7 +61,7 @@ Build Geode from source code using the Zig compiler. This method gives you the m
 
 **Requirements**: Zig 0.15.1+ ([download from ziglang.org](https://ziglang.org/download/))
 
-**See**: [Build from Source](from-source/)
+**See**: [Build from Source](/docs/installation/from-source/)
 
 ### Docker Installation
 
@@ -78,7 +78,7 @@ Run Geode in Docker containers for isolated, reproducible deployments. Docker in
 
 ## Topics in This Section
 
-- **[From Source](from-source/)** - Build Geode from source code with Zig including prerequisites, build commands, and platform-specific instructions
+- **[From Source](/docs/installation/from-source/)** - Build Geode from source code with Zig including prerequisites, build commands, and platform-specific instructions
 
 ## Platform Support
 

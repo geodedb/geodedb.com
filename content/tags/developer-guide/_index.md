@@ -304,14 +304,14 @@ except QueryError as e:
 
 **Installation**:
 ```bash
-go get go.codepros.org/geode
+go get geodedb.com/geode
 ```
 
 **Basic Usage**:
 ```go
 import (
     "database/sql"
-    _ "go.codepros.org/geode"
+    _ "geodedb.com/geode"
 )
 
 func main() {

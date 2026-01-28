@@ -743,7 +743,6 @@ def generate_performance_comparison(results):
 - **[Deployment](/tags/deployment/)**: Deployment strategies
 - **[Containers](/tags/containers/)**: Container-based testing
 - **[Testing](/tags/testing/)**: General testing practices
-- **[Quality Assurance](/tags/quality-assurance/)**: QA processes
 
 ## Further Reading
 

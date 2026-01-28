@@ -276,6 +276,6 @@ storage:
 
 ## Next Steps
 
-- [Query Optimization](../query-optimization/) - CBO and index selection
-- [Distributed Architecture](../distributed-architecture/) - Multi-node deployments
-- [Performance Tuning](/docs/guides/performance-tuning/) - Optimization strategies
+- [Query Optimization](/docs/architecture/query-optimization/) - CBO and index selection
+- [Distributed Systems](/docs/architecture/distributed-systems/) - Multi-node deployments
+- [Performance Tuning](/docs/query/performance-tuning/) - Optimization strategies

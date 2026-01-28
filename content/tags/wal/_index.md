@@ -403,16 +403,15 @@ Optimize recovery speed:
 - [Multi-Version Concurrency Control (MVCC)](/tags/mvcc/) - WAL integrates with MVCC
 - [Crash Recovery](/docs/recovery/) - Recovery process details
 - [Replication](/tags/distributed/) - WAL-based replication
-- [Backup and Restore](/docs/backup/) - Using WAL for backups
+- [Backup and Restore](/docs/operations/backup/) - Using WAL for backups
 - [Performance](/tags/performance/) - WAL performance tuning
 
 ## Further Reading
 
 - [Durability and Recovery Guide](/docs/recovery/) - Complete recovery documentation
 - [Architecture Overview](/docs/architecture/) - WAL in system architecture
-- [Replication Guide](/docs/replication/) - WAL streaming replication
-- [Performance Tuning](/docs/performance-tuning/) - WAL optimization
-- [Monitoring Guide](/docs/monitoring/) - WAL health monitoring
+- [Performance Tuning](/docs/query/performance-tuning/) - WAL optimization
+- [Monitoring Guide](/docs/operations/monitoring/) - WAL health monitoring
 
 Geode's Write-Ahead Logging implementation provides rock-solid durability guarantees while maintaining high write throughput—essential for production graph workloads where data loss is unacceptable.
 
@@ -791,9 +790,8 @@ geode_wal_files_count * 64 * 1024 * 1024  # Assuming 64MB segments
 
 - [Durability and Recovery Guide](/docs/recovery/) - Complete recovery documentation
 - [Architecture Overview](/docs/architecture/) - WAL in system architecture
-- [Replication Guide](/docs/replication/) - WAL streaming replication
-- [Performance Tuning](/docs/performance-tuning/) - WAL optimization
-- [Monitoring Guide](/docs/monitoring/) - WAL health monitoring
+- [Performance Tuning](/docs/query/performance-tuning/) - WAL optimization
+- [Monitoring Guide](/docs/operations/monitoring/) - WAL health monitoring
 - [PostgreSQL WAL Internals](https://www.postgresql.org/docs/current/wal-internals.html) - Detailed WAL concepts
 - [ARIES Recovery Algorithm](https://cs.stanford.edu/people/chrismre/cs345/rl/aries.pdf) - Foundational paper
 

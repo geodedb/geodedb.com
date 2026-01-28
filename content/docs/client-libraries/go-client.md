@@ -22,7 +22,7 @@ A production-ready Go `database/sql` driver for the Geode graph database with fu
 ## Installation
 
 ```bash
-go get go.codepros.org/geode
+go get geodedb.com/geode
 ```
 
 ## Features
@@ -49,7 +49,7 @@ import (
     "log"
     "time"
 
-    _ "go.codepros.org/geode"
+    _ "geodedb.com/geode"
 )
 
 func main() {
@@ -305,7 +305,7 @@ The driver provides rich error types with diagnostic information:
 ```go
 import (
     "errors"
-    "go.codepros.org/geode"
+    "geodedb.com/geode"
 )
 
 rows, err := db.QueryContext(ctx, "INVALID QUERY")
@@ -370,7 +370,7 @@ db.SetConnMaxIdleTime(1 * time.Minute)
 Helper functions for Unicode conversion:
 
 ```go
-import "go.codepros.org/geode"
+import "geodedb.com/geode"
 
 // UTF-8 to UTF-16
 utf16 := geode.Utf8ToUtf16("Hello 🌍")
@@ -543,7 +543,7 @@ db.SetMaxOpenConns(200)
 
 ## Next Steps
 
-- [GQL Reference](../../gql-reference/) - Query language guide
-- [Transaction Management](../../features/transactions/) - Advanced transaction features
-- [Error Handling](../../api-reference/errors/) - Complete error reference
-- [Performance Tuning](../../performance/) - Optimize performance
+- [GQL Reference](/docs/gql-reference/) - Query language guide
+- [Transaction Patterns](/docs/transactions/advanced-patterns/) - Advanced transaction features
+- [Error Codes](/docs/reference/error-codes/) - Complete error reference
+- [Performance Tuning](/docs/query/performance-tuning/) - Optimize performance

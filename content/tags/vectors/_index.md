@@ -150,7 +150,7 @@ async def store_document_with_embedding(client, doc_id, title, content):
 import (
     "context"
     openai "github.com/sashabaranov/go-openai"
-    "go.codepros.org/geode"
+    "geodedb.com/geode"
 )
 
 func storeProductWithEmbedding(ctx context.Context, db *sql.DB, product Product) error {

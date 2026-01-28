@@ -805,8 +805,8 @@ Complete projects that combine multiple concepts:
 - **[Getting Started](/tags/getting-started/)**: Foundation concepts and setup
 - **[Developer Guide](/tags/developer-guide/)**: Complete API reference
 - **[Quickstart](/tags/quickstart/)**: Fast-track guides for immediate productivity
-- **[Interactive Learning](/tags/interactive-learning/)**: More interactive exercises
-- **[Code Challenges](/tags/code-challenges/)**: Coding challenges and competitions
+- **[Tutorials](/tags/tutorials/)**: Structured learning paths
+- **[Examples](/tags/examples/)**: Ready-to-use code examples
 
 ## Additional Resources
 

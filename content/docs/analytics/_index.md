@@ -50,12 +50,12 @@ Built on top of Geode's storage engine, analytics operations benefit from memory
 
 ## Topics in This Section
 
-- **[Graph Algorithms](graph-algorithms/)** - Complete reference for supported graph algorithms including PageRank, community detection, shortest paths, and centrality measures
-- **[Real-time Analytics](real-time-analytics/)** - Streaming pattern detection, anomaly detection with ML, CDC integration, and backpressure handling
+- **[Graph Algorithms](/docs/analytics/graph-algorithms/)** - Complete reference for supported graph algorithms including PageRank, community detection, shortest paths, and centrality measures
+- **[Real-time Analytics](/docs/analytics/real-time-analytics/)** - Streaming pattern detection, anomaly detection with ML, CDC integration, and backpressure handling
 
 ## Learn More
 
-- [ML Graph Embeddings](/docs/features/ml-graph-embeddings/) - Node2Vec, GraphSAGE, and DeepWalk for graph representation learning
+- [Real-Time Analytics](/docs/analytics/real-time-analytics/) - Streaming pattern detection, anomaly detection with ML, CDC integration
 - [Query Performance Tuning](/docs/query/performance-tuning/) - Optimize analytics queries for maximum throughput
 - [Materialized Views](/docs/query/materialized-views/) - Cache analytics results for fast repeated access
 - [Architecture: Analytics](/docs/architecture/#advanced-features) - Technical architecture of the analytics subsystem

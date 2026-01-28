@@ -43,7 +43,7 @@ Geode's Go client implements the standard `database/sql` interface, enabling sea
 import (
     "database/sql"
     "fmt"
-    _ "go.codepros.org/geode"
+    _ "geodedb.com/geode"
 )
 
 func main() {
@@ -796,5 +796,5 @@ async def connect_k8s():
 - [Python Client Documentation](/docs/client-libraries/python-client/) - Python client reference
 - [Rust Client Documentation](/docs/client-libraries/rust-client/) - Rust client guide
 - [Node.js Client Documentation](/docs/client-libraries/nodejs-client/) - Node.js client guide
-- [REST API Reference](/docs/api/rest/) - HTTP API documentation
-- [Integration Examples](/docs/examples/integration/) - Real-world integration patterns
+- [API Reference](/docs/api-reference/) - API documentation
+- [Examples](/tags/examples/) - Real-world integration patterns

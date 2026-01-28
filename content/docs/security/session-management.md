@@ -34,7 +34,7 @@ Geode provides comprehensive session management features for maintaining statefu
 
 ### Prerequisites
 
-- Geode installed (see [Installation Guide](/docs/get-started/install/))
+- Geode installed (see [Installation Guide](/guides/installation/))
 - Basic understanding of database sessions
 - Familiarity with GQL query syntax
 
@@ -205,7 +205,7 @@ All Geode clients support connection pooling for optimal resource utilization an
 #### Go Client Pooling
 
 ```go
-import "go.codepros.org/geode"
+import "geodedb.com/geode"
 
 // Create connection pool
 pool, err := geode.NewConnectionPool(&geode.PoolConfig{

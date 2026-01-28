@@ -613,7 +613,7 @@ async with client.connection() as conn:
 
 ```go
 import "database/sql"
-import _ "go.codepros.org/geode"
+import _ "geodedb.com/geode"
 
 db, _ := sql.Open("geode", "geode://localhost:3141")
 

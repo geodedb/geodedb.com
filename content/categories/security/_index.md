@@ -411,8 +411,8 @@ async def check_permission(user_id: int, resource: str, action: str):
 
 ## Further Reading
 
-- [Security Overview](/docs/security-overview/) - Complete security architecture
-- [RLS Configuration Guide](/docs/rls-configuration/) - Row-Level Security setup
-- [Encryption Setup](/docs/encryption-setup/) - TDE and FLE configuration
-- [Audit Logging Guide](/docs/audit-logging/) - Compliance logging
-- [Compliance Documentation](/docs/compliance/) - Regulatory compliance guides
+- [Security Overview](/docs/security/overview/) - Complete security architecture
+- [Row-Level Security](/tags/row-level-security/) - Row-Level Security setup
+- [Field-Level Encryption](/docs/security/field-level-encryption/) - TDE and FLE configuration
+- [Audit Logging](/docs/ops/audit-logging/) - Compliance logging
+- [Compliance](/tags/compliance/) - Regulatory compliance guides

@@ -670,20 +670,15 @@ async def get_translation(content_id: str, locale: str):
 ## Related Topics
 
 - **[Unicode](/tags/unicode/)**: Unicode implementation details
-- **[Collation](/tags/collation/)**: String comparison and sorting
-- **[Timezone](/tags/timezone/)**: Timezone handling strategies
-- **[Localization](/tags/localization/)**: Localization implementation
 - **[Data Modeling](/tags/data-modeling/)**: Graph schema design
 - **[Indexing](/tags/indexing/)**: Index strategies for multilingual data
 - **[Performance](/tags/performance/)**: Optimization for i18n workloads
+- **[Configuration](/tags/configuration/)**: Server configuration options
 
 ## Further Reading
 
-- **i18n Guide**: `/docs/features/internationalization/`
-- **Unicode Reference**: `/docs/reference/unicode/`
-- **Collation Guide**: `/docs/features/collation/`
-- **Timezone Handling**: `/docs/features/timezones/`
-- **Best Practices**: `/docs/best-practices/internationalization/`
+- **Unicode Reference**: `/docs/reference/unicode-support/`
+- **Server Configuration**: `/docs/configuration/server-configuration/`
 
 ## Conclusion
 

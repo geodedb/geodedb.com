@@ -111,7 +111,7 @@ cd geode-client-go
 cat README.md
 
 # GoDoc documentation
-go doc -all go.codepros.org/geode
+go doc -all geodedb.com/geode
 ```
 
 **Python Client:**
@@ -371,7 +371,7 @@ Example code demonstrates common patterns:
 
 **Basic Connection (Go):**
 ```go
-import "go.codepros.org/geode"
+import "geodedb.com/geode"
 
 client, err := geode.NewClient("localhost:3141")
 if err != nil {

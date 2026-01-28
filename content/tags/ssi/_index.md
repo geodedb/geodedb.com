@@ -555,19 +555,16 @@ async def plot_commit_latency(client):
 
 ### Documentation
 
-- [Transaction Isolation Guide](/docs/isolation-levels/) - Complete isolation documentation
-- [Concurrency Control](/docs/concurrency/) - Detailed concurrency mechanisms
-- [Performance Tuning](/docs/performance-tuning/) - SSI optimization techniques
+- [Transactions Guide](/docs/transactions/) - Complete transaction documentation
+- [Performance Optimization](/docs/performance/) - Performance tuning techniques
 
 ### Academic Papers
 
 - "Serializable Isolation for Snapshot Databases" (Cahill et al., 2008) - Original SSI paper
-- [ISO/IEC 39075:2024](/tags/iso-standard/) - GQL standard transaction semantics
 
 ### Implementation Details
 
 - [Architecture Overview](/docs/architecture/) - System architecture including SSI
-- [Conflict Detection](/docs/conflict-detection/) - Detailed detection algorithms
-- [Distributed SSI](/tags/distributed/) - SSI in distributed environments
+- [Distributed Systems](/docs/architecture/distributed-systems/) - Distributed transaction handling
 
 Geode's SSI implementation provides true serializability with excellent performance. By detecting dangerous structures at commit time rather than blocking during execution, SSI enables high-concurrency workloads while maintaining the strongest possible correctness guarantees.

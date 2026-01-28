@@ -441,6 +441,7 @@ alerts:
 
 ## Next Steps
 
-- [Storage Engine](../storage-engine/) - Data encryption at rest
-- [Distributed Systems](../distributed-systems/) - Cluster security
+- [Storage Engine](/docs/architecture/storage-engine/) - Data encryption at rest
+- [Distributed Systems](/docs/architecture/distributed-systems/) - Cluster security
+- [Query Optimization](/docs/architecture/query-optimization/) - Query planning
 - [Audit Logging](/docs/ops/audit-logging/) - Detailed audit configuration

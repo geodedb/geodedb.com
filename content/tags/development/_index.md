@@ -153,7 +153,7 @@ MATCH (p:Person) RETURN p;
 
 **Installation**:
 ```bash
-go get go.codepros.org/geode
+go get geodedb.com/geode
 ```
 
 **Basic Usage**:
@@ -166,7 +166,7 @@ import (
     "fmt"
     "log"
     
-    _ "go.codepros.org/geode"
+    _ "geodedb.com/geode"
 )
 
 func main() {

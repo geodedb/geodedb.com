@@ -94,7 +94,7 @@ import (
     "context"
     "testing"
 
-    "go.codepros.org/geode"
+    "geodedb.com/geode"
 )
 
 func setupTestDB(t *testing.T) *geode.DB {
@@ -535,7 +535,6 @@ test:
 
 ## Further Reading
 
-- [Test Harness Documentation](/docs/development/test-harness/) - Cross-client testing
+- [Testing Guide](/docs/development/testing-guide/) - Cross-client testing
 - [Performance Benchmarking](/docs/performance/benchmarking/) - Benchmark methodology
-- [Contributing Guide](/docs/contribute/) - Contributing tests
-- [CANARY Markers](/docs/development/canary/) - Evidence-based testing
+- [Governance Guide](/docs/development/governance/) - Evidence-based development with CANARY markers

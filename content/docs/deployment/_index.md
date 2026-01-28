@@ -56,7 +56,7 @@ Kubernetes-ready deployment with Helm charts, StatefulSets, and native cloud int
 
 ## Topics in This Section
 
-- **[Deployment Patterns](deployment-patterns/)** - Comprehensive guide to standalone, distributed, and cloud-native deployment architectures
+- **[Deployment Patterns](/docs/deployment/deployment-patterns/)** - Comprehensive guide to standalone, distributed, and cloud-native deployment architectures
 
 ## Related Documentation
 

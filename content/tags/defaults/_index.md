@@ -133,7 +133,7 @@ package main
 import (
     "context"
     "fmt"
-    "go.codepros.org/geode"
+    "geodedb.com/geode"
 )
 
 func createEvent(ctx context.Context, db *geode.DB, name string) error {

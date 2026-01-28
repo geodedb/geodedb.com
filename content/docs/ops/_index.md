@@ -63,11 +63,11 @@ Direct installation on physical or virtual servers for maximum performance and c
 
 ## Topics in This Section
 
-- **[Deployment](deployment/)** - Complete production deployment guide with Vault, MinIO, Prometheus, Grafana, Loki, and Nginx reverse proxy
-- **[Docker Deployment](docker-deployment/)** - Docker and Docker Compose deployment including singleton and distributed cluster configurations
-- **[Observability](observability/)** - Monitoring, metrics, logging, and distributed tracing for production visibility
-- **[Audit Logging](audit-logging/)** - Comprehensive audit trail for compliance including GDPR, SOX, HIPAA, and PCI-DSS
-- **[Advanced Telemetry](telemetry-advanced/)** - Advanced telemetry patterns including distributed tracing, custom metrics, and log aggregation
+- **[Deployment](/docs/ops/deployment/)** - Complete production deployment guide with Vault, MinIO, Prometheus, Grafana, Loki, and Nginx reverse proxy
+- **[Docker Deployment](/docs/ops/docker-deployment/)** - Docker and Docker Compose deployment including singleton and distributed cluster configurations
+- **[Observability](/docs/ops/observability/)** - Monitoring, metrics, logging, and distributed tracing for production visibility
+- **[Audit Logging](/docs/ops/audit-logging/)** - Comprehensive audit trail for compliance including GDPR, SOX, HIPAA, and PCI-DSS
+- **[Advanced Telemetry](/docs/ops/telemetry-advanced/)** - Advanced telemetry patterns including distributed tracing, custom metrics, and log aggregation
 
 ## Observability Stack
 
@@ -100,7 +100,7 @@ Geode integrates with industry-standard observability tools:
 - **Security Dashboard**: Authentication, authorization, and audit events
 - **Capacity Planning**: Trend analysis and forecasting
 
-See [Observability](observability/) for complete setup.
+See [Observability](/docs/ops/observability/) for complete setup.
 
 ## Security and Compliance
 
@@ -120,7 +120,7 @@ Supports compliance with:
 - HIPAA (healthcare data access logging)
 - PCI-DSS (payment card data security)
 
-See [Audit Logging](audit-logging/) for configuration.
+See [Audit Logging](/docs/ops/audit-logging/) for configuration.
 
 ### Encryption
 

@@ -666,7 +666,7 @@ Start simple, iterate based on usage patterns, and always profile your queries.
 
 - [GQL Reference](/docs/gql-reference/)
 - [Performance Guide](/docs/performance/)
-- [Migration Guide](/guides/migration/)
+- [Migration Guide](/docs/guides/migration-guide/)
 - [Example Schemas](https://gitlab.com/devnw/codepros/geode/examples)
 
 ---

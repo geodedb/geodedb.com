@@ -618,15 +618,10 @@ Geode's consistency models map to CAP choices:
 - [Clustering](/tags/clustering/) - Database clustering and multi-node deployment
 - [Replication](/tags/replication/) - Data replication strategies
 - [Transactions](/tags/transactions/) - Transaction management and ACID properties
-- [Distributed](/tags/distributed/) - Distributed systems architecture
 - [Performance](/tags/performance/) - Performance optimization
-- [High Availability](/tags/high-availability/) - Building resilient systems
 
 ## Further Reading
 
-- [Consistency Models Guide](/docs/architecture/consistency/)
-- [Transaction Isolation Levels](/docs/features/transactions/)
-- [Replication and Consistency](/docs/architecture/replication/)
-- [CAP Theorem and Trade-offs](/docs/concepts/cap-theorem/)
-- [Conflict Resolution Strategies](/docs/features/conflict-resolution/)
-- [Production Consistency Configuration](/docs/deployment/consistency-tuning/)
+- [Distributed Architecture](/docs/architecture/distributed-architecture/) - Distributed systems design
+- [Transaction Patterns](/docs/transactions/advanced-patterns/) - Advanced transaction usage
+- [Distributed Systems](/docs/architecture/distributed-systems/) - Distributed systems architecture

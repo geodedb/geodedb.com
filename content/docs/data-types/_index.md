@@ -325,5 +325,5 @@ RETURN device.name, device.ip
 ## Next Steps
 
 - [GQL Reference](../gql-reference/) - Query language syntax
-- [Functions Reference](../api-reference/functions/) - Type manipulation functions
-- [Index Types](../configuration/indexes/) - Index configuration guide
+- [Functions Reference](../api-reference/) - Type manipulation functions
+- [Index Types](/docs/reference/indexes/) - Index configuration guide
