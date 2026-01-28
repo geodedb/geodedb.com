@@ -475,10 +475,48 @@ COMMIT;
 
 SSI may abort transactions due to conflicts. **Retry** with exponential backoff.
 
-```python
-import asyncio
-from geode_client import QueryError
+{{< tabs >}}
+{{< tab "Go" >}}
+```go
+func transferMoney(ctx context.Context, db *sql.DB, fromID, toID string, amount int) error {
+    for attempt := 0; attempt < maxRetries; attempt++ {
+        tx, err := db.BeginTx(ctx, nil)
+        if err != nil {
+            return err
+        }
 
+        _, err = tx.ExecContext(ctx,
+            "MATCH (a:Account {id: ?}) SET a.balance = a.balance - ?",
+            fromID, amount)
+        if err != nil {
+            tx.Rollback()
+            if isSerializationError(err) && attempt < maxRetries-1 {
+                time.Sleep(time.Duration(1<<attempt) * 100 * time.Millisecond)
+                continue
+            }
+            return err
+        }
+
+        _, err = tx.ExecContext(ctx,
+            "MATCH (b:Account {id: ?}) SET b.balance = b.balance + ?",
+            toID, amount)
+        if err != nil {
+            tx.Rollback()
+            if isSerializationError(err) && attempt < maxRetries-1 {
+                time.Sleep(time.Duration(1<<attempt) * 100 * time.Millisecond)
+                continue
+            }
+            return err
+        }
+
+        return tx.Commit()
+    }
+    return fmt.Errorf("max retries exceeded")
+}
+```
+{{< /tab >}}
+{{< tab "Python" >}}
+```python
 async def transfer_money(client, from_id, to_id, amount):
     for attempt in range(MAX_RETRIES):
         async with client.connection() as conn:
@@ -498,8 +536,126 @@ async def transfer_money(client, from_id, to_id, amount):
                 await conn.rollback()
                 if attempt == MAX_RETRIES - 1:
                     raise
-                await asyncio.sleep(2 ** attempt)  # Exponential backoff
+                await asyncio.sleep(2 ** attempt)
 ```
+{{< /tab >}}
+{{< tab "Rust" >}}
+```rust
+async fn transfer_money(conn: &mut Connection, from_id: &str, to_id: &str, amount: i64) -> Result<()> {
+    for attempt in 0..MAX_RETRIES {
+        conn.begin().await?;
+
+        let debit_params = [
+            ("id", Value::string(from_id)),
+            ("amount", Value::int(amount)),
+        ].into();
+        let credit_params = [
+            ("id", Value::string(to_id)),
+            ("amount", Value::int(amount)),
+        ].into();
+
+        match async {
+            conn.query_with_params(
+                "MATCH (a:Account {id: $id}) SET a.balance = a.balance - $amount",
+                &debit_params
+            ).await?;
+            conn.query_with_params(
+                "MATCH (b:Account {id: $id}) SET b.balance = b.balance + $amount",
+                &credit_params
+            ).await?;
+            conn.commit().await
+        }.await {
+            Ok(_) => return Ok(()),
+            Err(e) if e.is_retryable() && attempt < MAX_RETRIES - 1 => {
+                conn.rollback().await?;
+                tokio::time::sleep(Duration::from_millis(100 * (1 << attempt))).await;
+            }
+            Err(e) => {
+                conn.rollback().await?;
+                return Err(e);
+            }
+        }
+    }
+    Err("max retries exceeded".into())
+}
+```
+{{< /tab >}}
+{{< tab "Node.js" >}}
+```typescript
+async function transferMoney(fromId: string, toId: string, amount: number) {
+    for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+        const conn = await client.getConnection();
+        const tx = await conn.begin();
+
+        try {
+            await tx.exec(
+                'MATCH (a:Account {id: $id}) SET a.balance = a.balance - $amount',
+                { params: { id: fromId, amount } }
+            );
+            await tx.exec(
+                'MATCH (b:Account {id: $id}) SET b.balance = b.balance + $amount',
+                { params: { id: toId, amount } }
+            );
+            await tx.commit();
+            return; // Success
+        } catch (e) {
+            await tx.rollback();
+            if (isRetryableError(e) && attempt < MAX_RETRIES - 1) {
+                await new Promise(r => setTimeout(r, 100 * (1 << attempt)));
+                continue;
+            }
+            throw e;
+        } finally {
+            await client.releaseConnection(conn);
+        }
+    }
+}
+```
+{{< /tab >}}
+{{< tab "Zig" >}}
+```zig
+fn transferMoney(client: *GeodeClient, allocator: std.mem.Allocator, from_id: []const u8, to_id: []const u8, amount: i64) !void {
+    var attempt: usize = 0;
+    while (attempt < MAX_RETRIES) : (attempt += 1) {
+        try client.sendBegin();
+        _ = try client.receiveMessage(30000);
+
+        // Build params for parameterized queries
+        var params = std.json.ObjectMap.init(allocator);
+        defer params.deinit();
+        try params.put("from_id", .{ .string = from_id });
+        try params.put("to_id", .{ .string = to_id });
+        try params.put("amount", .{ .integer = amount });
+
+        // Debit sender
+        client.sendRunGql(1,
+            "MATCH (a:Account {id: $from_id}) SET a.balance = a.balance - $amount",
+            .{ .object = params }) catch |err| {
+            client.sendRollback() catch {};
+            _ = client.receiveMessage(30000) catch {};
+            if (err == error.SerializationError and attempt < MAX_RETRIES - 1) {
+                std.time.sleep(100_000_000 * (@as(u64, 1) << @intCast(attempt)));
+                continue;
+            }
+            return err;
+        };
+        _ = try client.receiveMessage(30000);
+
+        // Credit receiver
+        try client.sendRunGql(2,
+            "MATCH (a:Account {id: $to_id}) SET a.balance = a.balance + $amount",
+            .{ .object = params });
+        _ = try client.receiveMessage(30000);
+
+        try client.sendCommit();
+        _ = try client.receiveMessage(30000);
+        return;
+    }
+    return error.MaxRetriesExceeded;
+}
+```
+{{< /tab >}}
+{{< /tabs >}}
 
 ### 3. Use Savepoints for Complex Logic
 

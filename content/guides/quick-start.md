@@ -318,26 +318,39 @@ pub fn main() !void {
     defer client.deinit();
 
     try client.connect();
-    try client.openStream();
     try client.sendHello("quickstart", "1.0.0");
     _ = try client.receiveMessage(30000);
 
-    // Create people
-    try client.sendQuery(
-        \\CREATE (:Person {name: "Alice", age: 30, city: "New York"})
-    );
+    // Create people with parameterized queries
+    var params = std.json.ObjectMap.init(allocator);
+    defer params.deinit();
+    try params.put("name", .{ .string = "Alice" });
+    try params.put("age", .{ .integer = 30 });
+    try params.put("city", .{ .string = "New York" });
+
+    try client.sendRunGql(1, "CREATE (:Person {name: $name, age: $age, city: $city})",
+        .{ .object = params });
     _ = try client.receiveMessage(30000);
 
-    try client.sendQuery(
-        \\CREATE (:Person {name: "Bob", age: 25, city: "San Francisco"})
-    );
+    params.clearRetainingCapacity();
+    try params.put("name", .{ .string = "Bob" });
+    try params.put("age", .{ .integer = 25 });
+    try params.put("city", .{ .string = "San Francisco" });
+
+    try client.sendRunGql(2, "CREATE (:Person {name: $name, age: $age, city: $city})",
+        .{ .object = params });
     _ = try client.receiveMessage(30000);
 
     // Create relationship
-    try client.sendQuery(
-        \\MATCH (a:Person {name: "Alice"}), (b:Person {name: "Bob"})
-        \\CREATE (a)-[:KNOWS {since: 2020}]->(b)
-    );
+    params.clearRetainingCapacity();
+    try params.put("from", .{ .string = "Alice" });
+    try params.put("to", .{ .string = "Bob" });
+    try params.put("since", .{ .integer = 2020 });
+
+    try client.sendRunGql(3,
+        \\MATCH (a:Person {name: $from}), (b:Person {name: $to})
+        \\CREATE (a)-[:KNOWS {since: $since}]->(b)
+    , .{ .object = params });
     _ = try client.receiveMessage(30000);
 
     std.debug.print("Graph created!\n", .{});
@@ -429,13 +442,19 @@ for (const row of rows) {
 {{< /tab >}}
 {{< tab "Zig" >}}
 ```zig
-try client.sendQuery(
+try client.sendRunGql(1,
     \\MATCH (p:Person)
     \\RETURN p.name, p.age, p.city
     \\ORDER BY p.age
-);
+, null);
+const schema = try client.receiveMessage(30000);
+defer allocator.free(schema);
+
+// Pull results
+try client.sendPull(1, 1000);
 const result = try client.receiveMessage(30000);
 defer allocator.free(result);
+
 // Parse JSON response and iterate rows
 std.debug.print("Result: {s}\n", .{result});
 ```
@@ -511,10 +530,14 @@ for (const row of rows) {
 {{< /tab >}}
 {{< tab "Zig" >}}
 ```zig
-try client.sendQuery(
+try client.sendRunGql(1,
     \\MATCH (p:Person)-[:KNOWS]->(friend:Person)
     \\RETURN p.name AS person, friend.name AS friend
-);
+, null);
+const schema = try client.receiveMessage(30000);
+defer allocator.free(schema);
+
+try client.sendPull(1, 1000);
 const result = try client.receiveMessage(30000);
 defer allocator.free(result);
 std.debug.print("Result: {s}\n", .{result});
@@ -685,24 +708,32 @@ console.log('Transaction committed!');
 {{< tab "Zig" >}}
 ```zig
 // Begin transaction
-try client.sendQuery("BEGIN");
+try client.sendBegin();
 _ = try client.receiveMessage(30000);
 
-// Create a person
-try client.sendQuery(
-    \\CREATE (:Person {name: "David", age: 28})
-);
+// Create a person with params
+var params = std.json.ObjectMap.init(allocator);
+defer params.deinit();
+try params.put("name", .{ .string = "David" });
+try params.put("age", .{ .integer = 28 });
+
+try client.sendRunGql(1, "CREATE (:Person {name: $name, age: $age})",
+    .{ .object = params });
 _ = try client.receiveMessage(30000);
 
-// Create relationship
-try client.sendQuery(
-    \\MATCH (d:Person {name: "David"}), (a:Person {name: "Alice"})
+// Create relationship with params
+params.clearRetainingCapacity();
+try params.put("david", .{ .string = "David" });
+try params.put("alice", .{ .string = "Alice" });
+
+try client.sendRunGql(2,
+    \\MATCH (d:Person {name: $david}), (a:Person {name: $alice})
     \\CREATE (d)-[:KNOWS]->(a)
-);
+, .{ .object = params });
 _ = try client.receiveMessage(30000);
 
 // Commit
-try client.sendQuery("COMMIT");
+try client.sendCommit();
 _ = try client.receiveMessage(30000);
 
 std.debug.print("Transaction committed!\n", .{});

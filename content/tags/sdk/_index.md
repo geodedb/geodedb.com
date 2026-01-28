@@ -53,7 +53,7 @@ Geode's SDKs provide:
 ### Installation
 
 ```bash
-go get go.codepros.org/geode
+go get geodedb.com/geode
 ```
 
 ### Quick Start
@@ -66,7 +66,7 @@ import (
     "fmt"
     "log"
 
-    _ "go.codepros.org/geode"
+    _ "geodedb.com/geode"
 )
 
 func main() {
@@ -309,11 +309,20 @@ pub fn main() !void {
     const hello = try client.receiveMessage(30000);
     defer allocator.free(hello);
 
-    try client.sendQuery(
-        "MATCH (p:Person)-[:KNOWS]->(friend:Person) "
-        "WHERE p.name = 'Alice' "
-        "RETURN friend.name, friend.age"
-    );
+    // Execute a parameterized query
+    var params = std.json.ObjectMap.init(allocator);
+    defer params.deinit();
+    try params.put("name", .{ .string = "Alice" });
+
+    try client.sendRunGql(1,
+        \\MATCH (p:Person)-[:KNOWS]->(friend:Person)
+        \\WHERE p.name = $name
+        \\RETURN friend.name, friend.age
+    , .{ .object = params });
+    const schema = try client.receiveMessage(30000);
+    defer allocator.free(schema);
+
+    try client.sendPull(1, 1000);
     const result = try client.receiveMessage(30000);
     defer allocator.free(result);
 
@@ -370,7 +379,7 @@ let client = Client::builder()
 
 **Go**:
 ```go
-import "go.codepros.org/geode/errors"
+import "geodedb.com/geode/errors"
 
 if err != nil {
     if errors.IsSyntaxError(err) {

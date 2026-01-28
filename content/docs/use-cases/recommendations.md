@@ -178,21 +178,29 @@ async function getCollaborativeRecommendations(userId: string, limit = 20) {
 {{< /tab >}}
 {{< tab "Zig" >}}
 ```zig
-fn getCollaborativeRecommendations(client: *GeodeClient, user_id: []const u8) ![]Recommendation {
-    const query = std.fmt.allocPrint(allocator,
-        \\MATCH (me:User {{id: "{s}"}})-[:PURCHASED]->(item:Item)<-[:PURCHASED]-(similar:User)
+fn getCollaborativeRecommendations(client: *GeodeClient, allocator: std.mem.Allocator, user_id: []const u8) ![]Recommendation {
+    // Build params JSON object
+    var params = std.json.ObjectMap.init(allocator);
+    defer params.deinit();
+    try params.put("user_id", .{ .string = user_id });
+
+    const query =
+        \\MATCH (me:User {id: $user_id})-[:PURCHASED]->(item:Item)<-[:PURCHASED]-(similar:User)
         \\WITH similar, COUNT(item) AS common ORDER BY common DESC LIMIT 10
         \\MATCH (similar)-[:PURCHASED]->(rec:Item)
-        \\WHERE NOT EXISTS {{ MATCH (me:User {{id: "{s}"}})-[:PURCHASED]->(rec) }}
+        \\WHERE NOT EXISTS { MATCH (me:User {id: $user_id})-[:PURCHASED]->(rec) }
         \\WITH rec, COUNT(similar) AS strength
         \\RETURN rec.name, strength ORDER BY strength DESC LIMIT 20
-    , .{user_id, user_id}) catch unreachable;
-    defer allocator.free(query);
+    ;
 
-    try client.sendQuery(query);
+    try client.sendRunGql(1, query, .{ .object = params });
+    const schema = try client.receiveMessage(30000);
+    allocator.free(schema);
+
+    try client.sendPull(1, 1000);
     const result = try client.receiveMessage(30000);
     defer allocator.free(result);
-    return parseRecommendations(result);
+    return parseRecommendations(allocator, result);
 }
 ```
 {{< /tab >}}

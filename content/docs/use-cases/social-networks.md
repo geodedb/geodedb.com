@@ -286,21 +286,28 @@ async function getFriendRecommendations(userId: string, limit = 10) {
 {{< /tab >}}
 {{< tab "Zig" >}}
 ```zig
-fn getFriendRecommendations(client: *GeodeClient, user_id: []const u8) ![]Recommendation {
-    const query = std.fmt.allocPrint(allocator,
-        \\MATCH (me:User {{id: "{s}"}})-[:FOLLOWS]->(mutual:User)<-[:FOLLOWS]-(candidate:User)
+fn getFriendRecommendations(client: *GeodeClient, allocator: std.mem.Allocator, user_id: []const u8) ![]Recommendation {
+    // Build params JSON object
+    var params = std.json.ObjectMap.init(allocator);
+    defer params.deinit();
+    try params.put("user_id", .{ .string = user_id });
+
+    const query =
+        \\MATCH (me:User {id: $user_id})-[:FOLLOWS]->(mutual:User)<-[:FOLLOWS]-(candidate:User)
         \\WHERE NOT EXISTS((me)-[:FOLLOWS]->(candidate)) AND candidate <> me
         \\WITH candidate, count(DISTINCT mutual) AS mutual_count
         \\RETURN candidate.id, candidate.username, mutual_count
         \\ORDER BY mutual_count DESC LIMIT 10
-    , .{user_id}) catch unreachable;
-    defer allocator.free(query);
+    ;
 
-    try client.sendQuery(query);
+    try client.sendRunGql(1, query, .{ .object = params });
+    const schema = try client.receiveMessage(30000);
+    allocator.free(schema);
+
+    try client.sendPull(1, 1000);
     const result = try client.receiveMessage(30000);
     defer allocator.free(result);
-    // Parse JSON and return recommendations
-    return parseRecommendations(result);
+    return parseRecommendations(allocator, result);
 }
 ```
 {{< /tab >}}
@@ -665,19 +672,29 @@ async function pollNotifications(userId: string) {
 {{< /tab >}}
 {{< tab "Zig" >}}
 ```zig
-fn pollNotifications(client: *GeodeClient, user_id: []const u8) !void {
+fn pollNotifications(client: *GeodeClient, allocator: std.mem.Allocator, user_id: []const u8) !void {
     var last_seen: ?i64 = null;
+    var request_id: u64 = 1;
 
     while (true) {
-        const query = std.fmt.allocPrint(allocator,
-            \\MATCH (u:User {{id: "{s}"}})<-[r]-()
-            \\WHERE {?} IS NULL OR r.timestamp > {?}
+        var params = std.json.ObjectMap.init(allocator);
+        defer params.deinit();
+        try params.put("user_id", .{ .string = user_id });
+        try params.put("last_seen", if (last_seen) |ts| .{ .integer = ts } else .null);
+
+        const query =
+            \\MATCH (u:User {id: $user_id})<-[r]-()
+            \\WHERE $last_seen IS NULL OR r.timestamp > $last_seen
             \\RETURN type(r) AS rel_type, r.timestamp AS ts
             \\ORDER BY ts DESC LIMIT 20
-        , .{user_id, last_seen, last_seen}) catch continue;
-        defer allocator.free(query);
+        ;
 
-        try client.sendQuery(query);
+        try client.sendRunGql(request_id, query, .{ .object = params });
+        request_id += 1;
+        const schema = try client.receiveMessage(30000);
+        allocator.free(schema);
+
+        try client.sendPull(request_id - 1, 1000);
         const result = try client.receiveMessage(30000);
         defer allocator.free(result);
         // Parse JSON and handle notifications
@@ -793,14 +810,33 @@ async function pollLiveFeed(userId: string) {
 {{< /tab >}}
 {{< tab "Zig" >}}
 ```zig
-fn pollLiveFeed(client: *GeodeClient, user_id: []const u8) !void {
+fn pollLiveFeed(client: *GeodeClient, allocator: std.mem.Allocator, user_id: []const u8) !void {
     var last_seen: ?i64 = null;
+    var request_id: u64 = 1;
+
     while (true) {
-        // Build and execute query, parse results
-        try client.sendQuery("MATCH ...");
+        var params = std.json.ObjectMap.init(allocator);
+        defer params.deinit();
+        try params.put("user_id", .{ .string = user_id });
+        try params.put("last_seen", if (last_seen) |ts| .{ .integer = ts } else .null);
+
+        const query =
+            \\MATCH (me:User {id: $user_id})-[:FOLLOWS]->(friend:User)-[:POSTED]->(p:Post)
+            \\WHERE $last_seen IS NULL OR p.created_at > $last_seen
+            \\RETURN friend.username AS username, p.content AS content, p.created_at
+            \\ORDER BY p.created_at DESC LIMIT 50
+        ;
+
+        try client.sendRunGql(request_id, query, .{ .object = params });
+        request_id += 1;
+        const schema = try client.receiveMessage(30000);
+        allocator.free(schema);
+
+        try client.sendPull(request_id - 1, 1000);
         const result = try client.receiveMessage(30000);
         defer allocator.free(result);
-        // Process feed items
+        // Process feed items and update last_seen
+
         std.time.sleep(3 * std.time.ns_per_s);
     }
 }

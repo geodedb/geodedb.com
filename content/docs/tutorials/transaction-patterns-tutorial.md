@@ -184,20 +184,32 @@ await client.withTransaction(async (tx) => {
 {{< /tab >}}
 {{< tab "Zig" >}}
 ```zig
-try client.sendQuery("START TRANSACTION");
+try client.sendBegin();
 _ = try client.receiveMessage(30000);
 
-try client.sendQuery(
-    \\CREATE (:Account {id: 1, name: "Alice", balance: 1000})
-);
+// Create accounts with parameterized queries
+var params = std.json.ObjectMap.init(allocator);
+defer params.deinit();
+try params.put("id", .{ .integer = 1 });
+try params.put("name", .{ .string = "Alice" });
+try params.put("balance", .{ .integer = 1000 });
+
+try client.sendRunGql(1,
+    "CREATE (:Account {id: $id, name: $name, balance: $balance})",
+    .{ .object = params });
 _ = try client.receiveMessage(30000);
 
-try client.sendQuery(
-    \\CREATE (:Account {id: 2, name: "Bob", balance: 500})
-);
+params.clearRetainingCapacity();
+try params.put("id", .{ .integer = 2 });
+try params.put("name", .{ .string = "Bob" });
+try params.put("balance", .{ .integer = 500 });
+
+try client.sendRunGql(2,
+    "CREATE (:Account {id: $id, name: $name, balance: $balance})",
+    .{ .object = params });
 _ = try client.receiveMessage(30000);
 
-try client.sendQuery("COMMIT");
+try client.sendCommit();
 _ = try client.receiveMessage(30000);
 ```
 {{< /tab >}}
@@ -415,24 +427,41 @@ async function transferMoney(from: string, to: string, amount: number) {
 {{< /tab >}}
 {{< tab "Zig" >}}
 ```zig
-fn transferMoney(client: *GeodeClient, from: []const u8, to: []const u8, amount: i64) !void {
-    try client.sendQuery("START TRANSACTION");
+fn transferMoney(client: *GeodeClient, allocator: std.mem.Allocator, from: []const u8, to: []const u8, amount: i64) !void {
+    try client.sendBegin();
     _ = try client.receiveMessage(30000);
 
-    // Check balance (parse response to verify)
-    try client.sendQuery("MATCH (a:Account {name: '" ++ from ++ "'}) RETURN a.balance");
+    var params = std.json.ObjectMap.init(allocator);
+    defer params.deinit();
+    try params.put("from", .{ .string = from });
+    try params.put("to", .{ .string = to });
+    try params.put("amount", .{ .integer = amount });
+
+    // Check balance
+    try client.sendRunGql(1,
+        "MATCH (a:Account {name: $from}) RETURN a.balance AS balance",
+        .{ .object = params });
+    const schema = try client.receiveMessage(30000);
+    allocator.free(schema);
+
+    try client.sendPull(1, 1000);
     const balance_result = try client.receiveMessage(30000);
     defer allocator.free(balance_result);
+    // Parse and validate balance >= amount before proceeding
 
     // Debit sender
-    try client.sendQuery("MATCH (a:Account {name: '" ++ from ++ "'}) SET a.balance = a.balance - " ++ amount);
+    try client.sendRunGql(2,
+        "MATCH (a:Account {name: $from}) SET a.balance = a.balance - $amount",
+        .{ .object = params });
     _ = try client.receiveMessage(30000);
 
     // Credit receiver
-    try client.sendQuery("MATCH (a:Account {name: '" ++ to ++ "'}) SET a.balance = a.balance + " ++ amount);
+    try client.sendRunGql(3,
+        "MATCH (a:Account {name: $to}) SET a.balance = a.balance + $amount",
+        .{ .object = params });
     _ = try client.receiveMessage(30000);
 
-    try client.sendQuery("COMMIT");
+    try client.sendCommit();
     _ = try client.receiveMessage(30000);
 }
 ```

@@ -65,7 +65,8 @@ const geode = @import("geode_client");
 
 var client = geode.GeodeClient.init(allocator, "localhost", 3141, true);
 try client.connect();
-try client.openStream();
+try client.sendHello("match-tutorial", "1.0.0");
+_ = try client.receiveMessage(30000);
 ```
 {{< /tab >}}
 {{< /tabs >}}
@@ -241,7 +242,11 @@ for (const row of rows) {
 {{< /tab >}}
 {{< tab "Zig" >}}
 ```zig
-try client.sendQuery("MATCH (p:Person) RETURN p.name, p.age");
+try client.sendRunGql(1, "MATCH (p:Person) RETURN p.name, p.age", null);
+const schema = try client.receiveMessage(30000);
+defer allocator.free(schema);
+
+try client.sendPull(1, 1000);
 const result = try client.receiveMessage(30000);
 defer allocator.free(result);
 // Parse JSON response
@@ -381,10 +386,14 @@ for (const row of rows) {
 {{< /tab >}}
 {{< tab "Zig" >}}
 ```zig
-try client.sendQuery(
+try client.sendRunGql(1,
     \\MATCH (a:Person)-[k:KNOWS]->(b:Person)
     \\RETURN a.name AS from, b.name AS to, k.since AS year
-);
+, null);
+const schema = try client.receiveMessage(30000);
+defer allocator.free(schema);
+
+try client.sendPull(1, 1000);
 const result = try client.receiveMessage(30000);
 defer allocator.free(result);
 std.debug.print("Result: {s}\n", .{result});

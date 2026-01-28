@@ -155,11 +155,11 @@ Language-specific API documentation follows platform conventions:
 ```bash
 # View API docs locally
 cd geode-client-go
-go doc -all go.codepros.org/geode
+go doc -all geodedb.com/geode
 
 # Generate HTML docs
 godoc -http=:6060
-# Visit http://localhost:6060/pkg/go.codepros.org/geode
+# Visit http://localhost:6060/pkg/geodedb.com/geode
 ```
 
 **Python API Documentation:**
@@ -291,12 +291,13 @@ conn.commit().await?;
 
 **Error Handling:**
 ```zig
-// Zig example
-try client.sendQuery(query);
-const result = client.receiveMessage(30000) catch |err| {
+// Zig example - execute query and handle errors
+try client.sendRunGql(1, query, null);
+const schema = client.receiveMessage(30000) catch |err| {
     std.log.err("Query failed: {}", .{err});
     return err;
 };
+defer allocator.free(schema);
 ```
 
 ### Operations Documentation
