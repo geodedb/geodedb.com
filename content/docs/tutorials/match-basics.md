@@ -16,8 +16,59 @@ Learn fundamental pattern matching with GQL in this hands-on 10-minute tutorial.
 ## Prerequisites
 
 - Geode server running (`geode serve`)
-- Access to Geode shell (`geode shell`)
+- Access to Geode shell (`geode shell`) or a client library
 - No prior graph database experience required
+
+### Connect with Client Libraries
+
+{{< tabs >}}
+{{< tab "Go" >}}
+```go
+import (
+    "database/sql"
+    _ "geodedb.com/geode"
+)
+
+db, err := sql.Open("geode", "localhost:3141")
+if err != nil {
+    log.Fatal(err)
+}
+defer db.Close()
+```
+{{< /tab >}}
+{{< tab "Python" >}}
+```python
+from geode_client import Client
+
+client = Client(host="localhost", port=3141, skip_verify=True)
+# Use: async with client.connection() as conn:
+```
+{{< /tab >}}
+{{< tab "Rust" >}}
+```rust
+use geode_client::Client;
+
+let client = Client::new("127.0.0.1", 3141).skip_verify(true);
+let mut conn = client.connect().await?;
+```
+{{< /tab >}}
+{{< tab "Node.js" >}}
+```typescript
+import { createClient } from '@geodedb/client';
+
+const client = await createClient('geode://localhost:3141');
+```
+{{< /tab >}}
+{{< tab "Zig" >}}
+```zig
+const geode = @import("geode_client");
+
+var client = geode.GeodeClient.init(allocator, "localhost", 3141, true);
+try client.connect();
+try client.openStream();
+```
+{{< /tab >}}
+{{< /tabs >}}
 
 ## Tutorial Overview
 
@@ -137,6 +188,68 @@ MATCH (p:Person)
 RETURN p.name, p.age;
 ```
 
+### Execute with Client Libraries
+
+{{< tabs >}}
+{{< tab "Go" >}}
+```go
+rows, err := db.QueryContext(ctx, "MATCH (p:Person) RETURN p.name, p.age")
+if err != nil {
+    log.Fatal(err)
+}
+defer rows.Close()
+
+for rows.Next() {
+    var name string
+    var age int
+    if err := rows.Scan(&name, &age); err != nil {
+        log.Fatal(err)
+    }
+    fmt.Printf("%s: %d\n", name, age)
+}
+```
+{{< /tab >}}
+{{< tab "Python" >}}
+```python
+async with client.connection() as conn:
+    page, _ = await conn.query("MATCH (p:Person) RETURN p.name, p.age")
+    for row in page.rows:
+        name = row["p.name"].as_string
+        age = row["p.age"].as_int
+        print(f"{name}: {age}")
+```
+{{< /tab >}}
+{{< tab "Rust" >}}
+```rust
+let (page, _) = conn.query("MATCH (p:Person) RETURN p.name, p.age").await?;
+for row in &page.rows {
+    let name = row.get("p.name").unwrap().as_string()?;
+    let age = row.get("p.age").unwrap().as_int()?;
+    println!("{}: {}", name, age);
+}
+```
+{{< /tab >}}
+{{< tab "Node.js" >}}
+```typescript
+const rows = await client.queryAll('MATCH (p:Person) RETURN p.name, p.age');
+for (const row of rows) {
+    const name = row.get('p.name')?.asString;
+    const age = row.get('p.age')?.asNumber;
+    console.log(`${name}: ${age}`);
+}
+```
+{{< /tab >}}
+{{< tab "Zig" >}}
+```zig
+try client.sendQuery("MATCH (p:Person) RETURN p.name, p.age");
+const result = try client.receiveMessage(30000);
+defer allocator.free(result);
+// Parse JSON response
+std.debug.print("Result: {s}\n", .{result});
+```
+{{< /tab >}}
+{{< /tabs >}}
+
 **Expected output**:
 ```
 name     | age
@@ -210,6 +323,74 @@ Find all KNOWS relationships:
 MATCH (a:Person)-[k:KNOWS]->(b:Person)
 RETURN a.name AS from, b.name AS to, k.since AS year;
 ```
+
+### Execute with Client Libraries
+
+{{< tabs >}}
+{{< tab "Go" >}}
+```go
+rows, _ := db.QueryContext(ctx, `
+    MATCH (a:Person)-[k:KNOWS]->(b:Person)
+    RETURN a.name AS from, b.name AS to, k.since AS year
+`)
+defer rows.Close()
+
+for rows.Next() {
+    var from, to string
+    var year int
+    rows.Scan(&from, &to, &year)
+    fmt.Printf("%s knows %s since %d\n", from, to, year)
+}
+```
+{{< /tab >}}
+{{< tab "Python" >}}
+```python
+page, _ = await conn.query("""
+    MATCH (a:Person)-[k:KNOWS]->(b:Person)
+    RETURN a.name AS from, b.name AS to, k.since AS year
+""")
+for row in page.rows:
+    print(f"{row['from'].as_string} knows {row['to'].as_string} since {row['year'].as_int}")
+```
+{{< /tab >}}
+{{< tab "Rust" >}}
+```rust
+let (page, _) = conn.query(r#"
+    MATCH (a:Person)-[k:KNOWS]->(b:Person)
+    RETURN a.name AS from, b.name AS to, k.since AS year
+"#).await?;
+
+for row in &page.rows {
+    println!("{} knows {} since {}",
+        row.get("from").unwrap().as_string()?,
+        row.get("to").unwrap().as_string()?,
+        row.get("year").unwrap().as_int()?);
+}
+```
+{{< /tab >}}
+{{< tab "Node.js" >}}
+```typescript
+const rows = await client.queryAll(`
+    MATCH (a:Person)-[k:KNOWS]->(b:Person)
+    RETURN a.name AS from, b.name AS to, k.since AS year
+`);
+for (const row of rows) {
+    console.log(`${row.get('from')?.asString} knows ${row.get('to')?.asString} since ${row.get('year')?.asNumber}`);
+}
+```
+{{< /tab >}}
+{{< tab "Zig" >}}
+```zig
+try client.sendQuery(
+    \\MATCH (a:Person)-[k:KNOWS]->(b:Person)
+    \\RETURN a.name AS from, b.name AS to, k.since AS year
+);
+const result = try client.receiveMessage(30000);
+defer allocator.free(result);
+std.debug.print("Result: {s}\n", .{result});
+```
+{{< /tab >}}
+{{< /tabs >}}
 
 **Expected output**:
 ```

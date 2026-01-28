@@ -93,6 +93,116 @@ RETURN a;
 -- Returns 0 rows
 ```
 
+### Client Library Examples
+
+{{< tabs >}}
+{{< tab "Go" >}}
+```go
+// Start transaction
+tx, err := db.BeginTx(ctx, nil)
+if err != nil {
+    log.Fatal(err)
+}
+
+// Create accounts
+_, err = tx.ExecContext(ctx, `CREATE (:Account {id: ?, name: ?, balance: ?})`, 1, "Alice", 1000)
+if err != nil {
+    tx.Rollback()
+    log.Fatal(err)
+}
+
+_, err = tx.ExecContext(ctx, `CREATE (:Account {id: ?, name: ?, balance: ?})`, 2, "Bob", 500)
+if err != nil {
+    tx.Rollback()
+    log.Fatal(err)
+}
+
+// Commit
+if err := tx.Commit(); err != nil {
+    log.Fatal(err)
+}
+```
+{{< /tab >}}
+{{< tab "Python" >}}
+```python
+async with client.connection() as conn:
+    await conn.begin()
+    try:
+        await conn.execute(
+            "CREATE (:Account {id: $id, name: $name, balance: $balance})",
+            {"id": 1, "name": "Alice", "balance": 1000}
+        )
+        await conn.execute(
+            "CREATE (:Account {id: $id, name: $name, balance: $balance})",
+            {"id": 2, "name": "Bob", "balance": 500}
+        )
+        await conn.commit()
+    except Exception:
+        await conn.rollback()
+        raise
+```
+{{< /tab >}}
+{{< tab "Rust" >}}
+```rust
+conn.begin().await?;
+
+match async {
+    conn.query_with_params(
+        "CREATE (:Account {id: $id, name: $name, balance: $balance})",
+        &[("id", Value::int(1)), ("name", Value::string("Alice")), ("balance", Value::int(1000))].into()
+    ).await?;
+
+    conn.query_with_params(
+        "CREATE (:Account {id: $id, name: $name, balance: $balance})",
+        &[("id", Value::int(2)), ("name", Value::string("Bob")), ("balance", Value::int(500))].into()
+    ).await?;
+
+    conn.commit().await
+}.await {
+    Ok(_) => println!("Accounts created"),
+    Err(e) => {
+        conn.rollback().await?;
+        return Err(e);
+    }
+}
+```
+{{< /tab >}}
+{{< tab "Node.js" >}}
+```typescript
+await client.withTransaction(async (tx) => {
+    await tx.exec(
+        'CREATE (:Account {id: $id, name: $name, balance: $balance})',
+        { params: { id: 1, name: 'Alice', balance: 1000 } }
+    );
+    await tx.exec(
+        'CREATE (:Account {id: $id, name: $name, balance: $balance})',
+        { params: { id: 2, name: 'Bob', balance: 500 } }
+    );
+    // Auto-commits on success, auto-rollback on error
+});
+```
+{{< /tab >}}
+{{< tab "Zig" >}}
+```zig
+try client.sendQuery("START TRANSACTION");
+_ = try client.receiveMessage(30000);
+
+try client.sendQuery(
+    \\CREATE (:Account {id: 1, name: "Alice", balance: 1000})
+);
+_ = try client.receiveMessage(30000);
+
+try client.sendQuery(
+    \\CREATE (:Account {id: 2, name: "Bob", balance: 500})
+);
+_ = try client.receiveMessage(30000);
+
+try client.sendQuery("COMMIT");
+_ = try client.receiveMessage(30000);
+```
+{{< /tab >}}
+{{< /tabs >}}
+
 ### What You Learned
 
 - `START TRANSACTION` begins a transaction
@@ -156,42 +266,178 @@ COMMIT;
 
 ### Error Handling Pattern
 
+{{< tabs >}}
+{{< tab "Go" >}}
+```go
+func transferMoney(ctx context.Context, db *sql.DB, from, to string, amount int) error {
+    tx, err := db.BeginTx(ctx, nil)
+    if err != nil {
+        return err
+    }
+
+    // Check balance
+    var balance int
+    err = tx.QueryRowContext(ctx,
+        "MATCH (a:Account {name: ?}) RETURN a.balance", from).Scan(&balance)
+    if err != nil {
+        tx.Rollback()
+        return err
+    }
+    if balance < amount {
+        tx.Rollback()
+        return fmt.Errorf("insufficient funds in %s", from)
+    }
+
+    // Debit sender
+    _, err = tx.ExecContext(ctx,
+        "MATCH (a:Account {name: ?}) SET a.balance = a.balance - ?", from, amount)
+    if err != nil {
+        tx.Rollback()
+        return err
+    }
+
+    // Credit receiver
+    _, err = tx.ExecContext(ctx,
+        "MATCH (a:Account {name: ?}) SET a.balance = a.balance + ?", to, amount)
+    if err != nil {
+        tx.Rollback()
+        return err
+    }
+
+    return tx.Commit()
+}
+```
+{{< /tab >}}
+{{< tab "Python" >}}
 ```python
-# Python client - Handle transaction errors
-from geode_client import Client, QueryError
-
-client = Client(host="localhost", port=3141)
-
 async def transfer_money(from_account, to_account, amount):
     async with client.connection() as conn:
         try:
             await conn.begin()
 
             page, _ = await conn.query(
-                \"MATCH (from:Account {name: $from}) WHERE from.balance >= $amount RETURN from.balance AS balance\",
-                {\"from\": from_account, \"amount\": amount},
+                "MATCH (a:Account {name: $from}) RETURN a.balance AS balance",
+                {"from": from_account},
             )
 
-            if not page.rows:
-                raise ValueError(f\"Insufficient funds in {from_account}\")
+            if not page.rows or page.rows[0]["balance"].as_int < amount:
+                raise ValueError(f"Insufficient funds in {from_account}")
 
             await conn.execute(
-                \"MATCH (from:Account {name: $from}) SET from.balance = from.balance - $amount\",
-                {\"from\": from_account, \"amount\": amount},
+                "MATCH (a:Account {name: $from}) SET a.balance = a.balance - $amount",
+                {"from": from_account, "amount": amount},
             )
-
             await conn.execute(
-                \"MATCH (to:Account {name: $to}) SET to.balance = to.balance + $amount\",
-                {\"to\": to_account, \"amount\": amount},
+                "MATCH (a:Account {name: $to}) SET a.balance = a.balance + $amount",
+                {"to": to_account, "amount": amount},
             )
 
             await conn.commit()
-            print(f\"Transferred ${amount} from {from_account} to {to_account}\")
-
-        except (QueryError, ValueError) as e:
+        except Exception:
             await conn.rollback()
             raise
 ```
+{{< /tab >}}
+{{< tab "Rust" >}}
+```rust
+async fn transfer_money(conn: &mut Connection, from: &str, to: &str, amount: i64) -> Result<()> {
+    conn.begin().await?;
+
+    // Check balance
+    let params = [("from", Value::string(from))].into();
+    let (page, _) = conn.query_with_params(
+        "MATCH (a:Account {name: $from}) RETURN a.balance AS balance",
+        &params
+    ).await?;
+
+    let balance = page.rows.first()
+        .and_then(|r| r.get("balance"))
+        .map(|v| v.as_int().unwrap_or(0))
+        .unwrap_or(0);
+
+    if balance < amount {
+        conn.rollback().await?;
+        return Err("Insufficient funds".into());
+    }
+
+    // Transfer
+    let mut params = HashMap::new();
+    params.insert("from".to_string(), Value::string(from));
+    params.insert("to".to_string(), Value::string(to));
+    params.insert("amount".to_string(), Value::int(amount));
+
+    conn.query_with_params("MATCH (a:Account {name: $from}) SET a.balance = a.balance - $amount", &params).await?;
+    conn.query_with_params("MATCH (a:Account {name: $to}) SET a.balance = a.balance + $amount", &params).await?;
+
+    conn.commit().await
+}
+```
+{{< /tab >}}
+{{< tab "Node.js" >}}
+```typescript
+async function transferMoney(from: string, to: string, amount: number) {
+    const conn = await client.getConnection();
+    const tx = await conn.begin();
+
+    try {
+        // Check balance
+        const [row] = await tx.queryAll(
+            'MATCH (a:Account {name: $from}) RETURN a.balance AS balance',
+            { params: { from } }
+        );
+        const balance = row?.get('balance')?.asNumber ?? 0;
+
+        if (balance < amount) {
+            throw new Error(`Insufficient funds in ${from}`);
+        }
+
+        // Debit sender
+        await tx.exec(
+            'MATCH (a:Account {name: $from}) SET a.balance = a.balance - $amount',
+            { params: { from, amount } }
+        );
+
+        // Credit receiver
+        await tx.exec(
+            'MATCH (a:Account {name: $to}) SET a.balance = a.balance + $amount',
+            { params: { to, amount } }
+        );
+
+        await tx.commit();
+    } catch (e) {
+        await tx.rollback();
+        throw e;
+    } finally {
+        await client.releaseConnection(conn);
+    }
+}
+```
+{{< /tab >}}
+{{< tab "Zig" >}}
+```zig
+fn transferMoney(client: *GeodeClient, from: []const u8, to: []const u8, amount: i64) !void {
+    try client.sendQuery("START TRANSACTION");
+    _ = try client.receiveMessage(30000);
+
+    // Check balance (parse response to verify)
+    try client.sendQuery("MATCH (a:Account {name: '" ++ from ++ "'}) RETURN a.balance");
+    const balance_result = try client.receiveMessage(30000);
+    defer allocator.free(balance_result);
+
+    // Debit sender
+    try client.sendQuery("MATCH (a:Account {name: '" ++ from ++ "'}) SET a.balance = a.balance - " ++ amount);
+    _ = try client.receiveMessage(30000);
+
+    // Credit receiver
+    try client.sendQuery("MATCH (a:Account {name: '" ++ to ++ "'}) SET a.balance = a.balance + " ++ amount);
+    _ = try client.receiveMessage(30000);
+
+    try client.sendQuery("COMMIT");
+    _ = try client.receiveMessage(30000);
+}
+```
+{{< /tab >}}
+{{< /tabs >}}
 
 ## Step 3: Savepoints (Partial Rollback)
 

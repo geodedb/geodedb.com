@@ -31,7 +31,8 @@ Get up and running with Geode in just 5 minutes. This guide walks you through in
 docker run -d \
   --name geode \
   -p 3141:3141 \
-  geode:latest
+  -v geode-data:/var/lib/geode \
+  geodedb/geode:latest serve --listen 0.0.0.0:3141
 ```
 
 ### Using Docker Compose
@@ -42,13 +43,14 @@ Create `docker-compose.yml`:
 version: '3.8'
 services:
   geode:
-    image: geode:latest
+    image: geodedb/geode:latest
     ports:
       - "3141:3141"
     volumes:
       - geode-data:/var/lib/geode
     environment:
       - GEODE_LOG_LEVEL=info
+    command: ["serve", "--listen", "0.0.0.0:3141"]
 
 volumes:
   geode-data:
@@ -63,42 +65,60 @@ docker-compose up -d
 ### From Source
 
 ```bash
-git clone https://github.com/codeprosorg/geode
+git clone https://gitlab.com/devnw/codepros/geode/geode
 cd geode
 make build
-./bin/geode server
+./zig-out/bin/geode serve --listen 0.0.0.0:3141
 ```
 
 ## Step 2: Install Client
 
 Choose your preferred language:
 
-### Go
-
+{{< tabs >}}
+{{< tab "Go" >}}
 ```bash
-go get go.codepros.org/geode
+go get geodedb.com/geode
 ```
-
-### Python
-
+{{< /tab >}}
+{{< tab "Python" >}}
 ```bash
 pip install geode-client
 ```
-
-### Rust
-
-```bash
-cargo add geode-client
+{{< /tab >}}
+{{< tab "Rust" >}}
+```toml
+# Add to Cargo.toml
+[dependencies]
+geode-client = "0.1"
+tokio = { version = "1", features = ["full"] }
 ```
+{{< /tab >}}
+{{< tab "Node.js" >}}
+```bash
+npm install @geodedb/client
+```
+{{< /tab >}}
+{{< tab "Zig" >}}
+```bash
+# Add to build.zig.zon dependencies
+.geode_client = .{
+    .url = "https://gitlab.com/devnw/codepros/geode/geode-client-zig/-/archive/main/geode-client-zig-main.tar.gz",
+},
+```
+{{< /tab >}}
+{{< /tabs >}}
 
 ### CLI Tool
 
 ```bash
-# Build from source
-git clone https://github.com/codeprosorg/geode
-cd geode
-make build
-sudo cp ./zig-out/bin/geode /usr/local/bin/geode
+# Debian/Ubuntu
+curl -fsSL https://apt.geodedb.com/geode.gpg | sudo gpg --dearmor -o /usr/share/keyrings/geode-archive-keyring.gpg
+echo "deb [signed-by=/usr/share/keyrings/geode-archive-keyring.gpg] https://apt.geodedb.com stable main" | sudo tee /etc/apt/sources.list.d/geode.list
+sudo apt update && sudo apt install geode
+
+# Or via Docker
+docker exec -it geode geode shell
 ```
 
 ## Step 3: Verify Connection
@@ -115,7 +135,7 @@ Latency: 2ms
 
 ## Step 4: Create Your First Graph
 
-Let's create a simple social network:
+Let's create a simple social network. First, here's the GQL:
 
 ```gql
 // Create people
@@ -133,21 +153,18 @@ MATCH (charlie:Person {name: "Charlie"})
 CREATE (bob)-[:KNOWS {since: 2019}]->(charlie)
 ```
 
-### Using CLI
+### Using Client Libraries
 
-```bash
-geode exec -h localhost:3141 -q "CREATE (:Person {name: 'Alice', age: 30})"
-```
-
-### Using Go
-
+{{< tabs >}}
+{{< tab "Go" >}}
 ```go
 package main
 
 import (
+    "context"
     "database/sql"
     "log"
-    _ "go.codepros.org/geode"
+    _ "geodedb.com/geode"
 )
 
 func main() {
@@ -157,33 +174,185 @@ func main() {
     }
     defer db.Close()
 
-    _, err = db.Exec(`
-        CREATE (:Person {name: ?, age: ?})
-    `, "Alice", 30)
+    ctx := context.Background()
+
+    // Create people
+    _, err = db.ExecContext(ctx, `CREATE (:Person {name: ?, age: ?, city: ?})`,
+        "Alice", 30, "New York")
     if err != nil {
         log.Fatal(err)
     }
 
-    log.Println("Person created!")
+    _, err = db.ExecContext(ctx, `CREATE (:Person {name: ?, age: ?, city: ?})`,
+        "Bob", 25, "San Francisco")
+    if err != nil {
+        log.Fatal(err)
+    }
+
+    // Create relationship
+    _, err = db.ExecContext(ctx, `
+        MATCH (a:Person {name: ?}), (b:Person {name: ?})
+        CREATE (a)-[:KNOWS {since: ?}]->(b)
+    `, "Alice", "Bob", 2020)
+    if err != nil {
+        log.Fatal(err)
+    }
+
+    log.Println("Graph created!")
 }
 ```
-
-### Using Python
-
+{{< /tab >}}
+{{< tab "Python" >}}
 ```python
 import asyncio
 from geode_client import Client
 
 async def main():
-    client = Client(host="localhost", port=3141)
+    client = Client(host="localhost", port=3141, skip_verify=True)
     async with client.connection() as conn:
+        # Create people
         await conn.execute(
-            "CREATE (:Person {name: $name, age: $age})",
-            params={"name": "Alice", "age": 30}
+            "CREATE (:Person {name: $name, age: $age, city: $city})",
+            {"name": "Alice", "age": 30, "city": "New York"}
         )
-        print("Person created!")
+        await conn.execute(
+            "CREATE (:Person {name: $name, age: $age, city: $city})",
+            {"name": "Bob", "age": 25, "city": "San Francisco"}
+        )
+
+        # Create relationship
+        await conn.execute("""
+            MATCH (a:Person {name: $from}), (b:Person {name: $to})
+            CREATE (a)-[:KNOWS {since: $since}]->(b)
+        """, {"from": "Alice", "to": "Bob", "since": 2020})
+
+        print("Graph created!")
 
 asyncio.run(main())
+```
+{{< /tab >}}
+{{< tab "Rust" >}}
+```rust
+use geode_client::{Client, Value};
+use std::collections::HashMap;
+
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let client = Client::new("127.0.0.1", 3141).skip_verify(true);
+    let mut conn = client.connect().await?;
+
+    // Create people
+    let mut params = HashMap::new();
+    params.insert("name".to_string(), Value::string("Alice"));
+    params.insert("age".to_string(), Value::int(30));
+    params.insert("city".to_string(), Value::string("New York"));
+    conn.query_with_params(
+        "CREATE (:Person {name: $name, age: $age, city: $city})",
+        &params
+    ).await?;
+
+    params.insert("name".to_string(), Value::string("Bob"));
+    params.insert("age".to_string(), Value::int(25));
+    params.insert("city".to_string(), Value::string("San Francisco"));
+    conn.query_with_params(
+        "CREATE (:Person {name: $name, age: $age, city: $city})",
+        &params
+    ).await?;
+
+    // Create relationship
+    let mut rel_params = HashMap::new();
+    rel_params.insert("from".to_string(), Value::string("Alice"));
+    rel_params.insert("to".to_string(), Value::string("Bob"));
+    rel_params.insert("since".to_string(), Value::int(2020));
+    conn.query_with_params(r#"
+        MATCH (a:Person {name: $from}), (b:Person {name: $to})
+        CREATE (a)-[:KNOWS {since: $since}]->(b)
+    "#, &rel_params).await?;
+
+    println!("Graph created!");
+    Ok(())
+}
+```
+{{< /tab >}}
+{{< tab "Node.js" >}}
+```typescript
+import { createClient } from '@geodedb/client';
+
+async function main() {
+    const client = await createClient('geode://localhost:3141');
+
+    // Create people
+    await client.exec(
+        'CREATE (:Person {name: $name, age: $age, city: $city})',
+        { params: { name: 'Alice', age: 30, city: 'New York' } }
+    );
+    await client.exec(
+        'CREATE (:Person {name: $name, age: $age, city: $city})',
+        { params: { name: 'Bob', age: 25, city: 'San Francisco' } }
+    );
+
+    // Create relationship
+    await client.exec(`
+        MATCH (a:Person {name: $from}), (b:Person {name: $to})
+        CREATE (a)-[:KNOWS {since: $since}]->(b)
+    `, { params: { from: 'Alice', to: 'Bob', since: 2020 } });
+
+    console.log('Graph created!');
+    await client.close();
+}
+
+main();
+```
+{{< /tab >}}
+{{< tab "Zig" >}}
+```zig
+const std = @import("std");
+const geode = @import("geode_client");
+
+pub fn main() !void {
+    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    defer _ = gpa.deinit();
+    const allocator = gpa.allocator();
+
+    var client = geode.GeodeClient.init(allocator, "localhost", 3141, true);
+    defer client.deinit();
+
+    try client.connect();
+    try client.openStream();
+    try client.sendHello("quickstart", "1.0.0");
+    _ = try client.receiveMessage(30000);
+
+    // Create people
+    try client.sendQuery(
+        \\CREATE (:Person {name: "Alice", age: 30, city: "New York"})
+    );
+    _ = try client.receiveMessage(30000);
+
+    try client.sendQuery(
+        \\CREATE (:Person {name: "Bob", age: 25, city: "San Francisco"})
+    );
+    _ = try client.receiveMessage(30000);
+
+    // Create relationship
+    try client.sendQuery(
+        \\MATCH (a:Person {name: "Alice"}), (b:Person {name: "Bob"})
+        \\CREATE (a)-[:KNOWS {since: 2020}]->(b)
+    );
+    _ = try client.receiveMessage(30000);
+
+    std.debug.print("Graph created!\n", .{});
+}
+```
+{{< /tab >}}
+{{< /tabs >}}
+
+### Using CLI
+
+```bash
+geode shell
+geode> CREATE (:Person {name: 'Alice', age: 30, city: 'New York'})
+geode> CREATE (:Person {name: 'Bob', age: 25, city: 'San Francisco'})
+geode> MATCH (a:Person {name: 'Alice'}), (b:Person {name: 'Bob'}) CREATE (a)-[:KNOWS {since: 2020}]->(b)
 ```
 
 ## Step 5: Query Your Data
@@ -195,6 +364,83 @@ MATCH (p:Person)
 RETURN p.name, p.age, p.city
 ORDER BY p.age
 ```
+
+{{< tabs >}}
+{{< tab "Go" >}}
+```go
+rows, err := db.QueryContext(ctx, `
+    MATCH (p:Person)
+    RETURN p.name, p.age, p.city
+    ORDER BY p.age
+`)
+if err != nil {
+    log.Fatal(err)
+}
+defer rows.Close()
+
+for rows.Next() {
+    var name, city string
+    var age int
+    rows.Scan(&name, &age, &city)
+    fmt.Printf("%s, %d, %s\n", name, age, city)
+}
+```
+{{< /tab >}}
+{{< tab "Python" >}}
+```python
+async with client.connection() as conn:
+    page, _ = await conn.query("""
+        MATCH (p:Person)
+        RETURN p.name, p.age, p.city
+        ORDER BY p.age
+    """)
+    for row in page.rows:
+        print(f"{row['p.name'].as_string}, {row['p.age'].as_int}, {row['p.city'].as_string}")
+```
+{{< /tab >}}
+{{< tab "Rust" >}}
+```rust
+let (page, _) = conn.query(r#"
+    MATCH (p:Person)
+    RETURN p.name, p.age, p.city
+    ORDER BY p.age
+"#).await?;
+
+for row in &page.rows {
+    let name = row.get("p.name").unwrap().as_string()?;
+    let age = row.get("p.age").unwrap().as_int()?;
+    let city = row.get("p.city").unwrap().as_string()?;
+    println!("{}, {}, {}", name, age, city);
+}
+```
+{{< /tab >}}
+{{< tab "Node.js" >}}
+```typescript
+const rows = await client.queryAll(`
+    MATCH (p:Person)
+    RETURN p.name, p.age, p.city
+    ORDER BY p.age
+`);
+
+for (const row of rows) {
+    console.log(`${row.get('p.name')?.asString}, ${row.get('p.age')?.asNumber}, ${row.get('p.city')?.asString}`);
+}
+```
+{{< /tab >}}
+{{< tab "Zig" >}}
+```zig
+try client.sendQuery(
+    \\MATCH (p:Person)
+    \\RETURN p.name, p.age, p.city
+    \\ORDER BY p.age
+);
+const result = try client.receiveMessage(30000);
+defer allocator.free(result);
+// Parse JSON response and iterate rows
+std.debug.print("Result: {s}\n", .{result});
+```
+{{< /tab >}}
+{{< /tabs >}}
 
 Expected output:
 ```
@@ -211,6 +457,70 @@ Expected output:
 MATCH (p:Person)-[:KNOWS]->(friend:Person)
 RETURN p.name AS person, friend.name AS friend
 ```
+
+{{< tabs >}}
+{{< tab "Go" >}}
+```go
+rows, _ := db.QueryContext(ctx, `
+    MATCH (p:Person)-[:KNOWS]->(friend:Person)
+    RETURN p.name AS person, friend.name AS friend
+`)
+defer rows.Close()
+
+for rows.Next() {
+    var person, friend string
+    rows.Scan(&person, &friend)
+    fmt.Printf("%s knows %s\n", person, friend)
+}
+```
+{{< /tab >}}
+{{< tab "Python" >}}
+```python
+page, _ = await conn.query("""
+    MATCH (p:Person)-[:KNOWS]->(friend:Person)
+    RETURN p.name AS person, friend.name AS friend
+""")
+for row in page.rows:
+    print(f"{row['person'].as_string} knows {row['friend'].as_string}")
+```
+{{< /tab >}}
+{{< tab "Rust" >}}
+```rust
+let (page, _) = conn.query(r#"
+    MATCH (p:Person)-[:KNOWS]->(friend:Person)
+    RETURN p.name AS person, friend.name AS friend
+"#).await?;
+
+for row in &page.rows {
+    println!("{} knows {}",
+        row.get("person").unwrap().as_string()?,
+        row.get("friend").unwrap().as_string()?);
+}
+```
+{{< /tab >}}
+{{< tab "Node.js" >}}
+```typescript
+const rows = await client.queryAll(`
+    MATCH (p:Person)-[:KNOWS]->(friend:Person)
+    RETURN p.name AS person, friend.name AS friend
+`);
+for (const row of rows) {
+    console.log(`${row.get('person')?.asString} knows ${row.get('friend')?.asString}`);
+}
+```
+{{< /tab >}}
+{{< tab "Zig" >}}
+```zig
+try client.sendQuery(
+    \\MATCH (p:Person)-[:KNOWS]->(friend:Person)
+    \\RETURN p.name AS person, friend.name AS friend
+);
+const result = try client.receiveMessage(30000);
+defer allocator.free(result);
+std.debug.print("Result: {s}\n", .{result});
+```
+{{< /tab >}}
+{{< /tabs >}}
 
 Expected output:
 ```
@@ -266,6 +576,139 @@ CREATE (david)-[:KNOWS]->(alice)
 
 COMMIT
 ```
+
+{{< tabs >}}
+{{< tab "Go" >}}
+```go
+tx, err := db.BeginTx(ctx, nil)
+if err != nil {
+    log.Fatal(err)
+}
+
+// Create a person
+_, err = tx.ExecContext(ctx, `CREATE (:Person {name: ?, age: ?})`, "David", 28)
+if err != nil {
+    tx.Rollback()
+    log.Fatal(err)
+}
+
+// Create relationship
+_, err = tx.ExecContext(ctx, `
+    MATCH (d:Person {name: ?}), (a:Person {name: ?})
+    CREATE (d)-[:KNOWS]->(a)
+`, "David", "Alice")
+if err != nil {
+    tx.Rollback()
+    log.Fatal(err)
+}
+
+err = tx.Commit()
+if err != nil {
+    log.Fatal(err)
+}
+log.Println("Transaction committed!")
+```
+{{< /tab >}}
+{{< tab "Python" >}}
+```python
+async with client.connection() as conn:
+    await conn.begin()
+    try:
+        # Create a person
+        await conn.execute(
+            "CREATE (:Person {name: $name, age: $age})",
+            {"name": "David", "age": 28}
+        )
+
+        # Create relationship
+        await conn.execute("""
+            MATCH (d:Person {name: $david}), (a:Person {name: $alice})
+            CREATE (d)-[:KNOWS]->(a)
+        """, {"david": "David", "alice": "Alice"})
+
+        await conn.commit()
+        print("Transaction committed!")
+    except Exception as e:
+        await conn.rollback()
+        raise e
+```
+{{< /tab >}}
+{{< tab "Rust" >}}
+```rust
+conn.begin().await?;
+
+// Create a person
+let mut params = HashMap::new();
+params.insert("name".to_string(), Value::string("David"));
+params.insert("age".to_string(), Value::int(28));
+conn.query_with_params("CREATE (:Person {name: $name, age: $age})", &params).await?;
+
+// Create relationship
+let mut rel_params = HashMap::new();
+rel_params.insert("david".to_string(), Value::string("David"));
+rel_params.insert("alice".to_string(), Value::string("Alice"));
+match conn.query_with_params(r#"
+    MATCH (d:Person {name: $david}), (a:Person {name: $alice})
+    CREATE (d)-[:KNOWS]->(a)
+"#, &rel_params).await {
+    Ok(_) => {
+        conn.commit().await?;
+        println!("Transaction committed!");
+    }
+    Err(e) => {
+        conn.rollback().await?;
+        return Err(e.into());
+    }
+}
+```
+{{< /tab >}}
+{{< tab "Node.js" >}}
+```typescript
+await client.withTransaction(async (tx) => {
+    // Create a person
+    await tx.exec(
+        'CREATE (:Person {name: $name, age: $age})',
+        { params: { name: 'David', age: 28 } }
+    );
+
+    // Create relationship
+    await tx.exec(`
+        MATCH (d:Person {name: $david}), (a:Person {name: $alice})
+        CREATE (d)-[:KNOWS]->(a)
+    `, { params: { david: 'David', alice: 'Alice' } });
+
+    // Auto-commits on success
+});
+console.log('Transaction committed!');
+```
+{{< /tab >}}
+{{< tab "Zig" >}}
+```zig
+// Begin transaction
+try client.sendQuery("BEGIN");
+_ = try client.receiveMessage(30000);
+
+// Create a person
+try client.sendQuery(
+    \\CREATE (:Person {name: "David", age: 28})
+);
+_ = try client.receiveMessage(30000);
+
+// Create relationship
+try client.sendQuery(
+    \\MATCH (d:Person {name: "David"}), (a:Person {name: "Alice"})
+    \\CREATE (d)-[:KNOWS]->(a)
+);
+_ = try client.receiveMessage(30000);
+
+// Commit
+try client.sendQuery("COMMIT");
+_ = try client.receiveMessage(30000);
+
+std.debug.print("Transaction committed!\n", .{});
+```
+{{< /tab >}}
+{{< /tabs >}}
 
 ## Step 7: Create Indexes
 
