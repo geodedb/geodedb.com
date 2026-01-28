@@ -16,7 +16,7 @@ Complete documentation for containerized deployment of Geode graph database usin
 ## Overview
 
 Geode offers multiple Docker deployment options:
-- **Pre-built images** from GitHub Container Registry (fastest)
+- **Pre-built images** from [Docker Hub](https://hub.docker.com/r/geodedb/geode) (fastest)
 - **Development environment** with complete toolchain
 - **Production deployment** with multi-stage builds
 - **Distributed clusters** with 3-node Raft consensus
@@ -28,14 +28,14 @@ All Geode Docker containers use **QUIC+TLS over UDP port 8443** for secure, high
 ### Using Pre-built Images (5 Minutes)
 
 ```bash
-# Pull the latest image
-docker pull ghcr.io/spyderorg/geode:latest
+# Pull the latest image from Docker Hub
+docker pull geodedb/geode:latest
 
 # Run the container
-docker run -d -p 8443:8443/udp --name geode ghcr.io/spyderorg/geode:latest
+docker run -d -p 3141:3141/udp --name geode geodedb/geode:latest
 
 # Test connectivity
-docker exec geode geode query "RETURN 1 AS health" --server 127.0.0.1:8443
+docker exec geode geode query "RETURN 1 AS health" --server 127.0.0.1:3141
 ```
 
 **Expected output**:
@@ -51,10 +51,10 @@ version: '3.8'
 
 services:
   geode:
-    image: ghcr.io/spyderorg/geode:latest
+    image: geodedb/geode:latest
     container_name: geode-server
     ports:
-      - "8443:8443/udp"
+      - "3141:3141/udp"
       - "9090:9090"
     volumes:
       - geode-data:/data
@@ -62,7 +62,7 @@ services:
       - GEODE_LOG_LEVEL=info
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "geode", "query", "RETURN 1", "--server", "127.0.0.1:8443"]
+      test: ["CMD", "geode", "query", "RETURN 1", "--server", "127.0.0.1:3141"]
       interval: 30s
       timeout: 3s
       retries: 3
@@ -73,7 +73,7 @@ volumes:
 
 ## Available Docker Images
 
-Geode provides multiple image variants optimized for different use cases:
+Geode images are available on [Docker Hub](https://hub.docker.com/r/geodedb/geode) with multiple variants optimized for different use cases:
 
 | Image Tag | Base | Size | Use Case |
 |-----------|------|------|----------|
@@ -86,16 +86,16 @@ Geode provides multiple image variants optimized for different use cases:
 
 ```bash
 # Standard (recommended for most deployments)
-docker pull ghcr.io/spyderorg/geode:latest
+docker pull geodedb/geode:latest
 
 # Alpine (minimal size)
-docker pull ghcr.io/spyderorg/geode:alpine
+docker pull geodedb/geode:alpine
 
 # GPU support (vector operations, graph algorithms)
-docker pull ghcr.io/spyderorg/geode:gpu
+docker pull geodedb/geode:gpu
 
 # Production optimized (distroless base)
-docker pull ghcr.io/spyderorg/geode:prod
+docker pull geodedb/geode:prod
 ```
 
 ## Development Environment
@@ -238,7 +238,7 @@ version: '3.8'
 
 services:
   geode:
-    image: ghcr.io/spyderorg/geode:prod
+    image: geodedb/geode:prod
     container_name: geode-server
     ports:
       - "8443:8443/udp"
@@ -286,7 +286,7 @@ volumes:
 
 ```bash
 # Generate self-signed certificates
-docker run --rm -v ./certs:/certs ghcr.io/spyderorg/geode:latest \
+docker run --rm -v ./certs:/certs geodedb/geode:latest \
   cert_gen --output-dir /certs
 
 # Run with custom certificates
@@ -294,7 +294,7 @@ docker run -d \
   -p 8443:8443/udp \
   -v ./certs:/certs:ro \
   -v ./data:/data \
-  ghcr.io/spyderorg/geode:latest \
+  geodedb/geode:latest \
   --data-dir /data \
   --cert /certs/server.crt \
   --key /certs/server.key \
@@ -315,7 +315,7 @@ docker run -d \
   --name geode \
   -p 8443:8443/udp \
   -v $(pwd)/data:/data \
-  ghcr.io/spyderorg/geode:latest \
+  geodedb/geode:latest \
   --data-dir /data
 ```
 
@@ -376,7 +376,7 @@ version: '3.8'
 
 services:
   geode-node-1:
-    image: ghcr.io/spyderorg/geode:latest
+    image: geodedb/geode:latest
     container_name: geode-leader
     ports:
       - "7567:8443/udp"
@@ -391,7 +391,7 @@ services:
       - geode-cluster
 
   geode-node-2:
-    image: ghcr.io/spyderorg/geode:latest
+    image: geodedb/geode:latest
     container_name: geode-follower-1
     ports:
       - "7569:8443/udp"
@@ -409,7 +409,7 @@ services:
       - geode-node-1
 
   geode-node-3:
-    image: ghcr.io/spyderorg/geode:latest
+    image: geodedb/geode:latest
     container_name: geode-follower-2
     ports:
       - "7571:8443/udp"
@@ -492,7 +492,7 @@ OpenSSL FIPS 140-3 module is enabled by default in production images. Verify wit
 
 ```bash
 # Check OpenSSL version
-docker run --rm ghcr.io/spyderorg/geode:latest openssl version -a
+docker run --rm geodedb/geode:latest openssl version -a
 
 # Check FIPS providers
 docker exec <container> openssl list -providers
@@ -512,7 +512,7 @@ Providers:
 ```yaml
 services:
   geode:
-    image: ghcr.io/spyderorg/geode:prod
+    image: geodedb/geode:prod
     read_only: true                    # Immutable filesystem
     tmpfs:
       - /tmp                           # Writable temp only
@@ -536,7 +536,7 @@ openssl req -x509 -newkey rsa:4096 -nodes \
   -subj "/CN=geode.example.com"
 
 # Or use Geode's built-in generator
-docker run --rm -v ./certs:/certs ghcr.io/spyderorg/geode:latest \
+docker run --rm -v ./certs:/certs geodedb/geode:latest \
   cert_gen --output-dir /certs --days 365
 
 # Verify certificate
@@ -549,14 +549,14 @@ For vector operations and graph algorithms with GPU acceleration:
 
 ```bash
 # Pull GPU-enabled image
-docker pull ghcr.io/spyderorg/geode:gpu
+docker pull geodedb/geode:gpu
 
 # Run with GPU support
 docker run -d \
   --name geode-gpu \
   --gpus all \
   -p 8443:8443/udp \
-  ghcr.io/spyderorg/geode:gpu
+  geodedb/geode:gpu
 
 # Verify CUDA availability
 docker exec geode-gpu nvidia-smi
@@ -566,7 +566,7 @@ docker exec geode-gpu nvidia-smi
 ```yaml
 services:
   geode-gpu:
-    image: ghcr.io/spyderorg/geode:gpu
+    image: geodedb/geode:gpu
     deploy:
       resources:
         reservations:
@@ -586,7 +586,7 @@ docker run \
   --sysctl net.core.rmem_max=26214400 \
   --sysctl net.core.wmem_max=26214400 \
   --ulimit nofile=65536:65536 \
-  ghcr.io/spyderorg/geode:latest
+  geodedb/geode:latest
 ```
 
 ### Resource Limits
@@ -608,7 +608,7 @@ deploy:
 # Increase connection limits
 docker run -e GEODE_MAX_CONNECTIONS=10000 \
   -e GEODE_CACHE_SIZE=4GB \
-  ghcr.io/spyderorg/geode:latest
+  geodedb/geode:latest
 ```
 
 ## Monitoring & Health Checks
@@ -671,7 +671,7 @@ netstat -uapn | grep 8443
 ```bash
 # Error: address already in use
 # Solution: Change host port
-docker run -p 9443:8443/udp ghcr.io/spyderorg/geode:latest
+docker run -p 9443:8443/udp geodedb/geode:latest
 ```
 
 **2. Permission Errors**
@@ -711,7 +711,7 @@ openssl rsa -in ./certs/server.key -noout -modulus | md5sum
 
 ```bash
 # Enable debug logging
-docker run -e GEODE_LOG_LEVEL=debug ghcr.io/spyderorg/geode:latest
+docker run -e GEODE_LOG_LEVEL=debug geodedb/geode:latest
 
 # Attach for debugging
 docker exec -it geode /bin/bash
@@ -827,8 +827,7 @@ docker-compose -f docker-integration/docker-compose.integration.yml up client-zi
 
 ## Resources
 
-- [Docker Hub](https://hub.docker.com/) - Container registry
-- [GitHub Container Registry](https://ghcr.io) - Geode image hosting
+- [Geode on Docker Hub](https://hub.docker.com/r/geodedb/geode) - Official Geode container images
 - [Docker Compose Documentation](https://docs.docker.com/compose/)
 - [QUIC Protocol](https://datatracker.ietf.org/doc/html/rfc9000)
 

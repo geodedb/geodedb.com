@@ -23,7 +23,7 @@ This guide covers Docker-based Geode deployments, from basic containers through 
 
 ## Official Geode Docker Images
 
-Geode provides official images on Docker Hub and GitHub Container Registry:
+Geode provides official images on [Docker Hub](https://hub.docker.com/r/geodedb/geode):
 
 ```bash
 # Pull latest stable version
@@ -31,9 +31,6 @@ docker pull geodedb/geode:latest
 
 # Pull specific version
 docker pull geodedb/geode:v0.18.0
-
-# Pull from GitHub Container Registry
-docker pull ghcr.io/devnw/geode:latest
 ```
 
 **Image Variants**:

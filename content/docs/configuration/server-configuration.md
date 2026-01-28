@@ -478,7 +478,7 @@ version: '3.8'
 
 services:
   geode:
-    image: ghcr.io/codepros/geode:latest
+    image: geodedb/geode:latest
     ports:
       - "3141:3141/udp"       # QUIC
       - "9090:9090"           # Metrics
