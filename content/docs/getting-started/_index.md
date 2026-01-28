@@ -58,13 +58,9 @@ sudo install -m 0755 geode-linux-amd64 /usr/local/bin/geode
 {{< /tab >}}
 {{< tab "macOS" >}}
 ```bash
-# Apple Silicon
-curl -L -o geode-darwin-arm64 https://gitlab.com/devnw/codepros/geode/geode/-/releases/latest/download/geode-darwin-arm64
-sudo install -m 0755 geode-darwin-arm64 /usr/local/bin/geode
-
-# Intel
-curl -L -o geode-darwin-amd64 https://gitlab.com/devnw/codepros/geode/geode/-/releases/latest/download/geode-darwin-amd64
-sudo install -m 0755 geode-darwin-amd64 /usr/local/bin/geode
+# Install via Homebrew (recommended)
+brew tap geodedb/geode
+brew install geode
 ```
 {{< /tab >}}
 {{< tab "Windows (WSL)" >}}

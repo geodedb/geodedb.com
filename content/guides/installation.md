@@ -264,7 +264,20 @@ sudo apt upgrade geode
 
 For environments without Docker or package managers.
 
-### Download Binary
+### macOS Installation (Homebrew)
+
+The recommended way to install Geode on macOS is via Homebrew:
+
+```bash
+# Install via Homebrew
+brew tap geodedb/geode
+brew install geode
+
+# Verify installation
+geode version
+```
+
+### Download Binary (Linux)
 
 ```bash
 # Linux x86_64
@@ -274,14 +287,6 @@ tar -xzf geode-linux-amd64.tar.gz
 # Linux ARM64
 curl -LO https://releases.geodedb.com/latest/geode-linux-arm64.tar.gz
 tar -xzf geode-linux-arm64.tar.gz
-
-# macOS Intel
-curl -LO https://releases.geodedb.com/latest/geode-darwin-amd64.tar.gz
-tar -xzf geode-darwin-amd64.tar.gz
-
-# macOS Apple Silicon
-curl -LO https://releases.geodedb.com/latest/geode-darwin-arm64.tar.gz
-tar -xzf geode-darwin-arm64.tar.gz
 ```
 
 ### Install Binary

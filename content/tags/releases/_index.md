@@ -196,16 +196,12 @@ curl -L -o geode.rpm https://gitlab.com/devnw/codepros/geode/geode/-/releases/la
 sudo rpm -i geode.rpm
 ```
 
-**macOS Binaries**:
+**macOS (Homebrew)**:
 
 ```bash
-# Apple Silicon
-curl -L -o geode-darwin-arm64 https://gitlab.com/devnw/codepros/geode/geode/-/releases/latest/download/geode-darwin-arm64
-sudo install -m 0755 geode-darwin-arm64 /usr/local/bin/geode
-
-# Intel
-curl -L -o geode-darwin-amd64 https://gitlab.com/devnw/codepros/geode/geode/-/releases/latest/download/geode-darwin-amd64
-sudo install -m 0755 geode-darwin-amd64 /usr/local/bin/geode
+# Install via Homebrew (recommended)
+brew tap geodedb/geode
+brew install geode
 ```
 
 **From Source**:
