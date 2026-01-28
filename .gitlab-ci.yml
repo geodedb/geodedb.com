@@ -148,10 +148,10 @@ pages:
     url: https://dev.geodedb.com
 
 # =============================================================================
-# Deploy Stage - Cloudflare Pages (Production) - AUTOMATIC on tags
+# Deploy Stage - Cloudflare Pages (Production) - AUTOMATIC on release branch
 # =============================================================================
 
-# Deploy to Cloudflare Pages on tagged releases -> geodedb.com
+# Deploy to Cloudflare Pages on release branch -> geodedb.com
 cloudflare-pages:
   extends: .setup
   stage: deploy
@@ -168,8 +168,8 @@ cloudflare-pages:
     # Deploy to Cloudflare Pages using Direct Upload
     - wrangler pages deploy public --project-name=$CLOUDFLARE_PAGES_PROJECT --commit-dirty=true
   rules:
-    # Automatically deploy on version tags (v1.0.0, v2.1.3, etc.)
-    - if: $CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+$/
+    # Automatically deploy on release branch
+    - if: $CI_COMMIT_BRANCH == "release"
   environment:
     name: production
     url: https://geodedb.com

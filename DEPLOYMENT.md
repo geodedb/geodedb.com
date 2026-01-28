@@ -6,8 +6,8 @@
 
 | Environment | URL | Platform | Trigger |
 |-------------|-----|----------|---------|
-| **Production** | https://geodedb.com | Cloudflare Pages | Tagged releases (`v*.*.*`) - **Automatic** |
-| **Development** | https://dev.geodedb.com | GitLab Pages | Main branch pushes - **Automatic** |
+| **Production** | https://geodedb.com | Cloudflare Pages | `release` branch pushes - **Automatic** |
+| **Development** | https://dev.geodedb.com | GitLab Pages | `main` branch pushes - **Automatic** |
 
 ## How It Works
 
@@ -24,19 +24,17 @@ This provides a preview environment for testing changes before production releas
 
 ### Production (Cloudflare Pages) - geodedb.com
 
-Production deployments are **automatically triggered** by semantic version tags:
+Production deployments are **automatically triggered** by pushes to the `release` branch:
 
-1. Create and push a tag: `git tag v1.0.0 && git push origin v1.0.0`
+1. Merge or push changes to `release` branch
 2. GitLab CI automatically runs the `cloudflare-pages` job
 3. Hugo builds the site with `baseURL: https://geodedb.com`
 4. Wrangler deploys to Cloudflare Pages
 5. Site is live at https://geodedb.com
 
-**Tag Format**: Must match `v*.*.*` (e.g., `v1.0.0`, `v2.1.3`, `v0.18.1`)
-
 ### Manual Production Deploy (Emergency)
 
-For urgent fixes without creating a tag:
+For urgent fixes without merging to release:
 
 1. Go to GitLab CI/CD > Pipelines
 2. Find the pipeline for main branch
@@ -54,9 +52,10 @@ git pull origin main
 # 2. Test on development site
 # Visit https://dev.geodedb.com and verify changes
 
-# 3. Create a release tag
-git tag v1.0.0
-git push origin v1.0.0
+# 3. Merge main into release branch
+git checkout release
+git merge main
+git push origin release
 
 # 4. Production deployment starts automatically
 # Monitor at: https://gitlab.com/devnw/codepros/geode/geodedb.com/-/pipelines
@@ -68,23 +67,22 @@ git push origin v1.0.0
 ### Hotfix Release
 
 ```bash
-# 1. Create hotfix branch
-git checkout -b hotfix/critical-fix main
+# 1. Create hotfix branch from release
+git checkout -b hotfix/critical-fix release
 
 # 2. Make and commit fixes
 git add .
 git commit -m "Fix: critical issue"
 
-# 3. Merge to main
+# 3. Merge to release (deploys to production)
+git checkout release
+git merge hotfix/critical-fix
+git push origin release
+
+# 4. Also merge to main (keeps branches in sync)
 git checkout main
 git merge hotfix/critical-fix
 git push origin main
-
-# 4. Wait for dev site deployment, verify fix at dev.geodedb.com
-
-# 5. Create patch release tag
-git tag v1.0.1
-git push origin v1.0.1
 ```
 
 ## CI/CD Variables
