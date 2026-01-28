@@ -1,5 +1,6 @@
 ---
 title: "Backup and Restore Guide"
+slug: "backup-restore"
 description: "Comprehensive guide to backing up and restoring Geode databases"
 weight: 32
 tags: ["backup", "restore", "disaster-recovery", "high-availability", "operations"]

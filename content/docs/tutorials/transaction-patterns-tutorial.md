@@ -4,6 +4,7 @@ description: "Master ACID transactions in Geode: isolation levels, savepoints, d
 keywords: ["transactions", "ACID", "savepoints", "isolation levels", "MVCC", "SSI", "serializable", "deadlock", "consistency", "rollback"]
 weight: 60
 slug: "transaction-patterns-tutorial"
+url: "/docs/tutorials/transaction-patterns-tutorial/"
 canonical: "https://geodedb.com/docs/tutorials/transaction-patterns-tutorial/"
 ---
 

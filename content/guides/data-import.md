@@ -1,5 +1,6 @@
 ---
 title: "Data Import Guide"
+slug: "data-import"
 description: "Comprehensive guide to importing data into Geode from various sources"
 weight: 30
 tags: ["import", "csv", "json", "migration", "bulk-loading", "etl"]

@@ -1,5 +1,6 @@
 ---
 title: "Testing Strategies Guide"
+slug: "testing"
 description: "Comprehensive guide to testing Geode applications with unit tests, integration tests, and performance testing"
 weight: 40
 tags: ["testing", "unit-tests", "integration-tests", "testcontainers", "ci-cd"]

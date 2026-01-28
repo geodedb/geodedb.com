@@ -4,6 +4,7 @@ description: "Step-by-step tutorial for using graph algorithms in Geode: PageRan
 keywords: ["graph algorithms", "PageRank", "shortest path", "community detection", "centrality", "Dijkstra", "Louvain", "betweenness centrality", "graph analytics"]
 weight: 40
 slug: "graph-algorithms-tutorial"
+url: "/docs/tutorials/graph-algorithms-tutorial/"
 canonical: "https://geodedb.com/docs/tutorials/graph-algorithms-tutorial/"
 ---
 

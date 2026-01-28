@@ -1,5 +1,6 @@
 ---
 title: "Data Export Guide"
+slug: "data-export"
 description: "Comprehensive guide to exporting data from Geode to various formats"
 weight: 31
 tags: ["export", "csv", "json", "backup", "analytics", "etl"]

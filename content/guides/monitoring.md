@@ -1,5 +1,6 @@
 ---
 title: "Monitoring Guide"
+slug: "monitoring"
 description: "Monitor Geode with built-in metrics, Prometheus, Grafana, and alerting"
 weight: 52
 tags: ["monitoring", "metrics", "prometheus", "grafana", "alerting", "observability"]

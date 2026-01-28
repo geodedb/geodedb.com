@@ -1,5 +1,6 @@
 ---
 title: "Quick Start Guide"
+slug: "quick-start"
 description: "Get started with Geode in 5 minutes"
 weight: 1
 tags: ["quickstart", "tutorial", "beginner"]

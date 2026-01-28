@@ -1,5 +1,6 @@
 ---
 title: "Recommendation Engine Guide"
+slug: "recommendations"
 description: "Build powerful recommendation systems with Geode using collaborative filtering, content-based, and graph-based approaches"
 weight: 61
 tags: ["recommendations", "collaborative-filtering", "machine-learning", "personalization", "graph-algorithms"]

@@ -1,5 +1,6 @@
 ---
 title: "Error Handling Guide"
+slug: "error-handling"
 description: "Comprehensive guide to handling errors in Geode applications including error codes, retry strategies, and best practices"
 weight: 41
 tags: ["errors", "error-handling", "debugging", "retry", "logging"]

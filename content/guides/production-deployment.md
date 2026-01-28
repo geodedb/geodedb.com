@@ -1,5 +1,6 @@
 ---
 title: "Production Deployment Guide"
+slug: "production-deployment"
 description: "Complete guide to deploying Geode in production environments"
 weight: 50
 tags: ["production", "deployment", "docker", "kubernetes", "security", "tls"]

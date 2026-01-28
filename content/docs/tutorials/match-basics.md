@@ -4,6 +4,7 @@ description: "Step-by-step tutorial for learning GQL pattern matching fundamenta
 keywords: ["MATCH tutorial", "pattern matching", "GQL basics", "graph queries", "node creation", "relationship patterns", "WHERE clause", "RETURN clause"]
 weight: 20
 slug: "match-basics"
+url: "/docs/tutorials/match-basics/"
 canonical: "https://geodedb.com/docs/tutorials/match-basics/"
 ---
 

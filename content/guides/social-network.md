@@ -1,5 +1,6 @@
 ---
 title: "Social Network Guide"
+slug: "social-network"
 description: "Build a scalable social network with Geode - users, posts, comments, likes, and friend recommendations"
 weight: 60
 tags: ["social-network", "graph-patterns", "recommendations", "feed", "relationships"]

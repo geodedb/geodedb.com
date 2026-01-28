@@ -1,5 +1,6 @@
 ---
 title: "Query Performance Guide"
+slug: "query-performance"
 description: "Optimize your GQL queries for maximum performance in Geode"
 weight: 20
 tags: ["performance", "optimization", "queries", "best-practices"]

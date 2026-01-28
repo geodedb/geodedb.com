@@ -1,5 +1,6 @@
 ---
 title: "Migrating from Neo4j to Geode"
+slug: "migration-neo4j"
 description: "Complete guide to migrating from Neo4j to Geode, including Cypher to GQL translation, data export, and driver migration"
 weight: 70
 tags: ["migration", "neo4j", "cypher", "gql", "graph-database"]

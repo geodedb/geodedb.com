@@ -1,5 +1,7 @@
 ---
 title: "Tutorials and Examples"
+slug: "overview"
+url: "/docs/tutorials/overview/"
 description: "Step-by-step tutorials for Geode: MATCH basics, indexing and EXPLAIN/PROFILE, graph algorithms, embeddings, and backup/restore workflows"
 weight: 10
 tags:

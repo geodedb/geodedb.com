@@ -1,5 +1,6 @@
 ---
 title: "Installation Guide"
+slug: "installation"
 description: "Complete guide for installing Geode and client libraries on all platforms"
 weight: 2
 tags: ["installation", "setup", "docker", "apt", "client-libraries"]

@@ -1,5 +1,6 @@
 ---
 title: "Query Profiling Guide"
+slug: "query-profiling"
 description: "Analyze and optimize GQL queries using EXPLAIN and PROFILE in Geode"
 weight: 22
 tags: ["profiling", "explain", "performance", "debugging", "optimization"]

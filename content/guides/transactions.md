@@ -1,5 +1,6 @@
 ---
 title: "Transaction Management Guide"
+slug: "transactions"
 description: "Comprehensive guide to managing transactions in Geode including ACID guarantees, isolation levels, savepoints, and concurrency control"
 weight: 42
 tags: ["transactions", "acid", "isolation", "concurrency", "savepoints"]

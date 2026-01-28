@@ -1,5 +1,6 @@
 ---
 title: "Building Your First Application"
+slug: "first-application"
 description: "Step-by-step guide to building your first Geode graph database application"
 weight: 3
 tags: ["tutorial", "application", "beginner", "crud", "parameterized-queries"]

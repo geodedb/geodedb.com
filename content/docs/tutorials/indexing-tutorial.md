@@ -4,6 +4,7 @@ description: "Comprehensive tutorial for creating indexes, using EXPLAIN and PRO
 keywords: ["indexing tutorial", "query optimization", "EXPLAIN", "PROFILE", "B-tree index", "HNSW index", "performance tuning", "cost-based optimizer"]
 weight: 30
 slug: "indexing-tutorial"
+url: "/docs/tutorials/indexing-tutorial/"
 canonical: "https://geodedb.com/docs/tutorials/indexing-tutorial/"
 ---
 

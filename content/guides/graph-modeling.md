@@ -1,5 +1,6 @@
 ---
 title: "Graph Modeling Guide"
+slug: "graph-modeling"
 description: "Best practices for designing effective graph schemas in Geode"
 weight: 10
 tags: ["schema", "modeling", "design", "best-practices"]

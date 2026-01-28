@@ -1,5 +1,6 @@
 ---
 title: "Index Strategy Guide"
+slug: "index-strategy"
 description: "Design effective indexing strategies for optimal Geode query performance"
 weight: 21
 tags: ["indexing", "performance", "optimization", "schema"]

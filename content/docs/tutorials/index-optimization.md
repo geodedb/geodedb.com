@@ -4,6 +4,7 @@ description: "Practical guide to index optimization in Geode including EXPLAIN a
 keywords: ["index optimization", "performance tuning", "B-tree", "HNSW", "full-text search", "EXPLAIN", "query optimization"]
 weight: 40
 slug: "index-optimization"
+url: "/docs/tutorials/index-optimization/"
 canonical: "https://geodedb.com/docs/tutorials/index-optimization"
 ---
 

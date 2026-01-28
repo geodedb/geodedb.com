@@ -1,5 +1,6 @@
 ---
 title: "Knowledge Graph Guide"
+slug: "knowledge-graph"
 description: "Build and query knowledge graphs with Geode - ontology design, entity modeling, inference, and NLP integration"
 weight: 62
 tags: ["knowledge-graph", "ontology", "entities", "inference", "nlp", "semantic"]

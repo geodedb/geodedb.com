@@ -1,5 +1,6 @@
 ---
 title: "High Availability Guide"
+slug: "high-availability"
 description: "Configure Geode for high availability with replication, failover, and disaster recovery"
 weight: 51
 tags: ["high-availability", "replication", "failover", "clustering", "disaster-recovery"]

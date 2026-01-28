@@ -4,6 +4,7 @@ description: "Learn vector similarity search with Geode: generate embeddings, cr
 keywords: ["vector search", "embeddings", "HNSW", "similarity search", "semantic search", "cosine distance", "L2 distance", "vector index", "neural search", "machine learning"]
 weight: 50
 slug: "vector-search-tutorial"
+url: "/docs/tutorials/vector-search-tutorial/"
 canonical: "https://geodedb.com/docs/tutorials/vector-search-tutorial/"
 ---
 

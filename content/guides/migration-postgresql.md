@@ -1,5 +1,6 @@
 ---
 title: "Migrating from PostgreSQL to Geode"
+slug: "migration-postgresql"
 description: "Complete guide to migrating from PostgreSQL to Geode, including relational to graph model conversion, ETL pipelines, and incremental migration strategies"
 weight: 71
 tags: ["migration", "postgresql", "sql", "gql", "relational"]

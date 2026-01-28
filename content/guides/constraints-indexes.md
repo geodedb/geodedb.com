@@ -1,5 +1,6 @@
 ---
 title: "Constraints and Indexes Guide"
+slug: "constraints-indexes"
 description: "Create and manage constraints and indexes for data integrity and query performance in Geode"
 weight: 12
 tags: ["constraints", "indexes", "performance", "schema", "optimization"]

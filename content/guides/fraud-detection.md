@@ -1,5 +1,6 @@
 ---
 title: "Fraud Detection Guide"
+slug: "fraud-detection"
 description: "Detect fraudulent patterns and anomalies using Geode's graph analysis capabilities"
 weight: 63
 tags: ["fraud-detection", "anomaly-detection", "risk-scoring", "compliance", "security"]

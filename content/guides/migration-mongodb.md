@@ -1,5 +1,6 @@
 ---
 title: "Migrating from MongoDB to Geode"
+slug: "migration-mongodb"
 description: "Complete guide to migrating from MongoDB to Geode, including document to graph conversion, embedded documents to relationships, and query translation"
 weight: 72
 tags: ["migration", "mongodb", "document", "gql", "nosql"]

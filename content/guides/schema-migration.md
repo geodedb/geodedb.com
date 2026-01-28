@@ -1,5 +1,6 @@
 ---
 title: "Schema Migration Guide"
+slug: "schema-migration"
 description: "Plan and execute schema migrations in Geode with zero downtime strategies"
 weight: 13
 tags: ["migration", "schema", "versioning", "deployment", "operations"]
