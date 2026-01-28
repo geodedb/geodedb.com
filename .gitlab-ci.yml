@@ -166,7 +166,7 @@ cloudflare-pages:
     # Install wrangler for Cloudflare Pages deployment
     - npm install -g wrangler
     # Deploy to Cloudflare Pages using Direct Upload
-    - wrangler pages deploy public --project-name=$CLOUDFLARE_PAGES_PROJECT --commit-dirty=true
+    - wrangler pages deploy public --project-name=$CLOUDFLARE_PAGES_PROJECT --branch=release --commit-dirty=true
   rules:
     # Automatically deploy on release branch
     - if: $CI_COMMIT_BRANCH == "release"
