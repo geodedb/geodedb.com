@@ -33,7 +33,10 @@ stages:
 .setup:
   before_script:
     - apt-get update -qq
-    - apt-get install -y -qq wget git ca-certificates nodejs npm
+    - apt-get install -y -qq wget git ca-certificates curl
+    # Install Node.js 20 (required for wrangler)
+    - curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+    - apt-get install -y -qq nodejs
     - echo "Cloning private submodules with CI token..."
     - git config --global url."https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.com/".insteadOf "https://gitlab.com/"
     - git submodule sync --recursive
