@@ -77,22 +77,126 @@ USE RecommendationEngine;
 Recommend items liked by similar users:
 
 ```gql
--- Find users similar to current user
+-- Find users similar to current user and their recommendations
 MATCH (me:User {id: $user_id})-[:PURCHASED]->(item:Item)<-[:PURCHASED]-(similar:User)
 WITH similar, COUNT(item) AS common_purchases
-ORDER BY common_purchases DESC
-LIMIT 10
-
--- Get items purchased by similar users but not by me
+ORDER BY common_purchases DESC LIMIT 10
 MATCH (similar)-[:PURCHASED]->(recommended:Item)
-WHERE NOT EXISTS {
-  MATCH (me:User {id: $user_id})-[:PURCHASED]->(recommended)
-}
+WHERE NOT EXISTS { MATCH (me:User {id: $user_id})-[:PURCHASED]->(recommended) }
 WITH recommended, COUNT(similar) AS recommendation_strength
 RETURN recommended.name, recommendation_strength
-ORDER BY recommendation_strength DESC
-LIMIT 20;
+ORDER BY recommendation_strength DESC LIMIT 20;
 ```
+
+{{< tabs >}}
+{{< tab "Go" >}}
+```go
+func getCollaborativeRecommendations(ctx context.Context, db *sql.DB, userID string) ([]Recommendation, error) {
+    rows, err := db.QueryContext(ctx, `
+        MATCH (me:User {id: ?})-[:PURCHASED]->(item:Item)<-[:PURCHASED]-(similar:User)
+        WITH similar, COUNT(item) AS common ORDER BY common DESC LIMIT 10
+        MATCH (similar)-[:PURCHASED]->(rec:Item)
+        WHERE NOT EXISTS { MATCH (me:User {id: ?})-[:PURCHASED]->(rec) }
+        WITH rec, COUNT(similar) AS strength
+        RETURN rec.name, rec.category, strength
+        ORDER BY strength DESC LIMIT 20
+    `, userID, userID)
+    if err != nil {
+        return nil, err
+    }
+    defer rows.Close()
+
+    var recs []Recommendation
+    for rows.Next() {
+        var r Recommendation
+        rows.Scan(&r.Name, &r.Category, &r.Score)
+        recs = append(recs, r)
+    }
+    return recs, nil
+}
+```
+{{< /tab >}}
+{{< tab "Python" >}}
+```python
+async def get_collaborative_recommendations(conn, user_id: str, limit: int = 20):
+    page, _ = await conn.query("""
+        MATCH (me:User {id: $user_id})-[:PURCHASED]->(item:Item)<-[:PURCHASED]-(similar:User)
+        WITH similar, COUNT(item) AS common ORDER BY common DESC LIMIT 10
+        MATCH (similar)-[:PURCHASED]->(rec:Item)
+        WHERE NOT EXISTS { MATCH (me:User {id: $user_id})-[:PURCHASED]->(rec) }
+        WITH rec, COUNT(similar) AS strength
+        RETURN rec.name, rec.category, strength
+        ORDER BY strength DESC LIMIT $limit
+    """, {"user_id": user_id, "limit": limit})
+
+    return [
+        {"name": row["rec.name"].as_string, "strength": row["strength"].as_int}
+        for row in page.rows
+    ]
+```
+{{< /tab >}}
+{{< tab "Rust" >}}
+```rust
+async fn get_collaborative_recommendations(conn: &mut Connection, user_id: &str) -> Result<Vec<Recommendation>> {
+    let params = [("user_id", Value::string(user_id))].into();
+    let (page, _) = conn.query_with_params(r#"
+        MATCH (me:User {id: $user_id})-[:PURCHASED]->(item:Item)<-[:PURCHASED]-(similar:User)
+        WITH similar, COUNT(item) AS common ORDER BY common DESC LIMIT 10
+        MATCH (similar)-[:PURCHASED]->(rec:Item)
+        WHERE NOT EXISTS { MATCH (me:User {id: $user_id})-[:PURCHASED]->(rec) }
+        WITH rec, COUNT(similar) AS strength
+        RETURN rec.name, rec.category, strength ORDER BY strength DESC LIMIT 20
+    "#, &params).await?;
+
+    Ok(page.rows.iter().map(|row| Recommendation {
+        name: row.get("rec.name").unwrap().as_string().unwrap(),
+        category: row.get("rec.category").unwrap().as_string().unwrap(),
+        score: row.get("strength").unwrap().as_int().unwrap() as f64,
+    }).collect())
+}
+```
+{{< /tab >}}
+{{< tab "Node.js" >}}
+```typescript
+async function getCollaborativeRecommendations(userId: string, limit = 20) {
+    const rows = await client.queryAll(`
+        MATCH (me:User {id: $userId})-[:PURCHASED]->(item:Item)<-[:PURCHASED]-(similar:User)
+        WITH similar, COUNT(item) AS common ORDER BY common DESC LIMIT 10
+        MATCH (similar)-[:PURCHASED]->(rec:Item)
+        WHERE NOT EXISTS { MATCH (me:User {id: $userId})-[:PURCHASED]->(rec) }
+        WITH rec, COUNT(similar) AS strength
+        RETURN rec.name, rec.category, strength ORDER BY strength DESC LIMIT $limit
+    `, { params: { userId, limit } });
+
+    return rows.map(row => ({
+        name: row.get('rec.name')?.asString,
+        category: row.get('rec.category')?.asString,
+        strength: row.get('strength')?.asNumber
+    }));
+}
+```
+{{< /tab >}}
+{{< tab "Zig" >}}
+```zig
+fn getCollaborativeRecommendations(client: *GeodeClient, user_id: []const u8) ![]Recommendation {
+    const query = std.fmt.allocPrint(allocator,
+        \\MATCH (me:User {{id: "{s}"}})-[:PURCHASED]->(item:Item)<-[:PURCHASED]-(similar:User)
+        \\WITH similar, COUNT(item) AS common ORDER BY common DESC LIMIT 10
+        \\MATCH (similar)-[:PURCHASED]->(rec:Item)
+        \\WHERE NOT EXISTS {{ MATCH (me:User {{id: "{s}"}})-[:PURCHASED]->(rec) }}
+        \\WITH rec, COUNT(similar) AS strength
+        \\RETURN rec.name, strength ORDER BY strength DESC LIMIT 20
+    , .{user_id, user_id}) catch unreachable;
+    defer allocator.free(query);
+
+    try client.sendQuery(query);
+    const result = try client.receiveMessage(30000);
+    defer allocator.free(result);
+    return parseRecommendations(result);
+}
+```
+{{< /tab >}}
+{{< /tabs >}}
 
 ### 2. Collaborative Filtering (Item-Item)
 

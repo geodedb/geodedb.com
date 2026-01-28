@@ -186,6 +186,126 @@ ORDER BY mutual_count DESC
 LIMIT 10;
 ```
 
+{{< tabs >}}
+{{< tab "Go" >}}
+```go
+func getFriendRecommendations(ctx context.Context, db *sql.DB, userID string) ([]Recommendation, error) {
+    rows, err := db.QueryContext(ctx, `
+        MATCH (me:User {id: ?})-[:FOLLOWS]->(mutual:User)<-[:FOLLOWS]-(candidate:User)
+        WHERE NOT EXISTS((me)-[:FOLLOWS]->(candidate)) AND candidate <> me
+        WITH candidate, count(DISTINCT mutual) AS mutual_count
+        RETURN candidate.id, candidate.username, candidate.name, mutual_count
+        ORDER BY mutual_count DESC
+        LIMIT 10
+    `, userID)
+    if err != nil {
+        return nil, err
+    }
+    defer rows.Close()
+
+    var recommendations []Recommendation
+    for rows.Next() {
+        var r Recommendation
+        rows.Scan(&r.ID, &r.Username, &r.Name, &r.MutualCount)
+        recommendations = append(recommendations, r)
+    }
+    return recommendations, nil
+}
+```
+{{< /tab >}}
+{{< tab "Python" >}}
+```python
+async def get_friend_recommendations(conn, user_id: str, limit: int = 10):
+    page, _ = await conn.query("""
+        MATCH (me:User {id: $user_id})-[:FOLLOWS]->(mutual:User)<-[:FOLLOWS]-(candidate:User)
+        WHERE NOT EXISTS((me)-[:FOLLOWS]->(candidate)) AND candidate <> me
+        WITH candidate, count(DISTINCT mutual) AS mutual_count,
+             collect(DISTINCT mutual.username) AS mutual_friends
+        RETURN candidate.id, candidate.username, candidate.name,
+               mutual_count, mutual_friends
+        ORDER BY mutual_count DESC
+        LIMIT $limit
+    """, {"user_id": user_id, "limit": limit})
+
+    return [
+        {
+            "id": row["candidate.id"].as_string,
+            "username": row["candidate.username"].as_string,
+            "mutual_count": row["mutual_count"].as_int,
+            "mutual_friends": row["mutual_friends"].as_array
+        }
+        for row in page.rows
+    ]
+```
+{{< /tab >}}
+{{< tab "Rust" >}}
+```rust
+async fn get_friend_recommendations(conn: &mut Connection, user_id: &str) -> Result<Vec<Recommendation>> {
+    let params = [("user_id", Value::string(user_id))].into();
+    let (page, _) = conn.query_with_params(r#"
+        MATCH (me:User {id: $user_id})-[:FOLLOWS]->(mutual:User)<-[:FOLLOWS]-(candidate:User)
+        WHERE NOT EXISTS((me)-[:FOLLOWS]->(candidate)) AND candidate <> me
+        WITH candidate, count(DISTINCT mutual) AS mutual_count
+        RETURN candidate.id, candidate.username, candidate.name, mutual_count
+        ORDER BY mutual_count DESC
+        LIMIT 10
+    "#, &params).await?;
+
+    let recommendations = page.rows.iter().map(|row| Recommendation {
+        id: row.get("candidate.id").unwrap().as_string().unwrap(),
+        username: row.get("candidate.username").unwrap().as_string().unwrap(),
+        mutual_count: row.get("mutual_count").unwrap().as_int().unwrap() as i32,
+    }).collect();
+
+    Ok(recommendations)
+}
+```
+{{< /tab >}}
+{{< tab "Node.js" >}}
+```typescript
+async function getFriendRecommendations(userId: string, limit = 10) {
+    const rows = await client.queryAll(`
+        MATCH (me:User {id: $userId})-[:FOLLOWS]->(mutual:User)<-[:FOLLOWS]-(candidate:User)
+        WHERE NOT EXISTS((me)-[:FOLLOWS]->(candidate)) AND candidate <> me
+        WITH candidate, count(DISTINCT mutual) AS mutualCount,
+             collect(DISTINCT mutual.username) AS mutualFriends
+        RETURN candidate.id, candidate.username, candidate.name,
+               mutualCount, mutualFriends
+        ORDER BY mutualCount DESC
+        LIMIT $limit
+    `, { params: { userId, limit } });
+
+    return rows.map(row => ({
+        id: row.get('candidate.id')?.asString,
+        username: row.get('candidate.username')?.asString,
+        mutualCount: row.get('mutualCount')?.asNumber,
+        mutualFriends: row.get('mutualFriends')?.asArray?.map(v => v.asString)
+    }));
+}
+```
+{{< /tab >}}
+{{< tab "Zig" >}}
+```zig
+fn getFriendRecommendations(client: *GeodeClient, user_id: []const u8) ![]Recommendation {
+    const query = std.fmt.allocPrint(allocator,
+        \\MATCH (me:User {{id: "{s}"}})-[:FOLLOWS]->(mutual:User)<-[:FOLLOWS]-(candidate:User)
+        \\WHERE NOT EXISTS((me)-[:FOLLOWS]->(candidate)) AND candidate <> me
+        \\WITH candidate, count(DISTINCT mutual) AS mutual_count
+        \\RETURN candidate.id, candidate.username, mutual_count
+        \\ORDER BY mutual_count DESC LIMIT 10
+    , .{user_id}) catch unreachable;
+    defer allocator.free(query);
+
+    try client.sendQuery(query);
+    const result = try client.receiveMessage(30000);
+    defer allocator.free(result);
+    // Parse JSON and return recommendations
+    return parseRecommendations(result);
+}
+```
+{{< /tab >}}
+{{< /tabs >}}
+
 #### Common Interests
 
 ```gql
@@ -404,16 +524,56 @@ RETURN {
 
 ### Live Notifications
 
-<!-- CANARY: REQ=REQ-CLIENT-PY-001; FEATURE="PythonClientConnection"; ASPECT=HelloHandshake; STATUS=IMPL; OWNER=clients; UPDATED=2025-02-14 -->
+Poll for new notifications and display them to users.
 
+{{< tabs >}}
+{{< tab "Go" >}}
+```go
+func pollNotifications(ctx context.Context, db *sql.DB, userID string) {
+    var lastSeen *int64
+    ticker := time.NewTicker(2 * time.Second)
+    defer ticker.Stop()
+
+    for {
+        select {
+        case <-ctx.Done():
+            return
+        case <-ticker.C:
+            rows, err := db.QueryContext(ctx, `
+                MATCH (u:User {id: ?})<-[r]-()
+                WHERE ? IS NULL OR r.timestamp > ?
+                RETURN type(r) AS rel_type, r.timestamp AS ts
+                ORDER BY ts DESC LIMIT 20
+            `, userID, lastSeen, lastSeen)
+            if err != nil {
+                continue
+            }
+
+            for rows.Next() {
+                var relType string
+                var ts int64
+                rows.Scan(&relType, &ts)
+
+                switch relType {
+                case "LIKED":
+                    fmt.Println("Someone liked your post!")
+                case "FOLLOWED":
+                    fmt.Println("New follower!")
+                case "COMMENTED":
+                    fmt.Println("New comment!")
+                }
+                if lastSeen == nil || ts > *lastSeen {
+                    lastSeen = &ts
+                }
+            }
+            rows.Close()
+        }
+    }
+}
+```
+{{< /tab >}}
+{{< tab "Python" >}}
 ```python
-# Python client - Polling-based notifications
-# (Current clients do not expose CDC streams; use polling or a custom CDC service.)
-from geode_client import Client
-import asyncio
-
-client = Client(host="geode.example.com", port=3141)
-
 async def poll_notifications(user_id):
     last_seen = None
     async with client.connection() as conn:
@@ -422,8 +582,7 @@ async def poll_notifications(user_id):
                 MATCH (u:User {id: $user_id})<-[r]-()
                 WHERE $last_seen IS NULL OR r.timestamp > $last_seen
                 RETURN type(r) AS rel_type, r.timestamp AS ts
-                ORDER BY ts DESC
-                LIMIT 20
+                ORDER BY ts DESC LIMIT 20
             """, {"user_id": user_id, "last_seen": last_seen})
 
             for row in page.rows:
@@ -433,43 +592,221 @@ async def poll_notifications(user_id):
                 elif rel_type == "FOLLOWED":
                     print("New follower!")
                 elif rel_type == "COMMENTED":
-                    print("New comment on your post")
+                    print("New comment!")
 
             if page.rows:
                 last_seen = page.rows[0]["ts"].raw_value
-
             await asyncio.sleep(2)
-
-asyncio.run(poll_notifications("u1"))
 ```
+{{< /tab >}}
+{{< tab "Rust" >}}
+```rust
+async fn poll_notifications(conn: &mut Connection, user_id: &str) -> Result<()> {
+    let mut last_seen: Option<i64> = None;
+
+    loop {
+        let params = [
+            ("user_id", Value::string(user_id)),
+            ("last_seen", last_seen.map(Value::int).unwrap_or(Value::null())),
+        ].into();
+
+        let (page, _) = conn.query_with_params(r#"
+            MATCH (u:User {id: $user_id})<-[r]-()
+            WHERE $last_seen IS NULL OR r.timestamp > $last_seen
+            RETURN type(r) AS rel_type, r.timestamp AS ts
+            ORDER BY ts DESC LIMIT 20
+        "#, &params).await?;
+
+        for row in &page.rows {
+            let rel_type = row.get("rel_type").unwrap().as_string()?;
+            match rel_type.as_str() {
+                "LIKED" => println!("Someone liked your post!"),
+                "FOLLOWED" => println!("New follower!"),
+                "COMMENTED" => println!("New comment!"),
+                _ => {}
+            }
+            if let Some(ts) = row.get("ts").and_then(|v| v.as_int().ok()) {
+                last_seen = Some(ts.max(last_seen.unwrap_or(0)));
+            }
+        }
+        tokio::time::sleep(Duration::from_secs(2)).await;
+    }
+}
+```
+{{< /tab >}}
+{{< tab "Node.js" >}}
+```typescript
+async function pollNotifications(userId: string) {
+    let lastSeen: number | null = null;
+
+    while (true) {
+        const rows = await client.queryAll(`
+            MATCH (u:User {id: $userId})<-[r]-()
+            WHERE $lastSeen IS NULL OR r.timestamp > $lastSeen
+            RETURN type(r) AS relType, r.timestamp AS ts
+            ORDER BY ts DESC LIMIT 20
+        `, { params: { userId, lastSeen } });
+
+        for (const row of rows) {
+            const relType = row.get('relType')?.asString;
+            switch (relType) {
+                case 'LIKED': console.log('Someone liked your post!'); break;
+                case 'FOLLOWED': console.log('New follower!'); break;
+                case 'COMMENTED': console.log('New comment!'); break;
+            }
+            const ts = row.get('ts')?.asNumber;
+            if (ts && (!lastSeen || ts > lastSeen)) lastSeen = ts;
+        }
+
+        await new Promise(r => setTimeout(r, 2000));
+    }
+}
+```
+{{< /tab >}}
+{{< tab "Zig" >}}
+```zig
+fn pollNotifications(client: *GeodeClient, user_id: []const u8) !void {
+    var last_seen: ?i64 = null;
+
+    while (true) {
+        const query = std.fmt.allocPrint(allocator,
+            \\MATCH (u:User {{id: "{s}"}})<-[r]-()
+            \\WHERE {?} IS NULL OR r.timestamp > {?}
+            \\RETURN type(r) AS rel_type, r.timestamp AS ts
+            \\ORDER BY ts DESC LIMIT 20
+        , .{user_id, last_seen, last_seen}) catch continue;
+        defer allocator.free(query);
+
+        try client.sendQuery(query);
+        const result = try client.receiveMessage(30000);
+        defer allocator.free(result);
+        // Parse JSON and handle notifications
+
+        std.time.sleep(2 * std.time.ns_per_s);
+    }
+}
+```
+{{< /tab >}}
+{{< /tabs >}}
 
 ### Real-Time Feed Updates
 
+{{< tabs >}}
+{{< tab "Go" >}}
+```go
+func pollLiveFeed(ctx context.Context, db *sql.DB, userID string) {
+    var lastSeen *int64
+    for {
+        rows, _ := db.QueryContext(ctx, `
+            MATCH (me:User {id: ?})-[:FOLLOWS]->(friend:User)-[:POSTED]->(p:Post)
+            WHERE ? IS NULL OR p.created_at > ?
+            RETURN friend.username AS username, p.content AS content, p.created_at
+            ORDER BY p.created_at DESC LIMIT 50
+        `, userID, lastSeen, lastSeen)
+
+        for rows.Next() {
+            var username, content string
+            var createdAt int64
+            rows.Scan(&username, &content, &createdAt)
+            fmt.Printf("New post from %s: %s\n", username, content)
+            if lastSeen == nil || createdAt > *lastSeen {
+                lastSeen = &createdAt
+            }
+        }
+        rows.Close()
+        time.Sleep(3 * time.Second)
+    }
+}
+```
+{{< /tab >}}
+{{< tab "Python" >}}
 ```python
-# Poll for new posts from followed users
 async def poll_live_feed(user_id):
     last_seen = None
     async with client.connection() as conn:
         while True:
             page, _ = await conn.query("""
-                MATCH (me:User {id: $user_id})-[:FOLLOWS]->(friend:User)
-                      -[:POSTED]->(p:Post)
+                MATCH (me:User {id: $user_id})-[:FOLLOWS]->(friend:User)-[:POSTED]->(p:Post)
                 WHERE $last_seen IS NULL OR p.created_at > $last_seen
-                RETURN friend.username AS username, p.content AS content, p.created_at AS created_at
-                ORDER BY p.created_at DESC
-                LIMIT 50
+                RETURN friend.username AS username, p.content AS content, p.created_at
+                ORDER BY p.created_at DESC LIMIT 50
             """, {"user_id": user_id, "last_seen": last_seen})
 
             for row in page.rows:
-                username = row["username"].raw_value
-                content = row["content"].raw_value
-                print(f"New post from {username}: {content}")
+                print(f"New post from {row['username'].raw_value}: {row['content'].raw_value}")
 
             if page.rows:
-                last_seen = page.rows[0]["created_at"].raw_value
-
+                last_seen = page.rows[0]["p.created_at"].raw_value
             await asyncio.sleep(3)
 ```
+{{< /tab >}}
+{{< tab "Rust" >}}
+```rust
+async fn poll_live_feed(conn: &mut Connection, user_id: &str) -> Result<()> {
+    let mut last_seen: Option<i64> = None;
+
+    loop {
+        let params = [
+            ("user_id", Value::string(user_id)),
+            ("last_seen", last_seen.map(Value::int).unwrap_or(Value::null())),
+        ].into();
+
+        let (page, _) = conn.query_with_params(r#"
+            MATCH (me:User {id: $user_id})-[:FOLLOWS]->(friend:User)-[:POSTED]->(p:Post)
+            WHERE $last_seen IS NULL OR p.created_at > $last_seen
+            RETURN friend.username AS username, p.content AS content, p.created_at
+            ORDER BY p.created_at DESC LIMIT 50
+        "#, &params).await?;
+
+        for row in &page.rows {
+            println!("New post from {}: {}",
+                row.get("username").unwrap().as_string()?,
+                row.get("content").unwrap().as_string()?);
+        }
+        tokio::time::sleep(Duration::from_secs(3)).await;
+    }
+}
+```
+{{< /tab >}}
+{{< tab "Node.js" >}}
+```typescript
+async function pollLiveFeed(userId: string) {
+    let lastSeen: number | null = null;
+
+    while (true) {
+        const rows = await client.queryAll(`
+            MATCH (me:User {id: $userId})-[:FOLLOWS]->(friend:User)-[:POSTED]->(p:Post)
+            WHERE $lastSeen IS NULL OR p.created_at > $lastSeen
+            RETURN friend.username AS username, p.content AS content, p.created_at AS createdAt
+            ORDER BY createdAt DESC LIMIT 50
+        `, { params: { userId, lastSeen } });
+
+        for (const row of rows) {
+            console.log(`New post from ${row.get('username')?.asString}: ${row.get('content')?.asString}`);
+            const ts = row.get('createdAt')?.asNumber;
+            if (ts && (!lastSeen || ts > lastSeen)) lastSeen = ts;
+        }
+        await new Promise(r => setTimeout(r, 3000));
+    }
+}
+```
+{{< /tab >}}
+{{< tab "Zig" >}}
+```zig
+fn pollLiveFeed(client: *GeodeClient, user_id: []const u8) !void {
+    var last_seen: ?i64 = null;
+    while (true) {
+        // Build and execute query, parse results
+        try client.sendQuery("MATCH ...");
+        const result = try client.receiveMessage(30000);
+        defer allocator.free(result);
+        // Process feed items
+        std.time.sleep(3 * std.time.ns_per_s);
+    }
+}
+```
+{{< /tab >}}
+{{< /tabs >}}
 
 ## Performance Optimization
 
