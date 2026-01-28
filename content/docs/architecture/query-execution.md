@@ -71,7 +71,7 @@ Geode's query execution follows a sophisticated pipeline that transforms user GQ
 
 The lexer (`src/gql/lexer.zig`) tokenizes the input GQL query into a stream of tokens.
 
-**Implementation Location**: `src/gql/lexer.zig` (631 LOC)
+**Implementation Location**: `src/gql/lexer.zig`
 
 **Key Responsibilities**:
 - Tokenize input string
@@ -111,7 +111,7 @@ Tokens:
 
 The parser (`src/gql/parser.zig`) builds an Abstract Syntax Tree (AST) from the token stream.
 
-**Implementation Location**: `src/gql/parser.zig` (5,883 LOC)
+**Implementation Location**: `src/gql/parser.zig`
 
 **Key Responsibilities**:
 - Construct AST from tokens
@@ -253,14 +253,14 @@ fn reportError(self: *Parser, err: ParserError) void {
 
 The query planner (`src/planner/`) transforms the AST into a logical query plan.
 
-**Implementation Location**: `src/planner/` (multiple files, ~3,500 LOC total)
+**Implementation Location**: `src/planner/`
 
 **Key Files**:
-- `src/planner/optimizer.zig` (609 LOC) - Query optimization
-- `src/planner/cbo.zig` (760 LOC) - Cost-based optimization
-- `src/planner/cost_model.zig` (594 LOC) - Cost estimation
-- `src/planner/pipeline.zig` (750 LOC) - Execution pipeline
-- `src/planner/adaptive.zig` (668 LOC) - Adaptive query execution
+- `src/planner/optimizer.zig` - Query optimization
+- `src/planner/cbo.zig` - Cost-based optimization
+- `src/planner/cost_model.zig` - Cost estimation
+- `src/planner/pipeline.zig` - Execution pipeline
+- `src/planner/adaptive.zig` - Adaptive query execution
 
 **Logical Plan Structure**:
 \`\`\`
@@ -369,7 +369,7 @@ fn checkBinaryOperation(bin: BinaryExpression, context: *SemanticContext) TypeEr
 
 ### Cost-Based Optimization (CBO)
 
-**Implementation Location**: `src/planner/cbo.zig` (760 LOC)
+**Implementation Location**: `src/planner/cbo.zig`
 
 **Optimization Strategies**:
 
@@ -435,7 +435,7 @@ fn optimizeJoinOrder(joins: []Join, stats: *Statistics) []Join {
 
 ### Cost Model
 
-**Implementation Location**: `src/planner/cost_model.zig` (594 LOC)
+**Implementation Location**: `src/planner/cost_model.zig`
 
 **Cost Factors**:
 
@@ -499,7 +499,7 @@ fn estimateMemoryCost(operator: Operator) f64 {
 
 ### Statistics Collection
 
-**Implementation Location**: `src/server/index_optimizer.zig` (2,444 LOC)
+**Implementation Location**: `src/server/index_optimizer.zig`
 
 **Collected Statistics**:
 - Node label cardinalities
@@ -523,13 +523,13 @@ statistics:
 
 ### Execution Engine
 
-**Implementation Location**: `src/execution/` (multiple files, ~10,000 LOC total)
+**Implementation Location**: `src/execution/`
 
 **Key Files**:
-- `src/execution.zig` (1,723 LOC) - Main execution logic
-- `src/execution/path_and_call_operations.zig` (4,725 LOC) - Path operations
-- `src/execution/match_operations.zig` (2,015 LOC) - MATCH execution
-- `src/execution/crud_operations.zig` (1,876 LOC) - CREATE/UPDATE/DELETE
+- `src/execution.zig` - Main execution logic
+- `src/execution/path_and_call_operations.zig` - Path operations
+- `src/execution/match_operations.zig` - MATCH execution
+- `src/execution/crud_operations.zig` - CREATE/UPDATE/DELETE
 
 **Execution Model**:
 
@@ -711,7 +711,7 @@ fn executeAggregate(self: *Executor, agg: AggregateOperator) !ResultSet {
 
 ### Expression Evaluation
 
-**Implementation Location**: `src/eval.zig` (3,332 LOC)
+**Implementation Location**: `src/eval.zig`
 
 **Evaluator**:
 \`\`\`zig
@@ -753,7 +753,7 @@ fn evaluateBinaryExpression(
 
 ### Distributed Query Coordinator
 
-**Implementation Location**: `src/distributed/enhanced_query_coordinator.zig` (750 LOC)
+**Implementation Location**: `src/distributed/enhanced_query_coordinator.zig`
 
 **Distributed Execution Flow**:
 

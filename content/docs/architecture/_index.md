@@ -223,11 +223,11 @@ Geode is an enterprise-ready graph database built with a modular, high-performan
 
 ```
 src/
-├── server/          # Server implementation (7,039 LOC)
-├── cli/             # CLI implementation (5,885 LOC)
-├── gql/             # GQL parser (5,883 LOC)
-├── execution/       # Query execution (4,725 LOC)
-├── eval.zig         # Expression evaluation (3,332 LOC)
+├── server/          # Server implementation
+├── cli/             # CLI implementation
+├── gql/             # GQL parser
+├── execution/       # Query execution
+├── eval.zig         # Expression evaluation
 ├── planner/         # Query planning
 ├── storage/         # Storage engine
 ├── security/        # Security features
