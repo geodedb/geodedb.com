@@ -137,8 +137,17 @@ Run Geode in Docker containers for isolated, reproducible deployments. Docker in
 {{< tabs >}}
 {{< tab "Debian/Ubuntu" >}}
 ```bash
-curl -L -o geode.deb https://gitlab.com/devnw/codepros/geode/geode/-/releases/latest/download/geode-linux-amd64.deb
-sudo apt install ./geode.deb
+# Add GPG signing key
+curl -fsSL https://apt.geodedb.com/geode.gpg | \
+  sudo gpg --dearmor -o /usr/share/keyrings/geode-archive-keyring.gpg
+
+# Add repository
+echo "deb [signed-by=/usr/share/keyrings/geode-archive-keyring.gpg] https://apt.geodedb.com stable main" | \
+  sudo tee /etc/apt/sources.list.d/geode.list
+
+# Install
+sudo apt update
+sudo apt install geode
 ```
 {{< /tab >}}
 {{< tab "RHEL/Fedora" >}}
@@ -173,8 +182,17 @@ sudo install -m 0755 geode-darwin-amd64 /usr/local/bin/geode
 wsl --install -d Ubuntu
 
 # Inside Ubuntu (WSL)
-curl -L -o geode.deb https://gitlab.com/devnw/codepros/geode/geode/-/releases/latest/download/geode-linux-amd64.deb
-sudo apt install ./geode.deb
+# Add GPG signing key
+curl -fsSL https://apt.geodedb.com/geode.gpg | \
+  sudo gpg --dearmor -o /usr/share/keyrings/geode-archive-keyring.gpg
+
+# Add repository
+echo "deb [signed-by=/usr/share/keyrings/geode-archive-keyring.gpg] https://apt.geodedb.com stable main" | \
+  sudo tee /etc/apt/sources.list.d/geode.list
+
+# Install
+sudo apt update
+sudo apt install geode
 ```
 {{< /tab >}}
 {{< /tabs >}}

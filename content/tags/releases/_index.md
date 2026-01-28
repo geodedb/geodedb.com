@@ -120,7 +120,7 @@ curl -sSL https://install.geodedb.com | sh
 geode serve --config /etc/geode/config.yaml
 
 # 6. Update client libraries
-go get -u go.codepros.org/geode@v1.0.0
+go get -u geodedb.com/geode@v1.0.0
 pip install --upgrade geode-client==1.0.0
 cargo update geode-client
 ```
@@ -183,9 +183,13 @@ Geode provides multiple release channels for different use cases:
 **Linux Packages**:
 
 ```bash
-# Debian/Ubuntu
-curl -L -o geode.deb https://gitlab.com/devnw/codepros/geode/geode/-/releases/latest/download/geode-linux-amd64.deb
-sudo apt install ./geode.deb
+# Debian/Ubuntu (APT repository - recommended for automatic updates)
+curl -fsSL https://apt.geodedb.com/geode.gpg | \
+  sudo gpg --dearmor -o /usr/share/keyrings/geode-archive-keyring.gpg
+echo "deb [signed-by=/usr/share/keyrings/geode-archive-keyring.gpg] https://apt.geodedb.com stable main" | \
+  sudo tee /etc/apt/sources.list.d/geode.list
+sudo apt update
+sudo apt install geode
 
 # RHEL/Fedora
 curl -L -o geode.rpm https://gitlab.com/devnw/codepros/geode/geode/-/releases/latest/download/geode-linux-x86_64.rpm
