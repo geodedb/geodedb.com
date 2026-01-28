@@ -123,7 +123,12 @@ link-check:
   extends: .setup
   stage: test
   script:
-    - hugo -b https://geodedb.com --minify --gc --panicOnWarning
+    # Build the site
+    - hugo -b https://geodedb.com --minify --gc
+    # Install htmltest for link checking
+    - curl -fsSL https://htmltest.wjdp.uk | bash -s -- -b /usr/local/bin
+    # Run link checker
+    - htmltest --conf .htmltest.yml
   rules:
     - if: $CI_COMMIT_BRANCH
 

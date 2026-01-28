@@ -1,0 +1,39 @@
+# htmltest configuration for link checking
+# See: https://github.com/wjdp/htmltest
+
+DirectoryPath: "public"
+
+# Check internal links
+CheckInternal: true
+
+# Check external links (disabled to avoid rate limiting in CI)
+CheckExternal: false
+
+# Check anchors/fragments
+CheckAnchors: true
+
+# Check mailto links
+CheckMailto: false
+
+# Check telephone links
+CheckTel: false
+
+# Ignore these patterns
+IgnoreURLs:
+  - "localhost"
+  - "127.0.0.1"
+  - "example.com"
+  - "geode://.*"
+  - "mailto:.*"
+
+# Ignore these directories
+IgnoreDirs:
+  - "fonts"
+  - "images"
+
+# Output format
+OutputDir: ".htmltest"
+OutputLogFile: "htmltest.log"
+
+# Fail on warnings
+StrictMode: true
