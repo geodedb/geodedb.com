@@ -168,6 +168,11 @@
             {{ end }}
           {{ end }}
 
+          {{/* Search button (desktop) */}}
+          <li class="nav-item ms-lg-2 d-none d-lg-flex">
+            {{ partial "search.html" . }}
+          </li>
+
           {{/* Quick action buttons (desktop) */}}
           <li class="nav-item ms-lg-2 d-none d-lg-flex">
             <a href="/docs/getting-started/" class="btn btn-primary btn-sm px-3 d-inline-flex align-items-center gap-2">

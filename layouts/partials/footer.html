@@ -6,7 +6,7 @@
     <div class="footer-content py-5">
       <div class="row g-4">
         {{/* Column 1: Brand & Description */}}
-        <div class="col-lg-4 mb-4 mb-lg-0">
+        <div class="col-lg-3 mb-4 mb-lg-0">
           <div class="footer-brand mb-4">
             {{ if .Site.Params.branding.footer.logo }}
               <img
@@ -50,64 +50,71 @@
         </div>
 
         {{/* Column 2: Documentation */}}
-        <div class="col-6 col-lg-2">
+        <div class="col-6 col-md-4 col-lg-2">
           <h4 class="h6 fw-semibold mb-3 text-uppercase">Documentation</h4>
           <ul class="list-unstyled footer-links">
             <li><a href="/docs/getting-started/">Getting Started</a></li>
-            <li><a href="/docs/installation/">Installation</a></li>
-            <li><a href="/docs/gql/">GQL Reference</a></li>
+            <li><a href="/guides/installation/">Installation</a></li>
+            <li><a href="/docs/gql-reference/">GQL Reference</a></li>
             <li><a href="/docs/api-reference/">API Reference</a></li>
             <li><a href="/docs/architecture/">Architecture</a></li>
+            <li><a href="/docs/tutorials/">Tutorials</a></li>
           </ul>
         </div>
 
-        {{/* Column 3: Resources */}}
-        <div class="col-6 col-lg-2">
-          <h4 class="h6 fw-semibold mb-3 text-uppercase">Resources</h4>
+        {{/* Column 3: Guides */}}
+        <div class="col-6 col-md-4 col-lg-2">
+          <h4 class="h6 fw-semibold mb-3 text-uppercase">Guides</h4>
           <ul class="list-unstyled footer-links">
-            <li><a href="/docs/guides/">Guides</a></li>
-            <li><a href="https://codepros.org/blog" target="_blank" rel="noopener">
-              Blog
-              <wa-icon name="arrow-up-right-from-square" class="ms-1 small"></wa-icon>
-            </a></li>
-            <li><a href="/docs/contribute/">Contributing</a></li>
-            <li><a href="https://gitlab.com/devnw/codepros/geode/geode/-/releases" target="_blank" rel="noopener">
-              Releases
-              <wa-icon name="arrow-up-right-from-square" class="ms-1 small"></wa-icon>
-            </a></li>
-            <li><a href="https://gitlab.com/devnw/codepros/geode/geode/-/issues" target="_blank" rel="noopener">
-              Community
-              <wa-icon name="arrow-up-right-from-square" class="ms-1 small"></wa-icon>
-            </a></li>
+            <li><a href="/guides/quick-start/">Quick Start</a></li>
+            <li><a href="/guides/graph-modeling/">Graph Modeling</a></li>
+            <li><a href="/guides/query-performance/">Query Performance</a></li>
+            <li><a href="/guides/backup-restore/">Backup & Restore</a></li>
+            <li><a href="/guides/production-deployment/">Production Deploy</a></li>
+            <li><a href="/guides/">All Guides</a></li>
           </ul>
         </div>
 
-        {{/* Column 4: Clients */}}
-        <div class="col-6 col-lg-2">
-          <h4 class="h6 fw-semibold mb-3 text-uppercase">Client Libraries</h4>
+        {{/* Column 4: Topics (Taxonomies) */}}
+        <div class="col-6 col-md-4 col-lg-2">
+          <h4 class="h6 fw-semibold mb-3 text-uppercase">Topics</h4>
           <ul class="list-unstyled footer-links">
-            <li><a href="/clients/go/">Go</a></li>
-            <li><a href="/clients/python/">Python</a></li>
-            <li><a href="/clients/rust/">Rust</a></li>
-            <li><a href="/clients/nodejs/">Node.js</a></li>
-            <li><a href="/clients/zig/">Zig</a></li>
+            <li><a href="/tags/gql/">GQL</a></li>
+            <li><a href="/tags/performance/">Performance</a></li>
+            <li><a href="/tags/security/">Security</a></li>
+            <li><a href="/tags/transactions/">Transactions</a></li>
+            <li><a href="/tags/indexing/">Indexing</a></li>
+            <li><a href="/tags/">All Topics</a></li>
           </ul>
         </div>
 
-        {{/* Column 5: Legal & Company */}}
-        <div class="col-6 col-lg-2">
+        {{/* Column 5: Client Libraries */}}
+        <div class="col-6 col-md-4 col-lg-1">
+          <h4 class="h6 fw-semibold mb-3 text-uppercase">Clients</h4>
+          <ul class="list-unstyled footer-links">
+            <li><a href="/tags/go-client/">Go</a></li>
+            <li><a href="/tags/python-client/">Python</a></li>
+            <li><a href="/tags/rust-client/">Rust</a></li>
+            <li><a href="/tags/javascript/">Node.js</a></li>
+            <li><a href="/tags/zig-client/">Zig</a></li>
+          </ul>
+        </div>
+
+        {{/* Column 6: Company & Legal */}}
+        <div class="col-6 col-md-4 col-lg-2">
           <h4 class="h6 fw-semibold mb-3 text-uppercase">Company</h4>
           <ul class="list-unstyled footer-links">
             <li><a href="https://codepros.org/about" target="_blank" rel="noopener">
               About
               <wa-icon name="arrow-up-right-from-square" class="ms-1 small"></wa-icon>
             </a></li>
-            <li><a href="/privacy/">Privacy Policy</a></li>
-            <li><a href="/terms/">Terms of Use</a></li>
-            <li><a href="https://gitlab.com/devnw/codepros/geode/geode/-/blob/main/SECURITY.md" target="_blank" rel="noopener">
-              Security
+            <li><a href="https://codepros.org/blog" target="_blank" rel="noopener">
+              Blog
               <wa-icon name="arrow-up-right-from-square" class="ms-1 small"></wa-icon>
             </a></li>
+            <li><a href="/docs/contribute/">Contributing</a></li>
+            <li><a href="/privacy/">Privacy</a></li>
+            <li><a href="/terms/">Terms</a></li>
             <li><a href="https://gitlab.com/devnw/codepros/geode/geode/-/blob/main/LICENSE" target="_blank" rel="noopener">
               License
               <wa-icon name="arrow-up-right-from-square" class="ms-1 small"></wa-icon>
@@ -117,8 +124,27 @@
       </div>
     </div>
 
+    {{/* Popular Tags Row */}}
+    <div class="footer-tags py-4 border-top border-bottom">
+      <div class="d-flex flex-wrap align-items-center gap-2">
+        <span class="text-white-50 small text-uppercase fw-semibold me-2">Popular:</span>
+        <a href="/tags/match/" class="footer-tag">MATCH</a>
+        <a href="/tags/create/" class="footer-tag">CREATE</a>
+        <a href="/tags/aggregation/" class="footer-tag">Aggregation</a>
+        <a href="/tags/where/" class="footer-tag">WHERE</a>
+        <a href="/tags/return/" class="footer-tag">RETURN</a>
+        <a href="/tags/transactions/" class="footer-tag">Transactions</a>
+        <a href="/tags/indexing/" class="footer-tag">Indexing</a>
+        <a href="/tags/quic/" class="footer-tag">QUIC</a>
+        <a href="/tags/tls/" class="footer-tag">TLS</a>
+        <a href="/tags/rbac/" class="footer-tag">RBAC</a>
+        <a href="/tags/high-availability/" class="footer-tag">HA</a>
+        <a href="/tags/distributed-systems/" class="footer-tag">Distributed</a>
+      </div>
+    </div>
+
     {{/* Bottom bar */}}
-    <div class="footer-bottom border-top py-4">
+    <div class="footer-bottom py-4">
       <div class="row align-items-center">
         <div class="col-md-6 mb-3 mb-md-0">
           <p class="small text-white-50 mb-0">
@@ -169,7 +195,7 @@
   }
 
   .footer-links a:hover {
-    color: #d4a5ff;
+    color: #ffffff;
     text-decoration: none;
   }
 
@@ -191,6 +217,31 @@
     background: rgba(156, 77, 255, 0.4);
     color: #d4a5ff;
     transform: translateY(-2px);
+  }
+
+  /* Footer Tags */
+  .footer-tags {
+    border-color: rgba(156, 77, 255, 0.2) !important;
+  }
+
+  .footer-tag {
+    display: inline-block;
+    padding: 0.25rem 0.75rem;
+    background: rgba(156, 77, 255, 0.15);
+    color: #ce93d8;
+    border-radius: var(--radius-full, 9999px);
+    font-size: 0.75rem;
+    font-weight: 500;
+    text-decoration: none;
+    transition: all var(--duration-fast) var(--ease-out);
+    border: 1px solid rgba(156, 77, 255, 0.3);
+  }
+
+  .footer-tag:hover {
+    background: rgba(156, 77, 255, 0.3);
+    color: #ffffff;
+    border-color: rgba(156, 77, 255, 0.5);
+    transform: translateY(-1px);
   }
 
   .footer-bottom a:hover {
@@ -248,5 +299,24 @@
 
   [data-bs-theme="light"] .footer-modern .footer-bottom a:hover {
     color: #ffffff !important;
+  }
+
+  [data-bs-theme="light"] .footer-tag {
+    color: #ce93d8 !important;
+  }
+
+  [data-bs-theme="light"] .footer-tag:hover {
+    color: #ffffff !important;
+  }
+
+  /* Responsive adjustments */
+  @media (max-width: 991.98px) {
+    .footer-tags {
+      text-align: center;
+    }
+
+    .footer-tags .d-flex {
+      justify-content: center;
+    }
   }
 </style>
