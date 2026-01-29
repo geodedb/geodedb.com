@@ -41,20 +41,28 @@
       />
     </a>
 
-    <!-- Mobile toggler -->
-    <button
-      class="navbar-toggler border-0 d-lg-none"
-      type="button"
-      data-bs-toggle="offcanvas"
-      data-bs-target="#{{ $offID }}"
-      data-offcanvas-toggle="offcanvas"
-      data-offcanvas-target="#{{ $offID }}"
-      aria-controls="{{ $offID }}"
-      aria-expanded="false"
-      aria-label="{{ $navToggle }}"
-    >
-      <wa-icon name="bars"></wa-icon>
-    </button>
+    {{/* Mobile search and toggler - search is outside collapsed menu */}}
+    <div class="d-flex align-items-center d-lg-none">
+      {{/* Mobile search button */}}
+      <div class="me-2">
+        {{ partial "search.html" . }}
+      </div>
+
+      <!-- Mobile toggler -->
+      <button
+        class="navbar-toggler border-0"
+        type="button"
+        data-bs-toggle="offcanvas"
+        data-bs-target="#{{ $offID }}"
+        data-offcanvas-toggle="offcanvas"
+        data-offcanvas-target="#{{ $offID }}"
+        aria-controls="{{ $offID }}"
+        aria-expanded="false"
+        aria-label="{{ $navToggle }}"
+      >
+        <wa-icon name="bars"></wa-icon>
+      </button>
+    </div>
 
     <!-- Mobile off-canvas -->
     <div
@@ -182,7 +190,7 @@
           </li>
 
           <li class="nav-item ms-2 d-none d-lg-flex">
-            <a href="https://gitlab.com/devnw/codepros/geode/geode" target="_blank" rel="noopener" class="btn btn-outline-secondary btn-sm px-3 d-inline-flex align-items-center gap-2">
+            <a href="https://gitlab.com/devnw/codepros/geode" target="_blank" rel="noopener" class="btn btn-outline-secondary btn-sm px-3 d-inline-flex align-items-center gap-2">
               <wa-icon name="gitlab" family="brands" aria-hidden="true"></wa-icon>
               <span>GitLab</span>
             </a>
@@ -248,7 +256,7 @@
           </li>
 
           <li class="nav-item mobile-cta-section d-lg-none">
-            <a href="https://gitlab.com/devnw/codepros/geode/geode" target="_blank" rel="noopener" class="mobile-cta-btn mobile-cta-secondary">
+            <a href="https://gitlab.com/devnw/codepros/geode" target="_blank" rel="noopener" class="mobile-cta-btn mobile-cta-secondary">
               <wa-icon name="gitlab" family="brands" aria-hidden="true"></wa-icon>
               <span>View on GitLab</span>
             </a>
