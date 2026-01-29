@@ -37,6 +37,9 @@
           <div class="hero-kicker d-inline-flex align-items-center mb-4 px-3 py-2 rounded-pill">
             <wa-icon name="check-circle" class="hero-kicker__icon me-2" aria-hidden="true"></wa-icon>
             <span class="hero-kicker__text small fw-semibold">100% ISO GQL Compliant • Production Ready</span>
+            {{ with site.Data.version }}
+            <span class="badge bg-primary-subtle text-primary ms-2 px-2 py-1 small fw-semibold rounded-pill">v{{ .current }}</span>
+            {{ end }}
           </div>
 
           {{/* Main headline */}}
@@ -335,17 +338,18 @@ LIMIT 10`}}</code></pre>
                   role="tabpanel"
                   aria-labelledby="home-install-docker-tab"
                 >
-                  <pre class="mb-0"><code class="language-bash">{{`# Pull and run Geode
+                  {{ $version := site.Data.version }}
+                  <pre class="mb-0"><code class="language-bash"># Pull and run Geode
 docker run -d \
   -p 3141:3141 \
   -v geode-data:/var/lib/geode \
   --name geode \
-  geodedb/geode:latest serve --listen 0.0.0.0:3141
+  geodedb/geode:{{ $version.docker.latest }} serve --listen 0.0.0.0:3141
 
 # Connect and query
 docker exec -it geode geode shell
-geode> CREATE (n:Person {name: 'Alice', age: 30})
-geode> MATCH (n:Person) RETURN n`}}</code></pre>
+geode&gt; CREATE (n:Person {name: 'Alice', age: 30})
+geode&gt; MATCH (n:Person) RETURN n</code></pre>
                 </div>
                 <div
                   class="tab-pane fade"

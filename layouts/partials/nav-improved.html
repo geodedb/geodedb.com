@@ -169,8 +169,8 @@
       <button
         class="navbar-toggler border-0"
         type="button"
-        data-offcanvas-toggle="offcanvas"
-        data-offcanvas-target="#{{ $offID }}"
+        data-bs-toggle="offcanvas"
+        data-bs-target="#{{ $offID }}"
         aria-controls="{{ $offID }}"
         aria-expanded="false"
         aria-label="{{ $navToggle }}"
@@ -395,6 +395,41 @@
     [data-bs-theme="auto"] .navbar-modern .navbar-nav .nav-item,
     [data-bs-theme="auto"] .navbar-modern .navbar-nav .nav-link {
       background: transparent !important;
+    }
+  }
+
+  /* Responsive breakpoints for improved navigation */
+  @media (max-width: 991.98px) {
+    .navbar-brand img {
+      max-height: 50px;
+      width: auto;
+    }
+
+    .navbar-toggler {
+      padding: 0.5rem;
+    }
+
+    .offcanvas {
+      max-width: 300px;
+    }
+
+    .offcanvas-body .navbar-nav {
+      padding: 0;
+    }
+
+    .offcanvas-body .nav-link {
+      padding: 0.75rem 1rem;
+    }
+  }
+
+  @media (max-width: 575.98px) {
+    .navbar-brand img {
+      max-height: 40px;
+    }
+
+    .container-fluid {
+      padding-left: 1rem;
+      padding-right: 1rem;
     }
   }
 </style>

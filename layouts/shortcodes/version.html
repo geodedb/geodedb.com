@@ -1,0 +1,30 @@
+{{/*
+  Version shortcode - displays version information from data/version.yaml
+
+  Usage:
+    {{</* version */>}}                    - Current version (e.g., "0.1.4-alpha.4")
+    {{</* version "display" */>}}          - Display version (e.g., "0.1.4")
+    {{</* version "semver" */>}}           - Full semver (e.g., "0.1.4-alpha.4")
+    {{</* version "docker.stable" */>}}    - Docker stable tag
+    {{</* version "clients.go" */>}}       - Go client version
+*/}}
+{{- $key := .Get 0 | default "current" -}}
+{{- $version := site.Data.version -}}
+
+{{- if eq $key "current" -}}
+  {{- $version.current -}}
+{{- else if eq $key "display" -}}
+  {{- $version.display -}}
+{{- else if eq $key "semver" -}}
+  {{- $version.semver -}}
+{{- else if eq $key "release_date" -}}
+  {{- $version.release_date -}}
+{{- else if hasPrefix $key "clients." -}}
+  {{- $client := strings.TrimPrefix "clients." $key -}}
+  {{- index $version.clients $client -}}
+{{- else if hasPrefix $key "docker." -}}
+  {{- $tag := strings.TrimPrefix "docker." $key -}}
+  {{- index $version.docker $tag -}}
+{{- else -}}
+  {{- index $version $key -}}
+{{- end -}}

@@ -54,8 +54,6 @@
         type="button"
         data-bs-toggle="offcanvas"
         data-bs-target="#{{ $offID }}"
-        data-offcanvas-toggle="offcanvas"
-        data-offcanvas-target="#{{ $offID }}"
         aria-controls="{{ $offID }}"
         aria-expanded="false"
         aria-label="{{ $navToggle }}"
@@ -307,7 +305,7 @@
                 {{/* Placeholder for consistent layout when no translations */}}
                 <div class="mobile-util-btn mobile-util-placeholder" aria-hidden="true">
                   <wa-icon name="code" aria-hidden="true"></wa-icon>
-                  <span>v0.18</span>
+                  <span>v{{ site.Data.version.display }}</span>
                 </div>
               {{ end }}
             </div>
@@ -442,6 +440,159 @@
 
   .offcanvas [aria-expanded="true"] .dropdown-chevron {
     transform: rotate(180deg);
+  }
+
+  /* Responsive styles for different breakpoints */
+  @media (max-width: 991.98px) {
+    /* Mobile logo sizing */
+    .navbar-brand img {
+      max-height: 50px;
+      width: auto;
+    }
+
+    /* Ensure toggler is visible and accessible */
+    .navbar-toggler {
+      padding: 0.5rem;
+      background: transparent;
+    }
+
+    .navbar-toggler wa-icon {
+      font-size: 1.5rem;
+      color: var(--color-neutral-700);
+    }
+
+    /* Mobile offcanvas improvements */
+    .offcanvas {
+      max-width: 300px;
+    }
+
+    .offcanvas-body .navbar-nav {
+      padding: 1rem 0;
+    }
+
+    .offcanvas-body .nav-link {
+      padding: 0.75rem 1rem;
+      border-radius: var(--radius-md);
+    }
+
+    .offcanvas-body .nav-link:hover {
+      background: var(--color-neutral-100);
+    }
+
+    /* Mobile dropdown styling */
+    .offcanvas .dropdown-menu {
+      position: static !important;
+      transform: none !important;
+      border: none;
+      box-shadow: none;
+      padding-left: 1rem;
+      background: transparent;
+    }
+
+    /* Mobile CTA buttons */
+    .mobile-cta-section {
+      padding: 0.5rem 1rem;
+      border-top: 1px solid var(--color-neutral-200);
+      margin-top: 0.5rem;
+    }
+
+    .mobile-cta-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      width: 100%;
+      padding: 0.75rem 1rem;
+      border-radius: var(--radius-md);
+      text-decoration: none;
+      font-weight: 500;
+    }
+
+    .mobile-cta-primary {
+      background: var(--bs-primary);
+      color: #fff !important;
+    }
+
+    .mobile-cta-secondary {
+      background: transparent;
+      border: 1px solid var(--color-neutral-300);
+      color: var(--color-neutral-700);
+    }
+
+    /* Mobile utility buttons */
+    .mobile-utils-section {
+      padding: 1rem;
+      border-top: 1px solid var(--color-neutral-200);
+      margin-top: 0.5rem;
+    }
+
+    .mobile-utils-row {
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    .mobile-util-btn {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      padding: 0.75rem;
+      border-radius: var(--radius-md);
+      background: var(--color-neutral-100);
+      border: none;
+      color: var(--color-neutral-700);
+      font-size: 0.875rem;
+      cursor: pointer;
+    }
+
+    .mobile-util-btn:hover {
+      background: var(--color-neutral-200);
+    }
+  }
+
+  @media (max-width: 575.98px) {
+    /* Extra small screens */
+    .navbar-brand img {
+      max-height: 40px;
+    }
+
+    .container-fluid {
+      padding-left: 1rem;
+      padding-right: 1rem;
+    }
+  }
+
+  /* Dark mode responsive adjustments */
+  [data-bs-theme="dark"] .navbar-toggler wa-icon {
+    color: var(--color-neutral-300);
+  }
+
+  [data-bs-theme="dark"] .offcanvas {
+    background: var(--bs-dark);
+    color: var(--color-neutral-100);
+  }
+
+  [data-bs-theme="dark"] .offcanvas-header {
+    border-bottom-color: var(--color-neutral-700);
+  }
+
+  [data-bs-theme="dark"] .offcanvas-body .nav-link:hover {
+    background: var(--color-neutral-800);
+  }
+
+  [data-bs-theme="dark"] .mobile-cta-secondary {
+    border-color: var(--color-neutral-600);
+    color: var(--color-neutral-300);
+  }
+
+  [data-bs-theme="dark"] .mobile-util-btn {
+    background: var(--color-neutral-800);
+    color: var(--color-neutral-300);
+  }
+
+  [data-bs-theme="dark"] .mobile-util-btn:hover {
+    background: var(--color-neutral-700);
   }
 </style>
 
