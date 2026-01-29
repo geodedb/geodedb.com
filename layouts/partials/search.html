@@ -6,7 +6,7 @@
   class="btn btn-link search-trigger"
   id="searchTrigger"
   aria-label="Open search"
-  title="Search (Ctrl+K)"
+  title="Search (/ or Ctrl+K)"
 >
   <wa-icon name="magnifying-glass" aria-hidden="true"></wa-icon>
 </button>
@@ -42,9 +42,9 @@
           <wa-icon name="lightbulb" class="search-empty-icon" aria-hidden="true"></wa-icon>
           <p>Start typing to search...</p>
           <div class="search-tips">
-            <span><kbd>↑</kbd><kbd>↓</kbd> to navigate</span>
-            <span><kbd>Enter</kbd> to select</span>
-            <span><kbd>ESC</kbd> to close</span>
+            <span><kbd>/</kbd> to search</span>
+            <span><kbd>↑</kbd><kbd>↓</kbd> navigate</span>
+            <span><kbd>ESC</kbd> close</span>
           </div>
         </div>
         <div class="search-no-results" id="searchNoResults" style="display: none;">
@@ -96,10 +96,15 @@
     color: var(--color-primary-600);
   }
 
-  /* Search Overlay */
+  /* Search Overlay - reset all inherited styles */
   .search-overlay {
+    all: initial;
+    font-family: inherit;
     position: fixed;
-    inset: 0;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
     z-index: 9999;
     background: rgba(0, 0, 0, 0.6);
     backdrop-filter: blur(4px);
@@ -108,7 +113,8 @@
     justify-content: center;
     padding-top: 10vh;
     opacity: 0;
-    transition: opacity var(--duration-fast) var(--ease-out);
+    transition: opacity 0.15s ease-out;
+    box-sizing: border-box;
   }
 
   .search-overlay.active {
@@ -121,15 +127,20 @@
     width: 100%;
     max-width: 640px;
     margin: 0 1rem;
-    background: var(--color-neutral-0, #fff);
-    border-radius: var(--radius-xl, 1rem);
+    background: #ffffff;
+    border-radius: 1rem;
     box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
     overflow: hidden;
     transform: translateY(-20px);
-    transition: transform var(--duration-fast) var(--ease-out);
+    transition: transform 0.15s ease-out;
     max-height: 80vh;
     display: flex;
     flex-direction: column;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    font-size: 1rem;
+    line-height: 1.5;
+    color: #1f2937;
+    box-sizing: border-box;
   }
 
   .search-overlay.active .search-container {
@@ -141,8 +152,9 @@
     display: flex;
     align-items: center;
     padding: 1rem;
-    border-bottom: 1px solid var(--color-neutral-200, #e5e7eb);
+    border-bottom: 1px solid #e5e7eb;
     gap: 0.75rem;
+    box-sizing: border-box;
   }
 
   .search-input-wrapper {
@@ -150,13 +162,14 @@
     display: flex;
     align-items: center;
     gap: 0.75rem;
-    background: var(--color-neutral-100, #f3f4f6);
-    border-radius: var(--radius-lg, 0.5rem);
+    background: #f3f4f6;
+    border-radius: 0.5rem;
     padding: 0.75rem 1rem;
+    box-sizing: border-box;
   }
 
   .search-input-icon {
-    color: var(--color-neutral-400);
+    color: #9ca3af;
     flex-shrink: 0;
   }
 
@@ -165,22 +178,23 @@
     border: none;
     background: transparent;
     font-size: 1rem;
-    color: var(--color-neutral-900);
+    color: #111827;
     outline: none;
+    font-family: inherit;
   }
 
   .search-input::placeholder {
-    color: var(--color-neutral-400);
+    color: #9ca3af;
   }
 
   .search-kbd {
-    background: var(--color-neutral-200);
-    color: var(--color-neutral-600);
+    background: #e5e7eb;
+    color: #4b5563;
     padding: 0.125rem 0.5rem;
-    border-radius: var(--radius-sm, 0.25rem);
+    border-radius: 0.25rem;
     font-size: 0.75rem;
     font-family: inherit;
-    border: 1px solid var(--color-neutral-300);
+    border: 1px solid #d1d5db;
   }
 
   .search-close {
@@ -191,15 +205,15 @@
     height: 2.5rem;
     border: none;
     background: transparent;
-    color: var(--color-neutral-500);
-    border-radius: var(--radius-md);
+    color: #6b7280;
+    border-radius: 0.375rem;
     cursor: pointer;
-    transition: all var(--duration-fast) var(--ease-out);
+    transition: all 0.15s ease-out;
   }
 
   .search-close:hover {
-    background: var(--color-neutral-100);
-    color: var(--color-neutral-700);
+    background: #f3f4f6;
+    color: #374151;
   }
 
   /* Search Body */
@@ -207,6 +221,7 @@
     flex: 1;
     overflow-y: auto;
     padding: 1rem;
+    box-sizing: border-box;
   }
 
   /* Empty State */
@@ -214,7 +229,7 @@
   .search-no-results {
     text-align: center;
     padding: 2rem 1rem;
-    color: var(--color-neutral-500);
+    color: #6b7280;
   }
 
   .search-empty-icon {
@@ -232,9 +247,9 @@
   }
 
   .search-tips kbd {
-    background: var(--color-neutral-200);
+    background: #e5e7eb;
     padding: 0.125rem 0.375rem;
-    border-radius: var(--radius-sm);
+    border-radius: 0.25rem;
     font-size: 0.75rem;
     margin-right: 0.25rem;
   }
@@ -253,20 +268,21 @@
   .search-result-link {
     display: block;
     padding: 0.875rem 1rem;
-    border-radius: var(--radius-md);
+    border-radius: 0.375rem;
     text-decoration: none;
-    color: var(--color-neutral-900);
-    transition: all var(--duration-fast) var(--ease-out);
+    color: #111827;
+    transition: all 0.15s ease-out;
+    box-sizing: border-box;
   }
 
   .search-result-link:hover,
   .search-result-link.active {
-    background: var(--color-primary-50);
-    color: var(--color-primary-700);
+    background: #f3e8ff;
+    color: #6b21a8;
   }
 
   .search-result-link.active {
-    outline: 2px solid var(--color-primary-500);
+    outline: 2px solid #9c4dff;
     outline-offset: -2px;
   }
 
@@ -280,7 +296,7 @@
   }
 
   .search-result-title mark {
-    background: var(--color-warning-200);
+    background: #fde68a;
     color: inherit;
     padding: 0 0.125rem;
     border-radius: 2px;
@@ -290,31 +306,31 @@
     font-size: 0.6875rem;
     font-weight: 500;
     padding: 0.125rem 0.5rem;
-    border-radius: var(--radius-full, 9999px);
-    background: var(--color-neutral-100);
-    color: var(--color-neutral-600);
+    border-radius: 9999px;
+    background: #f3f4f6;
+    color: #4b5563;
     text-transform: uppercase;
     letter-spacing: 0.025em;
   }
 
   .search-result-badge.badge-guide {
-    background: var(--color-success-100, #dcfce7);
-    color: var(--color-success-700, #15803d);
+    background: #dcfce7;
+    color: #15803d;
   }
 
   .search-result-badge.badge-docs {
-    background: var(--color-primary-100);
-    color: var(--color-primary-700);
+    background: #f3e8ff;
+    color: #6b21a8;
   }
 
   .search-result-badge.badge-tag {
-    background: var(--color-warning-100, #fef3c7);
-    color: var(--color-warning-700, #a16207);
+    background: #fef3c7;
+    color: #a16207;
   }
 
   .search-result-excerpt {
     font-size: 0.8125rem;
-    color: var(--color-neutral-600);
+    color: #4b5563;
     line-height: 1.5;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -324,7 +340,7 @@
   }
 
   .search-result-excerpt mark {
-    background: var(--color-warning-100);
+    background: #fef3c7;
     color: inherit;
     padding: 0 0.125rem;
     border-radius: 2px;
@@ -334,7 +350,7 @@
   .search-quick-links {
     margin-top: 1.5rem;
     padding-top: 1rem;
-    border-top: 1px solid var(--color-neutral-200);
+    border-top: 1px solid #e5e7eb;
   }
 
   .search-section-title {
@@ -342,7 +358,7 @@
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    color: var(--color-neutral-500);
+    color: #6b7280;
     margin-bottom: 0.75rem;
   }
 
@@ -357,75 +373,101 @@
     align-items: center;
     gap: 0.5rem;
     padding: 0.625rem 0.75rem;
-    border-radius: var(--radius-md);
+    border-radius: 0.375rem;
     text-decoration: none;
-    color: var(--color-neutral-700);
+    color: #374151;
     font-size: 0.875rem;
     font-weight: 500;
-    transition: all var(--duration-fast) var(--ease-out);
+    transition: all 0.15s ease-out;
+    box-sizing: border-box;
   }
 
   .search-quick-link:hover {
-    background: var(--color-neutral-100);
-    color: var(--color-primary-600);
+    background: #f3f4f6;
+    color: #7c3aed;
   }
 
   .search-quick-link wa-icon {
-    color: var(--color-neutral-400);
-    transition: color var(--duration-fast) var(--ease-out);
+    color: #9ca3af;
+    transition: color 0.15s ease-out;
   }
 
   .search-quick-link:hover wa-icon {
-    color: var(--color-primary-500);
+    color: #9c4dff;
   }
 
   /* Dark mode support */
   [data-bs-theme="dark"] .search-container {
-    background: var(--color-neutral-900, #171717);
-    border: 1px solid var(--color-neutral-700);
+    background: #1f1f1f;
+    border: 1px solid #404040;
+    color: #e5e5e5;
   }
 
   [data-bs-theme="dark"] .search-header {
-    border-bottom-color: var(--color-neutral-700);
+    border-bottom-color: #404040;
   }
 
   [data-bs-theme="dark"] .search-input-wrapper {
-    background: var(--color-neutral-800);
+    background: #2a2a2a;
   }
 
   [data-bs-theme="dark"] .search-input {
-    color: var(--color-neutral-100);
+    color: #f5f5f5;
   }
 
   [data-bs-theme="dark"] .search-kbd {
-    background: var(--color-neutral-700);
-    color: var(--color-neutral-300);
-    border-color: var(--color-neutral-600);
+    background: #404040;
+    color: #d4d4d4;
+    border-color: #525252;
+  }
+
+  [data-bs-theme="dark"] .search-result-link {
+    color: #e5e5e5;
   }
 
   [data-bs-theme="dark"] .search-result-link:hover,
   [data-bs-theme="dark"] .search-result-link.active {
-    background: rgba(156, 77, 255, 0.15);
-  }
-
-  [data-bs-theme="dark"] .search-result-title {
-    color: var(--color-neutral-100);
+    background: rgba(156, 77, 255, 0.2);
+    color: #e9d5ff;
   }
 
   [data-bs-theme="dark"] .search-result-excerpt {
-    color: var(--color-neutral-400);
+    color: #a3a3a3;
+  }
+
+  [data-bs-theme="dark"] .search-empty,
+  [data-bs-theme="dark"] .search-no-results {
+    color: #a3a3a3;
   }
 
   [data-bs-theme="dark"] .search-quick-links {
-    border-top-color: var(--color-neutral-700);
+    border-top-color: #404040;
+  }
+
+  [data-bs-theme="dark"] .search-section-title {
+    color: #a3a3a3;
   }
 
   [data-bs-theme="dark"] .search-quick-link {
-    color: var(--color-neutral-300);
+    color: #d4d4d4;
   }
 
   [data-bs-theme="dark"] .search-quick-link:hover {
-    background: var(--color-neutral-800);
+    background: #2a2a2a;
+    color: #e9d5ff;
+  }
+
+  [data-bs-theme="dark"] .search-close {
+    color: #a3a3a3;
+  }
+
+  [data-bs-theme="dark"] .search-close:hover {
+    background: #2a2a2a;
+    color: #e5e5e5;
+  }
+
+  [data-bs-theme="dark"] .search-tips kbd {
+    background: #404040;
   }
 
   /* Mobile adjustments */
@@ -635,7 +677,7 @@
     activeIndex = -1;
   }
 
-  // Handle keyboard navigation
+  // Handle keyboard navigation in input
   function handleKeydown(e) {
     const items = resultsList.querySelectorAll('.search-result-link');
 
@@ -654,9 +696,6 @@
         if (activeIndex >= 0 && items[activeIndex]) {
           items[activeIndex].click();
         }
-        break;
-      case 'Escape':
-        closeSearch();
         break;
     }
   }
@@ -685,13 +724,38 @@
 
   input?.addEventListener('keydown', handleKeydown);
 
-  // Global keyboard shortcut (Ctrl+K or Cmd+K)
+  // Global keyboard shortcuts
   document.addEventListener('keydown', (e) => {
+    const isActive = overlay.classList.contains('active');
+
+    // Ctrl+K or Cmd+K to toggle
     if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
       e.preventDefault();
-      if (overlay.classList.contains('active')) {
+      if (isActive) {
         closeSearch();
       } else {
+        openSearch();
+      }
+      return;
+    }
+
+    // ESC to close (global)
+    if (e.key === 'Escape' && isActive) {
+      e.preventDefault();
+      closeSearch();
+      return;
+    }
+
+    // "/" to open (when not in an input/textarea)
+    if (e.key === '/' && !isActive) {
+      const activeEl = document.activeElement;
+      const isTyping = activeEl && (
+        activeEl.tagName === 'INPUT' ||
+        activeEl.tagName === 'TEXTAREA' ||
+        activeEl.isContentEditable
+      );
+      if (!isTyping) {
+        e.preventDefault();
         openSearch();
       }
     }
