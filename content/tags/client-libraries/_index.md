@@ -437,7 +437,7 @@ Add to your `build.zig.zon`:
 ```zig
 .dependencies = .{
     .geode_client = .{
-        .url = "https://github.com/geodedb/geode-client-zig/archive/v0.18.0.tar.gz",
+        .url = "https://github.com/geodedb/geode-client-zig/archive/v0.1.3.tar.gz",
         .hash = "...",
     },
 },

@@ -586,5 +586,5 @@ ORDER BY age_group;
 ---
 
 **Last Updated:** January 28, 2026
-**Geode Version:** v0.18.0+
+**Geode Version:** v0.1.3+
 **GQL Compliance:** ISO/IEC 39075:2024

@@ -294,7 +294,7 @@ RETURN p.name, p.email
 
 ```bash
 geode shell
-Connected to Geode v0.18.0
+Connected to Geode v0.1.3
 geode>
 ```
 

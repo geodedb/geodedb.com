@@ -657,4 +657,4 @@ ORDER BY total DESC
 **Query Language**: ISO/IEC 39075:2024 GQL
 **Optimization**: Cost-based optimizer with index awareness
 **Last Updated**: January 2026
-**Geode Version**: v0.18.0+
+**Geode Version**: v0.1.3+

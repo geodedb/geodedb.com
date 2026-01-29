@@ -43,7 +43,7 @@ Geode is a production-ready graph database that stores data as nodes (entities) 
 
 ### Prerequisites
 
-- **Zig 0.15.1+** (for server compilation)
+- **Zig 0.1.0+** (for server compilation)
 - **Git** (for cloning the repository)
 - **Linux, macOS, or Windows** (with WSL2 for Windows users)
 
@@ -94,7 +94,7 @@ Check that Geode is running:
 geode shell
 
 # Should display:
-# Geode Shell v0.18.0
+# Geode Shell v0.1.3
 # Connected to localhost:3141
 # Type 'help' for available commands
 ```
@@ -754,17 +754,17 @@ geode serve --data /tmp/geode-dev
 # docker-compose.yml
 services:
   geode-1:
-    image: codepros/geode:v0.18.0
+    image: codepros/geode:v0.1.3
     volumes:
       - geode-data-1:/var/lib/geode
 
   geode-2:
-    image: codepros/geode:v0.18.0
+    image: codepros/geode:v0.1.3
     volumes:
       - geode-data-2:/var/lib/geode
 
   geode-3:
-    image: codepros/geode:v0.18.0
+    image: codepros/geode:v0.1.3
     volumes:
       - geode-data-3:/var/lib/geode
 ```

@@ -150,7 +150,7 @@ Geode may not be the best fit for:
 
 ## Production Readiness
 
-**Current Status**: Production Ready (v0.18.0+)
+**Current Status**: Production Ready (v0.1.3+)
 
 - **Test Coverage**: 97.4% pass rate (1,644/1,688 integration tests)
 - **Unit Tests**: 100% pass rate (393/393 tests)

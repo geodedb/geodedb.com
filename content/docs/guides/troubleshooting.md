@@ -48,15 +48,15 @@ This guide helps you diagnose and resolve common issues with Geode database inst
 # Check your Zig version
 zig version
 
-# Geode requires Zig 0.15.1+
+# Geode requires Zig 0.1.0+
 # Install correct version if needed
 # On Linux (from ziglang.org):
-wget https://ziglang.org/download/0.15.1/zig-linux-x86_64-0.15.1.tar.xz
-tar xf zig-linux-x86_64-0.15.1.tar.xz
-export PATH="$(pwd)/zig-linux-x86_64-0.15.1:$PATH"
+wget https://ziglang.org/download/0.1.0/zig-linux-x86_64-0.1.0.tar.xz
+tar xf zig-linux-x86_64-0.1.0.tar.xz
+export PATH="$(pwd)/zig-linux-x86_64-0.1.0:$PATH"
 
 # Verify version
-zig version  # Should show 0.15.1
+zig version  # Should show 0.1.0
 
 # Rebuild
 cd geode
@@ -1030,9 +1030,9 @@ When reporting an issue, include:
 
 **Example Bug Report**:
 ```markdown
-**Geode Version**: v0.18.0
+**Geode Version**: v0.1.3
 **OS**: Ubuntu 22.04 LTS
-**Zig Version**: 0.15.1
+**Zig Version**: 0.1.0
 
 **Issue**: Query with CASE expression fails with syntax error
 

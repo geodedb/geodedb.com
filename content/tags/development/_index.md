@@ -36,7 +36,7 @@ This comprehensive guide covers everything developers need to build applications
 - Modern compiler toolchain
 
 **For Server Development**:
-- Zig 0.15.1+ (for building from source)
+- Zig 0.1.0+ (for building from source)
 - Git
 
 **For Client Development**:

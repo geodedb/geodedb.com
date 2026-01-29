@@ -87,7 +87,7 @@ sudo apt install geode
 ### Build from Source (Optional)
 
 ```bash
-# Requires Zig 0.15.1+
+# Requires Zig 0.1.0+
 git clone https://github.com/codeprosorg/geode
 cd geode
 make build

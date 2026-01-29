@@ -105,7 +105,7 @@ A complete Docker-based development environment replicating the local developmen
 
 ### What's Included
 
-- **Zig 0.15.1** - Primary build system
+- **Zig 0.1.0** - Primary build system
 - **Python 3.12** - Test harness and geodetestlab
 - **OpenSSL 3.3.2 with FIPS** - Enterprise cryptography
 - **MsQUIC v2.5.4** - High-performance QUIC implementation

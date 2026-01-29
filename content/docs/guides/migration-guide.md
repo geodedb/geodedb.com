@@ -26,7 +26,7 @@ Geode provides multiple migration paths depending on your source system and requ
 
 ### Current Version Status
 
-**Geode v0.18.0** (January 2026) - Production Ready
+**Geode v0.1.3** (January 2026) - Production Ready
 - 100% GQL Compliance (ISO/IEC 39075:2024)
 - 97.4% Test Pass Rate (1644/1688 tests)
 - All 7 development phases complete
@@ -132,12 +132,12 @@ geode query "MATCH (n) RETURN count(n)"
 Migrate configuration between versions:
 
 ```yaml
-# Old configuration (v0.16.x)
+# Old configuration (v0.1.x)
 server:
   listen: '0.0.0.0:3141'
   data_dir: '/var/lib/geode'
 
-# New configuration (v0.18.x) - backward compatible
+# New configuration (v0.1.x) - backward compatible
 server:
   listen: '0.0.0.0:3141'
   data_dir: '/var/lib/geode'
@@ -157,7 +157,7 @@ storage:
   tde_enabled: true  # New: transparent data encryption
 ```
 
-**Breaking Changes (v0.17.x → v0.18.x)**:
+**Breaking Changes (v0.1.x → v0.1.x)**:
 - Authentication now **enabled by default** (was optional)
 - TLS auto-generation **disabled by default** (use proper certificates)
 - Hardcoded credentials removed (use environment variables)
@@ -401,8 +401,8 @@ Maintain two identical environments for zero-downtime upgrades:
 
 ```bash
 # Setup:
-# - Blue environment: production (v0.17.x)
-# - Green environment: staging (v0.18.x)
+# - Blue environment: production (v0.1.x)
+# - Green environment: staging (v0.1.x)
 
 # Step 1: Replicate data to green environment
 geode backup --dest s3://my-bucket/migration --mode full --source blue

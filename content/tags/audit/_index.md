@@ -56,7 +56,7 @@ Every audit event contains:
     "session_id": "sess_abc123def456",
     "roles": ["analyst", "viewer"],
     "ip_address": "192.168.1.100",
-    "user_agent": "geode-client-python/0.18.0"
+    "user_agent": "geode-client-python/0.1.3"
   },
 
   "operation": {

@@ -465,7 +465,7 @@ Problems during Geode installation or compilation.
 ```bash
 # Check Zig version
 zig version
-# Should be 0.15.1 or later
+# Should be 0.1.0 or later
 
 # Clean and rebuild
 make clean
@@ -478,9 +478,9 @@ make build
 
 ```bash
 # Install correct Zig version
-wget https://ziglang.org/download/0.15.1/zig-linux-x86_64-0.15.1.tar.xz
-tar -xf zig-linux-x86_64-0.15.1.tar.xz
-export PATH="$(pwd)/zig-linux-x86_64-0.15.1:$PATH"
+wget https://ziglang.org/download/0.1.0/zig-linux-x86_64-0.1.0.tar.xz
+tar -xf zig-linux-x86_64-0.1.0.tar.xz
+export PATH="$(pwd)/zig-linux-x86_64-0.1.0:$PATH"
 zig version
 ```
 

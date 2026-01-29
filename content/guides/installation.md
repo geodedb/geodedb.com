@@ -110,7 +110,7 @@ docker compose up -d
 | Tag | Description |
 |-----|-------------|
 | `latest` | Latest stable release |
-| `0.18.0` | Specific version |
+| `0.1.3` | Specific version |
 | `0.18` | Latest patch of minor version |
 | `edge` | Latest development build |
 | `alpine` | Minimal Alpine-based image |
@@ -338,7 +338,7 @@ For contributors or custom builds.
 
 ### Prerequisites
 
-- **Zig**: Version 0.15.1 or later
+- **Zig**: Version 0.1.0 or later
 - **Git**: For cloning the repository
 - **Make**: For build automation
 
@@ -346,9 +346,9 @@ For contributors or custom builds.
 
 ```bash
 # Download Zig (Linux x86_64)
-curl -LO https://ziglang.org/download/0.15.1/zig-linux-x86_64-0.15.1.tar.xz
-tar -xf zig-linux-x86_64-0.15.1.tar.xz
-sudo mv zig-linux-x86_64-0.15.1 /opt/zig
+curl -LO https://ziglang.org/download/0.1.0/zig-linux-x86_64-0.1.0.tar.xz
+tar -xf zig-linux-x86_64-0.1.0.tar.xz
+sudo mv zig-linux-x86_64-0.1.0 /opt/zig
 echo 'export PATH="/opt/zig:$PATH"' >> ~/.bashrc
 source ~/.bashrc
 
@@ -412,7 +412,7 @@ go get geodedb.com/geode
 {{< tab "go.mod" >}}
 ```go
 // Add to your go.mod
-require geodedb.com/geode v0.18.0
+require geodedb.com/geode v0.1.3
 ```
 {{< /tab >}}
 {{< /tabs >}}
@@ -467,7 +467,7 @@ pipenv install geode-client
 {{< /tab >}}
 {{< tab "requirements.txt" >}}
 ```text
-geode-client>=0.18.0
+geode-client>=0.1.3
 ```
 {{< /tab >}}
 {{< /tabs >}}
@@ -548,7 +548,7 @@ pnpm add @geodedb/client
 ```json
 {
   "dependencies": {
-    "@geodedb/client": "^0.18.0"
+    "@geodedb/client": "^0.1.3"
   }
 }
 ```
@@ -574,7 +574,7 @@ main();
 
 ### Zig Client
 
-**Requirements**: Zig 0.15.1+
+**Requirements**: Zig 0.1.0+
 
 {{< tabs >}}
 {{< tab "build.zig.zon" >}}
@@ -584,7 +584,7 @@ main();
     .version = "0.1.0",
     .dependencies = .{
         .geode_client = .{
-            .url = "https://gitlab.com/devnw/codepros/geode/geode-client-zig/-/archive/v0.18.0/geode-client-zig-v0.18.0.tar.gz",
+            .url = "https://gitlab.com/devnw/codepros/geode/geode-client-zig/-/archive/v0.1.3/geode-client-zig-v0.1.3.tar.gz",
             .hash = "...", // Get hash from first build attempt
         },
     },
@@ -653,7 +653,7 @@ After installation, verify everything is working correctly.
 geode ping localhost:3141
 
 # Expected output:
-# Connected to Geode v0.18.0
+# Connected to Geode v0.1.3
 # Latency: 2ms
 ```
 

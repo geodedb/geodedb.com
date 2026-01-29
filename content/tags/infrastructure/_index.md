@@ -315,7 +315,7 @@ Outputs:
   become: yes
   
   vars:
-    geode_version: "v0.18.0"
+    geode_version: "v0.1.3"
     geode_data_dir: "/var/lib/geode"
   
   tasks:

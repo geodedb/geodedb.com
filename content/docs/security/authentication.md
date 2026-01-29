@@ -44,7 +44,7 @@ Geode supports multiple authentication methods to accommodate different deployme
 | OAuth2/OIDC | SSO integration, cloud-native | High |
 | mTLS (Mutual TLS) | Zero-trust, service mesh | Very High |
 
-**Default Behavior**: Authentication is **enabled by default** in Geode v0.18.0+. Configure at least one authentication method before production deployment.
+**Default Behavior**: Authentication is **enabled by default** in Geode v0.1.3+. Configure at least one authentication method before production deployment.
 
 ## Username/Password Authentication
 
@@ -262,7 +262,7 @@ geode shell --username alice
 # Output:
 # Password: ********
 # MFA Code: 123456
-# Connected to Geode v0.18.0
+# Connected to Geode v0.1.3
 ```
 
 ### Backup Codes

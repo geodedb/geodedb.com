@@ -71,7 +71,7 @@ spec:
     spec:
       containers:
       - name: geode
-        image: geodedb/geode:v0.18.0
+        image: geodedb/geode:v0.1.3
         ports:
         - containerPort: 3141
           name: client
@@ -169,7 +169,7 @@ spec:
             topologyKey: kubernetes.io/hostname
       containers:
       - name: geode
-        image: geodedb/geode:v0.18.0
+        image: geodedb/geode:v0.1.3
         env:
         - name: GEODE_CLUSTER_MODE
           value: "distributed"
@@ -457,7 +457,7 @@ spec:
 ```bash
 # Update image
 kubectl set image statefulset/geode \
-  geode=geodedb/geode:v0.18.1 \
+  geode=geodedb/geode:v0.1.3 \
   -n geode
 
 # Monitor rollout

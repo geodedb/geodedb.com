@@ -165,12 +165,12 @@ This simplicity makes Geode's codebase approachable for contributors and maintai
 
 ### Prerequisites
 
-**Zig 0.15.1 or later**: Download from [ziglang.org](https://ziglang.org/download/)
+**Zig 0.1.0 or later**: Download from [ziglang.org](https://ziglang.org/download/)
 
 ```bash
 # Verify Zig installation
 zig version
-# Should output: 0.15.1 or later
+# Should output: 0.1.0 or later
 ```
 
 **System dependencies**:
@@ -261,7 +261,7 @@ Geode welcomes contributions from the community. The codebase follows evidence-b
 ### Getting Started
 
 1. **Read the contribution guide**: See `geode/CLAUDE.md` and `geode/docs/CONTRIBUTING.md`
-2. **Set up development environment**: Install Zig 0.15.1+
+2. **Set up development environment**: Install Zig 0.1.0+
 3. **Build and test**: Ensure `make test` passes
 4. **Pick an issue**: Check GitLab issues for good first issues
 

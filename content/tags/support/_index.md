@@ -229,9 +229,9 @@ Query should return all nodes
 Server returns error: "..."
 
 ### Environment
-- Geode Version: 0.18.0
+- Geode Version: 0.1.3
 - OS: Ubuntu 22.04
-- Zig Version: 0.15.1
+- Zig Version: 0.1.0
 - Client Library: Python 3.9
 
 ### Additional Context
@@ -300,7 +300,7 @@ Resources for independent problem-solving.
 **Installation:**
 
 Q: What Zig version is required?
-A: Zig 0.15.1 or later is required for building Geode.
+A: Zig 0.1.0 or later is required for building Geode.
 
 Q: Can I run Geode on Windows?
 A: Yes, using WSL2 (Windows Subsystem for Linux 2).

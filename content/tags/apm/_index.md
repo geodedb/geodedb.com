@@ -148,7 +148,7 @@ Connect performance to business metrics:
 # Python application with Datadog APM
 # requirements.txt
 ddtrace>=1.0.0
-geode-client>=0.18.0
+geode-client>=0.1.3
 
 # Install
 pip install ddtrace geode-client
@@ -211,7 +211,7 @@ async def generate_recommendations(user_id):
 # Python application with New Relic
 # requirements.txt
 newrelic>=8.0.0
-geode-client>=0.18.0
+geode-client>=0.1.3
 
 # Install
 pip install newrelic geode-client
@@ -271,7 +271,7 @@ newrelic.agent.record_custom_event('RecommendationGenerated', {
 # Python application with Elastic APM
 # requirements.txt
 elastic-apm[flask]>=6.0.0
-geode-client>=0.18.0
+geode-client>=0.1.3
 
 # Install
 pip install elastic-apm geode-client

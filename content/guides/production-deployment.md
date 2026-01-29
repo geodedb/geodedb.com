@@ -551,7 +551,7 @@ version: '3.8'
 
 services:
   geode:
-    image: geodedb/geode:0.18.0
+    image: geodedb/geode:0.1.3
     container_name: geode-prod
     restart: unless-stopped
     user: "1000:1000"
@@ -613,7 +613,7 @@ version: '3.8'
 
 services:
   geode:
-    image: geodedb/geode:0.18.0
+    image: geodedb/geode:0.1.3
 
     deploy:
       replicas: 3
@@ -819,7 +819,7 @@ spec:
 
       containers:
         - name: geode
-          image: geodedb/geode:0.18.0
+          image: geodedb/geode:0.1.3
           imagePullPolicy: IfNotPresent
 
           command:
@@ -1126,7 +1126,7 @@ logging:
   fields:
     service: "geode"
     environment: "production"
-    version: "0.18.0"
+    version: "0.1.3"
 ```
 
 ### Log Output

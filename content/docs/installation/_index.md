@@ -59,7 +59,7 @@ Build Geode from source code using the Zig compiler. This method gives you the m
 - **Platform Support**: Build for any platform supported by Zig
 - **Optimization**: Custom build flags for specific hardware
 
-**Requirements**: Zig 0.15.1+ ([download from ziglang.org](https://ziglang.org/download/))
+**Requirements**: Zig 0.1.0+ ([download from ziglang.org](https://ziglang.org/download/))
 
 **See**: [Build from Source](/docs/installation/from-source/)
 
@@ -219,7 +219,7 @@ docker logs geode
 git clone https://github.com/codeprosorg/geode
 cd geode
 
-# Build (requires Zig 0.15.1+)
+# Build (requires Zig 0.1.0+)
 make build
 
 # Start server
@@ -309,7 +309,7 @@ See [Deployment Guide](/docs/ops/deployment/) for complete service configuration
 
 **Symptom**: Build fails with "command not found: zig"
 
-**Solution**: Install Zig 0.15.1+ from [ziglang.org](https://ziglang.org/download/)
+**Solution**: Install Zig 0.1.0+ from [ziglang.org](https://ziglang.org/download/)
 
 ### Port Binding Errors
 

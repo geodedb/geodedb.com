@@ -837,5 +837,5 @@ RETURN value IS NULL AS is_null;
 ---
 
 **Last Updated:** January 28, 2026
-**Geode Version:** v0.18.0+
+**Geode Version:** v0.1.3+
 **Type Count:** 50+ specialized types

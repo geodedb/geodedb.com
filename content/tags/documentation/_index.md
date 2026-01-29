@@ -470,11 +470,11 @@ See also:
 Documentation clearly indicates version applicability:
 
 ```markdown
-> **Note**: This feature requires Geode v0.18.0 or later.
+> **Note**: This feature requires Geode v0.1.3 or later.
 ```
 
 ```markdown
-> **Changed in v0.18.0**: The default connection pool size increased from 10 to 50.
+> **Changed in v0.1.3**: The default connection pool size increased from 10 to 50.
 ```
 
 ## Documentation Maintenance

@@ -491,7 +491,7 @@ Example audit log:
   "ip_address": "192.168.1.100",
   "timestamp": "2026-01-24T10:15:32.123Z",
   "client_info": {
-    "user_agent": "geode-client-python/0.18.0",
+    "user_agent": "geode-client-python/0.1.3",
     "platform": "linux"
   }
 }

@@ -438,7 +438,7 @@ curl http://localhost:8080/health
 # Output:
 {
   "status": "healthy",
-  "version": "0.18.0",
+  "version": "0.1.3",
   "uptime": "72h15m30s",
   "checks": {
     "storage": "healthy",

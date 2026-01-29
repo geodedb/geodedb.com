@@ -22,7 +22,7 @@ This guide covers building Geode from source using the Zig compiler.
 
 ### Required Tools
 
-- **Zig 0.15.1+** - [Download from ziglang.org](https://ziglang.org/download/)
+- **Zig 0.1.0+** - [Download from ziglang.org](https://ziglang.org/download/)
 - **Git** - For cloning the repository
 - **Make** (optional) - For using build shortcuts
 
@@ -434,7 +434,7 @@ zig build docs
 # Check Zig version
 zig version
 
-# Should be 0.15.1 or later
+# Should be 0.1.0 or later
 # If not, download latest from ziglang.org
 ```
 

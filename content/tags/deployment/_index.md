@@ -112,7 +112,7 @@ Containerized deployment with Docker:
 **Pull official image**:
 
 ```bash
-docker pull codepros/geode:v0.18.0
+docker pull codepros/geode:v0.1.3
 ```
 
 **Run container**:
@@ -125,7 +125,7 @@ docker run -d \
   -v /var/lib/geode:/var/lib/geode \
   -v /etc/geode:/etc/geode:ro \
   --restart unless-stopped \
-  codepros/geode:v0.18.0
+  codepros/geode:v0.1.3
 ```
 
 **Docker Compose** (`docker-compose.yml`):
@@ -135,7 +135,7 @@ version: '3.8'
 
 services:
   geode:
-    image: codepros/geode:v0.18.0
+    image: codepros/geode:v0.1.3
     container_name: geode
     ports:
       - "3141:3141"
@@ -222,7 +222,7 @@ spec:
     spec:
       containers:
       - name: geode
-        image: codepros/geode:v0.18.0
+        image: codepros/geode:v0.1.3
         ports:
         - containerPort: 3141
           name: client

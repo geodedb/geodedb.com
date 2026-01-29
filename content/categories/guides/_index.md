@@ -46,11 +46,11 @@ docker run -d \
 docker exec geode geode ping
 ```
 
-**Building from Source** (Zig 0.15.1+):
+**Building from Source** (Zig 0.1.0+):
 ```bash
 # Install Zig
-curl -L https://ziglang.org/download/0.15.1/zig-linux-x86_64-0.15.1.tar.xz | tar xJ
-export PATH=$PATH:$(pwd)/zig-linux-x86_64-0.15.1
+curl -L https://ziglang.org/download/0.1.0/zig-linux-x86_64-0.1.0.tar.xz | tar xJ
+export PATH=$PATH:$(pwd)/zig-linux-x86_64-0.1.0
 
 # Clone and build
 git clone https://github.com/codeprosorg/geode

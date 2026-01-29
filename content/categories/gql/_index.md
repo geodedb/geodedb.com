@@ -345,7 +345,7 @@ ORDER BY size DESC
 
 Geode's GQL implementation is production-ready with all ISO features:
 
-**v0.18.0+ (Current)**:
+**v0.1.3+ (Current)**:
 - ✅ Full ISO/IEC 39075:2024 compliance
 - ✅ All pattern matching features
 - ✅ Complete CRUD operations
@@ -464,4 +464,4 @@ Found a GQL bug? Have a feature request? Contributions welcome:
 **Standard**: ISO/IEC 39075:2024
 **Conformance**: 100% (70/70 ISO tests passing)
 **Last Updated**: January 2026
-**Geode Version**: v0.18.0+
+**Geode Version**: v0.1.3+

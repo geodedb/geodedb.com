@@ -313,7 +313,7 @@ Track client connectivity:
   "connection_id": "conn-789",
   "client_address": "192.168.1.100:54321",
   "client_type": "python",
-  "client_version": "0.18.0",
+  "client_version": "0.1.3",
   "tls_version": "TLS1.3"
 }
 

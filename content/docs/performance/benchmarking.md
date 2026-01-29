@@ -714,8 +714,8 @@ if __name__ == "__main__":
 # Performance Comparison Report
 
 ## Configuration
-- **Baseline**: v0.17.5
-- **Current**: v0.18.0
+- **Baseline**: v0.1.2
+- **Current**: v0.1.3
 - **Hardware**: 16 cores, 64GB RAM, NVMe SSD
 - **Data**: 1M nodes, 10M relationships
 
@@ -730,7 +730,7 @@ if __name__ == "__main__":
 | Peak Memory | 12GB | 11GB | -8.3% |
 
 ## Conclusion
-Version 0.18.0 shows improvements across all metrics, with
+Version 0.1.3 shows improvements across all metrics, with
 particularly notable improvements in P99 latency (-15.3%).
 No regressions detected.
 ```

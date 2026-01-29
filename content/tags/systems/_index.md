@@ -82,7 +82,7 @@ For developers interested in contributing to Geode's core:
 
 **Build requirements**:
 ```bash
-# Requires Zig 0.15.1+
+# Requires Zig 0.1.0+
 cd geode
 make build        # Debug build
 make release      # Release build (ReleaseSafe)

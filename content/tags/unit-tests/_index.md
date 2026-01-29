@@ -680,7 +680,7 @@ jobs:
       - name: Setup Zig
         uses: goto-bus-stop/setup-zig@v2
         with:
-          version: 0.15.1
+          version: 0.1.0
 
       - name: Run Geode unit tests
         run: |

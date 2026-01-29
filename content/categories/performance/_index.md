@@ -616,4 +616,4 @@ ORDER BY users DESC
 
 **Scalability**: Distributed deployment with up to 32 shards
 **Last Updated**: January 2026
-**Geode Version**: v0.18.0+
+**Geode Version**: v0.1.3+

@@ -94,8 +94,8 @@ Messages are newline-delimited JSON objects (one per line).
 
 **Example Session:**
 ```json
-C: {"type": "HELLO", "version": "1.0", "client": "geode-client-go/0.18.0"}
-S: {"type": "HELLO", "version": "1.0", "server": "geode/0.18.0"}
+C: {"type": "HELLO", "version": "1.0", "client": "geode-client-go/0.1.3"}
+S: {"type": "HELLO", "version": "1.0", "server": "geode/0.1.3"}
 
 C: {"type": "RUN_GQL", "query": "MATCH (n) RETURN n LIMIT 1", "params": {}}
 S: {"type": "SCHEMA", "fields": ["n"]}
@@ -163,7 +163,7 @@ S: {"type": "SUCCESS", "rows": 1}
 {
   "type": "HELLO",
   "version": "1.0",
-  "server": "geode/0.18.0",
+  "server": "geode/0.1.3",
   "capabilities": ["transactions", "savepoints", "vector_ops"]
 }
 ```

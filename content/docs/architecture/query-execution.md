@@ -1105,5 +1105,5 @@ GROUP BY p.department
 ---
 
 *Last Updated: January 2026*
-*Implementation: Geode v0.18.0+*
+*Implementation: Geode v0.1.3+*
 *Status: Production-ready - 100% GQL compliance*

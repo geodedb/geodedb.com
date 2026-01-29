@@ -89,7 +89,7 @@ on:
     branches: [main]
 
 env:
-  ZIG_VERSION: 0.15.1
+  ZIG_VERSION: 0.1.0
   GO_VERSION: 1.24.0
   PYTHON_VERSION: 3.11
   RUST_VERSION: 1.70
@@ -378,7 +378,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-24.04, macos-14, windows-2022]
-        zig: [0.15.1, master]
+        zig: [0.1.0, master]
         exclude:
           # Exclude unstable combinations
           - os: windows-2022
@@ -440,8 +440,8 @@ migration-tests:
   steps:
     - name: Test Forward Migration
       run: |
-        # Start with v0.17.0 schema
-        docker run -d --name geode-old geodedb/geode:v0.17.0
+        # Start with v0.1.2 schema
+        docker run -d --name geode-old geodedb/geode:v0.1.2
 
         # Load test data
         ./scripts/load-test-data.sh
@@ -457,11 +457,11 @@ migration-tests:
 
     - name: Test Rollback
       run: |
-        # Rollback to v0.17.0
+        # Rollback to v0.1.2
         docker stop geode-new
         docker run -d --name geode-rollback \
           -v geode-data:/var/lib/geode \
-          geodedb/geode:v0.17.0
+          geodedb/geode:v0.1.2
 
         # Verify backward compatibility
         ./scripts/verify-rollback.sh
@@ -599,7 +599,7 @@ if __name__ == '__main__':
 ```yaml
 # Exact versions, not ranges
 env:
-  ZIG_VERSION: 0.15.1        # Not "latest"
+  ZIG_VERSION: 0.1.0        # Not "latest"
   GO_VERSION: 1.24.0         # Not "1.24"
   PYTHON_VERSION: 3.11.8     # Not "3.11"
 ```

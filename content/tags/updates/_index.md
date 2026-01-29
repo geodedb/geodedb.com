@@ -33,10 +33,10 @@ Geode uses semantic versioning (SemVer) to communicate the nature and impact of 
 Geode version numbers follow the format `MAJOR.MINOR.PATCH`:
 
 - **MAJOR** (e.g., 1.0.0 → 2.0.0): Breaking changes requiring migration
-- **MINOR** (e.g., 0.17.0 → 0.18.0): New features, backward compatible
-- **PATCH** (e.g., 0.18.0 → 0.18.1): Bug fixes, security patches
+- **MINOR** (e.g., 0.1.2 → 0.1.3): New features, backward compatible
+- **PATCH** (e.g., 0.1.3 → 0.1.3): Bug fixes, security patches
 
-**Current Version:** v0.18.0 (Production Ready, January 2026)
+**Current Version:** v0.1.3 (Production Ready, January 2026)
 
 ### Release Types
 
@@ -68,17 +68,17 @@ Verify your installed Geode version using the CLI:
 
 ```bash
 ./geode --version
-# Output: Geode v0.18.0 (2026-01-15)
+# Output: Geode v0.1.3 (2026-01-15)
 
 # Check detailed build information
 ./geode version --verbose
 # Output:
 # Geode Graph Database
-# Version: 0.18.0
+# Version: 0.1.3
 # Build Date: 2026-01-15
 # Git Commit: a3f7b92
 # GQL Standard: ISO/IEC 39075:2024
-# Zig Version: 0.15.1
+# Zig Version: 0.1.0
 ```
 
 Check version from client libraries:
@@ -173,8 +173,8 @@ For single-instance deployments or small clusters:
 
 # 3. Replace binary
 mv geode geode.old
-wget https://geodedb.com/releases/geode-v0.18.0-linux-amd64
-mv geode-v0.18.0-linux-amd64 geode
+wget https://geodedb.com/releases/geode-v0.1.3-linux-amd64
+mv geode-v0.1.3-linux-amd64 geode
 chmod +x geode
 
 # 4. Run migration (if needed)
@@ -197,11 +197,11 @@ For high-availability clusters with zero downtime:
 docker run -d --name geode-green \
   -v /data/geode:/data \
   -p 3142:3141 \
-  geodedb/geode:0.18.0
+  geodedb/geode:0.1.3
 
 # 2. Verify green environment health
 curl http://localhost:3142/health
-# {"status": "healthy", "version": "0.18.0"}
+# {"status": "healthy", "version": "0.1.3"}
 
 # 3. Run smoke tests against green
 ./test-harness --target localhost:3142 --suite smoke
@@ -231,7 +231,7 @@ for node in node1 node2 node3; do
   ssh $node "systemctl stop geode"
 
   # Replace binary
-  scp geode-v0.18.0 $node:/usr/local/bin/geode
+  scp geode-v0.1.3 $node:/usr/local/bin/geode
 
   # Migrate (if needed)
   ssh $node "./geode migrate --apply"
@@ -272,7 +272,7 @@ Preview migration steps:
 ```bash
 ./geode migrate --dry-run
 # Output:
-# Migration plan for v0.17.0 → v0.18.0:
+# Migration plan for v0.1.2 → v0.1.3:
 # 1. Add vector_embeddings table
 # 2. Create index on node_properties(property_key)
 # 3. Update query optimizer statistics
@@ -316,9 +316,9 @@ Understand compatibility between server and client library versions.
 
 | Server Version | Go Client | Python Client | Rust Client | Zig Client |
 |----------------|-----------|---------------|-------------|------------|
-| v0.18.0        | v0.18.x   | v0.18.x       | v0.18.x     | v0.18.x    |
-| v0.17.0        | v0.17.x   | v0.17.x       | v0.17.x     | v0.17.x    |
-| v0.16.0        | v0.16.x   | v0.16.x       | v0.16.x     | v0.16.x    |
+| v0.1.3        | v0.1.x   | v0.1.x       | v0.1.x     | v0.1.x    |
+| v0.1.2        | v0.1.x   | v0.1.x       | v0.1.x     | v0.1.x    |
+| v0.1.1        | v0.1.x   | v0.1.x       | v0.1.x     | v0.1.x    |
 
 **General Rule:** Match minor versions between server and clients for guaranteed compatibility.
 
@@ -334,11 +334,11 @@ Geode's JSON line protocol maintains backward compatibility within major version
 
 Geode tracks GQL standard evolution:
 
-- **v0.18.0:** ISO/IEC 39075:2024 (100% compliance)
-- **v0.17.0:** ISO/IEC 39075:2024 (95% compliance)
-- **v0.16.0:** ISO/IEC 39075:2024 Draft (85% compliance)
+- **v0.1.3:** ISO/IEC 39075:2024 (100% compliance)
+- **v0.1.2:** ISO/IEC 39075:2024 (95% compliance)
+- **v0.1.1:** ISO/IEC 39075:2024 Draft (85% compliance)
 
-Queries written for v0.16.0+ remain valid in newer versions unless they rely on deprecated features.
+Queries written for v0.1.1+ remain valid in newer versions unless they rely on deprecated features.
 
 ## Release Notes and Changelogs
 
@@ -355,10 +355,10 @@ Release notes for each version include:
 5. **Security Updates:** CVEs addressed, security improvements
 6. **Deprecations:** Features marked for future removal with migration guidance
 
-### Example Release Note (v0.18.0)
+### Example Release Note (v0.1.3)
 
 ```markdown
-## Geode v0.18.0 - January 2026
+## Geode v0.1.3 - January 2026
 
 ### Breaking Changes
 - None
@@ -385,7 +385,7 @@ Release notes for each version include:
 - Enhanced certificate validation in client libraries
 
 ### Deprecations
-- Legacy transaction API (removed in v0.20.0, use new transaction context)
+- Legacy transaction API (removed in v0.2.0, use new transaction context)
 ```
 
 ### Accessing Release Notes
@@ -394,8 +394,8 @@ Release notes are available through multiple channels:
 
 - **Website:** https://geodedb.com/releases/
 - **GitHub:** https://github.com/geodedb/geode/releases
-- **CLI:** `./geode release-notes --version 0.18.0`
-- **API:** `curl https://geodedb.com/api/v1/releases/0.18.0`
+- **CLI:** `./geode release-notes --version 0.1.3`
+- **API:** `curl https://geodedb.com/api/v1/releases/0.1.3`
 
 ## Update Notifications
 
@@ -431,10 +431,10 @@ Configure Geode to check for updates:
 # Check for updates manually
 ./geode check-update
 # Output:
-# Current version: v0.17.0
-# Latest version: v0.18.0
+# Current version: v0.1.2
+# Latest version: v0.1.3
 # Update available: YES
-# Release notes: https://geodedb.com/releases/v0.18.0
+# Release notes: https://geodedb.com/releases/v0.1.3
 ```
 
 ### Security Advisories
@@ -460,7 +460,7 @@ Create a staging environment mirroring production:
 ./geode restore --input /backup/prod.db --target staging:3141
 
 # Deploy new version to staging
-ssh staging "docker pull geodedb/geode:0.18.0"
+ssh staging "docker pull geodedb/geode:0.1.3"
 ssh staging "docker-compose up -d"
 
 # Run test suite
@@ -508,7 +508,7 @@ Keep client libraries synchronized with server versions.
 
 ```bash
 # Update to specific version
-go get geodedb.com/geode@v0.18.0
+go get geodedb.com/geode@v0.1.3
 
 # Update to latest
 go get -u geodedb.com/geode
@@ -521,7 +521,7 @@ go list -m geodedb.com/geode
 
 ```bash
 # Update to specific version
-pip install geode-client==0.18.0
+pip install geode-client==0.1.3
 
 # Update to latest
 pip install --upgrade geode-client
@@ -548,7 +548,7 @@ cargo tree | grep geode-client
 
 ```bash
 # Update build.zig.zon
-.dependencies.geode_client.url = "https://geodedb.com/zig/geode-client-0.18.0.tar.gz"
+.dependencies.geode_client.url = "https://geodedb.com/zig/geode-client-0.1.3.tar.gz"
 
 # Fetch updated dependency
 zig build --fetch
@@ -575,7 +575,7 @@ Read release notes carefully, focusing on breaking changes section:
 
 ```bash
 # Display breaking changes only
-./geode release-notes --version 0.18.0 --filter breaking
+./geode release-notes --version 0.1.3 --filter breaking
 ```
 
 ### Test in Non-Production First
@@ -646,7 +646,7 @@ Deprecated features include migration guidance:
 # WARNING: Using deprecated transaction API
 # Affected queries: 12
 # Migration guide: https://geodedb.com/migration/transaction-api
-# Removal planned: v0.20.0
+# Removal planned: v0.2.0
 ```
 
 ## Community and Support

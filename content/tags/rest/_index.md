@@ -525,7 +525,7 @@ Check database health and connectivity.
 ```json
 {
   "status": "healthy",
-  "version": "0.18.0",
+  "version": "0.1.3",
   "uptime_seconds": 86400,
   "checks": {
     "database": "ok",
@@ -544,7 +544,7 @@ Get detailed server status and statistics.
 **Response**:
 ```json
 {
-  "version": "0.18.0",
+  "version": "0.1.3",
   "uptime_seconds": 86400,
   "node_id": "node_abc123",
   "role": "primary",

@@ -39,7 +39,7 @@ Stay current with Geode development by reviewing release notes before upgrading.
 
 ## Current Release
 
-### v0.18.0 (Production Ready)
+### v0.1.3 (Production Ready)
 
 **Release Date**: January 2026
 
@@ -72,25 +72,25 @@ Geode follows a predictable release schedule:
 
 ## Version History
 
-### v0.18.x Series (Current)
+### v0.1.x Series (Current)
 
-**v0.18.0** (January 2026)
+**v0.1.3** (January 2026)
 - Production ready milestone
 - Complete GQL compliance
 - Enterprise security features
 - Distributed deployment support
 
-### v0.17.x Series
+### v0.1.x Series
 
-**v0.17.0** (December 2025)
+**v0.1.2** (December 2025)
 - Advanced analytics features
 - ML graph embeddings
 - Materialized views
 - Enhanced security
 
-### v0.16.x Series
+### v0.1.x Series
 
-**v0.16.0** (November 2025)
+**v0.1.1** (November 2025)
 - Full-text search with BM25
 - Vector search with HNSW
 - Geospatial indexing
@@ -98,7 +98,7 @@ Geode follows a predictable release schedule:
 
 ### v0.15.x Series
 
-**v0.15.0** (October 2025)
+**v0.1.0** (October 2025)
 - Six index types
 - Query optimizer improvements
 - Memory-mapped I/O
@@ -201,7 +201,7 @@ RETURN 1 AS x;  -- Test query
 docker exec geode geode backup --output /backups/pre-upgrade.tar.gz
 
 # 2. Pull new image
-docker pull geodedb/geode:v0.18.0
+docker pull geodedb/geode:v0.1.3
 
 # 3. Stop container
 docker stop geode
@@ -211,7 +211,7 @@ docker run -d \
   -p 3141:3141 \
   -v geode-data:/var/lib/geode \
   --name geode \
-  geodedb/geode:v0.18.0
+  geodedb/geode:v0.1.3
 
 # 5. Verify
 docker logs geode
@@ -221,7 +221,7 @@ docker logs geode
 
 Review breaking changes before upgrading:
 
-**v0.18.0 Breaking Changes**:
+**v0.1.3 Breaking Changes**:
 - None (first production release)
 
 **Future Breaking Changes**:
@@ -235,8 +235,8 @@ Review breaking changes before upgrading:
 
 | Server Version | Go Client | Python Client | Rust Client | Zig Client |
 |----------------|-----------|---------------|-------------|------------|
-| v0.18.x        | v0.18.x   | v0.18.x       | v0.18.x     | v0.18.x    |
-| v0.17.x        | v0.17.x   | v0.17.x       | v0.17.x     | v0.17.x    |
+| v0.1.x        | v0.1.x   | v0.1.x       | v0.1.x     | v0.1.x    |
+| v0.1.x        | v0.1.x   | v0.1.x       | v0.1.x     | v0.1.x    |
 
 **Recommendation**: Keep client library version synchronized with server version.
 
@@ -272,7 +272,7 @@ Features are deprecated before removal:
 - **Security Patches**: Throughout support period
 - **Bug Fixes**: Critical bugs only after 12 months
 
-**Current LTS**: v0.18.x (until June 2027)
+**Current LTS**: v0.1.x (until June 2027)
 
 ### Standard Releases
 
@@ -334,7 +334,7 @@ docker run -d \
   -p 3141:3141 \
   -v geode-data:/var/lib/geode \
   --name geode \
-  geodedb/geode:v0.17.0
+  geodedb/geode:v0.1.2
 ```
 
 ### Distributed Deployment

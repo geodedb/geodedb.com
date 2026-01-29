@@ -61,7 +61,7 @@ Start the Geode interactive shell:
 geode shell
 
 # Output:
-# Geode Shell v0.18.0
+# Geode Shell v0.1.3
 # Connected to localhost:3141
 # Type \help for commands
 # geode>
@@ -715,5 +715,5 @@ DETACH DELETE n
 ---
 
 **Last Updated:** January 28, 2026
-**Geode Version:** v0.18.0+
+**Geode Version:** v0.1.3+
 **GQL Compliance:** ISO/IEC 39075:2024

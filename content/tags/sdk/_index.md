@@ -281,7 +281,7 @@ Add to `build.zig.zon`:
 ```zig
 .dependencies = .{
     .geode_client = .{
-        .url = "https://gitlab.com/devnw/codepros/geode/geode-client-zig/archive/v0.18.0.tar.gz",
+        .url = "https://gitlab.com/devnw/codepros/geode/geode-client-zig/archive/v0.1.3.tar.gz",
         .hash = "...",
     },
 }

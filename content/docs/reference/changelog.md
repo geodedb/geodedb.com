@@ -16,7 +16,7 @@ Complete version history and release notes for Geode graph database.
 
 ## Current Status (January 2026)
 
-**Version**: v0.18.0+ (Production Ready)
+**Version**: v0.1.3+ (Production Ready)
 
 Geode has achieved **production-ready status** with comprehensive compliance and testing:
 
@@ -28,7 +28,7 @@ Geode has achieved **production-ready status** with comprehensive compliance and
 
 ## Version History
 
-### [v0.18.0] - Production Ready Release (January 2026)
+### [v0.1.3] - Production Ready Release (January 2026)
 
 **Status**: Production Ready - All major features complete
 
@@ -185,7 +185,7 @@ None. This is a major release with no deprecations.
 
 #### Migration Guide
 
-**From Pre-v0.18.0 Versions**:
+**From Pre-v0.1.3 Versions**:
 
 1. **Update CLI Usage**:
    ```bash
@@ -239,7 +239,7 @@ None. This is a major release with no deprecations.
 
 ---
 
-### [v0.17.0] - Grey Cardinal Compliance (October 2025)
+### [v0.1.2] - Grey Cardinal Compliance (October 2025)
 
 **Focus**: Gap closure and compliance improvements
 
@@ -291,14 +291,14 @@ None. This is a major release with no deprecations.
 
 | Version | Status | Support End | GQL Compliance | Test Coverage |
 |---------|--------|-------------|----------------|---------------|
-| v0.18.x | Production Ready | Active | 100% (70/70) | 97.4% |
-| v0.17.x | Maintenance | June 2026 | 100% (70/70) | 95%+ |
+| v0.1.x | Production Ready | Active | 100% (70/70) | 97.4% |
+| v0.1.x | Maintenance | June 2026 | 100% (70/70) | 95%+ |
 
 ### Upgrade Policy
 
 - **Major versions** (e.g., v0.x to v1.x): May contain breaking changes
 - **Minor versions** (e.g., v0.17 to v0.18): Backward compatible with migration guides
-- **Patch versions** (e.g., v0.18.0 to v0.18.1): Backward compatible, drop-in replacements
+- **Patch versions** (e.g., v0.1.3 to v0.1.3): Backward compatible, drop-in replacements
 
 ## Release Schedule
 
@@ -339,7 +339,7 @@ make geodetestlab-comprehensive
 
 ## Breaking Changes Summary
 
-### v0.18.0 Breaking Changes
+### v0.1.3 Breaking Changes
 
 **CLI Architecture**:
 - Removed `geodec` and `geoded` binaries
@@ -347,24 +347,24 @@ make geodetestlab-comprehensive
 
 **Migration Required**: Yes
 **Estimated Migration Time**: 15-30 minutes
-**Backwards Compatibility**: None (clean break from v0.17.x architecture)
+**Backwards Compatibility**: None (clean break from v0.1.x architecture)
 
 ## Feature Timeline
 
-### January 2026 (v0.18.0+)
+### January 2026 (v0.1.3+)
 - ✅ Production-ready status achieved
 - ✅ 97.4% test coverage (1644/1688 tests)
 - ✅ All 7 development phases complete
 - ✅ Enterprise features complete
 
-### October-December 2025 (v0.18.0 development)
+### October-December 2025 (v0.1.3 development)
 - Enhanced RLS with policy optimization
 - ML graph embeddings (Node2Vec, GraphSAGE, DeepWalk)
 - Real-time analytics with streaming detection
 - Unified CLI architecture
 - REPL QUIC integration
 
-### October 2025 (v0.17.0)
+### October 2025 (v0.1.2)
 - Backup encryption (AES-256-GCM)
 - Time-series integration
 - WAL replay logic

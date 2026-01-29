@@ -32,7 +32,7 @@ Geode provides comprehensive client libraries for Python, Go, Rust, and Zig, all
 - **Python**: Async client with aioquic (Python 3.9+)
 - **Go**: database/sql driver implementation (Go 1.24+)
 - **Rust**: Tokio-based async client (Rust 1.70+)
-- **Zig**: Native client with vendored QUIC (Zig 0.15.1+)
+- **Zig**: Native client with vendored QUIC (Zig 0.1.0+)
 
 All clients communicate via QUIC+TLS on port 3141 using JSON line protocol.
 

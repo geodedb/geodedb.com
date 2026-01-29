@@ -48,7 +48,7 @@ Thank you for your interest in contributing to Geode! This guide will help you g
 git clone https://github.com/codeprosorg/geode
 cd geode
 
-# Install Zig 0.15.1+
+# Install Zig 0.1.0+
 # Download from https://ziglang.org/download/
 
 # Build
@@ -360,10 +360,10 @@ What should happen
 What actually happens
 
 ## Environment
-- Geode version: 0.18.0
+- Geode version: 0.1.3
 - OS: Ubuntu 22.04
-- Zig version: 0.15.1
-- Client library: Python 0.18.0
+- Zig version: 0.1.0
+- Client library: Python 0.1.3
 
 ## Logs
 \```
@@ -919,7 +919,7 @@ make security-scan
 git format-patch main
 
 # Create backport patches for LTS versions
-# v0.16.x, v0.17.x, v0.18.x
+# v0.1.x, v0.1.x, v0.1.x
 ```
 
 **Step 4: Coordinated Disclosure**
@@ -943,12 +943,12 @@ Brief description of the vulnerability
 **Vector**: CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H
 
 ## Affected Versions
-- Geode 0.15.0 - 0.17.x
-- Geode 0.18.0 - 0.18.3
+- Geode 0.1.0 - 0.17.x
+- Geode 0.1.3 - 0.1.3
 
 ## Fixed Versions
-- Geode 0.17.5
-- Geode 0.18.4
+- Geode 0.1.2
+- Geode 0.1.3
 
 ## Description
 Detailed description of vulnerability and attack vector

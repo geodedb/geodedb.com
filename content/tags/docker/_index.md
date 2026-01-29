@@ -30,12 +30,12 @@ Geode provides official images on [Docker Hub](https://hub.docker.com/r/geodedb/
 docker pull geodedb/geode:latest
 
 # Pull specific version
-docker pull geodedb/geode:v0.18.0
+docker pull geodedb/geode:v0.1.3
 ```
 
 **Image Variants**:
 - `geode:latest` - Latest stable release
-- `geode:v0.18.0` - Specific version tag
+- `geode:v0.1.3` - Specific version tag
 - `geode:alpine` - Alpine Linux based (smaller size)
 - `geode:distroless` - Minimal distroless image (maximum security)
 

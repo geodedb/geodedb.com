@@ -187,7 +187,7 @@ export GEODE_AUDIT_SEC
     "cef": {
       "vendor": "DEVNW",
       "product": "GEODE",
-      "version": "0.18.0"
+      "version": "0.1.3"
     }
   },
   "sinks": {
@@ -370,7 +370,7 @@ export GEODE_AUDIT_SEC
   "action": "initialize",
   "result": "success",
   "details": {
-    "version": "0.18.0",
+    "version": "0.1.3",
     "config_file": "/etc/geode/config.yaml"
   }
 }
@@ -591,7 +591,7 @@ geode audit verify --file segment.jsonl --algo sha256
 **CEF Format** (Common Event Format):
 ```
 <134>1 2026-01-24T10:30:15.123Z prod-db-01 geode 1234 auth.login -
-CEF:0|DEVNW|GEODE|0.18.0|auth.login|User Login|5|
+CEF:0|DEVNW|GEODE|0.1.3|auth.login|User Login|5|
 act=authenticate duser=alice@example.com outcome=success
 rt=Jan 24 2026 10:30:15 src=192.168.1.100
 ```

@@ -134,20 +134,20 @@ wsl
 
 ## Installing Zig Compiler
 
-Geode requires the Zig programming language compiler version 0.15.1 or later.
+Geode requires the Zig programming language compiler version 0.1.0 or later.
 
 ### Linux Zig Installation
 
 ```bash
-# Download Zig 0.15.1 for Linux
+# Download Zig 0.1.0 for Linux
 cd /tmp
-wget https://ziglang.org/download/0.15.1/zig-linux-x86_64-0.15.1.tar.xz
+wget https://ziglang.org/download/0.1.0/zig-linux-x86_64-0.1.0.tar.xz
 
 # Extract to /opt
-sudo tar -xf zig-linux-x86_64-0.15.1.tar.xz -C /opt
+sudo tar -xf zig-linux-x86_64-0.1.0.tar.xz -C /opt
 
 # Create symbolic link
-sudo ln -s /opt/zig-linux-x86_64-0.15.1 /opt/zig
+sudo ln -s /opt/zig-linux-x86_64-0.1.0 /opt/zig
 
 # Add to PATH
 echo 'export PATH="/opt/zig:$PATH"' >> ~/.bashrc
@@ -162,13 +162,13 @@ zig version
 ```bash
 # Download Zig for macOS
 cd /tmp
-wget https://ziglang.org/download/0.15.1/zig-macos-x86_64-0.15.1.tar.xz
+wget https://ziglang.org/download/0.1.0/zig-macos-x86_64-0.1.0.tar.xz
 
 # Extract to /usr/local
-sudo tar -xf zig-macos-x86_64-0.15.1.tar.xz -C /usr/local
+sudo tar -xf zig-macos-x86_64-0.1.0.tar.xz -C /usr/local
 
 # Create symbolic link
-sudo ln -s /usr/local/zig-macos-x86_64-0.15.1 /usr/local/zig
+sudo ln -s /usr/local/zig-macos-x86_64-0.1.0 /usr/local/zig
 
 # Add to PATH
 echo 'export PATH="/usr/local/zig:$PATH"' >> ~/.zshrc
@@ -181,7 +181,7 @@ zig version
 For Apple Silicon Macs, use the aarch64 version:
 
 ```bash
-wget https://ziglang.org/download/0.15.1/zig-macos-aarch64-0.15.1.tar.xz
+wget https://ziglang.org/download/0.1.0/zig-macos-aarch64-0.1.0.tar.xz
 ```
 
 ### Alternative Zig Installation Methods
@@ -192,7 +192,7 @@ Some platforms offer package manager installation:
 # Homebrew (macOS/Linux)
 brew install zig
 
-# Verify version is 0.15.1+
+# Verify version is 0.1.0+
 zig version
 ```
 
@@ -226,7 +226,7 @@ For production deployments, use a specific tagged version:
 git tag -l
 
 # Checkout specific version
-git checkout v0.18.0
+git checkout v0.1.3
 
 # Verify checked-out version
 git describe --tags
@@ -308,7 +308,7 @@ For faster rebuilds during development, use incremental compilation (automatic w
 ```bash
 # Verify Zig version
 zig version
-# Should output: 0.15.1 or later
+# Should output: 0.1.0 or later
 ```
 
 **Out of Memory:**
@@ -674,7 +674,7 @@ sudo systemctl stop geode
 # Update source code
 cd ~/projects/geode
 git fetch --tags
-git checkout v0.18.0
+git checkout v0.1.3
 
 # Rebuild
 cd geode

@@ -223,19 +223,19 @@ Update cluster nodes one at a time:
 
 ```bash
 # Update node 3 (standby)
-kubectl set image statefulset/geode geode=geodedb/geode:0.19.0 --index=2
+kubectl set image statefulset/geode geode=geodedb/geode:0.1.4 --index=2
 # Wait for health check
 kubectl wait --for=condition=ready pod/geode-2
 
 # Update node 2 (standby)
-kubectl set image statefulset/geode geode=geodedb/geode:0.19.0 --index=1
+kubectl set image statefulset/geode geode=geodedb/geode:0.1.4 --index=1
 kubectl wait --for=condition=ready pod/geode-1
 
 # Trigger primary failover to updated node
 geode cluster failover --target=node2
 
 # Update node 1 (now standby)
-kubectl set image statefulset/geode geode=geodedb/geode:0.19.0 --index=0
+kubectl set image statefulset/geode geode=geodedb/geode:0.1.4 --index=0
 kubectl wait --for=condition=ready pod/geode-0
 ```
 

@@ -229,7 +229,7 @@ docker exec -it <container_id> geode shell
 git clone https://github.com/codeprosorg/geode
 cd geode
 
-# Build (requires Zig 0.15.1+)
+# Build (requires Zig 0.1.0+)
 make build
 
 # Run server

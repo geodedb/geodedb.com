@@ -92,7 +92,7 @@ This allows equality searches (`WHERE email = 'alice@example.com'`) on encrypted
 
 ### Prerequisites
 
-- Geode 0.18.0+
+- Geode 0.1.3+
 - Understanding of your data classification requirements
 - RBAC/roles configured for your users
 

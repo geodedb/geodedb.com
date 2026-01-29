@@ -603,11 +603,11 @@ Understanding Geode's architecture enables effective contributions:
 
 ---
 
-**Language**: Zig 0.15.1+
+**Language**: Zig 0.1.0+
 **Architecture**: Layered, modular design
 **Concurrency**: MVCC with SSI
 **Protocol**: QUIC with TLS 1.3
 **Test Coverage**: 97.4%
 **ISO Compliance**: 100%
 **Last Updated**: January 2026
-**Geode Version**: v0.18.0+
+**Geode Version**: v0.1.3+

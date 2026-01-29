@@ -39,7 +39,7 @@ Geode's changelog follows the "Keep a Changelog" format with entries organized b
 - **Security**: Security improvements and vulnerability patches
 - **Performance**: Performance optimizations and improvements
 
-## Current Version: v0.18.0 (Production Ready)
+## Current Version: v0.1.3 (Production Ready)
 
 **Status**: Production Ready (January 2026)
 **Released**: January 24, 2026
@@ -53,7 +53,7 @@ Geode's changelog follows the "Keep a Changelog" format with entries organized b
 - QUIC + TLS 1.3 protocol support
 - Multi-language client libraries (Go, Python, Rust, Zig)
 
-### Added in v0.18.0
+### Added in v0.1.3
 
 **Core Features**:
 - Full ISO/IEC 39075:2024 GQL standard compliance
@@ -85,7 +85,7 @@ Geode's changelog follows the "Keep a Changelog" format with entries organized b
 - Data import/export tools (JSON, CSV, GraphML)
 - Prometheus metrics integration
 
-### Changed in v0.18.0
+### Changed in v0.1.3
 
 - Protocol upgraded to QUIC-only (removed TCP fallback)
 - Default port changed from 8443 to 3141
@@ -93,7 +93,7 @@ Geode's changelog follows the "Keep a Changelog" format with entries organized b
 - Memory allocator optimized for graph workloads
 - Storage engine redesigned for better concurrency
 
-### Fixed in v0.18.0
+### Fixed in v0.1.3
 
 - Query optimizer now correctly handles optional matches
 - Transaction isolation improved for concurrent writes
@@ -147,7 +147,7 @@ v2.0.0: Feature removed
 https://github.com/codeprosorg/geode/blob/main/CHANGELOG.md
 
 # View changes between versions
-git log v0.17.0..v0.18.0 --oneline
+git log v0.1.2..v0.1.3 --oneline
 
 # View release notes
 https://github.com/codeprosorg/geode/releases
@@ -160,10 +160,10 @@ https://github.com/codeprosorg/geode/releases
 geode changelog
 
 # Display changelog for specific version
-geode changelog --version v0.18.0
+geode changelog --version v0.1.3
 
 # Display all changes since version
-geode changelog --since v0.15.0
+geode changelog --since v0.1.0
 
 # Display only security fixes
 geode changelog --category security
@@ -181,7 +181,7 @@ Visit /docs/reference/changelog/ for interactive changelog with:
 
 Each major and significant minor release includes a migration guide:
 
-**Upgrade from v0.17.x to v0.18.x**:
+**Upgrade from v0.1.x to v0.1.x**:
 
 1. **Backup Existing Database**:
    ```bash
@@ -229,17 +229,17 @@ Each major and significant minor release includes a migration guide:
 
 | Server Version | Go Client | Python Client | Rust Client | Zig Client |
 |----------------|-----------|---------------|-------------|------------|
-| v0.18.x        | v1.0.x    | v1.0.x        | v1.0.x      | v1.0.x     |
-| v0.17.x        | v0.9.x    | v0.9.x        | v0.9.x      | v0.9.x     |
-| v0.16.x        | v0.8.x    | v0.8.x        | v0.8.x      | v0.8.x     |
+| v0.1.x        | v1.0.x    | v1.0.x        | v1.0.x      | v1.0.x     |
+| v0.1.x        | v0.9.x    | v0.9.x        | v0.9.x      | v0.9.x     |
+| v0.1.x        | v0.8.x    | v0.8.x        | v0.8.x      | v0.8.x     |
 
 **Protocol Compatibility**:
 
 | Version | Protocol | Wire Format | TLS Version |
 |---------|----------|-------------|-------------|
-| v0.18.x | QUIC     | JSON Line   | TLS 1.3     |
-| v0.17.x | QUIC/TCP | Binary/JSON | TLS 1.2+    |
-| v0.16.x | TCP      | Binary      | TLS 1.2+    |
+| v0.1.x | QUIC     | JSON Line   | TLS 1.3     |
+| v0.1.x | QUIC/TCP | Binary/JSON | TLS 1.2+    |
+| v0.1.x | TCP      | Binary      | TLS 1.2+    |
 
 ## Security Advisories
 
@@ -258,22 +258,22 @@ Response Time: 48 hours
 1. Issue reported privately to security team
 2. Vulnerability assessed and patch developed
 3. Security advisory published (CVE assigned if applicable)
-4. Patch released with security tag (e.g., v0.18.1-security)
+4. Patch released with security tag (e.g., v0.1.3-security)
 5. Users notified via security mailing list
 
-**Current Security Status**: No known vulnerabilities (as of v0.18.0)
+**Current Security Status**: No known vulnerabilities (as of v0.1.3)
 
 ## Deprecation Notices
 
 **Currently Deprecated** (removal planned for v1.0.0):
 
-None currently. All features in v0.18.0 are stable and supported.
+None currently. All features in v0.1.3 are stable and supported.
 
 **Previously Deprecated and Removed**:
 
-- v0.17.0: TCP protocol support (removed in v0.18.0)
-- v0.16.0: Binary wire format (removed in v0.17.0)
-- v0.15.0: Legacy authentication API (removed in v0.16.0)
+- v0.1.2: TCP protocol support (removed in v0.1.3)
+- v0.1.1: Binary wire format (removed in v0.1.2)
+- v0.1.0: Legacy authentication API (removed in v0.1.1)
 
 ## Changelog Best Practices
 

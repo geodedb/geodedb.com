@@ -47,7 +47,7 @@ curl -f http://localhost:8080/health || echo "Health check failed"
 {
   "status": "healthy",
   "timestamp": "2024-01-15T14:30:00Z",
-  "version": "0.18.0"
+  "version": "0.1.3"
 }
 ```
 

@@ -38,13 +38,13 @@ Geode requires a modern Linux, macOS, or Windows environment with sufficient res
 
 Geode is written in Zig and requires specific build tools:
 
-**Zig Compiler**: Version 0.15.1 or later is required for building Geode. Download from the official Zig website:
+**Zig Compiler**: Version 0.1.0 or later is required for building Geode. Download from the official Zig website:
 
 ```bash
 # Linux/macOS: Download and extract
-wget https://ziglang.org/download/0.15.1/zig-linux-x86_64-0.15.1.tar.xz
-tar -xf zig-linux-x86_64-0.15.1.tar.xz
-sudo mv zig-linux-x86_64-0.15.1 /opt/zig
+wget https://ziglang.org/download/0.1.0/zig-linux-x86_64-0.1.0.tar.xz
+tar -xf zig-linux-x86_64-0.1.0.tar.xz
+sudo mv zig-linux-x86_64-0.1.0 /opt/zig
 export PATH="/opt/zig:$PATH"
 
 # Verify installation
@@ -242,7 +242,7 @@ cd geode
 The server starts and listens on localhost port 3141. Output indicates successful startup:
 
 ```
-[INFO] Geode Graph Database v0.18.0
+[INFO] Geode Graph Database v0.1.3
 [INFO] Listening on 127.0.0.1:3141
 [INFO] Data directory: ./data
 [INFO] Ready for connections
@@ -502,7 +502,7 @@ Common setup problems and solutions.
 If build fails, verify Zig version and dependencies:
 
 ```bash
-zig version  # Should be 0.15.1+
+zig version  # Should be 0.1.0+
 make clean
 make build
 ```

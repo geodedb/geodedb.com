@@ -50,7 +50,7 @@ geode shell --user alice --password secretpass
 
 **Welcome Screen**:
 ```
-Geode Interactive Shell v0.18.0
+Geode Interactive Shell v0.1.3
 Connected to: localhost:3141
 Type \help or \? for help, \quit to exit
 

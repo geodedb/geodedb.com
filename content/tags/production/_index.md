@@ -197,7 +197,7 @@ spec:
 
       containers:
       - name: geode
-        image: geodedb/geode:0.18.0
+        image: geodedb/geode:0.1.3
         ports:
         - containerPort: 3141
           name: client

@@ -43,7 +43,7 @@ const geode_client = b.dependency("geode_client", .{
 exe.root_module.addImport("geode_client", geode_client.module("geode_client"));
 ```
 
-**Requirements**: Zig 0.15.1+ and OpenSSL (Linux)
+**Requirements**: Zig 0.1.0+ and OpenSSL (Linux)
 
 ## Quick Start
 

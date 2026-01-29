@@ -154,7 +154,7 @@ Each client handles protocol complexity, connection management, and error handli
 Geode provides multiple installation options:
 
 ```bash
-# From source (requires Zig 0.15.1+)
+# From source (requires Zig 0.1.0+)
 git clone https://github.com/codeprosorg/geode
 cd geode
 make build
@@ -374,7 +374,7 @@ Line-delimited format enables streaming: clients process rows as they arrive rat
 
 ```bash
 # Pull official image
-docker pull codepros/geode:v0.18.0
+docker pull codepros/geode:v0.1.3
 
 # Run with persistent storage
 docker run -d \
@@ -382,7 +382,7 @@ docker run -d \
   -p 3141:3141 \
   -v geode-data:/var/lib/geode \
   -e GEODE_LOG_LEVEL=debug \
-  codepros/geode:v0.18.0
+  codepros/geode:v0.1.3
 
 # Connect and develop
 docker exec -it geode-dev geode shell
@@ -434,7 +434,7 @@ spec:
     spec:
       containers:
       - name: geode
-        image: codepros/geode:v0.18.0
+        image: codepros/geode:v0.1.3
         ports:
         - containerPort: 3141
           name: quic
@@ -682,7 +682,7 @@ const resolvers = {
 
 ## Roadmap and Future Development
 
-**Upcoming in v0.19.0**:
+**Upcoming in v0.1.4**:
 - Distributed mode with automatic sharding
 - Improved query optimizer with machine learning
 - Additional graph algorithm library

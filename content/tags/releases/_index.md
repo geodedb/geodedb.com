@@ -33,7 +33,7 @@ Geode uses semantic versioning (SemVer) for all releases:
 MAJOR.MINOR.PATCH[-PRERELEASE][+BUILD]
 
 Examples:
-0.18.0          - Stable release
+0.1.3          - Stable release
 1.0.0           - Major version
 1.2.3-beta.1    - Pre-release
 1.2.3+20240124  - Build metadata
@@ -62,7 +62,7 @@ Examples:
 - Minor performance tweaks
 - No new features
 
-## Current Release: v0.18.0
+## Current Release: v0.1.3
 
 **Release Date**: January 24, 2026
 **Status**: Production Ready
@@ -94,7 +94,7 @@ Examples:
 - Rust client v1.0.0 (tokio-based)
 - Zig client v1.0.0 (vendored QUIC)
 
-### Upgrade from v0.17.x
+### Upgrade from v0.1.x
 
 **Breaking Changes**:
 1. TCP protocol removed (QUIC only)
@@ -106,17 +106,17 @@ Examples:
 # 1. Backup existing database
 geode backup create --output pre-v0.18-backup.tar.gz
 
-# 2. Stop v0.17.x server
+# 2. Stop v0.1.x server
 geode shutdown
 
-# 3. Install v0.18.0
+# 3. Install v0.1.3
 curl -sSL https://install.geodedb.com | sh
 
 # 4. Update configuration
 # Change port from 8443 to 3141
 # Remove TCP protocol settings
 
-# 5. Start v0.18.0 server
+# 5. Start v0.1.3 server
 geode serve --config /etc/geode/config.yaml
 
 # 6. Update client libraries
@@ -133,25 +133,25 @@ Geode provides multiple release channels for different use cases:
 - Fully tested and validated
 - Long-term support
 - Security updates guaranteed
-- Example: v0.18.0
+- Example: v0.1.3
 
 **Beta** (Early Access):
 - Feature-complete but undergoing final testing
 - Preview upcoming features
 - Not recommended for production
-- Example: v0.19.0-beta.1
+- Example: v0.1.4-beta.1
 
 **Alpha** (Experimental):
 - Early development builds
 - APIs may change
 - For testing only
-- Example: v0.19.0-alpha.3
+- Example: v0.1.4-alpha.3
 
 **Nightly** (Development):
 - Daily builds from main branch
 - Bleeding edge features
 - Unstable, for development only
-- Example: v0.19.0-nightly+20240124
+- Example: v0.1.4-nightly+20240124
 
 ## Release Schedule
 
@@ -209,7 +209,7 @@ brew install geode
 ```bash
 git clone https://github.com/codeprosorg/geode
 cd geode
-git checkout v0.18.0
+git checkout v0.1.3
 make build
 ./zig-out/bin/geode serve --listen 0.0.0.0:3141
 ```
@@ -222,10 +222,10 @@ docker pull geodedb/geode:latest
 docker pull geodedb/geode:0.18
 
 # Specific version
-docker pull geodedb/geode:0.18.0
+docker pull geodedb/geode:0.1.3
 
 # Run container
-docker run -p 3141:3141 geodedb/geode:0.18.0
+docker run -p 3141:3141 geodedb/geode:0.1.3
 ```
 
 Additional package managers are not currently published; use release artifacts, Docker, or build from source.
@@ -254,9 +254,9 @@ Before any release, Geode undergoes comprehensive testing:
 ## Support Policy
 
 **Current Versions**:
-- v0.18.x: Full support (new features, bug fixes, security)
-- v0.17.x: Maintenance mode (bug fixes, security only)
-- v0.16.x: End of life (no updates)
+- v0.1.x: Full support (new features, bug fixes, security)
+- v0.1.x: Maintenance mode (bug fixes, security only)
+- v0.1.x: End of life (no updates)
 
 **Support Levels**:
 
@@ -281,7 +281,7 @@ Before any release, Geode undergoes comprehensive testing:
 Each release includes detailed release notes:
 
 ```markdown
-# Geode v0.18.0
+# Geode v0.1.3
 
 **Release Date**: January 24, 2026
 **Status**: Production Ready
@@ -319,13 +319,13 @@ Each release includes detailed release notes:
 
 ## Roadmap and Future Releases
 
-**v0.19.0** (Planned: April 2026):
+**v0.1.4** (Planned: April 2026):
 - Enhanced vector search capabilities
 - Graph algorithms library
 - Query result caching
 - Additional client language support
 
-**v0.20.0** (Planned: July 2026):
+**v0.2.0** (Planned: July 2026):
 - Distributed query execution
 - Sharding and partitioning
 - Advanced analytics functions
@@ -370,11 +370,11 @@ Each release includes detailed release notes:
 If upgrade fails, execute rollback:
 
 ```bash
-# 1. Stop failed v0.18.0 server
+# 1. Stop failed v0.1.3 server
 geode shutdown
 
-# 2. Restore v0.17.x binary
-sudo dpkg -i geode-0.17.0.deb
+# 2. Restore v0.1.x binary
+sudo dpkg -i geode-0.1.2.deb
 
 # 3. Restore database from backup
 geode restore --input pre-v0.18-backup.tar.gz
@@ -382,7 +382,7 @@ geode restore --input pre-v0.18-backup.tar.gz
 # 4. Restore configuration
 cp /etc/geode/config.yaml.backup /etc/geode/config.yaml
 
-# 5. Start v0.17.x server
+# 5. Start v0.1.x server
 geode serve
 
 # 6. Verify functionality

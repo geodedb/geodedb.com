@@ -68,14 +68,14 @@ Understanding container architecture helps you build efficient, secure Geode dep
 docker pull codepros/geode:latest
 
 # Pull specific version
-docker pull codepros/geode:v0.18.0
+docker pull codepros/geode:v0.1.3
 
 # Run container
 docker run -d \
   --name geode \
   -p 3141:3141 \
   -v geode-data:/var/lib/geode \
-  codepros/geode:v0.18.0
+  codepros/geode:v0.1.3
 ```
 
 ### Geode Dockerfile
@@ -117,7 +117,7 @@ version: '3.8'
 
 services:
   geode:
-    image: codepros/geode:v0.18.0
+    image: codepros/geode:v0.1.3
     container_name: geode
     ports:
       - "3141:3141"
@@ -217,7 +217,7 @@ docker run -d \
   --read-only \
   --tmpfs /tmp:rw,noexec,nosuid,size=100m \
   -v geode-data:/var/lib/geode \
-  codepros/geode:v0.18.0
+  codepros/geode:v0.1.3
 ```
 
 ### Resource Limits
@@ -229,7 +229,7 @@ docker run -d \
   --memory-swap=16g \
   --cpus=8 \
   --pids-limit=4096 \
-  codepros/geode:v0.18.0
+  codepros/geode:v0.1.3
 ```
 
 ## Advanced Container Patterns
@@ -243,7 +243,7 @@ Deploy helper containers alongside Geode for additional functionality:
 version: '3.8'
 services:
   geode:
-    image: codepros/geode:v0.18.0
+    image: codepros/geode:v0.1.3
     container_name: geode-main
     volumes:
       - geode-data:/var/lib/geode
@@ -351,7 +351,7 @@ Scan images for vulnerabilities before deployment:
 # Scan with Trivy
 docker run --rm \
   -v /var/run/docker.sock:/var/run/docker.sock \
-  aquasec/trivy image codepros/geode:v0.18.0
+  aquasec/trivy image codepros/geode:v0.1.3
 
 # Scan with Clair
 docker run -d --name clair-db postgres:13
@@ -359,7 +359,7 @@ docker run -d --name clair \
   --link clair-db:postgres \
   quay.io/coreos/clair:latest
 
-clairctl analyze codepros/geode:v0.18.0
+clairctl analyze codepros/geode:v0.1.3
 ```
 
 ## Production Deployment Patterns
@@ -371,7 +371,7 @@ clairctl analyze codepros/geode:v0.18.0
 version: '3.8'
 services:
   geode-1:
-    image: codepros/geode:v0.18.0
+    image: codepros/geode:v0.1.3
     hostname: geode-1
     networks:
       - geode-cluster
@@ -384,7 +384,7 @@ services:
           - node.labels.zone == us-east-1a
 
   geode-2:
-    image: codepros/geode:v0.18.0
+    image: codepros/geode:v0.1.3
     hostname: geode-2
     networks:
       - geode-cluster
@@ -397,7 +397,7 @@ services:
           - node.labels.zone == us-east-1b
 
   geode-3:
-    image: codepros/geode:v0.18.0
+    image: codepros/geode:v0.1.3
     hostname: geode-3
     networks:
       - geode-cluster

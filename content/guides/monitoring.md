@@ -1217,7 +1217,7 @@ logging:
   fields:
     service: geode
     environment: production
-    version: "0.18.0"
+    version: "0.1.3"
 
   output:
     - type: file

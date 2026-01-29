@@ -812,5 +812,5 @@ ORDER BY p.name
 ---
 
 **Last Updated:** January 24, 2026
-**Geode Version:** v0.18.0+
+**Geode Version:** v0.1.3+
 **ISO GQL Compliance:** 100% (70/70 tests passing)

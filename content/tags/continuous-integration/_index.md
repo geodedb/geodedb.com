@@ -100,7 +100,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-24.04, macos-14]
-        zig: [0.15.1]
+        zig: [0.1.0]
     steps:
       - uses: actions/checkout@v4
 
@@ -145,7 +145,7 @@ unit-tests:
     - name: Setup Zig
       uses: goto-bus-stop/setup-zig@v2
       with:
-        version: 0.15.1
+        version: 0.1.0
 
     - name: Run Unit Tests
       working-directory: geode
@@ -495,7 +495,7 @@ on:
 **Pin all versions**:
 ```yaml
 env:
-  ZIG_VERSION: 0.15.1
+  ZIG_VERSION: 0.1.0
   GO_VERSION: 1.24.0
   PYTHON_VERSION: 3.11.8
   RUST_VERSION: 1.70.0

@@ -41,7 +41,7 @@ docker run -p 3141:3141 codepros/geode:latest
 docker exec -it <container_id> geode shell
 ```
 
-**Building from Source** (requires Zig 0.15.1+):
+**Building from Source** (requires Zig 0.1.0+):
 ```bash
 # Clone repository
 git clone https://github.com/codeprosorg/geode

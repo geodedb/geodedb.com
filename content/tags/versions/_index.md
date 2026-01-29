@@ -32,8 +32,8 @@ Geode uses semantic versioning (SemVer 2.0.0):
 ```
 MAJOR.MINOR.PATCH[-PRERELEASE][+BUILD]
 
-Current Version: 0.18.0
-Next Minor:      0.19.0
+Current Version: 0.1.3
+Next Minor:      0.1.4
 Next Major:      1.0.0
 ```
 
@@ -44,30 +44,30 @@ Next Major:      1.0.0
 - Protocol incompatibilities
 - Database format changes requiring migration
 - Removal of deprecated features
-- Example: 0.18.0 → 1.0.0
+- Example: 0.1.3 → 1.0.0
 
 **MINOR Version** (0.18.x → 0.19.x):
 - New backward-compatible features
 - New GQL functions or operators
 - Performance improvements
 - Enhanced client capabilities
-- Example: 0.18.0 → 0.19.0
+- Example: 0.1.3 → 0.1.4
 
-**PATCH Version** (0.18.0 → 0.18.1):
+**PATCH Version** (0.1.3 → 0.1.3):
 - Bug fixes
 - Security patches
 - Documentation corrections
 - Minor optimizations
-- Example: 0.18.0 → 0.18.1
+- Example: 0.1.3 → 0.1.3
 
-## Current Version: 0.18.0
+## Current Version: 0.1.3
 
 **Server Version**:
 ```bash
 $ geode version
-Geode v0.18.0
+Geode v0.1.3
 Build: 20240124-1a2b3c4
-Zig: 0.15.1
+Zig: 0.1.0
 Protocol: QUIC v1
 GQL: ISO/IEC 39075:2024
 ```
@@ -153,7 +153,7 @@ zig build --version
 SHOW VERSION;
 
 -- Returns:
--- version: "0.18.0"
+-- version: "0.1.3"
 -- build: "20240124-1a2b3c4"
 -- protocol: "QUIC v1"
 -- gql_version: "ISO/IEC 39075:2024"
@@ -190,7 +190,7 @@ geode-client = "^1.0"    # Compatible versions
 
 ```dockerfile
 # Exact version
-FROM geodedb/geode:0.18.0
+FROM geodedb/geode:0.1.3
 
 # Minor version (latest patch)
 FROM geodedb/geode:0.18
@@ -220,8 +220,8 @@ For clustered deployments:
 
 ```bash
 # 1. Upgrade standby nodes first
-ssh replica-1 "sudo apt-get install geode=0.18.0"
-ssh replica-2 "sudo apt-get install geode=0.18.0"
+ssh replica-1 "sudo apt-get install geode=0.1.3"
+ssh replica-2 "sudo apt-get install geode=0.1.3"
 
 # 2. Wait for replication sync
 geode cluster status
@@ -230,7 +230,7 @@ geode cluster status
 geode cluster promote replica-1
 
 # 4. Upgrade old primary
-ssh primary "sudo apt-get install geode=0.18.0"
+ssh primary "sudo apt-get install geode=0.1.3"
 
 # 5. Rebalance cluster
 geode cluster rebalance
@@ -249,7 +249,7 @@ geode replicate --from blue:3141 --to green:3141
 ./run-integration-tests.sh --host green:3141
 
 # 4. Switch traffic to green
-kubectl patch service geode -p '{"spec":{"selector":{"version":"0.18.0"}}}'
+kubectl patch service geode -p '{"spec":{"selector":{"version":"0.1.3"}}}'
 
 # 5. Decommission blue environment after validation
 docker-compose -f docker-compose.blue.yml down
@@ -262,7 +262,7 @@ docker-compose -f docker-compose.blue.yml down
 kubectl apply -f canary-10percent.yaml
 
 # 2. Monitor metrics and errors
-kubectl logs -l version=0.18.0 --tail=100
+kubectl logs -l version=0.1.3 --tail=100
 
 # 3. Gradually increase traffic: 25% → 50% → 100%
 kubectl apply -f canary-25percent.yaml
@@ -276,29 +276,29 @@ kubectl apply -f canary-100percent.yaml
 
 ```bash
 # Different versions on different ports
-/opt/geode-0.17.0/bin/geode serve --listen :8443
-/opt/geode-0.18.0/bin/geode serve --listen :3141
+/opt/geode-0.1.2/bin/geode serve --listen :8443
+/opt/geode-0.1.3/bin/geode serve --listen :3141
 
 # Docker containers
-docker run -p 8443:8443 geodedb/geode:0.17.0
-docker run -p 3141:3141 geodedb/geode:0.18.0
+docker run -p 8443:8443 geodedb/geode:0.1.2
+docker run -p 3141:3141 geodedb/geode:0.1.3
 ```
 
 **Client Version Selection**:
 
 ```go
 // Go - include client version in HELLO
-db, err := sql.Open("geode", "localhost:3141?hello_ver=0.18.0")
+db, err := sql.Open("geode", "localhost:3141?hello_ver=0.1.3")
 
 // Python - include client version in HELLO
 client = Client(
     host="localhost",
     port=3141,
-    hello_ver="0.18.0"
+    hello_ver="0.1.3"
 )
 
 // Rust - include client version in HELLO
-let client = Client::new("localhost", 3141).hello_ver("0.18.0");
+let client = Client::new("localhost", 3141).hello_ver("0.1.3");
 let mut conn = client.connect().await?;
 ```
 
@@ -386,7 +386,7 @@ jobs:
     runs-on: ubuntu-latest
     services:
       geode:
-        image: geodedb/geode:0.18.0  # Pin exact version
+        image: geodedb/geode:0.1.3  # Pin exact version
         ports:
           - 3141:3141
 
@@ -406,7 +406,7 @@ jobs:
 test:
   image: python:3.11
   services:
-    - name: geodedb/geode:0.18.0
+    - name: geodedb/geode:0.1.3
       alias: geode
   before_script:
     - pip install geode-client==1.0.0
@@ -420,13 +420,13 @@ When crossing major version boundaries:
 
 ```bash
 # 1. Review breaking changes
-geode changelog --breaking --since v0.18.0
+geode changelog --breaking --since v0.1.3
 
 # 2. Run migration checker
-geode migrate check --from 0.18.0 --to 1.0.0
+geode migrate check --from 0.1.3 --to 1.0.0
 
 # 3. Generate migration plan
-geode migrate plan --from 0.18.0 --to 1.0.0 --output plan.yaml
+geode migrate plan --from 0.1.3 --to 1.0.0 --output plan.yaml
 
 # 4. Execute migration
 geode migrate execute --plan plan.yaml
@@ -450,7 +450,7 @@ geode migrate validate
 **Version Mismatch Errors**:
 
 ```
-Error: Client version 0.9.0 incompatible with server 0.18.0
+Error: Client version 0.9.0 incompatible with server 0.1.3
 Solution: Upgrade client to 1.0.x series
 ```
 
@@ -464,8 +464,8 @@ Solution: Upgrade to client library version 1.0.0+
 **Feature Not Available**:
 
 ```
-Error: VECTOR search not supported in server version 0.17.0
-Solution: Upgrade server to 0.18.0+
+Error: VECTOR search not supported in server version 0.1.2
+Solution: Upgrade server to 0.1.3+
 ```
 
 ## Related Topics

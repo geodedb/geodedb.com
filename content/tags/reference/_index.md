@@ -739,7 +739,7 @@ for row in &page.rows {
 {
   "type": "HELLO",
   "version": "1.0",
-  "client": "geode-python/0.18.0",
+  "client": "geode-python/0.1.3",
   "auth": {
     "method": "basic",
     "username": "admin",
@@ -756,7 +756,7 @@ for row in &page.rows {
 {
   "type": "WELCOME",
   "version": "1.0",
-  "server": "geode/0.18.0",
+  "server": "geode/0.1.3",
   "session_id": "550e8400-e29b-41d4-a716-446655440000",
   "capabilities": {
     "max_query_size": 1048576,

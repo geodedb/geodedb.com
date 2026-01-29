@@ -860,7 +860,7 @@ version: '3.8'
 
 services:
   geode:
-    image: codepros/geode:v0.18.0
+    image: codepros/geode:v0.1.3
     ports:
       - "3141:3141"
     volumes:

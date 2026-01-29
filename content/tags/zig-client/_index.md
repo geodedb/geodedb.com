@@ -45,7 +45,7 @@ The Zig client is designed for systems programmers and performance-critical appl
 
 ## Requirements
 
-- Zig 0.15.1 or later
+- Zig 0.1.0 or later
 - OpenSSL (for TLS support on Linux)
 - Running Geode server
 

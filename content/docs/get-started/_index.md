@@ -147,7 +147,7 @@ See [Docker Deployment](/docs/ops/deployment#docker) for the full production sta
 
 ### Option 3: Build from Source
 
-**Requirements**: Zig 0.15.1+ ([download from ziglang.org](https://ziglang.org/download/))
+**Requirements**: Zig 0.1.0+ ([download from ziglang.org](https://ziglang.org/download/))
 
 ```bash
 # Clone repository

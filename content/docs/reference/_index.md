@@ -242,7 +242,7 @@ See [Unicode Support](/docs/reference/unicode-support/) for details.
 
 ## Version Information
 
-Current version: **v0.18.0** (Production Ready)
+Current version: **v0.1.3** (Production Ready)
 
 Key metrics:
 - **Test Coverage**: 97.4% (1,644/1,688 tests passing)

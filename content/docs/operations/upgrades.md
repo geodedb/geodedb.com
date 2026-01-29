@@ -91,7 +91,7 @@ geode config show > config-dump.yaml
 Review breaking changes for each version:
 
 ```yaml
-# v0.17.x -> v0.18.x Breaking Changes
+# v0.1.x -> v0.1.x Breaking Changes
 
 authentication:
   # Was: optional (auth_enabled: false by default)
@@ -121,7 +121,7 @@ For single-node deployments or development environments.
 
 set -euo pipefail
 
-NEW_VERSION="0.18.0"
+NEW_VERSION="0.1.3"
 BACKUP_DIR="/var/lib/geode/upgrade-backup-$(date +%Y%m%d)"
 
 echo "=== In-Place Upgrade to $NEW_VERSION ==="
@@ -239,7 +239,7 @@ For distributed clusters with zero downtime.
 
 set -euo pipefail
 
-NEW_VERSION="0.18.0"
+NEW_VERSION="0.1.3"
 NODES=("geode-node1" "geode-node2" "geode-node3")
 GEODE_BIN_URL="https://releases.geodedb.com/v$NEW_VERSION/geode-linux-amd64"
 
@@ -339,7 +339,7 @@ done
 # Same process as upgrade, but with previous version
 # Keep previous binary available for quick rollback
 
-OLD_VERSION="0.17.5"
+OLD_VERSION="0.1.2"
 # ... follow same rolling procedure with old version
 ```
 
@@ -359,7 +359,7 @@ For critical production with instant rollback capability.
             │ 100%           │ 0%             │
        ┌────▼────┐      ┌────▼────┐
        │  Blue   │      │  Green  │
-       │ v0.17.x │      │ v0.18.x │
+       │ v0.1.x │      │ v0.1.x │
        │(Active) │      │(Standby)│
        └─────────┘      └─────────┘
 ```
@@ -372,7 +372,7 @@ For critical production with instant rollback capability.
 
 set -euo pipefail
 
-NEW_VERSION="0.18.0"
+NEW_VERSION="0.1.3"
 BLUE_CLUSTER="geode-blue"
 GREEN_CLUSTER="geode-green"
 
@@ -494,7 +494,7 @@ For gradual rollout with monitoring.
 
 set -euo pipefail
 
-NEW_VERSION="0.18.0"
+NEW_VERSION="0.1.3"
 CANARY_PERCENTAGE=5
 
 echo "=== Canary Deployment to $NEW_VERSION ==="
@@ -557,10 +557,10 @@ mv /etc/geode/geode.yaml.new /etc/geode/geode.yaml
 
 ### Manual Migration Examples
 
-**v0.17.x to v0.18.x**:
+**v0.1.x to v0.1.x**:
 
 ```yaml
-# Old (v0.17.x)
+# Old (v0.1.x)
 server:
   listen: '0.0.0.0:3141'
   auth_enabled: false  # Optional auth
@@ -568,7 +568,7 @@ server:
 tls:
   auto_generate: true  # Auto-generate certs
 
-# New (v0.18.x)
+# New (v0.1.x)
 server:
   listen: '0.0.0.0:3141'
   # auth_enabled removed, now always true

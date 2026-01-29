@@ -515,16 +515,16 @@ Rolling upgrade strategy:
 ```bash
 # Upgrade script
 for node in observer1 observer2; do
-  geode admin upgrade $node --version 0.19.0
+  geode admin upgrade $node --version 0.1.4
 done
 
 for node in follower1 follower2; do
-  geode admin upgrade $node --version 0.19.0
+  geode admin upgrade $node --version 0.1.4
   geode admin wait-for-sync $node
 done
 
 geode admin failover leader1 --to follower1
-geode admin upgrade leader1 --version 0.19.0
+geode admin upgrade leader1 --version 0.1.4
 ```
 
 ## Advanced Consensus Patterns

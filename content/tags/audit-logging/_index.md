@@ -93,7 +93,7 @@ Geode supports multiple audit log formats to integrate with existing security in
     "username": "analyst@example.com",
     "roles": ["data_analyst", "viewer"],
     "ip_address": "192.168.1.100",
-    "user_agent": "geode-client-python/0.18.0"
+    "user_agent": "geode-client-python/0.1.3"
   },
   "operation": {
     "type": "SELECT",
@@ -129,7 +129,7 @@ Jan 24 10:15:32 geode-server audit[12345]: event=query_execution user=analyst@ex
 For SIEM systems that support CEF:
 
 ```
-CEF:0|CodePros|Geode|0.18.0|query_execution|Query Executed|5|src=192.168.1.100 suser=analyst@example.com act=SELECT outcome=success rt=Jan 24 2026 10:15:32 cs1=sess_abc123 cs1Label=SessionID
+CEF:0|CodePros|Geode|0.1.3|query_execution|Query Executed|5|src=192.168.1.100 suser=analyst@example.com act=SELECT outcome=success rt=Jan 24 2026 10:15:32 cs1=sess_abc123 cs1Label=SessionID
 ```
 
 ## Compliance Requirements

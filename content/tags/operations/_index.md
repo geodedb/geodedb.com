@@ -603,7 +603,7 @@ Upgrade Geode without downtime:
 # rolling-upgrade.sh
 
 NODES=("geode-1" "geode-2" "geode-3")
-NEW_VERSION="0.19.0"
+NEW_VERSION="0.1.4"
 
 for node in "${NODES[@]}"; do
     echo "Upgrading $node..."
@@ -650,7 +650,7 @@ Use Ansible for configuration management:
   become: yes
 
   vars:
-    geode_version: "0.19.0"
+    geode_version: "0.1.4"
     geode_listen_addr: "0.0.0.0:3141"
     geode_data_dir: "/var/lib/geode/data"
     geode_max_connections: 1000

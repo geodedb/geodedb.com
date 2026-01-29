@@ -57,7 +57,7 @@ Geode uses a QUIC-based binary protocol for client-server communication. This do
 {
   "type": "HELLO",
   "client_name": "geode-client-go",
-  "client_version": "0.18.0",
+  "client_version": "0.1.3",
   "protocol_version": 1,
   "capabilities": ["streaming", "pagination", "transactions"]
 }
@@ -67,7 +67,7 @@ Geode uses a QUIC-based binary protocol for client-server communication. This do
 ```json
 {
   "type": "HELLO_ACK",
-  "server_version": "0.18.0",
+  "server_version": "0.1.3",
   "protocol_version": 1,
   "capabilities": ["streaming", "pagination", "transactions", "federation"]
 }

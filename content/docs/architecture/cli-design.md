@@ -731,5 +731,5 @@ All CLI subprocess elimination implementations include proper CANARY governance 
 ---
 
 **Last Updated:** January 24, 2026
-**Geode Version:** v0.18.0+
+**Geode Version:** v0.1.3+
 **Architecture Status:** Unified Binary v1.0 (Production Ready)

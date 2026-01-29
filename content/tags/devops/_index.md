@@ -60,7 +60,7 @@ stages:
   - deploy
 
 variables:
-  ZIG_VERSION: "0.15.1"
+  ZIG_VERSION: "0.1.0"
 
 # Build Geode
 build:
@@ -123,7 +123,7 @@ jobs:
       - name: Install Zig
         uses: goto-bus-stop/setup-zig@v2
         with:
-          version: 0.15.1
+          version: 0.1.0
 
       - name: Build Geode
         run: |
@@ -393,14 +393,14 @@ apt-get update
 apt-get install -y wget ca-certificates
 
 # Install Zig
-wget https://ziglang.org/download/0.15.1/zig-linux-x86_64-0.15.1.tar.xz
-tar -xf zig-linux-x86_64-0.15.1.tar.xz -C /opt
+wget https://ziglang.org/download/0.1.0/zig-linux-x86_64-0.1.0.tar.xz
+tar -xf zig-linux-x86_64-0.1.0.tar.xz -C /opt
 
 # Clone and build Geode
 cd /opt
 git clone https://github.com/codeprosorg/geode
 cd geode
-/opt/zig-linux-x86_64-0.15.1/zig build -Doptimize=ReleaseSafe
+/opt/zig-linux-x86_64-0.1.0/zig build -Doptimize=ReleaseSafe
 
 # Install as service
 cp zig-out/bin/geode /usr/local/bin/
@@ -420,7 +420,7 @@ Manage Geode configuration with Ansible:
   become: yes
 
   vars:
-    geode_version: "0.18.0"
+    geode_version: "0.1.3"
     geode_data_dir: "/var/lib/geode/data"
     geode_user: "geode"
 
@@ -476,7 +476,7 @@ version: '3.8'
 
 services:
   geode-primary:
-    image: geode:0.18.0
+    image: geode:0.1.3
     container_name: geode-primary
     ports:
       - "3141:3141/udp"
@@ -497,7 +497,7 @@ services:
       retries: 3
 
   geode-replica:
-    image: geode:0.18.0
+    image: geode:0.1.3
     container_name: geode-replica
     ports:
       - "3142:3141/udp"

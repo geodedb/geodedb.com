@@ -24,7 +24,7 @@ params:
 
 Geode provides comprehensive telemetry capabilities for production observability, including streaming paging events, Prometheus metrics integration, QUIC transport metrics, and customizable monitoring dashboards.
 
-**Version**: v0.16.0+ (includes QUIC+TLS metrics)
+**Version**: v0.1.1+ (includes QUIC+TLS metrics)
 
 ### What You'll Learn
 
@@ -37,7 +37,7 @@ Geode provides comprehensive telemetry capabilities for production observability
 
 ### Prerequisites
 
-- Geode v0.16.0+ installed
+- Geode v0.1.1+ installed
 - Basic understanding of metrics and monitoring
 - Prometheus and Grafana (optional, for integration sections)
 
@@ -169,7 +169,7 @@ make quic-smoke
 
 ## QUIC Transport Metrics
 
-**New in v0.16.0**: QUIC+TLS transport telemetry replaces TCP metrics.
+**New in v0.1.1**: QUIC+TLS transport telemetry replaces TCP metrics.
 
 ### QUIC Metrics
 
@@ -392,7 +392,7 @@ Geode includes pre-built Grafana dashboards:
 2. `geode-queries.json` - Query performance
 3. `geode-transactions.json` - Transaction monitoring
 4. `geode-storage.json` - Storage and I/O
-5. `geode-quic.json` - QUIC transport metrics (v0.16.0+)
+5. `geode-quic.json` - QUIC transport metrics (v0.1.1+)
 
 **Import Dashboard**:
 1. Dashboards → Import
@@ -445,7 +445,7 @@ Geode includes pre-built Grafana dashboards:
 }
 ```
 
-#### QUIC Transport Dashboard (v0.16.0+)
+#### QUIC Transport Dashboard (v0.1.1+)
 
 ```json
 {
@@ -876,7 +876,7 @@ groups:
 
 ---
 
-**Version**: v0.16.0+ (QUIC+TLS metrics)
+**Version**: v0.1.1+ (QUIC+TLS metrics)
 **Telemetry**: Optional streaming events (stderr JSON Lines)
 **Prometheus**: Full integration with 50+ metrics
 **Status**: Production-ready

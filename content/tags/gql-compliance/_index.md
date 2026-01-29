@@ -462,7 +462,7 @@ All documentation references ISO/IEC 39075:2024 sections:
 
 ## Compliance Statement
 
-> Geode Graph Database version 0.18.0 and later fully conforms to ISO/IEC 39075:2024 - Information technology — Database languages — GQL. All mandatory features are implemented, and all 70 official ISO conformance tests pass successfully.
+> Geode Graph Database version 0.1.3 and later fully conforms to ISO/IEC 39075:2024 - Information technology — Database languages — GQL. All mandatory features are implemented, and all 70 official ISO conformance tests pass successfully.
 
 ## Future Standards Tracking
 
@@ -622,7 +622,7 @@ jobs:
       - name: Setup Zig
         uses: goto-bus-stop/setup-zig@v2
         with:
-          version: 0.15.1
+          version: 0.1.0
       - name: Build Geode
         run: make build
       - name: Run ISO Compliance Tests
@@ -930,7 +930,7 @@ Track standard changes:
 ### 2024-12-01: Corrigendum 1 Published
 - **Section**: §11.3 (String functions)
 - **Change**: Clarify SUBSTRING parameter ordering
-- **Status**: Implemented in Geode v0.17.2
+- **Status**: Implemented in Geode v0.1.2
 - **Commit**: abc123def
 ```
 

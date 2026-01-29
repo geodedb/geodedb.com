@@ -22,9 +22,9 @@ The **Releases and Changelog** category documents the evolution of Geode across 
 
 ## Current Stable Release
 
-**Geode v0.18.0** (January 2026) - Production Ready
+**Geode v0.1.3** (January 2026) - Production Ready
 
-This is the current stable release with 100% ISO/IEC 39075:2024 GQL compliance, 97.4% test coverage (1644/1688 tests passing), and comprehensive enterprise features. Version 0.18.0 represents production-ready status with proven reliability, performance, and security.
+This is the current stable release with 100% ISO/IEC 39075:2024 GQL compliance, 97.4% test coverage (1644/1688 tests passing), and comprehensive enterprise features. Version 0.1.3 represents production-ready status with proven reliability, performance, and security.
 
 **Status**: Recommended for production deployments
 
@@ -38,7 +38,7 @@ This is the current stable release with 100% ISO/IEC 39075:2024 GQL compliance, 
 
 ## Version History
 
-### v0.18.0 - Production Ready (January 2026)
+### v0.1.3 - Production Ready (January 2026)
 
 **Major Features**:
 - 100% ISO/IEC 39075:2024 GQL compliance achieved
@@ -80,10 +80,10 @@ This is the current stable release with 100% ISO/IEC 39075:2024 GQL compliance, 
 
 **Upgrade Notes**:
 - First production-ready release
-- No breaking changes from v0.17.x
+- No breaking changes from v0.1.x
 - Recommended to upgrade all client libraries to latest versions
 
-### v0.17.0 - Pre-Production (December 2025)
+### v0.1.2 - Pre-Production (December 2025)
 
 **Major Features**:
 - Near-complete GQL compliance (68/70 tests passing)
@@ -108,12 +108,12 @@ This is the current stable release with 100% ISO/IEC 39075:2024 GQL compliance, 
 - Resolved race condition in concurrent index updates
 
 **Upgrade Notes**:
-- Update client libraries to v0.17.0+
+- Update client libraries to v0.1.2+
 - Migrate configuration files to new YAML format
 - Update firewall rules for port 3141
 - Test queries using variable-length paths (behavior refined)
 
-### v0.16.0 - Beta (November 2025)
+### v0.1.1 - Beta (November 2025)
 
 **Major Features**:
 - Initial vector search implementation
@@ -137,7 +137,7 @@ This is the current stable release with 100% ISO/IEC 39075:2024 GQL compliance, 
 - Review application code for removed compatibility features
 - Update authentication credentials if using custom auth
 
-### v0.15.0 - Alpha (October 2025)
+### v0.1.0 - Alpha (October 2025)
 
 **Major Features**:
 - Initial GQL implementation
@@ -199,7 +199,7 @@ Features follow a structured deprecation process:
 
 ## Long-Term Support (LTS)
 
-**Current LTS**: v0.18.x (January 2026 - January 2028)
+**Current LTS**: v0.1.x (January 2026 - January 2028)
 
 LTS releases receive:
 - **Security patches**: Critical vulnerabilities backported
@@ -209,11 +209,11 @@ LTS releases receive:
 
 ## Upgrade Guides
 
-### Upgrading from v0.17.x to v0.18.x
+### Upgrading from v0.1.x to v0.1.x
 
 **Prerequisites**:
-- Zig 0.15.1 or later for building from source
-- Client library updates to v0.18.0+
+- Zig 0.1.0 or later for building from source
+- Client library updates to v0.1.3+
 - Review breaking changes list
 
 **Steps**:
@@ -262,7 +262,7 @@ If issues arise, rollback to previous version:
 ./geode restore --input /backup/geode-backup-20250115.tar.gz
 
 # Start previous version
-./zig-out/bin/geode-v0.17.0 serve
+./zig-out/bin/geode-v0.1.2 serve
 ```
 
 ### Migration from Other Graph Databases
@@ -290,14 +290,14 @@ Each release provides:
 - Windows (x86_64)
 
 **Container Images**:
-- Docker Hub: `codepros/geode:v0.18.0`
+- Docker Hub: `codepros/geode:v0.1.3`
 - Alpine-based minimal image
 - Debian-based full image
 
 **Client Libraries**:
-- Go module: `geodedb.com/geode@v0.18.0`
-- Python package: `pip install geode-client==0.18.0`
-- Rust crate: `geode-client = "0.18.0"`
+- Go module: `geodedb.com/geode@v0.1.3`
+- Python package: `pip install geode-client==0.1.3`
+- Rust crate: `geode-client = "0.1.3"`
 - Zig package
 
 **Documentation**:
@@ -327,13 +327,13 @@ Security issues are disclosed through:
 
 Upcoming features planned for future releases:
 
-**v0.19.0 (Q2 2026)**:
+**v0.1.4 (Q2 2026)**:
 - Distributed graph storage and query execution
 - Horizontal scaling with automatic sharding
 - Read replicas for load distribution
 - Improved query optimizer with machine learning
 
-**v0.20.0 (Q3 2026)**:
+**v0.2.0 (Q3 2026)**:
 - Native graph algorithms library
 - Geospatial indexing and queries
 - Time-series graph optimizations
@@ -354,7 +354,7 @@ Upcoming features planned for future releases:
 
 ### Feature Matrix Across Versions
 
-| Feature | v0.15.0 | v0.16.0 | v0.17.0 | v0.18.0 |
+| Feature | v0.1.0 | v0.1.1 | v0.1.2 | v0.1.3 |
 |---------|---------|---------|---------|---------|
 | GQL Compliance | 45% | 68% | 97% | 100% |
 | Vector Search | - | Beta | Stable | Stable |
@@ -369,19 +369,19 @@ Upcoming features planned for future releases:
 
 ### Performance Improvements Timeline
 
-**v0.18.0 Performance Gains** (compared to v0.17.0):
+**v0.1.3 Performance Gains** (compared to v0.1.2):
 - Pattern matching: 25% faster
 - Index scans: 40% faster
 - Aggregations: 30% faster
 - Transaction commits: 15% faster
 - Memory usage: 20% reduction
 
-**v0.17.0 Performance Gains** (compared to v0.16.0):
+**v0.1.2 Performance Gains** (compared to v0.1.1):
 - Graph traversals: 50% faster
 - Query planning: 35% faster
 - Concurrent queries: 2x throughput
 
-**v0.16.0 Performance Gains** (compared to v0.15.0):
+**v0.1.1 Performance Gains** (compared to v0.1.0):
 - Pattern matching: 3x faster
 - Memory footprint: 50% smaller
 - Index creation: 4x faster
@@ -395,7 +395,7 @@ Upcoming features planned for future releases:
 # Blue-Green deployment for zero-downtime upgrade
 
 # Deploy new version alongside old
-docker run -d --name geode-green codepros/geode:v0.18.0
+docker run -d --name geode-green codepros/geode:v0.1.3
 
 # Replicate data from blue to green
 geode replicate --source geode-blue:3141 --target geode-green:3141
@@ -404,7 +404,7 @@ geode replicate --source geode-blue:3141 --target geode-green:3141
 geode verify --host geode-green:3141
 
 # Switch load balancer to green
-kubectl set image deployment/geode geode=codepros/geode:v0.18.0
+kubectl set image deployment/geode geode=codepros/geode:v0.1.3
 
 # Monitor for issues
 kubectl rollout status deployment/geode
@@ -418,7 +418,7 @@ docker rm geode-blue
 
 ```python
 async def migrate_v017_to_v018():
-    """Migrate data from v0.17.0 to v0.18.0."""
+    """Migrate data from v0.1.2 to v0.1.3."""
     # Connect to old and new instances
     old_client = geode_client.open_database("old-server:3141")
     new_client = geode_client.open_database("new-server:3141")
@@ -459,36 +459,36 @@ async def migrate_v017_to_v018():
 
 | Server Version | Go Client | Python Client | Rust Client | Zig Client |
 |----------------|-----------|---------------|-------------|------------|
-| v0.18.0 | v0.18.x | v0.18.x | v0.18.x | v0.18.x |
-| v0.17.0 | v0.17.x-v0.18.x | v0.17.x-v0.18.x | v0.17.x | v0.17.x |
-| v0.16.0 | v0.16.x | v0.16.x | v0.16.x | - |
+| v0.1.3 | v0.1.x | v0.1.x | v0.1.x | v0.1.x |
+| v0.1.2 | v0.1.x-v0.1.x | v0.1.x-v0.1.x | v0.1.x | v0.1.x |
+| v0.1.1 | v0.1.x | v0.1.x | v0.1.x | - |
 
 ## Known Issues and Workarounds
 
-### v0.18.0 Known Issues
+### v0.1.3 Known Issues
 
 **Issue #1**: Performance degradation with >100M nodes in distributed mode
 - **Workaround**: Use sharding key optimization
-- **Fix planned**: v0.19.0
+- **Fix planned**: v0.1.4
 - **Severity**: Medium
 
 **Issue #2**: Vector index creation slow for high dimensions (>512)
 - **Workaround**: Use lower dimensions or batch index creation
-- **Fix planned**: v0.18.1
+- **Fix planned**: v0.1.3
 - **Severity**: Low
 
 **Issue #3**: CDC stream lag under high write load
 - **Workaround**: Increase WAL buffer size
-- **Fix planned**: v0.18.1
+- **Fix planned**: v0.1.3
 - **Severity**: Medium
 
 ## Version Support Status
 
 | Version | Release Date | End of Support | Status |
 |---------|--------------|----------------|---------|
-| v0.18.x | Jan 2026 | Jan 2028 | LTS (Current) |
-| v0.17.x | Dec 2025 | Jun 2026 | Maintenance |
-| v0.16.x | Nov 2025 | Mar 2026 | Security Only |
+| v0.1.x | Jan 2026 | Jan 2028 | LTS (Current) |
+| v0.1.x | Dec 2025 | Jun 2026 | Maintenance |
+| v0.1.x | Nov 2025 | Mar 2026 | Security Only |
 | v0.15.x | Oct 2025 | Jan 2026 | EOL Soon |
 | v0.14.x and earlier | - | - | EOL |
 

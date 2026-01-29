@@ -39,19 +39,19 @@ Geode is designed for production graph applications across industries, from soci
 version: '3.8'
 services:
   geode-primary:
-    image: geodedb/geode:0.18.0
+    image: geodedb/geode:0.1.3
     command: serve --role primary --listen 0.0.0.0:3141
     volumes:
       - geode-primary-data:/data
 
   geode-replica-1:
-    image: geodedb/geode:0.18.0
+    image: geodedb/geode:0.1.3
     command: serve --role replica --primary geode-primary:3141
     volumes:
       - geode-replica-1-data:/data
 
   geode-replica-2:
-    image: geodedb/geode:0.18.0
+    image: geodedb/geode:0.1.3
     command: serve --role replica --primary geode-primary:3141
     volumes:
       - geode-replica-2-data:/data

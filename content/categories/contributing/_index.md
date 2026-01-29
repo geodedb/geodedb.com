@@ -27,7 +27,7 @@ This guide covers everything from setting up your development environment throug
 
 #### Prerequisites
 
-- **Zig 0.15.1+**: For server and Zig client development
+- **Zig 0.1.0+**: For server and Zig client development
 - **Go 1.24.0+**: For Go client development
 - **Python 3.9+**: For Python client development
 - **Rust 1.70+**: For Rust client development

@@ -380,8 +380,8 @@ geode recover \
 
 # Version compatibility
 geode restore --backup=/backups/geode-full.tar.gz \
-  --source-version=0.17.0 \
-  --target-version=0.18.0 \
+  --source-version=0.1.2 \
+  --target-version=0.1.3 \
   --migrate-schema=true
 ```
 

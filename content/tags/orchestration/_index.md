@@ -44,7 +44,7 @@ spec:
     spec:
       containers:
       - name: geode
-        image: codepros/geode:v0.18.0
+        image: codepros/geode:v0.1.3
         ports:
         - containerPort: 3141
           name: client
@@ -154,7 +154,7 @@ replicaCount: 3
 
 image:
   repository: codepros/geode
-  tag: v0.18.0
+  tag: v0.1.3
   pullPolicy: IfNotPresent
 
 resources:
@@ -315,7 +315,7 @@ metadata:
   namespace: geode
 spec:
   replicas: 5
-  version: v0.18.0
+  version: v0.1.3
   resources:
     memory: "32Gi"
     cpu: "8"
@@ -352,7 +352,7 @@ spec:
     metadata:
       labels:
         app: geode
-        version: v0.18.0
+        version: v0.1.3
       annotations:
         prometheus.io/scrape: "true"
         prometheus.io/port: "9090"
@@ -382,7 +382,7 @@ spec:
           privileged: true
       containers:
       - name: geode
-        image: codepros/geode:v0.18.0
+        image: codepros/geode:v0.1.3
         ports:
         - containerPort: 3141
           name: client
@@ -768,7 +768,7 @@ metadata:
     role: primary
 spec:
   replicas: 5
-  version: v0.18.0
+  version: v0.1.3
   region: us-east-1
   crossRegionReplication:
     enabled: true
@@ -789,7 +789,7 @@ metadata:
     role: replica
 spec:
   replicas: 3
-  version: v0.18.0
+  version: v0.1.3
   region: us-west-2
   crossRegionReplication:
     enabled: true
@@ -817,7 +817,7 @@ spec:
   - match:
     - headers:
         x-geode-version:
-          exact: v0.18.0
+          exact: v0.1.3
     route:
     - destination:
         host: geode.geode.svc.cluster.local
@@ -849,10 +849,10 @@ spec:
   subsets:
   - name: stable
     labels:
-      version: v0.18.0
+      version: v0.1.3
   - name: v0-18-0
     labels:
-      version: v0.18.0
+      version: v0.1.3
     trafficPolicy:
       connectionPool:
         tcp:

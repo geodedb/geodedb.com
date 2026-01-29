@@ -604,7 +604,7 @@ All data modifications logged with:
 
 ## Roadmap
 
-### Current (v0.18.0)
+### Current (v0.1.3)
 
 - Full GQL compliance (100%)
 - Row-level security

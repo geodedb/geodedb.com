@@ -677,7 +677,7 @@ Manage Geode servers from REPL:
 ```
 geode> \connect production-db.example.com:3141
 Connecting to production-db.example.com:3141...
-Connected to Geode v0.18.0 (cluster mode, 5 nodes)
+Connected to Geode v0.1.3 (cluster mode, 5 nodes)
 
 geode> \cluster status
 Cluster Status:

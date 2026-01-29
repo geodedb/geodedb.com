@@ -632,7 +632,7 @@ class ComplianceDocGenerator:
 
 ## Executive Summary
 
-Geode Graph Database v0.18.0 achieves **100% compliance** with ISO/IEC 39075:2024
+Geode Graph Database v0.1.3 achieves **100% compliance** with ISO/IEC 39075:2024
 (Graph Query Language) international standard.
 
 ## Test Results Summary

@@ -1916,6 +1916,6 @@ After successful deployment:
 ---
 
 *Last Updated: January 2026*
-*Geode Version: 0.18.0+*
+*Geode Version: 0.1.3+*
 *Status: Production Ready*
 

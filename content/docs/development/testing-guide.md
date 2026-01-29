@@ -132,8 +132,8 @@ make bench
 python3 --version  # Should be 3.9 or higher
 pip install pyyaml  # For geodetestlab
 
-# Zig 0.15.1+ for unit tests
-zig version  # Should be 0.15.1 or higher
+# Zig 0.1.0+ for unit tests
+zig version  # Should be 0.1.0 or higher
 
 # Build Geode binary
 make build
@@ -696,7 +696,7 @@ tests:
 ```yaml
 test-geodetestlab:
   stage: test
-  image: registry.gitlab.com/devnw/ci-catalog/zig:0.15.1
+  image: registry.gitlab.com/devnw/ci-catalog/zig:0.1.0
   before_script:
     - apt-get update && apt-get install -y python3 python3-pip
     - pip3 install pyyaml
@@ -1068,7 +1068,7 @@ zig build bench-query --output benchmark-results.json
     "os": "linux",
     "arch": "x86_64",
     "cpu": "Intel Core i7-9700K",
-    "zig_version": "0.15.1"
+    "zig_version": "0.1.0"
   }
 }
 ```
@@ -1195,7 +1195,7 @@ stages:
   - deploy
 
 variables:
-  ZIG_VERSION: "0.15.1"
+  ZIG_VERSION: "0.1.0"
   GEODE_LOG_LEVEL: "info"
 
 # Build stage
@@ -1317,7 +1317,7 @@ jobs:
       - uses: actions/checkout@v3
       - uses: goto-bus-stop/setup-zig@v2
         with:
-          version: 0.15.1
+          version: 0.1.0
       - name: Run unit tests
         run: make test
 
@@ -1327,7 +1327,7 @@ jobs:
       - uses: actions/checkout@v3
       - uses: goto-bus-stop/setup-zig@v2
         with:
-          version: 0.15.1
+          version: 0.1.0
       - uses: actions/setup-python@v4
         with:
           python-version: '3.9'
