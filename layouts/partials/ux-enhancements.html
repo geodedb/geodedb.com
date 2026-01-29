@@ -8,7 +8,10 @@
   <a class="skip-link visually-hidden-focusable" href="#mainNav">
     {{ i18n "skip_to_navigation" | default "Skip to navigation" }}
   </a>
-  {{ if .TableOfContents }}
+  {{/* Only show TOC skip link for pages with valid table of contents (not list pages) */}}
+  {{- $toc := .TableOfContents -}}
+  {{- $validToc := and $toc (and (ne $toc "<nav id=\"TableOfContents\"></nav>") (gt .WordCount 300)) -}}
+  {{- if and .IsPage $validToc }}
     <a class="skip-link visually-hidden-focusable" href="#docsTOC">
       {{ i18n "skip_to_toc" | default "Skip to table of contents" }}
     </a>
