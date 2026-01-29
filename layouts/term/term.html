@@ -1,0 +1,352 @@
+{{/* ──────────────────────────────────────────────────────────────
+  Taxonomy Term Layout - Matches documentation styling
+  - Clean header with breadcrumbs
+  - 3-column responsive layout like docs pages
+  - SEO optimized with structured data
+  ────────────────────────────────────────────────────────────────
+*/}}
+
+{{ define "main" }}
+
+{{ $container := partial "helpers/container.html" (dict "Page" .) }}
+
+{{/* Get taxonomy content file if it exists */}}
+{{ $taxonomyContent := "" }}
+{{ $taxonomyPage := "" }}
+{{ $hasDetailContent := false }}
+{{ $taxonomyPath := printf "%s/%s/" .Data.Plural (.Title | urlize) }}
+{{ range .Site.Pages }}
+  {{ if and .File (eq .File.Dir $taxonomyPath) }}
+    {{ $taxonomyContent = .Content }}
+    {{ $taxonomyPage = . }}
+    {{ $hasDetailContent = true }}
+    {{ break }}
+  {{ end }}
+{{ end }}
+
+{{/* Get description */}}
+{{ $description := "" }}
+{{ if $taxonomyPage }}
+  {{ if $taxonomyPage.Params.description }}
+    {{ $description = $taxonomyPage.Params.description }}
+  {{ else if $taxonomyPage.Summary }}
+    {{ $description = $taxonomyPage.Summary }}
+  {{ end }}
+{{ else if .Params.description }}
+  {{ $description = .Params.description }}
+{{ else if .Summary }}
+  {{ $description = .Summary }}
+{{ end }}
+
+<div class="docs-shell">
+  {{/* Clean header matching docs style */}}
+  <header class="docs-header bg-gradient py-4 border-bottom" role="banner">
+    <div class="{{ $container }} docs-header-inner">
+      <div class="row">
+        <div class="col-12">
+          {{/* Breadcrumb navigation */}}
+          {{ if .Site.Params.components.breadcrumb.visible }}
+            {{ partial "breadcrumb.html" . }}
+          {{ else }}
+            <nav aria-label="Breadcrumb" class="mb-2">
+              <ol class="breadcrumb small mb-0">
+                <li class="breadcrumb-item"><a href="/">Home</a></li>
+                <li class="breadcrumb-item"><a href="/{{ .Data.Plural }}/">{{ .Data.Plural | humanize }}</a></li>
+                <li class="breadcrumb-item active" aria-current="page">{{ .Title }}</li>
+              </ol>
+            </nav>
+          {{ end }}
+
+          {{/* Page title and description */}}
+          <div class="mt-3">
+            <div class="d-flex align-items-center gap-3 mb-2">
+              {{/* Taxonomy type badge */}}
+              <span class="badge bg-primary">
+                {{ if eq .Data.Plural "categories" }}
+                  <wa-icon name="folder-open" class="me-1" aria-hidden="true"></wa-icon>
+                  {{ i18n "category" | default "Category" }}
+                {{ else if eq .Data.Plural "tags" }}
+                  <wa-icon name="tag" class="me-1" aria-hidden="true"></wa-icon>
+                  {{ i18n "tag" | default "Tag" }}
+                {{ else }}
+                  <wa-icon name="bookmark" class="me-1" aria-hidden="true"></wa-icon>
+                  {{ .Data.Plural | humanize | singularize }}
+                {{ end }}
+              </span>
+              <span class="badge bg-secondary">
+                {{ .Pages.Len }} {{ if eq .Pages.Len 1 }}article{{ else }}articles{{ end }}
+              </span>
+            </div>
+
+            <h1 class="display-6 fw-bold mb-2" itemprop="headline">
+              {{ if $taxonomyPage }}{{ $taxonomyPage.Title }}{{ else }}{{ .Title }}{{ end }}
+            </h1>
+
+            {{ with $description }}
+              <p class="lead text-muted mb-0">{{ . | markdownify }}</p>
+            {{ end }}
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  {{/* Main content area - 3 column layout like docs */}}
+  <div class="{{ $container }} py-4 docs-main">
+    <div class="row">
+
+      {{/* LEFT SIDEBAR: Related Tags */}}
+      <aside class="col-12 col-lg-3 col-xl-2 order-0 mb-4 mb-lg-0" role="navigation" aria-label="Related topics">
+        {{/* Mobile toggle */}}
+        <div class="d-lg-none mb-3">
+          <button
+            class="btn btn-outline-secondary w-100 d-flex align-items-center justify-content-between"
+            type="button"
+            data-bs-toggle="collapse"
+            data-bs-target="#taxonomyNav"
+            aria-expanded="false"
+            aria-controls="taxonomyNav"
+          >
+            <span>
+              <wa-icon name="tags" class="me-2" aria-hidden="true"></wa-icon>
+              Related Topics
+            </span>
+            <wa-icon name="chevron-down" aria-hidden="true"></wa-icon>
+          </button>
+        </div>
+
+        <div class="collapse d-lg-block" id="taxonomyNav">
+          <div class="docs-sidebar-nav position-sticky" style="top: 1rem;">
+            {{/* Browse all link */}}
+            <div class="mb-4">
+              <a href="/{{ .Data.Plural }}/" class="btn btn-outline-primary btn-sm w-100">
+                <wa-icon name="compass" class="me-1" aria-hidden="true"></wa-icon>
+                Browse All {{ .Data.Plural | humanize }}
+              </a>
+            </div>
+
+            {{/* Related tags from same taxonomy */}}
+            {{ $currentTerm := .Title | lower }}
+            {{ $relatedTerms := slice }}
+            {{ range $name, $taxonomy := .Site.Taxonomies }}
+              {{ if eq $name $.Data.Plural }}
+                {{ range $term, $pages := $taxonomy }}
+                  {{ if and (ne ($term | lower) $currentTerm) (gt (len $pages) 0) }}
+                    {{ $relatedTerms = $relatedTerms | append (dict "name" $term "count" (len $pages)) }}
+                  {{ end }}
+                {{ end }}
+              {{ end }}
+            {{ end }}
+
+            {{ if $relatedTerms }}
+              <h6 class="text-uppercase text-muted small fw-semibold mb-3">
+                Other {{ .Data.Plural | humanize }}
+              </h6>
+              <ul class="list-unstyled taxonomy-nav-list">
+                {{ range first 15 (sort $relatedTerms "count" "desc") }}
+                  <li class="mb-2">
+                    <a href="/{{ $.Data.Plural }}/{{ .name | urlize }}/" class="text-decoration-none d-flex justify-content-between align-items-center">
+                      <span>{{ .name | humanize | title }}</span>
+                      <span class="badge bg-light text-muted">{{ .count }}</span>
+                    </a>
+                  </li>
+                {{ end }}
+              </ul>
+            {{ end }}
+
+            {{/* RSS Feed */}}
+            <div class="mt-4 pt-3 border-top">
+              <a href="{{ .Permalink }}index.xml" class="btn btn-sm btn-outline-secondary w-100" rel="alternate" type="application/rss+xml">
+                <wa-icon name="rss" class="me-1" aria-hidden="true"></wa-icon>
+                RSS Feed
+              </a>
+            </div>
+          </div>
+        </div>
+      </aside>
+
+      {{/* MAIN CONTENT */}}
+      <div class="col-12 col-lg-6 col-xl-7 order-1">
+        <article class="docs-content" itemscope itemtype="https://schema.org/CollectionPage">
+
+          {{/* Rich content from taxonomy _index.md */}}
+          {{ if $hasDetailContent }}
+            <div class="article-body mb-5" itemprop="mainEntity">
+              {{ $taxonomyContent }}
+            </div>
+            <hr class="my-5">
+          {{ end }}
+
+          {{/* Articles list */}}
+          <section class="taxonomy-articles">
+            <h2 class="h4 mb-4">
+              <wa-icon name="file-lines" class="me-2 text-primary" aria-hidden="true"></wa-icon>
+              {{ if $hasDetailContent }}Related Articles{{ else }}Articles tagged "{{ .Title }}"{{ end }}
+            </h2>
+
+            {{ $perPage := default 20 .Site.Params.taxonomyPaginate }}
+            {{ $paginator := .Paginate .Pages.ByDate.Reverse $perPage }}
+
+            {{ if eq $paginator.Pages.Len 0 }}
+              <div class="text-center py-5 text-muted">
+                <wa-icon name="folder-open" class="mb-3" style="font-size: 3rem;" aria-hidden="true"></wa-icon>
+                <p>No articles found with this tag yet.</p>
+                <a href="/" class="btn btn-primary">
+                  <wa-icon name="home" class="me-1" aria-hidden="true"></wa-icon>
+                  Back to Home
+                </a>
+              </div>
+            {{ else }}
+              <div class="list-group list-group-flush">
+                {{ range $paginator.Pages }}
+                  <a href="{{ .Permalink }}" class="list-group-item list-group-item-action border-0 px-0 py-3">
+                    <div class="d-flex w-100 justify-content-between align-items-start">
+                      <div class="flex-grow-1">
+                        <h3 class="h6 mb-1 fw-semibold">{{ .Title }}</h3>
+                        {{ with .Description }}
+                          <p class="mb-1 text-muted small">{{ . | truncate 120 }}</p>
+                        {{ else }}
+                          {{ with .Summary }}
+                            <p class="mb-1 text-muted small">{{ . | plainify | truncate 120 }}</p>
+                          {{ end }}
+                        {{ end }}
+                        <div class="d-flex gap-3 text-muted small">
+                          {{ with .Section }}
+                            <span class="badge bg-light text-dark">{{ . | humanize }}</span>
+                          {{ end }}
+                          {{ if .ReadingTime }}
+                            <span>
+                              <wa-icon name="clock" class="me-1" aria-hidden="true"></wa-icon>
+                              {{ .ReadingTime }} min read
+                            </span>
+                          {{ end }}
+                        </div>
+                      </div>
+                      <wa-icon name="chevron-right" class="text-muted ms-3 flex-shrink-0" aria-hidden="true"></wa-icon>
+                    </div>
+                  </a>
+                {{ end }}
+              </div>
+
+              {{/* Pagination */}}
+              {{ if gt $paginator.TotalPages 1 }}
+                <nav class="mt-4" aria-label="Pagination">
+                  {{ partial "pagination.html" (dict "paginator" $paginator "aria" "Page navigation") }}
+                </nav>
+              {{ end }}
+            {{ end }}
+          </section>
+        </article>
+      </div>
+
+      {{/* RIGHT SIDEBAR: Table of Contents */}}
+      <aside class="col-lg-3 order-2 d-none d-lg-block" role="complementary" aria-label="On this page">
+        <div class="docs-toc position-sticky" style="top: 1rem; max-height: calc(100vh - 2rem); overflow-y: auto;">
+          {{ if $hasDetailContent }}
+            {{/* TOC from content */}}
+            {{ if $taxonomyPage }}
+              {{ partial "docs/toc-enhanced" $taxonomyPage }}
+            {{ end }}
+          {{ end }}
+
+          {{/* Quick stats */}}
+          <div class="card border-0 bg-light mt-4">
+            <div class="card-body">
+              <h6 class="text-uppercase text-muted small fw-semibold mb-3">Quick Stats</h6>
+              <div class="d-flex justify-content-between py-2 border-bottom">
+                <span class="text-muted small">Total Articles</span>
+                <strong>{{ .Pages.Len }}</strong>
+              </div>
+              {{ if $taxonomyPage }}
+                {{ with $taxonomyPage.WordCount }}
+                  {{ if gt . 0 }}
+                    <div class="d-flex justify-content-between py-2 border-bottom">
+                      <span class="text-muted small">Guide Words</span>
+                      <strong>{{ . }}</strong>
+                    </div>
+                  {{ end }}
+                {{ end }}
+                {{ with $taxonomyPage.ReadingTime }}
+                  {{ if gt . 0 }}
+                    <div class="d-flex justify-content-between py-2">
+                      <span class="text-muted small">Reading Time</span>
+                      <strong>{{ . }} min</strong>
+                    </div>
+                  {{ end }}
+                {{ end }}
+              {{ end }}
+            </div>
+          </div>
+
+          {{/* Keywords if available */}}
+          {{ if $taxonomyPage }}
+            {{ with $taxonomyPage.Params.keywords }}
+              <div class="mt-4">
+                <h6 class="text-uppercase text-muted small fw-semibold mb-3">Keywords</h6>
+                <div class="d-flex flex-wrap gap-1">
+                  {{ range first 8 . }}
+                    <span class="badge bg-light text-muted small">{{ . }}</span>
+                  {{ end }}
+                </div>
+              </div>
+            {{ end }}
+          {{ end }}
+        </div>
+      </aside>
+
+    </div>
+  </div>
+</div>
+
+{{/* Structured data for SEO */}}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "CollectionPage",
+  "name": {{ .Title | jsonify }},
+  "description": {{ $description | jsonify }},
+  "url": {{ .Permalink | jsonify }},
+  "numberOfItems": {{ .Pages.Len }},
+  "mainEntity": {
+    "@type": "ItemList",
+    "numberOfItems": {{ .Pages.Len }},
+    "itemListElement": [
+      {{ range $index, $page := first 10 .Pages }}
+      {{ if $index }},{{ end }}
+      {
+        "@type": "ListItem",
+        "position": {{ add $index 1 }},
+        "url": {{ $page.Permalink | jsonify }},
+        "name": {{ $page.Title | jsonify }}
+      }
+      {{ end }}
+    ]
+  }
+}
+</script>
+
+<style>
+  .taxonomy-nav-list a {
+    color: inherit;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+    margin: 0 -0.5rem;
+    display: flex;
+  }
+  .taxonomy-nav-list a:hover {
+    background: var(--bs-light);
+    color: var(--bs-primary);
+  }
+  .list-group-item-action:hover {
+    background: var(--bs-light);
+  }
+  .list-group-item-action h3 {
+    color: inherit;
+    transition: color 0.15s ease;
+  }
+  .list-group-item-action:hover h3 {
+    color: var(--bs-primary);
+  }
+</style>
+
+{{ end }}
