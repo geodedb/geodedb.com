@@ -20,6 +20,165 @@ keywords:
 
 This guide covers monitoring Geode in production: built-in metrics, Prometheus integration, Grafana dashboards, alerting strategies, and performance monitoring.
 
+## Quick Start: Docker Compose Monitoring Stack
+
+Get a complete monitoring stack running in minutes with Docker Compose.
+
+### Complete Docker Compose Setup
+
+Create a `docker-compose.monitoring.yml`:
+
+```yaml
+version: '3.8'
+
+services:
+  geode:
+    image: geodedb/geode:latest
+    command: serve --listen 0.0.0.0:3141
+    ports:
+      - "3141:3141"
+      - "9090:9090"  # Metrics endpoint
+    volumes:
+      - geode-data:/var/lib/geode
+      - ./geode.yaml:/etc/geode/geode.yaml:ro
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  prometheus:
+    image: prom/prometheus:latest
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.enable-lifecycle'
+    ports:
+      - "9091:9090"
+    depends_on:
+      - geode
+
+  grafana:
+    image: grafana/grafana:latest
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+    ports:
+      - "3000:3000"
+    depends_on:
+      - prometheus
+
+volumes:
+  geode-data:
+  prometheus-data:
+  grafana-data:
+```
+
+### Geode Configuration for Metrics
+
+Create `geode.yaml`:
+
+```yaml
+# Geode server configuration with metrics enabled
+server:
+  listen: "0.0.0.0:3141"
+  data_dir: "/var/lib/geode/data"
+
+metrics:
+  enabled: true
+  listen: "0.0.0.0:9090"
+  path: "/metrics"
+
+http:
+  enabled: true
+  listen: "0.0.0.0:8080"
+```
+
+### Prometheus Configuration
+
+Create `prometheus.yml`:
+
+```yaml
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: []
+
+rule_files: []
+
+scrape_configs:
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  - job_name: 'geode'
+    static_configs:
+      - targets: ['geode:9090']
+    scrape_interval: 10s
+    metrics_path: /metrics
+```
+
+### Grafana Datasource Provisioning
+
+Create `grafana/provisioning/datasources/prometheus.yml`:
+
+```yaml
+apiVersion: 1
+
+datasources:
+  - name: Prometheus
+    type: prometheus
+    access: proxy
+    url: http://prometheus:9090
+    isDefault: true
+    editable: false
+```
+
+### Launch the Stack
+
+```bash
+# Start all services
+docker compose -f docker-compose.monitoring.yml up -d
+
+# Verify services are running
+docker compose -f docker-compose.monitoring.yml ps
+
+# View logs
+docker compose -f docker-compose.monitoring.yml logs -f
+```
+
+### Access the Services
+
+| Service | URL | Credentials |
+|---------|-----|-------------|
+| Geode | `localhost:3141` | - |
+| Geode Metrics | `localhost:9090/metrics` | - |
+| Prometheus | `localhost:9091` | - |
+| Grafana | `localhost:3000` | admin/admin |
+
+### Verify Metrics Collection
+
+```bash
+# Check Geode metrics directly
+curl http://localhost:9090/metrics | head -50
+
+# Check Prometheus targets
+curl http://localhost:9091/api/v1/targets | jq .
+
+# Should show geode target as "up"
+```
+
 ## Built-in Metrics
 
 ### Metrics Endpoint
