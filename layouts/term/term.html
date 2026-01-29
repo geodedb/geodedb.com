@@ -10,33 +10,11 @@
 
 {{ $container := partial "helpers/container.html" (dict "Page" .) }}
 
-{{/* Get taxonomy content file if it exists */}}
-{{ $taxonomyContent := "" }}
-{{ $taxonomyPage := "" }}
-{{ $hasDetailContent := false }}
-{{ $taxonomyPath := printf "%s/%s/" .Data.Plural (.Title | urlize) }}
-{{ range .Site.Pages }}
-  {{ if and .File (eq .File.Dir $taxonomyPath) }}
-    {{ $taxonomyContent = .Content }}
-    {{ $taxonomyPage = . }}
-    {{ $hasDetailContent = true }}
-    {{ break }}
-  {{ end }}
-{{ end }}
+{{/* For taxonomy terms, content is directly available on the page context */}}
+{{ $hasDetailContent := gt (len .Content) 0 }}
 
 {{/* Get description */}}
-{{ $description := "" }}
-{{ if $taxonomyPage }}
-  {{ if $taxonomyPage.Params.description }}
-    {{ $description = $taxonomyPage.Params.description }}
-  {{ else if $taxonomyPage.Summary }}
-    {{ $description = $taxonomyPage.Summary }}
-  {{ end }}
-{{ else if .Params.description }}
-  {{ $description = .Params.description }}
-{{ else if .Summary }}
-  {{ $description = .Summary }}
-{{ end }}
+{{ $description := .Params.description | default .Summary | default "" }}
 
 <div class="docs-shell">
   {{/* Clean header matching docs style */}}
@@ -79,7 +57,7 @@
             </div>
 
             <h1 class="display-6 fw-bold mb-2" itemprop="headline">
-              {{ if $taxonomyPage }}{{ $taxonomyPage.Title }}{{ else }}{{ .Title }}{{ end }}
+              {{ .Title }}
             </h1>
 
             {{ with $description }}
@@ -172,7 +150,7 @@
           {{/* Rich content from taxonomy _index.md */}}
           {{ if $hasDetailContent }}
             <div class="article-body mb-5" itemprop="mainEntity">
-              {{ $taxonomyContent }}
+              {{ .Content }}
             </div>
             <hr class="my-5">
           {{ end }}
@@ -244,9 +222,7 @@
         <div class="docs-toc position-sticky" style="top: 1rem; max-height: calc(100vh - 2rem); overflow-y: auto;">
           {{ if $hasDetailContent }}
             {{/* TOC from content */}}
-            {{ if $taxonomyPage }}
-              {{ partial "docs/toc-enhanced" $taxonomyPage }}
-            {{ end }}
+            {{ partial "docs/toc-enhanced" . }}
           {{ end }}
 
           {{/* Quick stats */}}
@@ -257,39 +233,35 @@
                 <span class="text-muted small">Total Articles</span>
                 <strong>{{ .Pages.Len }}</strong>
               </div>
-              {{ if $taxonomyPage }}
-                {{ with $taxonomyPage.WordCount }}
-                  {{ if gt . 0 }}
-                    <div class="d-flex justify-content-between py-2 border-bottom">
-                      <span class="text-muted small">Guide Words</span>
-                      <strong>{{ . }}</strong>
-                    </div>
-                  {{ end }}
+              {{ with .WordCount }}
+                {{ if gt . 0 }}
+                  <div class="d-flex justify-content-between py-2 border-bottom">
+                    <span class="text-muted small">Guide Words</span>
+                    <strong>{{ . }}</strong>
+                  </div>
                 {{ end }}
-                {{ with $taxonomyPage.ReadingTime }}
-                  {{ if gt . 0 }}
-                    <div class="d-flex justify-content-between py-2">
-                      <span class="text-muted small">Reading Time</span>
-                      <strong>{{ . }} min</strong>
-                    </div>
-                  {{ end }}
+              {{ end }}
+              {{ with .ReadingTime }}
+                {{ if gt . 0 }}
+                  <div class="d-flex justify-content-between py-2">
+                    <span class="text-muted small">Reading Time</span>
+                    <strong>{{ . }} min</strong>
+                  </div>
                 {{ end }}
               {{ end }}
             </div>
           </div>
 
           {{/* Keywords if available */}}
-          {{ if $taxonomyPage }}
-            {{ with $taxonomyPage.Params.keywords }}
-              <div class="mt-4">
-                <h6 class="text-uppercase text-muted small fw-semibold mb-3">Keywords</h6>
-                <div class="d-flex flex-wrap gap-1">
-                  {{ range first 8 . }}
-                    <span class="badge bg-light text-muted small">{{ . }}</span>
-                  {{ end }}
-                </div>
+          {{ with .Params.keywords }}
+            <div class="mt-4">
+              <h6 class="text-uppercase text-muted small fw-semibold mb-3">Keywords</h6>
+              <div class="d-flex flex-wrap gap-1">
+                {{ range first 8 . }}
+                  <span class="badge bg-light text-muted small">{{ . }}</span>
+                {{ end }}
               </div>
-            {{ end }}
+            </div>
           {{ end }}
         </div>
       </aside>
