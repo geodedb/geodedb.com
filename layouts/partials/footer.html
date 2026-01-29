@@ -146,22 +146,37 @@
     {{/* Bottom bar */}}
     <div class="footer-bottom py-4">
       <div class="row align-items-center">
-        <div class="col-md-6 mb-3 mb-md-0">
+        <div class="col-lg-5 mb-3 mb-lg-0">
           <p class="small text-white-50 mb-0">
             &copy; {{ now.Year }} <a href="https://codepros.org" target="_blank" rel="noopener" class="text-white-50 text-decoration-none">CodePros</a>.
             Licensed under <a href="https://www.apache.org/licenses/LICENSE-2.0" target="_blank" rel="noopener" class="text-white-50">Apache 2.0</a>.
           </p>
         </div>
-        <div class="col-md-6 text-md-end">
-          <div class="d-flex justify-content-md-end align-items-center gap-3">
+        <div class="col-lg-7 text-lg-end">
+          <div class="d-flex flex-wrap justify-content-lg-end align-items-center gap-2 gap-md-3">
+            {{/* Feeds */}}
+            <a href="/index.xml" class="footer-meta-link" rel="alternate" type="application/rss+xml" title="RSS Feed">
+              <wa-icon name="rss" aria-hidden="true"></wa-icon>
+              <span>RSS</span>
+            </a>
+            <a href="/index.xml" class="footer-meta-link" rel="alternate" type="application/atom+xml" title="Atom Feed">
+              <wa-icon name="rss" aria-hidden="true"></wa-icon>
+              <span>Atom</span>
+            </a>
+            <a href="/sitemap.xml" class="footer-meta-link" title="Sitemap">
+              <wa-icon name="sitemap" aria-hidden="true"></wa-icon>
+              <span>Sitemap</span>
+            </a>
+            <span class="text-white-50 d-none d-md-inline">•</span>
+            {{/* Built with */}}
             <span class="small text-white-50">Built with</span>
-            <a href="https://gohugo.io" target="_blank" rel="noopener" class="text-white-50 text-decoration-none small">
+            <a href="https://gohugo.io" target="_blank" rel="noopener" class="footer-meta-link">
               Hugo
             </a>
-            <span class="text-white-50">•</span>
-            <a href="https://gitlab.com/devnw/codepros/geode/geode" target="_blank" rel="noopener" class="text-white-50 text-decoration-none small d-flex align-items-center gap-1">
-              View Source
-              <wa-icon name="gitlab" class="small" aria-hidden="true" family="brands"></wa-icon>
+            <span class="text-white-50 d-none d-md-inline">•</span>
+            <a href="https://gitlab.com/devnw/codepros/geode/geode" target="_blank" rel="noopener" class="footer-meta-link">
+              <span>Source</span>
+              <wa-icon name="gitlab" aria-hidden="true" family="brands"></wa-icon>
             </a>
           </div>
         </div>
@@ -251,6 +266,25 @@
 
   .footer-bottom {
     border-top-color: rgba(156, 77, 255, 0.3) !important;
+  }
+
+  .footer-meta-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    color: rgba(243, 229, 245, 0.7);
+    text-decoration: none;
+    font-size: 0.8125rem;
+    transition: color 0.15s ease;
+  }
+
+  .footer-meta-link:hover {
+    color: #ffffff;
+    text-decoration: none;
+  }
+
+  .footer-meta-link wa-icon {
+    font-size: 0.875rem;
   }
 
   /* Light mode footer adjustments - matches header theme */
