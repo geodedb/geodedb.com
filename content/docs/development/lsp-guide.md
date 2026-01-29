@@ -41,6 +41,106 @@ Geode provides a complete Language Server Protocol (LSP) implementation for GQL 
 - For VS Code: Node.js and npm
 - For Neovim: nvim-lspconfig plugin
 
+## Starting Language Servers
+
+Geode provides two language server modes: LSP for IDE integration and MCP for AI assistant integration.
+
+### LSP Server (Language Server Protocol)
+
+The LSP server provides IDE features like autocomplete, hover documentation, and diagnostics.
+
+```bash
+# Start the LSP server (communicates via stdin/stdout)
+geode lsp
+
+# With verbose logging
+geode lsp --verbose
+
+# Specify log file for debugging
+geode lsp --log-file=/tmp/geode-lsp.log
+```
+
+The LSP server is typically launched automatically by your IDE, but you can test it manually:
+
+```bash
+# Test LSP initialization
+echo '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"capabilities":{}}}' | geode lsp
+```
+
+### MCP Server (Model Context Protocol)
+
+The MCP server provides AI assistants (like Claude) with direct access to Geode.
+
+```bash
+# Start the MCP server
+geode mcp serve
+
+# Connect to a specific Geode instance
+geode mcp serve --host localhost --port 3141
+
+# With authentication
+geode mcp serve --host localhost --port 3141 --user admin --password secret
+
+# With verbose output
+geode mcp serve --verbose
+```
+
+**MCP Server Configuration via environment variables:**
+
+```bash
+# Set connection details via environment
+export GEODE_HOST=localhost
+export GEODE_PORT=3141
+export GEODE_USER=admin
+export GEODE_PASSWORD=secret
+
+geode mcp serve
+```
+
+### Running Both Servers
+
+For full development experience with both IDE support and AI assistance:
+
+```bash
+# Terminal 1: Start Geode database server
+geode serve --listen 0.0.0.0:3141
+
+# Terminal 2: Your IDE uses LSP (automatically started)
+# Configure your IDE to run: geode lsp
+
+# Terminal 3: AI assistant uses MCP
+geode mcp serve --host localhost --port 3141
+```
+
+### Claude Code Integration
+
+To use Geode with Claude Code:
+
+1. **Configure MCP in Claude settings:**
+
+```json
+{
+  "mcpServers": {
+    "geode": {
+      "command": "geode",
+      "args": ["mcp", "serve", "--host", "localhost", "--port", "3141"]
+    }
+  }
+}
+```
+
+2. **Or use the Geode Claude plugin:**
+
+```bash
+# Install the plugin
+claude plugins install geode-claude-plugin
+
+# Or run with local plugin directory
+claude --plugin-dir ./geode-claude-plugin
+```
+
+See the [Claude Code Plugin](/plugins/claude/) documentation for more details.
+
 ## Architecture
 
 ### Components
