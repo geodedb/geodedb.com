@@ -21,25 +21,24 @@ Welcome to the complete documentation for Geode, an enterprise-ready graph datab
 
 ### Getting Started
 
-- **[Installation](installation/)** - Install Geode from source or Docker
-  - [From Source](/docs/installation/from-source/) - Build with Zig compiler
-- **[Getting Started](getting-started/)** - First steps with Geode
+- **[Installation](/guides/installation/)** - Install Geode from source or Docker
+- **[Getting Started](/docs/getting-started/)** - First steps with Geode
 
 ### Core Documentation
 
-- **[GQL Reference](gql-reference/)** - Complete query language reference with pattern matching, aggregations, and set operations
-- **[Data Types](data-types/)** - 50+ specialized types including vectors, geographic, network, and cryptographic
-- **[API Reference](api-reference/)** - Functions, operators, and system procedures
-- **[Configuration](configuration/)** - Complete server and client configuration reference
+- **[GQL Reference](/docs/gql-reference/)** - Complete query language reference with pattern matching, aggregations, and set operations
+- **[Data Model and Types](/docs/model/data-model-and-types/)** - 50+ specialized types including vectors, geographic, network, and cryptographic
+- **[API Reference](/docs/api-reference/)** - Functions, operators, and system procedures
+- **[Configuration](/docs/configuration/)** - Complete server and client configuration reference
 
 ### Architecture and Performance
 
-- **[Architecture](architecture/)** - System architecture, storage engine, and distributed systems
-- **[Performance Tuning](performance/)** - Query optimization, configuration tuning, and hardware recommendations
+- **[Architecture](/docs/architecture/)** - System architecture, storage engine, and distributed systems
+- **[Performance](/docs/performance/)** - Query optimization, configuration tuning, and hardware recommendations
 
 ### Client Libraries
 
-- **[Client Libraries](client-libraries/)** - Official libraries for Go, Python, Rust, Node.js, and Zig
+- **[Client Libraries](/docs/client-libraries/)** - Official libraries for Go, Python, Rust, Node.js, and Zig
   - [Go Client](/docs/client-libraries/go-client/) - Production-ready database/sql driver
   - [Python Client](/docs/client-libraries/python-client/) - Async Python with type hints
   - [Rust Client](/docs/client-libraries/rust-client/) - High-performance type-safe client
