@@ -1,0 +1,726 @@
+{{/* Enhanced Open Graph Protocol Implementation with Git-based Dates
+  Supports all OGP specification requirements and optional metadata
+  Based on Open Graph Protocol v1.0 (https://ogp.me/)
+
+  This override uses .GitInfo for accurate modification dates when available.
+*/}}
+
+{{/* Site-wide defaults from the config */}}
+{{ $siteDefaultMeta := $.Site.Params.meta | default dict }}
+{{ $ogDefaults := $siteDefaultMeta.og | default dict }}
+
+{{/* Section specific defaults */}}
+{{ $section := $.Site.GetPage "section" .Section }}
+{{ $sectionMeta := dict }}
+{{ if $section }}
+  {{ $sectionMetaTmp := $section.Params.meta | default dict }}
+  {{ $sectionMeta = $sectionMetaTmp }}
+{{ end }}
+
+{{/* Page specific meta tags */}}
+{{ $pageMetaTmp := .Params.meta | default dict }}
+{{ $pageMeta := $pageMetaTmp }}
+
+{{/* Combine all the meta values: site, section, then page (with increasing precedence) */}}
+{{ $combinedMeta := merge (merge $siteDefaultMeta $sectionMeta) $pageMeta }}
+{{ $ogMeta := $combinedMeta.og | default $ogDefaults }}
+
+{{/* Cache common values */}}
+{{ $permalink := .Permalink }}
+{{ if .Params.canonicalURL }}
+  {{ $permalink = .Params.canonicalURL }}
+{{ else if .Params.canonical }}
+  {{ $permalink = .Params.canonical }}
+{{ end }}
+
+{{ $relPermalink := .RelPermalink }}
+{{ $pageTitle := .Title }}
+
+{{/* Enhanced description inheritance */}}
+{{ $pageDescription := "" }}
+{{ with .Description }}
+  {{ $pageDescription = . }}
+{{ else }}
+  {{ with .Summary }}
+    {{ $pageDescription = . }}
+  {{ else }}
+    {{ with .Params.excerpt }}
+      {{ $pageDescription = . }}
+    {{ else }}
+      {{ with .Params.summary }}
+        {{ $pageDescription = . }}
+      {{ else }}
+        {{ $pageDescription = .Site.Params.description | default "" }}
+      {{ end }}
+    {{ end }}
+  {{ end }}
+{{ end }}
+
+{{ $siteTitle := .Site.Title }}
+{{ $siteName := .Site.Params.sitename | default .Site.Title }}
+
+{{/* ═══════════════════════════════════════════════════════════════
+  GIT-BASED DATE HANDLING
+  Uses GitInfo when available for accurate modification dates.
+  Falls back to frontmatter dates when git info is unavailable.
+  ═══════════════════════════════════════════════════════════════
+*/}}
+
+{{/* Published time - use frontmatter date, or fallback to git author date */}}
+{{ $publishedTime := "" }}
+{{ if not .Date.IsZero }}
+  {{ $publishedTime = .Date.Format "2006-01-02T15:04:05Z0700" }}
+{{ else if .GitInfo }}
+  {{/* For new pages without a date, use the git author date */}}
+  {{ $publishedTime = .GitInfo.AuthorDate.Format "2006-01-02T15:04:05Z0700" }}
+{{ end }}
+
+{{/* Modified time - prefer GitInfo.AuthorDate (most accurate), then .Lastmod */}}
+{{ $modifiedTime := "" }}
+{{ if .GitInfo }}
+  {{/* GitInfo provides the most accurate last modification date from git */}}
+  {{ $modifiedTime = .GitInfo.AuthorDate.Format "2006-01-02T15:04:05Z0700" }}
+{{ else if not .Lastmod.IsZero }}
+  {{ $modifiedTime = .Lastmod.Format "2006-01-02T15:04:05Z0700" }}
+{{ else if not .Date.IsZero }}
+  {{ $modifiedTime = .Date.Format "2006-01-02T15:04:05Z0700" }}
+{{ end }}
+
+{{/* ═══════════════════════════════════════════════════════════════
+  REQUIRED OPEN GRAPH PROPERTIES (Basic Metadata)
+  ═══════════════════════════════════════════════════════════════
+*/}}
+
+{{/* og:title - REQUIRED */}}
+{{ $ogTitle := $ogMeta.title | default $pageTitle }}
+{{ if eq $ogTitle "inherit" }}
+  {{ $ogTitle = $pageTitle }}
+{{ end }}
+<meta property="og:title" content="{{ $ogTitle }}" />
+
+{{/* og:type - REQUIRED */}}
+{{ $ogType := $ogMeta.type | default "website" }}
+{{ if .IsPage }}
+  {{ if eq .Type "authors" }}
+    {{ $ogType = "profile" }}
+  {{ else if or (eq .Type "blog") (eq .Type "articles") (eq .Type "events") }}
+    {{ $ogType = "article" }}
+  {{ else }}
+    {{ $ogType = $ogMeta.type | default "website" }}
+  {{ end }}
+{{ end }}
+<meta property="og:type" content="{{ $ogType }}" />
+
+{{/* og:url - REQUIRED */}}
+{{ $ogUrl := $ogMeta.url | default $permalink }}
+{{ if or (eq $ogUrl "inherit") (eq $ogUrl "") }}
+  {{ $ogUrl = $permalink }}
+{{ else }}
+  {{ $ogUrl = $ogUrl | absURL }}
+{{ end }}
+<meta property="og:url" content="{{ $ogUrl }}" />
+
+{{/* og:image - REQUIRED (process images array or single image) */}}
+{{ $ogImages := $ogMeta.images | default slice }}
+{{ if not $ogImages }}
+  {{ with $ogMeta.image }}
+    {{ $ogImages = slice (dict "url" .) }}
+  {{ end }}
+{{ end }}
+
+{{/* Fallback 1: use explicit image parameter from page params */}}
+{{ if not $ogImages }}
+  {{ with .Params.image }}
+    {{ $ogImages = slice (dict "url" .) }}
+  {{ end }}
+{{ end }}
+
+{{/* Fallback 2: use profile_image or avatar from page params (incl. page bundle resources) */}}
+{{ if not $ogImages }}
+  {{ $img := "" }}
+  {{ with .Params.profile_image }}
+    {{ $img = . }}
+  {{ else }}
+    {{ with .Params.avatar }}
+      {{ $img = . }}
+    {{ end }}
+  {{ end }}
+  {{ if $img }}
+    {{ $resolved := "" }}
+    {{ if or (hasPrefix $img "http://") (hasPrefix $img "https://") }}
+      {{ $resolved = $img }}
+    {{ else if hasPrefix $img "/" }}
+      {{ $resolved = ($img | absURL) }}
+    {{ else }}
+      {{ if .Resources }}
+        {{ with .Resources.GetMatch $img }}
+          {{ $resolved = .Permalink }}
+        {{ else }}
+          {{ with .Resources.GetMatch (printf "**/%s" (path.Base $img)) }}
+            {{ $resolved = .Permalink }}
+          {{ else }}
+            {{ $resolved = ($img | absURL) }}
+          {{ end }}
+        {{ end }}
+      {{ else }}
+        {{ $resolved = ($img | absURL) }}
+      {{ end }}
+    {{ end }}
+    {{ if $resolved }}
+      {{ $ogImages = slice (dict "url" $resolved "alt" (.Params.image_alt | default "")) }}
+    {{ end }}
+  {{ end }}
+{{ end }}
+
+{{/* Fallback 3: look for common image files in page bundle */}}
+{{ if not $ogImages }}
+  {{ if .Resources }}
+    {{ $imageExtensions := slice "jpg" "jpeg" "png" "webp" "gif" "svg" }}
+    {{ $commonNames := slice "featured" "cover" "header" "hero" "banner" "thumbnail" "thumb" "og" "social" }}
+    {{ range $name := $commonNames }}
+      {{ if not $ogImages }}
+        {{ range $ext := $imageExtensions }}
+          {{ $filename := printf "%s.%s" $name $ext }}
+          {{ with $.Resources.GetMatch $filename }}
+            {{ $ogImages = slice (dict "url" .Permalink "alt" (printf "%s image" $name)) }}
+            {{ break }}
+          {{ end }}
+        {{ end }}
+      {{ end }}
+    {{ end }}
+  {{ end }}
+{{ end }}
+
+{{/* Fallback 4: use first image from page bundle if any */}}
+{{ if not $ogImages }}
+  {{ if .Resources }}
+    {{ $images := .Resources.ByType "image" }}
+    {{ with $images }}
+      {{ $firstImage := index . 0 }}
+      {{ $ogImages = slice (dict "url" $firstImage.Permalink "alt" "Page image") }}
+    {{ end }}
+  {{ end }}
+{{ end }}
+
+{{/* Fallback 5: use site default image */}}
+{{ if not $ogImages }}
+  {{ with .Site.Params.defaultImage }}
+    {{ $ogImages = slice (dict "url" . "alt" (printf "%s default image" .Site.Title)) }}
+  {{ else }}
+    {{ with .Site.Params.meta.og.image }}
+      {{ $ogImages = slice (dict "url" . "alt" (printf "%s default image" .Site.Title)) }}
+    {{ end }}
+  {{ end }}
+{{ end }}
+
+{{ range $imageData := $ogImages }}
+  {{ $imageURL := $imageData.url }}
+  {{ if not (hasPrefix $imageURL "http") }}
+    {{ $imageURL = $imageURL | absURL }}
+  {{ end }}
+  <meta property="og:image" content="{{ $imageURL }}" />
+
+  {{/* Additional image properties */}}
+  {{ with $imageData.secure_url }}
+    <meta property="og:image:secure_url" content="{{ . | absURL }}" />
+  {{ else }}
+    {{ if hasPrefix $imageURL "https://" }}
+      <meta property="og:image:secure_url" content="{{ $imageURL }}" />
+    {{ end }}
+  {{ end }}
+
+  {{/* Try to determine image type from file extension */}}
+  {{ $imageType := $imageData.type | default "" }}
+  {{ if not $imageType }}
+    {{ $ext := path.Ext $imageURL | strings.TrimPrefix "." | lower }}
+    {{ if eq $ext "jpg" }}{{ $imageType = "image/jpeg" }}{{ end }}
+    {{ if eq $ext "jpeg" }}{{ $imageType = "image/jpeg" }}{{ end }}
+    {{ if eq $ext "png" }}{{ $imageType = "image/png" }}{{ end }}
+    {{ if eq $ext "webp" }}{{ $imageType = "image/webp" }}{{ end }}
+    {{ if eq $ext "gif" }}{{ $imageType = "image/gif" }}{{ end }}
+    {{ if eq $ext "svg" }}{{ $imageType = "image/svg+xml" }}{{ end }}
+  {{ end }}
+  {{ with $imageType }}
+    <meta property="og:image:type" content="{{ . }}" />
+  {{ end }}
+
+  {{/* Default dimensions for social media if not specified */}}
+  {{ $width := $imageData.width | default "1200" }}
+  {{ $height := $imageData.height | default "630" }}
+  <meta property="og:image:width" content="{{ $width }}" />
+  <meta property="og:image:height" content="{{ $height }}" />
+
+  {{ $alt := $imageData.alt | default .Title | default "Image" }}
+  <meta property="og:image:alt" content="{{ $alt }}" />
+{{ end }}
+
+{{/* ═══════════════════════════════════════════════════════════════
+  OPTIONAL OPEN GRAPH PROPERTIES (Recommended)
+  ═══════════════════════════════════════════════════════════════
+*/}}
+
+{{/* og:description */}}
+{{ $ogDescription := $ogMeta.description | default $pageDescription }}
+{{ if eq $ogDescription "inherit" }}
+  {{ $ogDescription = $pageDescription }}
+{{ end }}
+{{ with $ogDescription }}
+  <meta property="og:description" content="{{ . }}" />
+{{ end }}
+
+{{/* og:site_name */}}
+{{ $ogSiteName := $ogMeta.site_name | default $siteName }}
+{{ with $ogSiteName }}
+  <meta property="og:site_name" content="{{ . }}" />
+{{ end }}
+
+{{/* og:locale */}}
+{{ $ogLocale := $ogMeta.locale | default .Site.Language.Lang }}
+{{ if eq $ogLocale "en" }}
+  {{ $ogLocale = "en_US" }}
+{{ end }}
+<meta property="og:locale" content="{{ $ogLocale }}" />
+
+{{/* og:locale:alternate */}}
+{{ if hugo.IsMultilingual }}
+  {{ range .AllTranslations }}
+    {{ if ne .Language.Lang $.Language.Lang }}
+      {{ $altLocale := .Language.Lang }}
+      {{ if eq $altLocale "en" }}
+        {{ $altLocale = "en_US" }}
+      {{ end }}
+      <meta property="og:locale:alternate" content="{{ $altLocale }}" />
+    {{ end }}
+  {{ end }}
+{{ end }}
+
+{{/* og:determiner */}}
+{{ with $ogMeta.determiner }}
+  <meta property="og:determiner" content="{{ . }}" />
+{{ end }}
+
+{{/* ═══════════════════════════════════════════════════════════════
+  TEMPORAL PROPERTIES (Article, Video, etc.)
+  ═══════════════════════════════════════════════════════════════
+*/}}
+
+{{/* Updated time for all content */}}
+{{ with $modifiedTime }}
+  <meta property="og:updated_time" content="{{ . }}" />
+{{ end }}
+
+{{/* ═══════════════════════════════════════════════════════════════
+  MEDIA PROPERTIES (Audio, Video)
+  ═══════════════════════════════════════════════════════════════
+*/}}
+
+{{/* og:audio */}}
+{{ with $ogMeta.audios }}
+  {{ range . }}
+    {{ $audioURL := .url }}
+    {{ if not (hasPrefix $audioURL "http") }}
+      {{ $audioURL = $audioURL | absURL }}
+    {{ end }}
+    <meta property="og:audio" content="{{ $audioURL }}" />
+
+    {{ with .secure_url }}
+      <meta property="og:audio:secure_url" content="{{ . | absURL }}" />
+    {{ else }}
+      {{ if hasPrefix $audioURL "https://" }}
+        <meta property="og:audio:secure_url" content="{{ $audioURL }}" />
+      {{ end }}
+    {{ end }}
+
+    {{ with .type }}
+      <meta property="og:audio:type" content="{{ . }}" />
+    {{ end }}
+  {{ end }}
+{{ end }}
+
+{{/* og:video */}}
+{{ with $ogMeta.videos }}
+  {{ range . }}
+    {{ $videoURL := .url }}
+    {{ if not (hasPrefix $videoURL "http") }}
+      {{ $videoURL = $videoURL | absURL }}
+    {{ end }}
+    <meta property="og:video" content="{{ $videoURL }}" />
+
+    {{ with .secure_url }}
+      <meta property="og:video:secure_url" content="{{ . | absURL }}" />
+    {{ else }}
+      {{ if hasPrefix $videoURL "https://" }}
+        <meta property="og:video:secure_url" content="{{ $videoURL }}" />
+      {{ end }}
+    {{ end }}
+
+    {{ with .type }}
+      <meta property="og:video:type" content="{{ . }}" />
+    {{ end }}
+
+    {{ with .width }}
+      <meta property="og:video:width" content="{{ . }}" />
+    {{ end }}
+
+    {{ with .height }}
+      <meta property="og:video:height" content="{{ . }}" />
+    {{ end }}
+  {{ end }}
+{{ end }}
+
+{{/* ═══════════════════════════════════════════════════════════════
+  TYPE-SPECIFIC PROPERTIES
+  ═══════════════════════════════════════════════════════════════
+*/}}
+
+{{/* Article Properties */}}
+{{ if eq $ogType "article" }}
+  {{/* article:published_time */}}
+  {{ with $publishedTime }}
+    <meta property="article:published_time" content="{{ . }}" />
+  {{ end }}
+
+  {{/* article:modified_time */}}
+  {{ with $modifiedTime }}
+    <meta property="article:modified_time" content="{{ . }}" />
+  {{ end }}
+
+  {{/* article:expiration_time */}}
+  {{ with $ogMeta.article }}
+    {{ with .expiration_time }}
+      <meta property="article:expiration_time" content="{{ . }}" />
+    {{ end }}
+
+    {{/* article:author (can be multiple) */}}
+    {{ with .author }}
+      {{ if reflect.IsSlice . }}
+        {{ range . }}
+          <meta property="article:author" content="{{ . }}" />
+        {{ end }}
+      {{ else }}
+        <meta property="article:author" content="{{ . }}" />
+      {{ end }}
+    {{ end }}
+
+    {{/* article:section */}}
+    {{ with .section }}
+      <meta property="article:section" content="{{ . }}" />
+    {{ end }}
+
+    {{/* article:tag (can be multiple) */}}
+    {{ with .tag }}
+      {{ if reflect.IsSlice . }}
+        {{ range . }}
+          <meta property="article:tag" content="{{ . }}" />
+        {{ end }}
+      {{ else }}
+        <meta property="article:tag" content="{{ . }}" />
+      {{ end }}
+    {{ end }}
+  {{ else }}
+    {{/* Auto-populate from Hugo's taxonomies - support both 'author' and 'authors' params */}}
+    {{ $authorList := slice }}
+
+    {{/* Collect authors from 'authors' parameter (new system) */}}
+    {{ with .Params.authors }}
+      {{ if reflect.IsSlice . }}
+        {{ range . }}
+          {{ $authorPage := where site.Pages "Params.author_id" . }}
+          {{ if $authorPage }}
+            {{ $author := index $authorPage 0 }}
+            {{ $authorList = $authorList | append ($author.Params.display_name | default $author.Params.name | default .) }}
+          {{ else }}
+            {{ $authorList = $authorList | append . }}
+          {{ end }}
+        {{ end }}
+      {{ else }}
+        {{ $authorPage := where site.Pages "Params.author_id" . }}
+        {{ if $authorPage }}
+          {{ $author := index $authorPage 0 }}
+          {{ $authorList = $authorList | append ($author.Params.display_name | default $author.Params.name | default .) }}
+        {{ else }}
+          {{ $authorList = $authorList | append . }}
+        {{ end }}
+      {{ end }}
+    {{ end }}
+
+    {{/* Fallback to 'author' parameter (legacy) */}}
+    {{ if eq (len $authorList) 0 }}
+      {{ with .Params.author }}
+        {{ if reflect.IsSlice . }}
+          {{ $authorList = . }}
+        {{ else }}
+          {{ $authorList = slice . }}
+        {{ end }}
+      {{ end }}
+    {{ end }}
+
+    {{/* NEW: Fallback to site-level default author if still empty */}}
+    {{ if eq (len $authorList) 0 }}
+      {{ with site.Params.authors.default_author }}
+        {{ $ap := where site.Pages "Params.author_id" . }}
+        {{ if $ap }}
+          {{ $a := index $ap 0 }}
+          {{ $authorList = $authorList | append ($a.Params.display_name | default $a.Params.name | default .) }}
+        {{ else }}
+          {{ $authorList = $authorList | append . }}
+        {{ end }}
+      {{ end }}
+    {{ end }}
+
+    {{/* Output author meta tags */}}
+    {{ range $authorList }}
+      <meta property="article:author" content="{{ . }}" />
+    {{ end }}
+
+    {{/* Use section as article:section */}}
+    {{ with .Section }}
+      <meta property="article:section" content="{{ . | humanize }}" />
+    {{ end }}
+
+    {{/* Use tags as article:tag */}}
+    {{ with .Params.tags }}
+      {{ range . }}
+        <meta property="article:tag" content="{{ . }}" />
+      {{ end }}
+    {{ end }}
+  {{ end }}
+{{ end }}
+
+{{/* Book Properties */}}
+{{ if eq $ogType "book" }}
+  {{ with $ogMeta.book }}
+    {{/* book:author (can be multiple) */}}
+    {{ with .author }}
+      {{ if reflect.IsSlice . }}
+        {{ range . }}
+          <meta property="book:author" content="{{ . }}" />
+        {{ end }}
+      {{ else }}
+        <meta property="book:author" content="{{ . }}" />
+      {{ end }}
+    {{ end }}
+
+    {{/* book:isbn */}}
+    {{ with .isbn }}
+      <meta property="book:isbn" content="{{ . }}" />
+    {{ end }}
+
+    {{/* book:release_date */}}
+    {{ with .release_date }}
+      <meta property="book:release_date" content="{{ . }}" />
+    {{ end }}
+
+    {{/* book:tag (can be multiple) */}}
+    {{ with .tag }}
+      {{ if reflect.IsSlice . }}
+        {{ range . }}
+          <meta property="book:tag" content="{{ . }}" />
+        {{ end }}
+      {{ else }}
+        <meta property="book:tag" content="{{ . }}" />
+      {{ end }}
+    {{ end }}
+  {{ end }}
+{{ end }}
+
+{{/* Profile Properties */}}
+{{ if eq $ogType "profile" }}
+  {{ with $ogMeta.profile }}
+    {{ with .first_name }}
+      <meta property="profile:first_name" content="{{ . }}" />
+    {{ end }}
+
+    {{ with .last_name }}
+      <meta property="profile:last_name" content="{{ . }}" />
+    {{ end }}
+
+    {{ with .username }}
+      <meta property="profile:username" content="{{ . }}" />
+    {{ end }}
+
+    {{ with .gender }}
+      <meta property="profile:gender" content="{{ . }}" />
+    {{ end }}
+  {{ end }}
+{{ end }}
+
+{{/* Music Properties */}}
+{{ if in (slice "music.song" "music.album" "music.playlist" "music.radio_station") $ogType }}
+  {{ with $ogMeta.music }}
+    {{ if eq $ogType "music.song" }}
+      {{ with .duration }}
+        <meta property="music:duration" content="{{ . }}" />
+      {{ end }}
+
+      {{ with .album }}
+        {{ if reflect.IsSlice . }}
+          {{ range . }}
+            <meta property="music:album" content="{{ . }}" />
+          {{ end }}
+        {{ else }}
+          <meta property="music:album" content="{{ . }}" />
+        {{ end }}
+      {{ end }}
+
+      {{ with .album_disc }}
+        <meta property="music:album:disc" content="{{ . }}" />
+      {{ end }}
+
+      {{ with .album_track }}
+        <meta property="music:album:track" content="{{ . }}" />
+      {{ end }}
+
+      {{ with .musician }}
+        {{ if reflect.IsSlice . }}
+          {{ range . }}
+            <meta property="music:musician" content="{{ . }}" />
+          {{ end }}
+        {{ else }}
+          <meta property="music:musician" content="{{ . }}" />
+        {{ end }}
+      {{ end }}
+    {{ end }}
+
+    {{ if eq $ogType "music.album" }}
+      {{ with .song }}
+        {{ if reflect.IsSlice . }}
+          {{ range . }}
+            <meta property="music:song" content="{{ . }}" />
+          {{ end }}
+        {{ else }}
+          <meta property="music:song" content="{{ . }}" />
+        {{ end }}
+      {{ end }}
+
+      {{ with .musician }}
+        <meta property="music:musician" content="{{ . }}" />
+      {{ end }}
+
+      {{ with .release_date }}
+        <meta property="music:release_date" content="{{ . }}" />
+      {{ end }}
+    {{ end }}
+
+    {{ if eq $ogType "music.playlist" }}
+      {{ with .song }}
+        {{ if reflect.IsSlice . }}
+          {{ range . }}
+            <meta property="music:song" content="{{ . }}" />
+          {{ end }}
+        {{ else }}
+          <meta property="music:song" content="{{ . }}" />
+        {{ end }}
+      {{ end }}
+
+      {{ with .creator }}
+        <meta property="music:creator" content="{{ . }}" />
+      {{ end }}
+    {{ end }}
+
+    {{ if eq $ogType "music.radio_station" }}
+      {{ with .creator }}
+        <meta property="music:creator" content="{{ . }}" />
+      {{ end }}
+    {{ end }}
+  {{ end }}
+{{ end }}
+
+{{/* Video Properties */}}
+{{ if in (slice "video.movie" "video.episode" "video.tv_show" "video.other") $ogType }}
+  {{ with $ogMeta.video }}
+    {{ with .actor }}
+      {{ if reflect.IsSlice . }}
+        {{ range . }}
+          <meta property="video:actor" content="{{ . }}" />
+        {{ end }}
+      {{ else }}
+        <meta property="video:actor" content="{{ . }}" />
+      {{ end }}
+    {{ end }}
+
+    {{ with .actor_role }}
+      <meta property="video:actor:role" content="{{ . }}" />
+    {{ end }}
+
+    {{ with .director }}
+      {{ if reflect.IsSlice . }}
+        {{ range . }}
+          <meta property="video:director" content="{{ . }}" />
+        {{ end }}
+      {{ else }}
+        <meta property="video:director" content="{{ . }}" />
+      {{ end }}
+    {{ end }}
+
+    {{ with .writer }}
+      {{ if reflect.IsSlice . }}
+        {{ range . }}
+          <meta property="video:writer" content="{{ . }}" />
+        {{ end }}
+      {{ else }}
+        <meta property="video:writer" content="{{ . }}" />
+      {{ end }}
+    {{ end }}
+
+    {{ with .duration }}
+      <meta property="video:duration" content="{{ . }}" />
+    {{ end }}
+
+    {{ with .release_date }}
+      <meta property="video:release_date" content="{{ . }}" />
+    {{ end }}
+
+    {{ with .tag }}
+      {{ if reflect.IsSlice . }}
+        {{ range . }}
+          <meta property="video:tag" content="{{ . }}" />
+        {{ end }}
+      {{ else }}
+        <meta property="video:tag" content="{{ . }}" />
+      {{ end }}
+    {{ end }}
+
+    {{ if eq $ogType "video.episode" }}
+      {{ with .series }}
+        <meta property="video:series" content="{{ . }}" />
+      {{ end }}
+    {{ end }}
+  {{ end }}
+{{ end }}
+
+{{/* ═══════════════════════════════════════════════════════════════
+  LEGACY/ADDITIONAL PROPERTIES (for backwards compatibility)
+  ═══════════════════════════════════════════════════════════════
+*/}}
+
+{{/* Process any additional meta properties not covered above */}}
+{{ range $metaType, $metaValues := $combinedMeta }}
+  {{ if ne $metaType "og" }}
+    {{ range $key, $value := $metaValues }}
+      {{/* Skip if this is a known non-OG property */}}
+      {{ if not (in (slice "twitter" "fb" "apple") $metaType) }}
+        {{ if eq $key "url" }}
+          {{ if or (eq $value "inherit") (eq $value "") }}
+            {{ $value = $permalink }}
+          {{ else }}
+            {{ $value = $value | absURL }}
+          {{ end }}
+          <meta property="{{ $metaType }}:{{ $key }}" content="{{ $value }}" />
+        {{ else if and (eq $key "title") (eq $value "inherit") }}
+          <meta
+            property="{{ $metaType }}:{{ $key }}"
+            content="{{ $pageTitle }}"
+          />
+        {{ else if and (eq $key "description") (eq $value "inherit") }}
+          <meta
+            property="{{ $metaType }}:{{ $key }}"
+            content="{{ $pageDescription }}"
+          />
+        {{ else }}
+          <meta property="{{ $metaType }}:{{ $key }}" content="{{ $value }}" />
+        {{ end }}
+      {{ end }}
+    {{ end }}
+  {{ end }}
+{{ end }}

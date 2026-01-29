@@ -3,13 +3,17 @@
   xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
   xmlns:xhtml="http://www.w3.org/1999/xhtml"
 >
-  {{- /* Include the term page itself */ -}}
+  {{- /* Include the term page itself with git-based dates */ -}}
+  {{- $lastmod := "" -}}
+  {{- if .GitInfo -}}
+    {{- $lastmod = .GitInfo.AuthorDate.Format "2006-01-02T15:04:05-07:00" -}}
+  {{- else if not .Lastmod.IsZero -}}
+    {{- $lastmod = .Lastmod.Format "2006-01-02T15:04:05-07:00" -}}
+  {{- end -}}
   <url>
     <loc>{{ .Permalink }}</loc>
-    {{- if not .Lastmod.IsZero }}
-      <lastmod
-        >{{ .Lastmod.Format "2006-01-02T15:04:05-07:00" | safeHTML }}</lastmod
-      >
+    {{- with $lastmod }}
+      <lastmod>{{ . | safeHTML }}</lastmod>
     {{- end }}
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
@@ -34,14 +38,18 @@
     {{- end }}
   </url>
 
-  {{- /* Include all pages in this term */ -}}
+  {{- /* Include all pages in this term with git-based dates */ -}}
   {{- range .Data.Pages }}
+    {{- $pageLastmod := "" -}}
+    {{- if .GitInfo -}}
+      {{- $pageLastmod = .GitInfo.AuthorDate.Format "2006-01-02T15:04:05-07:00" -}}
+    {{- else if not .Lastmod.IsZero -}}
+      {{- $pageLastmod = .Lastmod.Format "2006-01-02T15:04:05-07:00" -}}
+    {{- end -}}
     <url>
       <loc>{{ .Permalink }}</loc>
-      {{- if not .Lastmod.IsZero }}
-        <lastmod
-          >{{ .Lastmod.Format "2006-01-02T15:04:05-07:00" | safeHTML }}</lastmod
-        >
+      {{- with $pageLastmod }}
+        <lastmod>{{ . | safeHTML }}</lastmod>
       {{- end }}
       <changefreq
         >{{ if eq .Section "articles" }}

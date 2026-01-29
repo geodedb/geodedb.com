@@ -3,6 +3,7 @@ title: "Geode Database"
 languageCode: "en-us"
 defaultContentLanguage: "en"
 enableRobotsTXT: true
+enableGitInfo: true
 canonifyURLs: true
 theme: "ultra"
 

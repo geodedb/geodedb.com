@@ -1,0 +1,112 @@
+{{- $pctx := . -}}
+{{- if .IsHome -}}{{ $pctx = .Site }}{{- end -}}
+{{- $pages := slice -}}
+{{- if or $.IsHome $.IsSection -}}
+{{- $pages = $pctx.RegularPages -}}
+{{- else -}}
+{{- $pages = $pctx.Pages -}}
+{{- end -}}
+{{- $limit := .Site.Config.Services.RSS.Limit -}}
+{{- if ge $limit 1 -}}
+{{- $pages = $pages | first $limit -}}
+{{- end -}}
+{{- printf "<?xml version=\"1.0\" encoding=\"utf-8\" standalone=\"yes\"?>" | safeHTML }}
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:dc="http://purl.org/dc/elements/1.1/">
+  <channel>
+    <title>{{ if eq .Title .Site.Title }}{{ .Site.Title }}{{ else }}{{ with .Title }}{{ . }} - {{ end }}{{ .Site.Title }}{{ end }}</title>
+    <link>{{ .Permalink }}</link>
+    <description>{{ with .Description }}{{ . }}{{ else }}{{ if eq .Title .Site.Title }}{{ .Site.Params.description | default (i18n "recent_content" . | default "Recent content") }}{{ else }}{{ i18n "recent_content" . | default "Recent content" }} {{ if ne .Title .Site.Title }}{{ with .Title }}{{ i18n "on" . | default "on" }} {{ . }}{{ end }}{{ end }}{{ end }}{{ end }}</description>
+    <generator>Hugo {{ hugo.Version }}</generator>
+    <language>{{ .Site.LanguageCode | default "en-us" }}</language>
+    {{ with .Site.Author.email }}<managingEditor>{{ . }}{{ with .Site.Author.name }} ({{ . }}){{ end }}</managingEditor>{{ end }}
+    {{ with .Site.Author.email }}<webMaster>{{ . }}{{ with .Site.Author.name }} ({{ . }}){{ end }}</webMaster>{{ end }}
+    {{ with .Site.Copyright }}<copyright>{{ . }}</copyright>{{ end }}
+    {{- /* Use GitInfo for last build date when available */ -}}
+    {{- $buildDate := now -}}
+    {{- if not .Date.IsZero -}}
+      {{- $buildDate = .Date -}}
+    {{- else if .GitInfo -}}
+      {{- $buildDate = .GitInfo.AuthorDate -}}
+    {{- end }}
+    <lastBuildDate>{{ $buildDate.Format "Mon, 02 Jan 2006 15:04:05 -0700" | safeHTML }}</lastBuildDate>
+    {{- with .OutputFormats.Get "RSS" }}
+    {{ printf "<atom:link href=%q rel=\"self\" type=%q />" .Permalink .MediaType | safeHTML }}
+    {{ end -}}
+    {{- /* Add alternate language links for multilingual RSS discovery */ -}}
+    {{- if hugo.IsMultilingual -}}
+      {{- range .Site.Languages -}}
+        {{- if ne . $.Site.Language -}}
+          {{- $altURL := $.Site.BaseURL | strings.TrimSuffix "/" -}}
+          {{- if ne .Lang $.Site.Params.DefaultContentLanguage -}}
+            {{- $altURL = printf "%s/%s" $altURL .Lang -}}
+          {{- end -}}
+          {{- if $.IsHome -}}
+            {{- $altURL = printf "%s/index.xml" $altURL -}}
+          {{- else if $.IsSection -}}
+            {{- $altURL = printf "%s/%s/index.xml" $altURL $.Section -}}
+          {{- else if $.IsPage -}}
+            {{- $altURL = printf "%s/%s/index.xml" $altURL $.Section -}}
+          {{- end -}}
+          {{ printf "<atom:link href=%q rel=\"alternate\" hreflang=%q type=\"application/rss+xml\" title=%q />" $altURL .Lang .LanguageName | safeHTML }}
+        {{- end -}}
+      {{- end -}}
+    {{- end -}}
+    {{- /* Category/Tags for RSS channel if this is a taxonomy */ -}}
+    {{- if and (eq .Kind "taxonomy") (.Data.Singular) -}}
+    <category>{{ .Data.Singular }}</category>
+    {{- end -}}
+    {{- /* Add RSS image if available */ -}}
+    {{- with .Site.Params.images -}}
+      {{- range first 1 . -}}
+        {{- $image := . -}}
+        {{- if not (strings.HasPrefix . "http") -}}
+          {{- $image = printf "%s%s" $.Site.BaseURL . -}}
+        {{- end }}
+    <image>
+      <url>{{ $image }}</url>
+      <title>{{ $.Site.Title }}</title>
+      <link>{{ $.Site.BaseURL }}</link>
+    </image>
+      {{- end -}}
+    {{- end -}}
+    {{- range $pages }}
+    {{- /* Calculate git-based publish date */ -}}
+    {{- $pubDate := now -}}
+    {{- if not .Date.IsZero -}}
+      {{- $pubDate = .Date -}}
+    {{- else if .GitInfo -}}
+      {{- $pubDate = .GitInfo.AuthorDate -}}
+    {{- end -}}
+    <item>
+      <title>{{ .Title }}</title>
+      <link>{{ .Permalink }}</link>
+      <pubDate>{{ $pubDate.Format "Mon, 02 Jan 2006 15:04:05 -0700" | safeHTML }}</pubDate>
+      {{ with .Site.Author.email }}<author>{{ . }}{{ with .Site.Author.name }} ({{ . }}){{ end }}</author>{{ end }}
+      <guid>{{ .Permalink }}</guid>
+      {{- /* Add categories and tags */ -}}
+      {{- range .Params.categories -}}
+      <category>{{ . }}</category>
+      {{- end -}}
+      {{- range .Params.tags -}}
+      <category>{{ . }}</category>
+      {{- end -}}
+      {{- /* Content description with proper encoding */ -}}
+      <description>{{ .Summary | html }}</description>
+      {{- /* Full content for RSS readers that support it */ -}}
+      {{- if .Site.Params.rss.fullContent -}}
+      <content:encoded><![CDATA[{{ .Content }}]]></content:encoded>
+      {{- end -}}
+      {{- /* Source information for multilingual content */ -}}
+      {{- if hugo.IsMultilingual -}}
+      <dc:language>{{ .Site.LanguageCode }}</dc:language>
+      {{- end -}}
+      {{- /* Enclosure for media files */ -}}
+      {{- with .Params.podcast -}}
+        {{- with .file -}}
+      <enclosure url="{{ . }}" {{ with $.Params.podcast.length }}length="{{ . }}"{{ end }} {{ with $.Params.podcast.type }}type="{{ . }}"{{ else }}type="audio/mpeg"{{ end }} />
+        {{- end -}}
+      {{- end -}}
+    </item>
+    {{ end }}
+  </channel>
+</rss>

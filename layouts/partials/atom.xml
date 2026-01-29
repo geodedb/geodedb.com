@@ -39,11 +39,14 @@
     {{- end -}}
   {{- end -}}
   <generator uri="https://gohugo.io/" version="{{ hugo.Version }}">Hugo</generator>
-  {{- if not .Date.IsZero }}
-  <updated>{{ .Date.Format "2006-01-02T15:04:05Z07:00" | safeHTML }}</updated>
-  {{ else }}
-  <updated>{{ now.Format "2006-01-02T15:04:05Z07:00" | safeHTML }}</updated>
-  {{ end -}}
+  {{- /* Use GitInfo for feed updated date when available */ -}}
+  {{- $feedUpdated := now -}}
+  {{- if not .Date.IsZero -}}
+    {{- $feedUpdated = .Date -}}
+  {{- else if .GitInfo -}}
+    {{- $feedUpdated = .GitInfo.AuthorDate -}}
+  {{- end }}
+  <updated>{{ $feedUpdated.Format "2006-01-02T15:04:05Z07:00" | safeHTML }}</updated>
   {{- with .Site.Author }}
   <author>
     {{- with .name }}<name>{{ . }}</name>{{ end }}
@@ -66,12 +69,27 @@
     {{- end -}}
   {{- end -}}
   {{- range $pages }}
+  {{- /* Calculate git-based dates for each entry */ -}}
+  {{- $publishedDate := now -}}
+  {{- if not .Date.IsZero -}}
+    {{- $publishedDate = .Date -}}
+  {{- else if .GitInfo -}}
+    {{- $publishedDate = .GitInfo.AuthorDate -}}
+  {{- end -}}
+  {{- $updatedDate := now -}}
+  {{- if .GitInfo -}}
+    {{- $updatedDate = .GitInfo.AuthorDate -}}
+  {{- else if not .Lastmod.IsZero -}}
+    {{- $updatedDate = .Lastmod -}}
+  {{- else if not .Date.IsZero -}}
+    {{- $updatedDate = .Date -}}
+  {{- end -}}
   <entry>
     <id>{{ .Permalink }}</id>
     <title{{ if ne $.Site.LanguageCode "en" }} xml:lang="{{ $.Site.LanguageCode }}"{{ end }}>{{ .Title }}</title>
     <link href="{{ .Permalink }}" rel="alternate" type="text/html" />
-    <published>{{ .Date.Format "2006-01-02T15:04:05Z07:00" | safeHTML }}</published>
-    <updated>{{ .Lastmod.Format "2006-01-02T15:04:05Z07:00" | safeHTML }}</updated>
+    <published>{{ $publishedDate.Format "2006-01-02T15:04:05Z07:00" | safeHTML }}</published>
+    <updated>{{ $updatedDate.Format "2006-01-02T15:04:05Z07:00" | safeHTML }}</updated>
     {{- with $.Site.Author }}
     <author>
       {{- with .name }}<name>{{ . }}</name>{{ end }}
