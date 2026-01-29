@@ -568,6 +568,9 @@
     {{/* Newsletter signup (Mailchimp) */}}
     {{ partial "newsletter/signup" . }}
 
+    {{/* Mermaid diagrams - loaded conditionally when page uses mermaid shortcode */}}
+    {{ partial "scripts/mermaid.html" . }}
+
     {{ block "body_end" . }}{{ partial "hooks/body-end" . }}{{ end }}
   </body>
 </html>

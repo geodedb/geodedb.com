@@ -1,0 +1,111 @@
+{{/*
+  Mermaid diagram support - loads mermaid.js conditionally when page has mermaid diagrams
+
+  This partial checks if the current page contains mermaid shortcodes and loads
+  the mermaid library accordingly.
+*/}}
+
+{{- if .Page.Store.Get "hasMermaid" }}
+{{/* Load mermaid from CDN */}}
+<script type="module">
+  import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+
+  // Initialize mermaid with theme detection
+  const initMermaid = () => {
+    const isDark = document.documentElement.getAttribute('data-bs-theme') === 'dark' ||
+      (document.documentElement.getAttribute('data-bs-theme') === 'auto' &&
+       window.matchMedia('(prefers-color-scheme: dark)').matches);
+
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: isDark ? 'dark' : 'default',
+      securityLevel: 'loose',
+      fontFamily: 'inherit',
+      flowchart: {
+        useMaxWidth: true,
+        htmlLabels: true,
+        curve: 'basis'
+      },
+      sequence: {
+        useMaxWidth: true,
+        diagramMarginX: 50,
+        diagramMarginY: 10
+      },
+      er: {
+        useMaxWidth: true
+      },
+      gantt: {
+        useMaxWidth: true
+      }
+    });
+  };
+
+  // Initialize on load
+  initMermaid();
+
+  // Re-render on theme change
+  const observer = new MutationObserver((mutations) => {
+    mutations.forEach((mutation) => {
+      if (mutation.attributeName === 'data-bs-theme') {
+        // Re-initialize mermaid with new theme
+        initMermaid();
+        // Re-render all diagrams
+        document.querySelectorAll('.mermaid').forEach((el) => {
+          el.removeAttribute('data-processed');
+        });
+        mermaid.run();
+      }
+    });
+  });
+
+  observer.observe(document.documentElement, { attributes: true });
+</script>
+
+<style>
+  /* Mermaid container styling */
+  .mermaid-container {
+    background: var(--color-neutral-50, #f9fafb);
+    border: 1px solid var(--color-neutral-200, #e5e7eb);
+    border-radius: var(--radius-lg, 0.75rem);
+    padding: 1.5rem;
+    overflow-x: auto;
+  }
+
+  .mermaid-title {
+    font-weight: 600;
+    color: var(--color-neutral-600, #4b5563);
+  }
+
+  .mermaid {
+    display: flex;
+    justify-content: center;
+  }
+
+  .mermaid svg {
+    max-width: 100%;
+    height: auto;
+  }
+
+  /* Dark mode adjustments */
+  [data-bs-theme="dark"] .mermaid-container {
+    background: var(--color-neutral-800, #1f2937);
+    border-color: var(--color-neutral-700, #374151);
+  }
+
+  [data-bs-theme="dark"] .mermaid-title {
+    color: var(--color-neutral-300, #d1d5db);
+  }
+
+  /* Auto dark mode */
+  @media (prefers-color-scheme: dark) {
+    [data-bs-theme="auto"] .mermaid-container {
+      background: var(--color-neutral-800, #1f2937);
+      border-color: var(--color-neutral-700, #374151);
+    }
+
+    [data-bs-theme="auto"] .mermaid-title {
+      color: var(--color-neutral-300, #d1d5db);
+    }
+  }
+</style>
+{{- end }}

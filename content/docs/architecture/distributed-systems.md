@@ -18,31 +18,49 @@ Geode's distributed architecture enables horizontal scaling, high availability, 
 
 The distributed layer implements several key patterns:
 
-```
-┌─────────────────────────────────────────────────────────┐
-│                    Client Layer                          │
-└─────────────────────────┬───────────────────────────────┘
-                          │
-┌─────────────────────────▼───────────────────────────────┐
-│                  Query Coordinator                       │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐     │
-│  │   Router    │  │  Planner    │  │   Merger    │     │
-│  └──────┬──────┘  └──────┬──────┘  └──────┬──────┘     │
-└─────────┼────────────────┼────────────────┼─────────────┘
-          │                │                │
-          ▼                ▼                ▼
-┌─────────────────────────────────────────────────────────┐
-│                   Shard Layer                            │
-│  ┌──────────┐  ┌──────────┐  ┌──────────┐              │
-│  │ Shard 1  │  │ Shard 2  │  │ Shard N  │              │
-│  │ (Leader) │  │ (Leader) │  │ (Leader) │              │
-│  └────┬─────┘  └────┬─────┘  └────┬─────┘              │
-│       │             │             │                     │
-│  ┌────▼─────┐  ┌────▼─────┐  ┌────▼─────┐              │
-│  │ Replicas │  │ Replicas │  │ Replicas │              │
-│  └──────────┘  └──────────┘  └──────────┘              │
-└─────────────────────────────────────────────────────────┘
-```
+{{< mermaid title="Distributed Architecture Overview" >}}
+flowchart TB
+    subgraph Client["Client Layer"]
+        C1[Client 1]
+        C2[Client 2]
+        C3[Client N]
+    end
+
+    subgraph Coordinator["Query Coordinator"]
+        Router[Router]
+        Planner[Planner]
+        Merger[Merger]
+    end
+
+    subgraph Shards["Shard Layer"]
+        subgraph S1["Shard 1"]
+            L1[Leader]
+            R1A[Replica]
+            R1B[Replica]
+        end
+        subgraph S2["Shard 2"]
+            L2[Leader]
+            R2A[Replica]
+            R2B[Replica]
+        end
+        subgraph SN["Shard N"]
+            LN[Leader]
+            RNA[Replica]
+            RNB[Replica]
+        end
+    end
+
+    Client --> Coordinator
+    Router --> S1
+    Router --> S2
+    Router --> SN
+    L1 --> R1A
+    L1 --> R1B
+    L2 --> R2A
+    L2 --> R2B
+    LN --> RNA
+    LN --> RNB
+{{< /mermaid >}}
 
 ## Raft Consensus
 
@@ -50,19 +68,28 @@ Geode uses Raft for distributed consensus within each shard:
 
 ### Leader Election
 
-```
-┌─────────────────────────────────────────────────────────┐
-│                    Raft Cluster                          │
-│                                                          │
-│    Follower ◄────── Heartbeat ──────► Leader            │
-│       │                                  │               │
-│       │         Vote Request             │               │
-│       ◄──────────────────────────────────►               │
-│                                                          │
-│    Follower ◄────── Heartbeat ──────► Leader            │
-│                                                          │
-└─────────────────────────────────────────────────────────┘
-```
+{{< mermaid title="Raft Consensus - Leader Election" >}}
+sequenceDiagram
+    participant F1 as Follower 1
+    participant L as Leader
+    participant F2 as Follower 2
+
+    Note over F1,F2: Normal Operation
+    L->>F1: Heartbeat
+    L->>F2: Heartbeat
+    F1-->>L: Ack
+    F2-->>L: Ack
+
+    Note over F1,F2: Leader Failure
+    F1->>F1: Election Timeout
+    F1->>F2: RequestVote
+    F2-->>F1: VoteGranted
+    F1->>F1: Becomes Leader
+
+    Note over F1,F2: New Leader
+    F1->>F2: Heartbeat (new leader)
+    F2-->>F1: Ack
+{{< /mermaid >}}
 
 ### Log Replication
 
@@ -166,18 +193,36 @@ pub fn assignShard(node: Node, neighbors: []Node) ShardId {
 
 Connect multiple Geode clusters for geo-distribution:
 
-```
-┌────────────────────────────────────────────────────────────┐
-│                      Federation Layer                       │
-│                                                             │
-│  ┌──────────────┐      ┌──────────────┐      ┌───────────┐ │
-│  │  US-East     │◄────►│  EU-West     │◄────►│  AP-South │ │
-│  │  Cluster     │      │  Cluster     │      │  Cluster  │ │
-│  └──────────────┘      └──────────────┘      └───────────┘ │
-│                                                             │
-│        Async Replication      Conflict Resolution           │
-└────────────────────────────────────────────────────────────┘
-```
+{{< mermaid title="Federation - Geo-Distributed Clusters" >}}
+flowchart LR
+    subgraph US["US-East Region"]
+        US1[Primary]
+        US2[Replica]
+        US3[Replica]
+        US1 --> US2
+        US1 --> US3
+    end
+
+    subgraph EU["EU-West Region"]
+        EU1[Primary]
+        EU2[Replica]
+        EU3[Replica]
+        EU1 --> EU2
+        EU1 --> EU3
+    end
+
+    subgraph AP["AP-South Region"]
+        AP1[Primary]
+        AP2[Replica]
+        AP3[Replica]
+        AP1 --> AP2
+        AP1 --> AP3
+    end
+
+    US1 <-.->|Async Replication| EU1
+    EU1 <-.->|Async Replication| AP1
+    AP1 <-.->|Async Replication| US1
+{{< /mermaid >}}
 
 ### Federation Configuration
 
