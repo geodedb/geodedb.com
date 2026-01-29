@@ -481,6 +481,290 @@ Contributors are recognized in:
 - **Discussions**: Ask in GitLab discussions
 - **Code**: Check existing implementations for examples
 
+## Geode Test Lab
+
+The Geode Test Lab provides a comprehensive testing environment for validating contributions before they're merged.
+
+### Test Lab Overview
+
+The test lab runs automatically on all merge requests and includes:
+
+| Test Suite | Duration | Description |
+|------------|----------|-------------|
+| Unit Tests | ~2 min | Fast, isolated function tests |
+| Integration Tests | ~5 min | Component interaction tests |
+| GQL Conformance | ~10 min | ISO/IEC 39075:2024 compliance (70 tests) |
+| Client Tests | ~3 min | Multi-language client validation |
+| Performance | ~15 min | Benchmark regression detection |
+| Security Scan | ~5 min | Static analysis and CVE checks |
+
+### Running Tests Locally
+
+Before submitting a PR, run the test lab locally:
+
+```bash
+# Navigate to the geode directory
+cd geode
+
+# Run unit tests (fast)
+make test
+
+# Run comprehensive test suite (97.4% pass rate expected)
+make geodetestlab-comprehensive
+
+# Run specific test categories
+zig build test -- --test-filter "storage"
+zig build test -- --test-filter "query"
+zig build test -- --test-filter "transaction"
+
+# Run GQL conformance tests
+make gql-conformance
+
+# Run performance benchmarks
+make benchmark
+```
+
+### Test Lab Requirements
+
+**Minimum Standards**:
+- ✅ 100% of existing tests must pass
+- ✅ New code must include tests
+- ✅ >90% code coverage maintained
+- ✅ No performance regressions (>5% degradation fails)
+- ✅ All CANARY markers properly formatted
+
+### Test Categories
+
+**1. Unit Tests** (`test "..."` in Zig):
+```zig
+test "Graph: add node with properties" {
+    const allocator = std.testing.allocator;
+    var graph = try Graph.init(allocator);
+    defer graph.deinit();
+
+    const node = try graph.addNode("Person", .{
+        .name = "Alice",
+        .age = @as(i64, 30),
+    });
+
+    try std.testing.expectEqualStrings("Person", node.label);
+    try std.testing.expectEqual(@as(i64, 30), node.getProperty("age").?.int);
+}
+```
+
+**2. Integration Tests**:
+```bash
+# Run the integration test harness
+cd geode-test-harness
+make test-all
+```
+
+**3. Client Compatibility Tests**:
+```bash
+# Test all client libraries against the server
+cd geode-test-harness
+
+# Test specific language
+make test-go
+make test-python
+make test-rust
+make test-zig
+
+# Generate test reports
+make test-all-html
+```
+
+### CI Pipeline Stages
+
+When you push a commit, the CI pipeline runs:
+
+```yaml
+stages:
+  - build
+  - test-unit
+  - test-integration
+  - test-gql-conformance
+  - test-clients
+  - benchmark
+  - security-scan
+  - documentation
+```
+
+### Viewing Test Results
+
+Access test results:
+
+1. **GitLab CI**: Click on the pipeline status badge
+2. **Test Reports**: Artifacts contain detailed HTML reports
+3. **Coverage**: View coverage report in artifacts
+
+### Common Test Failures
+
+| Failure | Cause | Resolution |
+|---------|-------|------------|
+| `test_xxx FAILED` | Test logic error | Fix implementation or test |
+| `memory leak detected` | Zig allocator issue | Use proper defer/deinit |
+| `benchmark regression` | Performance degradation | Optimize or justify change |
+| `CANARY missing` | Missing governance marker | Add CANARY comment |
+
+## Code Signing for Contributors
+
+All commits to Geode must be signed. This ensures authenticity and prevents tampering.
+
+### Why Code Signing?
+
+- **Authenticity**: Proves commits come from you
+- **Integrity**: Detects if commits are modified
+- **Compliance**: Required for enterprise deployments
+- **Trust**: Builds chain of trust in the codebase
+
+### Setting Up GPG Signing
+
+**1. Generate GPG Key**:
+
+```bash
+# Generate new key pair
+gpg --full-generate-key
+
+# Recommended settings:
+# - Key type: RSA and RSA (default)
+# - Key size: 4096 bits
+# - Expiration: 1-2 years
+# - Real name: Your full name
+# - Email: Same as your Git email
+```
+
+**2. List Your Keys**:
+
+```bash
+# List keys
+gpg --list-secret-keys --keyid-format=long
+
+# Output:
+# sec   rsa4096/ABCD1234EFGH5678 2026-01-15 [SC] [expires: 2028-01-15]
+#       1234567890ABCDEF1234567890ABCDEF12345678
+# uid           [ultimate] Your Name <your.email@example.com>
+```
+
+**3. Configure Git**:
+
+```bash
+# Set signing key (use the key ID from step 2)
+git config --global user.signingkey ABCD1234EFGH5678
+
+# Enable automatic signing
+git config --global commit.gpgsign true
+
+# Set GPG program (if needed)
+git config --global gpg.program gpg
+```
+
+**4. Export Public Key**:
+
+```bash
+# Export public key
+gpg --armor --export ABCD1234EFGH5678 > my-public-key.asc
+
+# Or copy to clipboard (macOS)
+gpg --armor --export ABCD1234EFGH5678 | pbcopy
+
+# Or copy to clipboard (Linux)
+gpg --armor --export ABCD1234EFGH5678 | xclip -selection clipboard
+```
+
+**5. Add Key to GitLab**:
+
+1. Go to GitLab > Preferences > GPG Keys
+2. Paste your public key
+3. Click "Add key"
+
+### Using SSH Signing (Alternative)
+
+If you prefer SSH keys over GPG:
+
+```bash
+# Configure SSH signing
+git config --global gpg.format ssh
+git config --global user.signingkey ~/.ssh/id_ed25519.pub
+
+# Enable automatic signing
+git config --global commit.gpgsign true
+```
+
+Add your SSH key to GitLab:
+1. Go to GitLab > Preferences > SSH Keys
+2. Check "Use this key for signing"
+
+### Signing Commits
+
+```bash
+# Sign a commit (if not automatic)
+git commit -S -m "feat: Add new feature"
+
+# Verify commit signature
+git log --show-signature -1
+
+# Verify specific commit
+git verify-commit HEAD
+```
+
+### Signing Tags
+
+```bash
+# Create signed tag
+git tag -s v1.0.0 -m "Release v1.0.0"
+
+# Verify tag signature
+git tag -v v1.0.0
+```
+
+### Troubleshooting Code Signing
+
+**GPG agent not running**:
+```bash
+# Start GPG agent
+gpgconf --launch gpg-agent
+
+# Or add to shell profile
+export GPG_TTY=$(tty)
+```
+
+**"Secret key not available"**:
+```bash
+# Check key is available
+gpg --list-secret-keys
+
+# Ensure email matches Git config
+git config user.email  # Must match GPG key email
+```
+
+**"Cannot sign commits" on macOS**:
+```bash
+# Install pinentry-mac
+brew install pinentry-mac
+
+# Configure GPG
+echo "pinentry-program $(which pinentry-mac)" >> ~/.gnupg/gpg-agent.conf
+
+# Restart agent
+gpgconf --kill gpg-agent
+```
+
+**Verifying Setup**:
+```bash
+# Create test commit
+echo "test" > test.txt
+git add test.txt
+git commit -m "test: Verify code signing works"
+
+# Check signature
+git log --show-signature -1
+
+# Should show:
+# gpg: Signature made [date]
+# gpg: Good signature from "Your Name <your@email.com>"
+```
+
 ## Advanced Topics
 
 ### Performance Optimization
