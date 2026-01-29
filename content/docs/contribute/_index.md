@@ -765,6 +765,272 @@ git log --show-signature -1
 # gpg: Good signature from "Your Name <your@email.com>"
 ```
 
+## Contributor Vetting Process
+
+Geode follows a formal vetting process for contributors to ensure code quality, security, and legal compliance.
+
+### Contributor License Agreement (CLA)
+
+All contributors must sign the Contributor License Agreement before their first contribution is accepted.
+
+**Why a CLA?**
+- Clarifies intellectual property rights
+- Grants necessary permissions for code distribution
+- Protects both contributors and the project
+- Enables license compatibility
+
+**Signing the CLA**:
+
+1. **First-time contributors**: When you open your first PR, the CLA bot will prompt you
+2. **Sign electronically**: Click the link and complete the form
+3. **Verify identity**: Use the same email as your Git commits
+4. **One-time process**: Only required once per contributor
+
+**CLA Terms Summary**:
+- You retain copyright of your contributions
+- You grant perpetual license to use, modify, and distribute
+- You confirm contributions are your original work
+- You confirm you have the right to submit
+
+### Third-Party Developer Verification
+
+For contributors from organizations or those with access to sensitive systems:
+
+**Verification Levels**:
+
+| Level | Requirements | Access Granted |
+|-------|--------------|----------------|
+| Standard | CLA + Code signing | General contributions |
+| Verified | Standard + Identity verification | Core system access |
+| Trusted | Verified + Organization validation | Security-sensitive code |
+
+**Standard Verification**:
+1. Sign CLA
+2. Set up code signing (GPG/SSH)
+3. Maintain signed commit history
+
+**Identity Verification** (for elevated access):
+1. Complete standard verification
+2. Provide government-issued ID verification
+3. Pass background check (for enterprise contributors)
+4. Complete security awareness training
+
+**Organization Validation** (for corporate contributors):
+1. Organization signs corporate CLA
+2. Designated representative validates contributors
+3. Organization assumes responsibility for member contributions
+
+### Certificate Signing Request (CSR) Verification
+
+For contributions to cryptographic or security-critical code:
+
+**When CSR Verification is Required**:
+- Authentication/authorization code changes
+- Cryptographic implementations
+- Key management system changes
+- Certificate handling code
+- TLS/mTLS implementations
+
+**CSR Process**:
+
+```bash
+# Generate private key (keep secure!)
+openssl genrsa -out contributor-private.key 4096
+
+# Create Certificate Signing Request
+openssl req -new \
+  -key contributor-private.key \
+  -out contributor.csr \
+  -subj "/C=US/ST=State/L=City/O=Organization/OU=Development/CN=contributor@email.com"
+
+# Submit CSR to security@codepros.org
+# Subject: CSR Submission for [GitLab Username]
+```
+
+**CSR Requirements**:
+- 4096-bit RSA or ED25519 key
+- Matches registered email address
+- Valid organization information
+- No self-signed certificates
+
+### Vetting Timeline
+
+| Step | Duration | Notes |
+|------|----------|-------|
+| CLA signing | Immediate | Automated via CLA bot |
+| Code signing setup | 1-2 hours | Self-service |
+| Identity verification | 1-3 business days | Manual review |
+| Organization validation | 5-10 business days | Requires corporate contact |
+| CSR verification | 2-5 business days | Security team review |
+
+## Vulnerability Handling for Maintainers
+
+This section documents the process for Geode team members handling security vulnerabilities.
+
+### Responsible Disclosure
+
+**Receiving Vulnerability Reports**:
+
+1. Monitor security@codepros.org inbox
+2. Acknowledge receipt within 24 hours
+3. Assign CVE ID if applicable
+4. Begin triage within 48 hours
+
+**Vulnerability Classification**:
+
+| Severity | CVSS Score | Response Time | Disclosure Timeline |
+|----------|------------|---------------|---------------------|
+| Critical | 9.0-10.0 | 24 hours | 7 days max |
+| High | 7.0-8.9 | 72 hours | 30 days |
+| Medium | 4.0-6.9 | 7 days | 60 days |
+| Low | 0.1-3.9 | 30 days | 90 days |
+
+### Vulnerability Response Process
+
+**Step 1: Triage**
+```markdown
+## Vulnerability Triage Checklist
+- [ ] Vulnerability verified/reproduced
+- [ ] Severity assessed (CVSS score)
+- [ ] Affected versions identified
+- [ ] Attack vector documented
+- [ ] Impact assessment completed
+- [ ] CVE ID requested (if applicable)
+```
+
+**Step 2: Fix Development**
+
+```bash
+# Create private security branch
+git checkout -b security/CVE-YYYY-XXXXX
+
+# Develop fix in private
+# DO NOT push to public repository
+
+# Test fix thoroughly
+make test
+make security-scan
+```
+
+**Step 3: Patch Preparation**
+
+```bash
+# Prepare patches for all affected versions
+git format-patch main
+
+# Create backport patches for LTS versions
+# v0.16.x, v0.17.x, v0.18.x
+```
+
+**Step 4: Coordinated Disclosure**
+
+1. **Notify reporter**: Confirm fix and disclosure timeline
+2. **Prepare advisory**: Draft security advisory
+3. **Pre-notify**: Inform enterprise customers (if applicable)
+4. **Release fix**: Publish patches to all branches
+5. **Public disclosure**: Publish advisory and CVE details
+
+### Security Advisory Template
+
+```markdown
+# Security Advisory: [CVE-YYYY-XXXXX]
+
+## Summary
+Brief description of the vulnerability
+
+## Severity
+**CVSS Score**: X.X (Critical/High/Medium/Low)
+**Vector**: CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H
+
+## Affected Versions
+- Geode 0.15.0 - 0.17.x
+- Geode 0.18.0 - 0.18.3
+
+## Fixed Versions
+- Geode 0.17.5
+- Geode 0.18.4
+
+## Description
+Detailed description of vulnerability and attack vector
+
+## Mitigation
+Temporary workarounds if immediate upgrade not possible
+
+## Credit
+Reporter name (if they consent to disclosure)
+
+## Timeline
+- YYYY-MM-DD: Vulnerability reported
+- YYYY-MM-DD: Acknowledged
+- YYYY-MM-DD: Fix developed
+- YYYY-MM-DD: Patches released
+- YYYY-MM-DD: Public disclosure
+```
+
+### Safely Removing Vulnerabilities from History
+
+**When to Remove from History**:
+- Committed credentials or secrets
+- Accidentally committed private keys
+- Sensitive data in commits
+
+**Process**:
+
+```bash
+# CAUTION: This rewrites history - coordinate with all team members
+
+# Use BFG Repo-Cleaner (preferred)
+java -jar bfg.jar --delete-files "*.pem" geode.git
+java -jar bfg.jar --replace-text passwords.txt geode.git
+
+# Or use git filter-repo
+git filter-repo --path-glob '*.key' --invert-paths
+
+# Force push (requires coordinated effort)
+git push origin --force --all
+git push origin --force --tags
+```
+
+**Post-Removal Actions**:
+
+1. **Rotate credentials**: All exposed secrets must be rotated
+2. **Notify team**: Inform all maintainers to re-clone
+3. **Update CI**: Regenerate CI tokens and secrets
+4. **Audit access**: Review who might have seen exposed data
+5. **Document incident**: Record in internal security log
+
+### Security Scanning
+
+**Regular Security Tasks**:
+
+```bash
+# Run daily security scan
+make security-scan
+
+# Check dependencies for CVEs
+zig fetch --check-vulnerabilities
+
+# Static analysis
+make lint-security
+
+# Generate SBOM (Software Bill of Materials)
+make sbom
+```
+
+**Automated Alerts**:
+- GitLab dependency scanning
+- SAST (Static Application Security Testing)
+- Container scanning
+- License compliance
+
+### Security Contacts
+
+| Role | Contact | Responsibility |
+|------|---------|----------------|
+| Security Lead | security@codepros.org | Overall security oversight |
+| Incident Response | incident@codepros.org | Active incident handling |
+| CVE Coordinator | cve@codepros.org | CVE assignments |
+
 ## Advanced Topics
 
 ### Performance Optimization
