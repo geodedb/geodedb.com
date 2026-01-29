@@ -1,6 +1,7 @@
 ---
 title: "Python Client"
 description: "Complete guide to the Geode Python async client library with QUIC + TLS support"
+url: /docs/client-libraries/python-client/
 weight: 20
 keywords:
   - Geode Python client

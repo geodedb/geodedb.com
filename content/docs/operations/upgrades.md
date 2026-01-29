@@ -1,6 +1,7 @@
 ---
 title: "Upgrade Procedures"
 description: "Safe upgrade procedures for Geode including in-place upgrades, rolling upgrades, blue-green deployments, and rollback procedures"
+url: /docs/operations/upgrades/
 weight: 40
 tags:
   - operations

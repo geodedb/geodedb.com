@@ -1,6 +1,7 @@
 ---
 title: "Fraud and Anomaly Detection"
 description: "Detect fraudulent transactions using graph patterns, ML embeddings, real-time CDC analytics, and Row-Level Security for compliance"
+url: /docs/use-cases/fraud-detection/
 weight: 20
 tags:
   - fraud-detection

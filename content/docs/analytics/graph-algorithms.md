@@ -1,6 +1,7 @@
 ---
 title: "Graph Algorithms and Analytics"
 description: "Run graph algorithms with real GQL examples, generate embeddings (Node2Vec/GraphSAGE/DeepWalk), and use vector similarity for analytics workloads"
+url: /docs/analytics/graph-algorithms/
 weight: 10
 tags:
   - graph-algorithms

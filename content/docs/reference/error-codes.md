@@ -1,6 +1,7 @@
 ---
 title: "Error Codes Reference"
 description: "Complete reference for Geode error codes, GQLSTATUS codes, and troubleshooting guidance following ISO/IEC SQL standards"
+url: /docs/reference/error-codes/
 keywords: ["error codes", "GQLSTATUS", "status codes", "error handling", "troubleshooting", "ISO SQL", "debugging", "error messages"]
 weight: 50
 slug: "error-codes"

@@ -1,6 +1,7 @@
 ---
 title: "Field-Level Encryption Guide"
 description: "Comprehensive guide to Geode's native field-level encryption: transparent encryption, searchable encrypted fields, key rotation, and RBAC-gated plaintext access"
+url: /docs/security/field-level-encryption/
 keywords: ["field-level encryption", "FLE", "AES-256-GCM", "ChaCha20-Poly1305", "blind index", "key rotation", "AEAD", "data encryption", "PII protection"]
 weight: 45
 slug: "field-level-encryption"

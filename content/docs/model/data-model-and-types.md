@@ -1,6 +1,7 @@
 ---
 title: "Data Model and Types"
 description: "Property-graph modeling in Geode plus the full type system (numeric, temporal, JSON, binary, vectors) with constructors and conversion rules"
+url: /docs/model/data-model-and-types/
 weight: 10
 tags:
   - data-model

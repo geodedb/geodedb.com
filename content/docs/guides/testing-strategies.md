@@ -1,6 +1,7 @@
 ---
 title: "Testing Strategies"
 description: "Comprehensive guide to testing strategies in Geode including unit testing, integration testing, regression testing, module testing, performance benchmarking, and CI/CD integration."
+url: /docs/guides/testing-strategies/
 keywords: ["testing", "unit tests", "integration tests", "regression tests", "geodetestlab", "test coverage", "CI/CD", "benchmarking", "fuzz testing", "module testing"]
 weight: 70
 slug: "testing-strategies"

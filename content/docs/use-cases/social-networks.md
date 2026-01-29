@@ -1,6 +1,7 @@
 ---
 title: "Social Network Analysis"
 description: "Build and analyze social networks with Geode: community detection, influence analysis, viral content tracking, and real-time engagement metrics"
+url: /docs/use-cases/social-networks/
 keywords: ["social network", "community detection", "influence analysis", "viral content", "engagement metrics", "social graph", "PageRank", "network analysis", "friend recommendations"]
 weight: 50
 slug: "social-networks"

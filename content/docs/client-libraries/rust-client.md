@@ -1,6 +1,7 @@
 ---
 title: "Rust Client"
 description: "Complete guide to the Geode Rust client library with tokio + Quinn QUIC support"
+url: /docs/client-libraries/rust-client/
 weight: 30
 keywords:
   - Geode Rust client

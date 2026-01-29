@@ -1,6 +1,7 @@
 ---
 title: "Post-Quantum Readiness & Cryptography"
 description: "Geode's cryptographic architecture designed for the Post-Quantum era, emphasizing forward secrecy, crypto-agility, and quantum-resistant algorithms."
+url: /docs/security/post-quantum-readiness/
 summary: "Deep dive into Geode's security architecture ensuring data protection in the Post-Quantum future through advanced cryptographic choices and forward secrecy."
 keywords:
   - post-quantum

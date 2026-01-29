@@ -1,6 +1,7 @@
 ---
 title: "Querying, Indexing, and Query Optimization"
 description: "Create and choose indexes (btree/hash/fulltext/spatial/vector), use EXPLAIN and PROFILE, and understand Geode's cost-based optimizer and IndexOptimizer"
+url: /docs/query/indexing-and-optimization/
 weight: 10
 tags:
   - indexing

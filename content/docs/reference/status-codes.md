@@ -1,6 +1,7 @@
 ---
 title: "ISO GQL Status Codes Reference"
 description: "Complete reference for ISO GQL status codes and error handling in Geode, including error categories, handling strategies, and troubleshooting guide"
+url: /docs/reference/status-codes/
 keywords: ["status codes", "error handling", "ISO GQL", "GQLSTATUS", "error codes", "troubleshooting"]
 weight: 50
 slug: "status-codes"

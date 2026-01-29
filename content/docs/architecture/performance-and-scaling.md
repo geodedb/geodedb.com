@@ -1,6 +1,7 @@
 ---
 title: "Performance and Scalability"
 description: "Understand Geode's performance architecture (storage, planner, indexes) and how distributed query coordination scales across shards over QUIC+TLS"
+url: /docs/architecture/performance-and-scaling/
 weight: 20
 tags:
   - performance

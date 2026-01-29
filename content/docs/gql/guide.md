@@ -1,6 +1,7 @@
 ---
 title: "Graph Query Language (GQL) Guide"
 description: "Learn GQL in Geode with executable examples: MATCH patterns, variable-length paths, transactions, functions, and standards-compliance notes"
+url: /docs/gql/guide/
 weight: 10
 tags:
   - gql

@@ -1,6 +1,7 @@
 ---
 title: "Benchmarking"
 description: "Comprehensive benchmarking guide for Geode including methodology, tools, workload types, and performance analysis"
+url: /docs/performance/benchmarking/
 weight: 30
 tags:
   - performance

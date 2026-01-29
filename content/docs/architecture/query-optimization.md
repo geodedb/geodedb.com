@@ -1,6 +1,7 @@
 ---
 title: "Query Optimization"
 description: "Geode's cost-based query optimizer including index selection, join ordering, predicate pushdown, and adaptive query execution"
+url: /docs/architecture/query-optimization/
 keywords: ["query optimization", "cost-based optimizer", "CBO", "index selection", "join ordering", "predicate pushdown"]
 weight: 25
 slug: "query-optimization"

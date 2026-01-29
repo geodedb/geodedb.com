@@ -1,6 +1,7 @@
 ---
 title: "Automated Backup Guide"
 description: "Complete guide to automated backup and recovery for Geode including S3 cloud backups, scheduled backups, point-in-time recovery, and disaster recovery procedures"
+url: /docs/guides/backup-automation/
 keywords: ["automated backups", "S3 backup", "cloud backup", "disaster recovery", "point-in-time recovery", "backup automation", "cron", "backup testing", "recovery testing"]
 weight: 65
 slug: "backup-automation"

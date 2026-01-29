@@ -1,6 +1,7 @@
 ---
 title: "Knowledge Graphs and Semantic Networks"
 description: "Build knowledge graphs with Geode for semantic search, ontology management, RDF integration, and intelligent information retrieval"
+url: /docs/use-cases/knowledge-graphs/
 keywords: ["knowledge graph", "semantic network", "ontology", "RDF", "SPARQL", "semantic search", "entity resolution", "linked data", "information retrieval"]
 weight: 40
 slug: "knowledge-graphs"

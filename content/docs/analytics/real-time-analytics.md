@@ -1,6 +1,7 @@
 ---
 title: "Real-Time Analytics Guide"
 description: "Comprehensive guide to Geode's real-time analytics system including change data capture (CDC), pattern detection, anomaly detection, machine learning integration, and streaming analytics."
+url: /docs/analytics/real-time-analytics/
 keywords: ["real-time analytics", "CDC", "change data capture", "pattern detection", "anomaly detection", "machine learning", "streaming", "event processing", "embeddings", "trend analysis"]
 weight: 10
 slug: "real-time-analytics"

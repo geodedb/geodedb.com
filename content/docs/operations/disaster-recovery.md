@@ -1,6 +1,7 @@
 ---
 title: "Disaster Recovery"
 description: "Complete disaster recovery guide for Geode including DR planning, RTO/RPO objectives, failover procedures, and business continuity"
+url: /docs/operations/disaster-recovery/
 weight: 30
 tags:
   - operations

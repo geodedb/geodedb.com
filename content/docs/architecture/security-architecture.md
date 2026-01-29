@@ -1,6 +1,7 @@
 ---
 title: "Security Architecture"
 description: "Geode's security architecture including authentication, authorization, encryption, audit logging, and compliance features"
+url: /docs/architecture/security-architecture/
 keywords: ["security", "authentication", "authorization", "RBAC", "encryption", "TDE", "FLE", "audit logging"]
 weight: 35
 slug: "security-architecture"

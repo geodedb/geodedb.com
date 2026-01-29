@@ -1,6 +1,7 @@
 ---
 title: "Transactions and Data Integrity"
 description: "Use START TRANSACTION/COMMIT/ROLLBACK, understand MVCC + SSI isolation, and learn how WAL and recovery preserve integrity in Geode"
+url: /docs/transactions/overview/
 weight: 10
 tags:
   - transactions

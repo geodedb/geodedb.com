@@ -1,6 +1,7 @@
 ---
 title: "Key Management System (KMS) Integration"
 description: "Enterprise key management for Geode: HashiCorp Vault, AWS KMS, envelope encryption, automated rotation, and secure key lifecycle management"
+url: /docs/security/kms-integration/
 keywords: ["KMS", "key management", "HashiCorp Vault", "AWS KMS", "envelope encryption", "key rotation", "master key", "data encryption key", "TDE"]
 weight: 50
 slug: "kms-integration"

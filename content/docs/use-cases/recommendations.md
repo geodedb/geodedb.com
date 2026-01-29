@@ -1,6 +1,7 @@
 ---
 title: "Recommendation Systems"
 description: "Build personalized recommendation engines using collaborative filtering, graph embeddings, and vector similarity search with Geode"
+url: /docs/use-cases/recommendations/
 weight: 30
 tags:
   - recommendations

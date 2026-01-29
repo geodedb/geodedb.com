@@ -1,6 +1,7 @@
 ---
 title: "Multi-Datacenter Deployment and Replication"
 description: "Complete guide for deploying Geode across multiple datacenters with high availability, disaster recovery, and cross-region replication patterns"
+url: /docs/guides/multi-datacenter/
 keywords: ["multi-datacenter", "replication", "high availability", "disaster recovery", "federation", "cross-region", "failover", "CDC", "active-active", "active-passive"]
 weight: 90
 slug: "multi-datacenter"

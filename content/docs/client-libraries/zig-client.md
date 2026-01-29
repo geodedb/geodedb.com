@@ -1,6 +1,7 @@
 ---
 title: "Zig Client"
 description: "Guide to the Geode Zig client for low-level QUIC protocol access"
+url: /docs/client-libraries/zig-client/
 weight: 40
 keywords:
   - Geode Zig client

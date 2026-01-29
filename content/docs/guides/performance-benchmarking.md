@@ -1,6 +1,7 @@
 ---
 title: "Performance Benchmarking Guide"
 description: "Comprehensive guide for benchmarking Geode performance: setup, tools, metrics, load testing, and result interpretation"
+url: /docs/guides/performance-benchmarking/
 keywords: ["performance", "benchmarking", "load testing", "metrics", "profiling", "optimization", "throughput", "latency", "stress testing"]
 weight: 95
 slug: "performance-benchmarking"

@@ -1,6 +1,7 @@
 ---
 title: "Backup Procedures"
 description: "Comprehensive backup procedures for Geode including full backups, incremental backups, S3 cloud storage, point-in-time recovery, and automated backup strategies"
+url: /docs/operations/backup/
 weight: 10
 tags:
   - operations

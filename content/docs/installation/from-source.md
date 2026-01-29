@@ -1,6 +1,7 @@
 ---
 title: "Install from Source"
 description: "Build Geode from source with Zig compiler"
+url: /docs/installation/from-source/
 weight: 20
 
 keywords:

@@ -1,6 +1,7 @@
 ---
 title: "Security and Compliance Guide"
 description: "Configure Geode authentication and policies, enable row-level security, use TDE/FLE with KMS integration, and deploy tamper-evident audit logging"
+url: /docs/security/overview/
 weight: 10
 tags:
   - security

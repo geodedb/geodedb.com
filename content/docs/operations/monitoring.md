@@ -1,6 +1,7 @@
 ---
 title: "Monitoring"
 description: "Set up comprehensive monitoring for Geode including Prometheus metrics, Grafana dashboards, alerting, and log aggregation"
+url: /docs/operations/monitoring/
 weight: 20
 tags:
   - operations

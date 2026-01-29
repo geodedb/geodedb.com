@@ -1,6 +1,7 @@
 ---
 title: "Migration Guide"
 description: "Comprehensive migration guide for moving data to Geode from other databases, between environments, and across versions"
+url: /docs/operations/migration/
 weight: 50
 tags:
   - operations

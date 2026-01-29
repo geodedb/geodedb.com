@@ -1,6 +1,7 @@
 ---
 title: "Authentication"
 description: "Configure authentication mechanisms in Geode including username/password, API keys, MFA, LDAP/AD integration, and OAuth2/OIDC"
+url: /docs/security/authentication/
 weight: 20
 tags:
   - security

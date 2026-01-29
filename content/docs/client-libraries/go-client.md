@@ -1,6 +1,7 @@
 ---
 title: "Go Client"
 description: "Complete guide to the Geode Go client library with database/sql integration"
+url: /docs/client-libraries/go-client/
 weight: 10
 
 keywords:

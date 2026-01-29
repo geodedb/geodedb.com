@@ -1,6 +1,7 @@
 ---
 title: "Query Execution Architecture"
 description: "Deep dive into Geode's query execution pipeline including parser, planner, optimizer, and executor with distributed query coordination"
+url: /docs/architecture/query-execution/
 keywords: ["query execution", "parser", "planner", "optimizer", "executor", "distributed queries", "query pipeline"]
 weight: 30
 slug: "query-execution"

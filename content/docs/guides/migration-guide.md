@@ -1,6 +1,7 @@
 ---
 title: "Migration Guide"
 description: "Complete guide for migrating data to Geode, upgrading between versions, migrating from other graph databases, backup and restore procedures, and zero-downtime migration strategies."
+url: /docs/guides/migration-guide/
 keywords: ["migration", "upgrade", "backup", "restore", "data import", "version upgrade", "zero downtime", "Neo4j migration", "cloud backup", "S3 backup", "point-in-time recovery"]
 weight: 60
 slug: "migration-guide"

@@ -1,6 +1,7 @@
 ---
 title: "Advanced Transaction Patterns"
 description: "Master advanced transaction patterns in Geode including isolation levels, savepoints, phantom read prevention, deadlock detection, distributed transactions, and ACID compliance strategies."
+url: /docs/transactions/advanced-patterns/
 keywords: ["transactions", "ACID", "isolation levels", "savepoints", "MVCC", "SSI", "deadlock detection", "phantom reads", "distributed transactions", "two-phase commit", "serializable"]
 weight: 20
 slug: "advanced-patterns"

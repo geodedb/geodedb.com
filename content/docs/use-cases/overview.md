@@ -1,6 +1,7 @@
 ---
 title: "Use Case Guides"
 description: "Practical guides to modeling and querying real-world domains in Geode, mapping features like embeddings, vector search, security, and analytics to business use cases"
+url: /docs/use-cases/overview/
 weight: 10
 tags:
   - use-cases

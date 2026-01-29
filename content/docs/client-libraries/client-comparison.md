@@ -1,6 +1,7 @@
 ---
 title: "Client Library Comparison"
 description: "Comparison matrix for Geode client libraries across Go, Python, Rust, Node.js, and Zig"
+url: /docs/client-libraries/client-comparison/
 keywords: ["client libraries", "Go", "Python", "Rust", "Node.js", "Zig", "comparison", "GQL", "QUIC"]
 weight: 30
 slug: "client-comparison"

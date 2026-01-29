@@ -1,6 +1,7 @@
 ---
 title: "Distributed Architecture Deep Dive"
 description: "Comprehensive guide to Geode's distributed query coordination, federation, sharding, load balancing, and fault tolerance for enterprise-scale graph databases."
+url: /docs/architecture/distributed-architecture/
 keywords: ["distributed architecture", "query coordination", "federation", "sharding", "load balancing", "fault tolerance", "QUIC", "multi-shard queries", "distributed transactions", "cluster management"]
 weight: 10
 slug: "distributed-architecture"

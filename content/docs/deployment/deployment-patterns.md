@@ -1,6 +1,7 @@
 ---
 title: "Deployment Patterns"
 description: "Production deployment strategies for Geode including single-node, distributed, and cloud deployment patterns with Docker Compose, Kubernetes, and infrastructure stack integration"
+url: /docs/deployment/deployment-patterns/
 keywords: ["deployment", "production", "docker", "kubernetes", "distributed", "cloud", "single-node", "high availability", "scaling"]
 weight: 10
 slug: "deployment-patterns"

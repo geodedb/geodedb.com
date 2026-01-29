@@ -1,6 +1,7 @@
 ---
 title: "Docker Deployment Guide"
 description: "Complete guide to deploying Geode graph database with Docker: pre-built images, development environment, production deployment, and distributed clusters"
+url: /docs/ops/docker-deployment/
 keywords: ["docker", "containerization", "deployment", "docker compose", "orchestration", "production", "distributed", "QUIC", "TLS"]
 weight: 35
 slug: "docker-deployment"

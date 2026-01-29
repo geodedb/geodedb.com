@@ -1,6 +1,7 @@
 ---
 title: "Monitoring and Telemetry"
 description: "Monitor Geode with health checks and Prometheus metrics, enable optional paging telemetry, and configure tamper-evident audit logging with tracing IDs"
+url: /docs/ops/observability/
 weight: 20
 tags:
   - monitoring

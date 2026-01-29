@@ -1,6 +1,7 @@
 ---
 title: "Deployment and Integration Guide"
 description: "Deploy Geode with Docker Compose or Kubernetes, configure Vault/MinIO/Prometheus/Grafana, set up S3 backups and CDC/webhooks, and integrate client libraries"
+url: /docs/ops/deployment/
 weight: 10
 tags:
   - deployment

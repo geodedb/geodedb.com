@@ -1,6 +1,7 @@
 ---
 title: "Authorization"
 description: "Configure authorization and access control in Geode including RBAC, ABAC, Row-Level Security (RLS), and fine-grained permissions"
+url: /docs/security/authorization/
 weight: 25
 tags:
   - security

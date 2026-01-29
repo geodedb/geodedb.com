@@ -1,6 +1,7 @@
 ---
 title: "Supply Chain Optimization"
 description: "Optimize supply chain operations with Geode: route planning, inventory tracking, supplier networks, and real-time logistics analytics"
+url: /docs/use-cases/supply-chain/
 keywords: ["supply chain", "logistics", "route optimization", "inventory management", "shortest path", "Dijkstra", "network analysis", "warehouse management", "delivery tracking"]
 weight: 60
 slug: "supply-chain"

@@ -1,6 +1,7 @@
 ---
 title: "Distributed Systems Architecture"
 description: "Geode's distributed systems including Raft consensus, federation, sharding strategies, and fault tolerance mechanisms"
+url: /docs/architecture/distributed-systems/
 keywords: ["distributed systems", "Raft consensus", "federation", "sharding", "replication", "fault tolerance"]
 weight: 30
 slug: "distributed-systems"

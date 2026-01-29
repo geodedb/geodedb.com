@@ -1,6 +1,7 @@
 ---
 title: "Node.js Client Library"
 description: "Complete guide to the Geode Node.js and TypeScript client with QUIC + TLS support"
+url: /docs/client-libraries/nodejs-client/
 keywords:
   - Geode Node.js client
   - TypeScript GQL driver

@@ -1,6 +1,7 @@
 ---
 title: "Changelog"
 description: "Complete version history and release notes for Geode graph database with breaking changes, new features, and migration guides"
+url: /docs/reference/changelog/
 keywords: ["changelog", "release notes", "version history", "updates", "migration", "breaking changes", "new features", "bug fixes", "deprecations"]
 weight: 60
 slug: "changelog"

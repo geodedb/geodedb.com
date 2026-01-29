@@ -1,6 +1,7 @@
 ---
 title: "Introduction and Key Features"
 description: "Production-ready graph database with ISO GQL compliance, ACID transactions, vector/spatial/full-text indexing, enterprise security, and distributed query coordination"
+url: /docs/overview/introduction/
 weight: 10
 tags:
   - overview

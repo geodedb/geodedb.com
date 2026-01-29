@@ -1,6 +1,7 @@
 ---
 title: "API Reference and CLI Manual"
 description: "Command-line reference for `geode` (with geoded/geodec compatibility) and the full Geode GQL surface: keywords, functions, types, procedures, and operational commands"
+url: /docs/reference/cli-and-api/
 weight: 10
 tags:
   - api-reference

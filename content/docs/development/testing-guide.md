@@ -1,6 +1,7 @@
 ---
 title: "Testing Guide"
 description: "Comprehensive testing strategies for Geode including unit tests, integration tests, geodetestlab framework, regression testing, fuzz testing, and CI/CD integration"
+url: /docs/development/testing-guide/
 keywords: ["testing", "unit tests", "integration tests", "geodetestlab", "regression", "fuzz testing", "CI/CD", "test coverage"]
 weight: 20
 slug: "testing-guide"

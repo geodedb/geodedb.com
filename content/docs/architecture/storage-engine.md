@@ -1,6 +1,7 @@
 ---
 title: "Storage Engine Architecture"
 description: "Deep dive into Geode's storage engine including memory-mapped I/O, page management, MVCC transactions, and data persistence"
+url: /docs/architecture/storage-engine/
 keywords: ["storage engine", "memory-mapped I/O", "page cache", "MVCC", "transactions", "persistence", "WAL"]
 weight: 20
 slug: "storage-engine"

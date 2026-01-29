@@ -1,6 +1,7 @@
 ---
 title: "Query Optimization"
 description: "Optimize GQL queries for maximum performance with indexing strategies, query planning, and execution tuning"
+url: /docs/performance/query-optimization/
 weight: 20
 tags:
   - performance
