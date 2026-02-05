@@ -30,53 +30,43 @@ Geode provides official client libraries for multiple languages, all built on th
 
 | Language | Package | Protocol | Async Model |
 |----------|---------|----------|-------------|
-| **Go** | `geodedb.com/geode` | QUIC | Goroutines |
-| **Python** | `geode-client` | QUIC | asyncio |
-| **Rust** | `geode-client` | QUIC | tokio |
-| **Zig** | `geode-client-zig` | QUIC | Native |
-| **Node.js** | `@geode/client` | QUIC | Promises |
+| **Go** | `geodedb.com/geode` | QUIC/gRPC | Goroutines |
+| **Python** | `geode-client` | QUIC/gRPC | asyncio |
+| **Rust** | `geode-client` | QUIC/gRPC | tokio |
+| **Zig** | `geode-client-zig` | QUIC/gRPC | Native |
+| **Node.js** | `@geodedb/client` | QUIC/gRPC | Promises |
 
 ## Wire Protocol
 
-All Geode clients communicate using a JSON line protocol over QUIC+TLS:
+All Geode clients communicate using a Protobuf wire protocol over QUIC+TLS (default) or gRPC:
 
 ### Message Types
 
 **Client → Server**:
-```json
-{"type": "HELLO", "version": 1, "client": "go/1.0.0"}
-{"type": "RUN_GQL", "query": "MATCH (n) RETURN n", "params": {}}
-{"type": "PULL", "n": 1000}
-{"type": "BEGIN", "isolation": "serializable"}
-{"type": "COMMIT"}
-{"type": "ROLLBACK"}
-{"type": "PING"}
-```
+- `HelloRequest`
+- `ExecuteRequest`
+- `PullRequest`
+- `BeginRequest` / `CommitRequest` / `RollbackRequest`
+- `PingRequest`
 
 **Server → Client**:
-```json
-{"type": "SCHEMA", "columns": ["n"], "types": ["node"]}
-{"type": "BINDINGS", "data": [{"n": {"id": 1, "labels": ["User"]}}]}
-{"type": "SUCCESS", "stats": {"nodes_created": 0}}
-{"type": "ERROR", "code": "42000", "message": "Syntax error"}
-```
+- `ExecutionResponse` (payloads: `SchemaDefinition`, `DataPage`, `Error`, `ExplainPayload`, `ProfilePayload`)
 
 ### Connection Lifecycle
 
 ```
 Client                          Server
   |                               |
-  |------ HELLO ----------------->|
-  |<----- SUCCESS ----------------|
+  |------ HelloRequest ---------->|
+  |<----- HelloResponse ----------|
   |                               |
-  |------ RUN_GQL --------------->|
-  |<----- SCHEMA -----------------|
-  |------ PULL ------------------>|
-  |<----- BINDINGS ---------------|
-  |<----- SUCCESS ----------------|
+  |------ ExecuteRequest -------->|
+  |<----- ExecutionResponse ------|
+  |------ PullRequest ----------->|
+  |<----- ExecutionResponse ------|
   |                               |
-  |------ PING ------------------>|
-  |<----- PONG -------------------|
+  |------ PingRequest ----------->|
+  |<----- PingResponse -----------|
 ```
 
 ## Client Architecture
@@ -423,7 +413,7 @@ async def test_real_query(geode):
 ```python
 # Configure pool for workload
 pool = ConnectionPool(
-    dsn="geode://localhost:3141/mydb",
+    dsn="quic://localhost:3141",
     min_connections=5,      # Keep warm
     max_connections=50,     # Scale limit
     max_idle_time=300,      # 5 minutes

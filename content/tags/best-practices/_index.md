@@ -420,7 +420,7 @@ client = Client(
 
 ```go
 // Go
-db, err := sql.Open("geode", "geode://localhost:3141?pool_size=20")
+db, err := sql.Open("geode", "quic://localhost:3141?pool_size=20")
 ```
 
 ### 3. Monitor Query Performance

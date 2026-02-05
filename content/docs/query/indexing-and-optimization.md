@@ -428,7 +428,7 @@ WHERE p.active = true  -- Selectivity ~90%
 
 From `match_tutorial.md`: Geode enforces deterministic ordering for pagination.
 
-**Explicit ordering** (recommended):
+**Explicit ordering** (required):
 ```gql
 MATCH (p:Person)
 RETURN p.name
@@ -436,11 +436,11 @@ ORDER BY p.created_at DESC, p.id ASC  -- Deterministic
 LIMIT 10;
 ```
 
-**Implicit ordering** (Geode applies stable order):
+**Unordered pagination** (rejected with `US001`):
 ```gql
 MATCH (p:Person)
 RETURN p.name
-LIMIT 10;  -- Geode ensures same 10 nodes each time
+LIMIT 10;
 ```
 
 ### 4. Use EXPLAIN Before PROFILE

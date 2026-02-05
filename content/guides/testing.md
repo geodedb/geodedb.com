@@ -1054,7 +1054,7 @@ describe('Geode Integration Tests', () => {
 
         const host = container.getHost();
         const port = container.getMappedPort(3141);
-        client = await createClient(`geode://${host}:${port}`);
+        client = await createClient(`quic://${host}:${port}`);
     }, 60000);
 
     afterAll(async () => {
@@ -2492,7 +2492,7 @@ describe('Performance Tests', () => {
     let client: GeodeClient;
 
     beforeAll(async () => {
-        client = await createClient('geode://localhost:3141');
+        client = await createClient('quic://localhost:3141');
         await client.exec('MATCH (n) DETACH DELETE n');
     });
 

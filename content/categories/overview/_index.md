@@ -1,6 +1,6 @@
 ---
 title: "Category: Overview and Introduction"
-description: "Comprehensive overview of Geode graph database: architecture, features, ISO GQL compliance, getting started guides, and core concepts for developers and architects."
+description: "Comprehensive overview of Geode graph database: architecture, features, ISO GQL conformance profile, getting started guides, and core concepts for developers and architects."
 keywords:
   - overview
   - introduction
@@ -23,7 +23,7 @@ The **Overview and Introduction** category provides high-level documentation abo
 
 ## What is Geode?
 
-Geode is a production-ready graph database that implements the **ISO/IEC 39075:2024 Graph Query Language (GQL)** standard. Written in Zig for maximum performance and memory safety, Geode combines the power of graph computing with enterprise-grade reliability, achieving 100% GQL compliance and 97.4% test coverage across 1,644 passing tests.
+Geode is a production-ready graph database that aligns with the **ISO/IEC 39075:2024 Graph Query Language (GQL)** standard via the full GQL conformance profile. Written in Zig for maximum performance and memory safety, Geode combines the power of graph computing with enterprise-grade reliability, achieving 100% GQL compliance and 97.4% test coverage across 1,644 passing tests.
 
 Unlike traditional relational databases that struggle with connected data, or proprietary graph databases that lock you into vendor-specific query languages, Geode provides a standards-based foundation for building modern applications on graph data. The ISO GQL standard ensures your queries are portable, future-proof, and backed by international consensus on graph database best practices.
 
@@ -53,7 +53,7 @@ RETURN friend.name, friend.occupation
 ORDER BY friend.name
 ```
 
-This standards compliance means:
+This standards alignment means:
 - **No vendor lock-in**: Your queries work across any GQL-compliant database
 - **Professional support**: The ISO committee maintains and evolves the language
 - **Future-proof**: New features arrive through standardized extensions
@@ -615,9 +615,9 @@ Pre-built dashboards visualize:
 ```javascript
 // Express + Apollo GraphQL + Geode
 const { ApolloServer, gql } = require('apollo-server-express');
-const { createClient } = require('@geode/client');
+const { createClient } = require('@geodedb/client');
 
-const geode = createClient('geode://localhost:3141');
+const geode = createClient('quic://localhost:3141');
 
 const typeDefs = gql`
   type Person {

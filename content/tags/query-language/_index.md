@@ -33,7 +33,7 @@ GQL (Graph Query Language) is an international standard for querying property gr
 - **SQL Compatibility**: Familiar syntax and semantics where applicable
 - **Composability**: Build complex queries from simple building blocks
 
-Geode achieves 100% GQL compliance, passing all 70 ISO standardization tests.
+Geode follows the 100% GQL compliance; see the conformance profile for scope and diagnostics.
 
 ## Query Structure
 
@@ -531,7 +531,7 @@ async with client.connection() as conn:
 import "database/sql"
 import _ "geodedb.com/geode"
 
-db, _ := sql.Open("geode", "geode://localhost:3141")
+db, _ := sql.Open("geode", "quic://localhost:3141")
 defer db.Close()
 
 // Query with parameters

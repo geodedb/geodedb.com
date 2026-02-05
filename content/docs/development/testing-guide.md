@@ -12,7 +12,7 @@ canonical: "https://geodedb.com/docs/development/testing-guide"
 
 # Testing Guide
 
-Geode maintains comprehensive test coverage with 97.4% integration test pass rate (1644/1688 tests) and 100% GQL compliance (70/70 ISO tests). This guide covers all testing frameworks, strategies, and best practices.
+Geode maintains comprehensive test coverage with 97.4% integration test pass rate (1644/1688 tests) and 100% GQL compliance (see conformance profile). This guide covers all testing frameworks, strategies, and best practices.
 
 ## Overview
 
@@ -31,9 +31,9 @@ Unit Tests (Zig):
   Total: 393 test blocks
   Passing: 393 tests (100%)
 
-ISO GQL Compliance:
-  Total: 70 official tests
-  Passing: 70 tests (100% compliance)
+GQL Conformance Profile:
+  Scope: ISO/IEC 39075:2024 compliance (see conformance profile)
+  Status: tracked in CI with published diagnostics
 
 CANARY Governance:
   Total: 1,735 markers
@@ -54,7 +54,7 @@ CANARY Governance:
 | Query Execution | 456 | 99.1% |
 | Server Operations | 234 | 95.7% |
 | CLI Commands | 178 | 99.4% |
-| GQL Compliance | 70 | 100% |
+| GQL Conformance (profile) | see profile | see profile |
 | Storage & Backup | 123 | 98.4% |
 | Distributed Systems | 87 | 94.3% |
 | Security Features | 156 | 100% |
@@ -69,7 +69,7 @@ Geode uses multiple complementary testing frameworks:
 3. **Regression Tests** - Shell scripts for specific bug scenarios
 4. **Fuzz Testing** - Randomized input testing for parser and storage
 5. **Benchmark Tests** - Performance regression detection
-6. **ISO Compliance Tests** - Official GQL standard conformance
+6. **GQL Conformance Tests** - Profile-based GQL conformance
 
 ## Quick Start
 
@@ -1142,7 +1142,7 @@ firefox coverage/index.html
 ```markdown
 ![Test Coverage](https://img.shields.io/badge/coverage-97.4%25-brightgreen)
 ![Unit Tests](https://img.shields.io/badge/unit%20tests-100%25-brightgreen)
-![GQL Compliance](https://img.shields.io/badge/GQL%20compliance-100%25-brightgreen)
+![GQL Compliance](https://img.shields.io/badge/GQL%20compliance-100%25-blue)
 ```
 
 ### Coverage Thresholds
@@ -1670,5 +1670,5 @@ After mastering Geode testing:
 
 *Last Updated: January 2026*
 *Test Coverage: 97.4% (1644/1688 tests passing)*
-*GQL Compliance: 100% (70/70 ISO tests passing)*
+*GQL Conformance Profile: ISO/IEC 39075:2024 compliance (see conformance profile)*
 *Status: Production Ready*

@@ -93,7 +93,7 @@ import (
 )
 
 func main() {
-    db, err := sql.Open("geode", "geode://localhost:3141")
+    db, err := sql.Open("geode", "quic://localhost:3141")
     if err != nil {
         log.Fatal(err)
     }
@@ -373,7 +373,7 @@ CREATE FULLTEXT INDEX article_content ON :Article(title, content);
 -- Insert articles
 CREATE (a1:Article {
     title: 'Getting Started with Geode',
-    content: 'Geode is a graph database implementing ISO GQL...',
+    content: 'Geode is a graph database aligned with the ISO GQL conformance profile...',
     published: datetime('2024-01-15')
 });
 

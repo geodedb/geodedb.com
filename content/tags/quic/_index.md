@@ -95,24 +95,16 @@ Geode's wire protocol leverages QUIC streams:
 
 1. **Connection Establishment**: Client initiates QUIC connection to port 3141
 2. **Stream Allocation**: Each query executes on a dedicated bidirectional stream
-3. **Request/Response**: JSON line protocol messages flow over streams
+3. **Request/Response**: Protobuf wire protocol messages flow over streams
 4. **Concurrent Queries**: Multiple queries execute in parallel using different streams
 5. **Connection Pooling**: Clients maintain persistent QUIC connections
 
-### JSON Line Protocol Over QUIC
+### Protobuf Messages Over QUIC
 
-Each QUIC stream carries a request-response conversation:
+Each QUIC stream carries a request-response conversation using Protobuf messages:
 
-```
-Client Stream 4:
-→ {"type": "RUN_GQL", "query": "MATCH (n:Person) RETURN n.name", "params": {}}
-
-Server Stream 4:
-← {"type": "SCHEMA", "fields": [{"name": "n.name", "type": "STRING"}]}
-← {"type": "BINDINGS", "values": ["Alice"]}
-← {"type": "BINDINGS", "values": ["Bob"]}
-← {"type": "DONE", "stats": {"rows": 2, "time_ms": 5.3}}
-```
+- `ExecuteRequest` → `ExecutionResponse` (schema + first page)
+- `PullRequest` → `ExecutionResponse` (subsequent pages)
 
 ### Stream Management
 
@@ -131,7 +123,7 @@ Geode fully supports QUIC connection migration:
 import geode_client
 
 # Client maintains connection during network changes
-client = geode_client.open_database('geode://db.example.com:3141')
+client = geode_client.open_database('quic://db.example.com:3141')
 async with client.connection() as conn:
     # Execute query on WiFi
     result, _ = await conn.query("MATCH (n:Person) RETURN count(n)")
@@ -149,13 +141,13 @@ Geode supports 0-RTT for repeat connections:
 
 ```python
 # First connection: 1-RTT handshake
-client = geode_client.open_database('geode://db.example.com:3141')
+client = geode_client.open_database('quic://db.example.com:3141')
 async with client.connection() as conn:
     result, _ = await conn.query("MATCH (n) RETURN count(n)")
 # Server sends session ticket for resumption
 
 # Second connection within ticket lifetime: 0-RTT
-client = geode_client.open_database('geode://db.example.com:3141')
+client = geode_client.open_database('quic://db.example.com:3141')
 async with client.connection() as conn:
     # Query sent in first packet, no handshake wait
     result, _ = await conn.query("MATCH (n) RETURN count(n)")
@@ -171,7 +163,7 @@ import asyncio
 
 async def measure_query_latency():
     """Measure end-to-end query latency with QUIC."""
-    client = geode_client.open_database('geode://localhost:3141')
+    client = geode_client.open_database('quic://localhost:3141')
     async with client.connection() as conn:
         for i in range(100):
             start = asyncio.get_event_loop().time()
@@ -196,7 +188,7 @@ async def measure_query_latency():
 ```python
 async def concurrent_queries():
     """Execute multiple queries in parallel over QUIC streams."""
-    client = geode_client.open_database('geode://localhost:3141')
+    client = geode_client.open_database('quic://localhost:3141')
     async with client.connection() as conn:
         # All queries use the same QUIC connection but different streams
         results = await asyncio.gather(
@@ -237,7 +229,7 @@ class MobileClient:
                 await asyncio.sleep(0.5)
 
 # Usage in mobile app
-client = MobileClient('geode://db.example.com:3141')
+client = MobileClient('quic://db.example.com:3141')
 
 # Works seamlessly across WiFi/cellular transitions
 results = await client.query("MATCH (n:Person) RETURN n.name LIMIT 10")
@@ -385,7 +377,7 @@ QUIC resource consumption is modest:
 ## Further Reading
 
 - [QUIC Specification (RFC 9000)](https://datatracker.ietf.org/doc/html/rfc9000) - Official IETF specification
-- [Wire Protocol](/docs/architecture/wire-protocol/) - JSON line protocol over QUIC
+- [Wire Protocol](/docs/architecture/wire-protocol/) - Protobuf wire protocol over QUIC
 - [Server Configuration](/docs/configuration/server-configuration/) - Server and connection configuration options
 - [Performance Tuning](/docs/query/performance-tuning/) - Optimizing connections and queries
 - [Protocol Documentation](/docs/protocol/) - Geode protocol design

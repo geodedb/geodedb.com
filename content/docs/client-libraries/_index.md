@@ -12,15 +12,15 @@ keywords:
 
 # Client Libraries
 
-Geode provides official client libraries for multiple programming languages. All clients use the same QUIC + TLS 1.3 protocol and JSON line framing, while higher-level APIs vary by language.
+Geode provides official client libraries for multiple programming languages. All clients speak the same **Protobuf wire protocol** over QUIC (default) or gRPC, while higher-level APIs vary by language.
 
 ## Available Libraries
 
 - **Go** - `database/sql` driver (`geodedb.com/geode`) - [Go client docs](/docs/client-libraries/go-client/)
 - **Python** - Async client (`geode-client`) - [Python client docs](/docs/client-libraries/python-client/)
-- **Rust** - tokio + Quinn client (`geode-client`) - [Rust client docs](/docs/client-libraries/rust-client/)
-- **Node.js** - TypeScript-first client (`@geode/client`) - [Node.js client docs](/docs/client-libraries/nodejs-client/)
-- **Zig** - Low-level QUIC client - [Zig client docs](/docs/client-libraries/zig-client/)
+- **Rust** - tokio-based client (`geode-client`) - [Rust client docs](/docs/client-libraries/rust-client/)
+- **Node.js** - TypeScript-first client (`@geodedb/client`) - [Node.js client docs](/docs/client-libraries/nodejs-client/)
+- **Zig** - Low-level QUIC/gRPC client - [Zig client docs](/docs/client-libraries/zig-client/)
 
 ## Quick Start
 
@@ -37,7 +37,7 @@ import (
     _ "geodedb.com/geode"
 )
 
-db, err := sql.Open("geode", "localhost:3141")
+db, err := sql.Open("geode", "quic://localhost:3141")
 ```
 
 ### Python
@@ -47,9 +47,9 @@ pip install geode-client
 ```
 
 ```python
-from geode_client import Client
+from geode_client import open_database
 
-client = Client(host="localhost", port=3141)
+client = open_database("quic://localhost:3141")
 async with client.connection() as conn:
     page, _ = await conn.query("RETURN 1 AS ok")
 ```
@@ -63,20 +63,20 @@ cargo add geode-client
 ```rust
 use geode_client::Client;
 
-let client = Client::new("localhost", 3141);
+let client = Client::from_dsn("quic://localhost:3141")?;
 let mut conn = client.connect().await?;
 ```
 
 ### Node.js
 
 ```bash
-npm install @geode/client
+npm install @geodedb/client
 ```
 
 ```ts
-import { createClient } from '@geode/client';
+import { createClient } from '@geodedb/client';
 
-const client = await createClient('geode://localhost:3141');
+const client = await createClient('quic://localhost:3141');
 const rows = await client.queryAll('RETURN 1 AS ok');
 ```
 
@@ -90,15 +90,15 @@ var client = geode.GeodeClient.init(allocator, "localhost", 3141, true);
 
 ## Protocol Consistency
 
-All clients speak the same protocol messages (`HELLO`, `RUN_GQL`, `PULL`, `BEGIN`, `COMMIT`, `ROLLBACK`) and surface ISO/IEC 39075 status classes in errors. Connection pooling and query builders are provided where available.
+All clients speak the same Protobuf message set (`Hello`, `Execute`, `Pull`, `Begin`, `Commit`, `Rollback`) and surface ISO/IEC 39075 status classes in errors. Connection pooling and query builders are provided where available.
 
 ## Choosing a Client
 
 - **Go**: `database/sql` integration with standard pooling and prepared statements.
-- **Python**: Async workflows, connection pooling, and query builder helpers.
+- **Python**: Async workflows, connection pooling, and gRPC/QUIC support.
 - **Rust**: tokio-based performance with typed values and DSN parsing.
 - **Node.js**: TypeScript-first API with pooling, query builders, and batching.
-- **Zig**: Low-level QUIC access for native integrations.
+- **Zig**: Low-level QUIC/gRPC access for native integrations.
 
 ## Next Steps
 

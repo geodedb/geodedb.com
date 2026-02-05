@@ -1,6 +1,6 @@
 ---
 title: "Tag: Graph Query Language (GQL)"
-description: "Explore Geode's ISO/IEC 39075:2024 GQL standard implementation including query syntax, pattern matching, and full compliance with the graph query language specification."
+description: "Explore Geode's ISO/IEC 39075:2024 GQL standard implementation including query syntax, pattern matching, and the full GQL conformance profile."
 keywords:
   - GQL
   - graph query language
@@ -24,7 +24,7 @@ The Graph Query Language (GQL) represents a watershed moment in database standar
 
 GQL combines the best ideas from existing graph query languages while introducing new capabilities for modern graph workloads. The language supports both read queries (MATCH) and write operations (INSERT, SET, REMOVE, DELETE), making it a complete data manipulation language. Its declarative nature means you describe what data you want, not how to retrieve it—the query optimizer handles execution strategy.
 
-Geode implements 100% of the ISO/IEC 39075:2024 specification, passing all 70 official ISO compliance tests. This makes Geode one of the first production-ready databases to offer complete GQL support, positioning it as a reference implementation for the standard.
+Geode follows the ISO/IEC 39075:2024 compliance. See the conformance profile for scope, diagnostics, and implementation-defined behaviors.
 
 ## Key Concepts
 
@@ -100,7 +100,7 @@ Geode's GQL implementation is built on a sophisticated query engine that transfo
 
 ### Standards Compliance
 
-Geode achieves 100% ISO/IEC 39075:2024 compliance through:
+Geode achieves ISO/IEC 39075:2024 compliance through:
 
 - **Complete syntax support**: All GQL keywords, operators, and expressions
 - **Correct semantics**: Exact ISO-specified behavior for edge cases
@@ -604,7 +604,7 @@ import (
 )
 
 func advancedQueries() error {
-    db, err := sql.Open("geode", "geode://localhost:3141/mydb")
+    db, err := sql.Open("geode", "quic://localhost:3141")
     if err != nil {
         return err
     }
@@ -869,4 +869,4 @@ class GeodeCluster:
             await conn.close()
 ```
 
-Geode's complete GQL implementation provides a production-ready platform for graph workloads. Whether you're building social networks, fraud detection systems, recommendation engines, or knowledge graphs, GQL's declarative syntax and Geode's optimized execution deliver both developer productivity and runtime performance.
+Geode's GQL implementation aligned with the conformance profile provides a production-ready platform for graph workloads. Whether you're building social networks, fraud detection systems, recommendation engines, or knowledge graphs, GQL's declarative syntax and Geode's optimized execution deliver both developer productivity and runtime performance.

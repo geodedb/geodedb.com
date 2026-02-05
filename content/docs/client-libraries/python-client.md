@@ -1,6 +1,6 @@
 ---
 title: "Python Client"
-description: "Complete guide to the Geode Python async client library with QUIC + TLS support"
+description: "Complete guide to the Geode Python async client library with QUIC/gRPC transport and Protobuf wire protocol"
 url: /docs/client-libraries/python-client/
 weight: 20
 keywords:
@@ -15,7 +15,7 @@ keywords:
 
 # Geode Python Client Library
 
-A modern async Python client for Geode graph database with QUIC + TLS 1.3 transport, query builders, and connection pooling.
+A modern async Python client for Geode graph database with QUIC + TLS 1.3 (default) or gRPC transport, query builders, and connection pooling.
 
 ## Installation
 
@@ -26,8 +26,10 @@ pip install geode-client
 ## Requirements
 
 - Python 3.9+
-- aioquic >= 0.9.0
-- Geode server with QUIC enabled
+- aioquic >= 0.9.0 (QUIC transport)
+- protobuf >= 4.21.0 (wire format)
+- grpcio >= 1.50.0 (gRPC transport)
+- Geode server with QUIC or gRPC enabled
 
 ## Quick Start
 
@@ -54,10 +56,28 @@ asyncio.run(main())
 ```python
 from geode_client import open_database
 
-client = open_database("quic://localhost:3141?skip_verify=true")
+client = open_database("quic://localhost:3141?insecure_tls_skip_verify=true")
 
 async with client.connection() as conn:
     page, _ = await conn.query("MATCH (n) RETURN n LIMIT 10")
+```
+
+### gRPC Transport
+
+```python
+from geode_client import open_database
+
+client = open_database("grpc://localhost:50051")
+```
+
+## DSN Format
+
+> **Note**: See the official [DSN specification](/docs/reference/dsn/) for complete details.
+
+```
+quic://[username:password@]host[:port][?options]   # QUIC transport (default port: 3141)
+grpc://[username:password@]host[:port][?options]   # gRPC transport (default port: 50051)
+host:port                                          # Scheme-less (defaults to QUIC)
 ```
 
 ## Querying

@@ -163,7 +163,7 @@ import geode_client
 
 async def setup_rls_policies():
     """Set up RLS policies for multi-tenant application."""
-    client = geode_client.open_database('geode://localhost:3141')
+    client = geode_client.open_database('quic://localhost:3141')
     async with client.connection() as conn:
         # Create policy: users can only see their own data
         await conn.execute("""
@@ -196,7 +196,7 @@ async def setup_rls_policies():
 # Query data with RLS enforcement
 async def get_customer_data(user_id: int):
     """Get customer data - RLS policies automatically enforced."""
-    client = geode_client.open_database('geode://localhost:3141')
+    client = geode_client.open_database('quic://localhost:3141')
     async with client.connection() as conn:
         auth = geode_client.AuthClient(conn)
         await auth.login('app_user', 'secure_password')
@@ -225,7 +225,7 @@ def tokenize(value: str, key: bytes) -> str:
 async def store_sensitive_data():
     """Store data with application-layer tokenization."""
     token_key = get_master_key()
-    client = geode_client.open_database('geode://localhost:3141')
+    client = geode_client.open_database('quic://localhost:3141')
 
     async with client.connection() as conn:
         tokenized_ssn = tokenize('123-45-6789', token_key)
@@ -248,7 +248,7 @@ async def find_customer_by_ssn(ssn: str):
     token_key = get_master_key()
     tokenized_ssn = tokenize(ssn, token_key)
 
-    client = geode_client.open_database('geode://localhost:3141')
+    client = geode_client.open_database('quic://localhost:3141')
     async with client.connection() as conn:
         result, _ = await conn.query("""
             MATCH (c:Customer {ssn_token: $ssn_token})
@@ -264,7 +264,7 @@ async def find_customer_by_ssn(ssn: str):
 ```python
 async def setup_audit_logging():
     """Configure audit logging for compliance."""
-    client = geode_client.open_database('geode://localhost:3141')
+    client = geode_client.open_database('quic://localhost:3141')
     async with client.connection() as conn:
         # Enable audit logging
         await conn.execute("""
@@ -282,7 +282,7 @@ async def setup_audit_logging():
 # Generate compliance report
 async def generate_gdpr_access_report(user_id: int):
     """Generate GDPR data access report for user."""
-    client = geode_client.open_database('geode://localhost:3141')
+    client = geode_client.open_database('quic://localhost:3141')
     async with client.connection() as conn:
         result, _ = await conn.query("""
             SELECT timestamp, user, query, affected_records
@@ -316,7 +316,7 @@ import geode_client
 async def authenticate_user(username: str, password: str):
     """Authenticate user with RBAC support."""
     try:
-        client = geode_client.open_database('geode://localhost:3141')
+        client = geode_client.open_database('quic://localhost:3141')
         async with client.connection() as conn:
             auth = geode_client.AuthClient(conn)
             await auth.login(username, password)
@@ -341,7 +341,7 @@ async def authenticate_user(username: str, password: str):
 # Role-based access control
 async def check_permission(user_id: int, resource: str, action: str):
     """Check if user has permission for action on resource."""
-    client = geode_client.open_database('geode://localhost:3141')
+    client = geode_client.open_database('quic://localhost:3141')
     async with client.connection() as conn:
         result, _ = await conn.query("""
             MATCH (u:User {id: $user_id})-[:HAS_ROLE]->(r:Role)

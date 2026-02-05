@@ -23,7 +23,7 @@ Database operations encompass the day-to-day management, monitoring, and mainten
 
 ## Understanding Database Operations
 
-Database operations involve a comprehensive set of activities that maintain system health and performance. For Geode, these operations leverage its enterprise-ready architecture, QUIC-based connectivity, and ISO/IEC 39075:2024 GQL compliance to provide robust operational capabilities.
+Database operations involve a comprehensive set of activities that maintain system health and performance. For Geode, these operations leverage its enterprise-ready architecture, QUIC-based connectivity, and ISO/IEC 39075:2024 GQL conformance profile to provide robust operational capabilities.
 
 ### Core Operational Components
 
@@ -939,7 +939,7 @@ Operational excellence requires understanding related areas:
 Additional operational resources:
 
 - Geode documentation on server configuration and management
-- ISO/IEC 39075:2024 standard for GQL compliance requirements
+- ISO/IEC 39075:2024 standard and conformance profile requirements
 - Client library documentation for connection pool configuration
 - System administration guides for process management and security
 - Operational runbooks and playbooks

@@ -216,7 +216,7 @@ import geode_client
 import asyncio
 
 async def get_employee_data():
-    client = geode_client.open_database('geode://localhost:3141')
+    client = geode_client.open_database('quic://localhost:3141')
     async with client.connection() as conn:
         result, _ = await conn.query("""
             MATCH (p:Person)-[:WORKS_AT]->(c:Company)
@@ -371,7 +371,7 @@ import geode_client
 import asyncio
 
 async def setup_movie_database():
-    client = geode_client.open_database('geode://localhost:3141')
+    client = geode_client.open_database('quic://localhost:3141')
     async with client.connection() as conn:
         # Create movies
         movies = [
@@ -422,7 +422,7 @@ asyncio.run(setup_movie_database())
 ```python
 async def get_recommendations(user_name, limit=5):
     """Get movie recommendations for a user."""
-    client = geode_client.open_database('geode://localhost:3141')
+    client = geode_client.open_database('quic://localhost:3141')
     async with client.connection() as conn:
         result, _ = await conn.query("""
             // Find users with similar taste
@@ -480,7 +480,7 @@ The Shawshank Redemption: 5.0 (confidence: 1 user)
 
 ```python
 async def create_transaction_network():
-    client = geode_client.open_database('geode://localhost:3141')
+    client = geode_client.open_database('quic://localhost:3141')
     async with client.connection() as conn:
         # Create accounts
         for i in range(1, 11):
@@ -537,7 +537,7 @@ asyncio.run(create_transaction_network())
 ```python
 async def detect_circular_transactions(time_window_hours=24):
     """Find circular money flows within time window."""
-    client = geode_client.open_database('geode://localhost:3141')
+    client = geode_client.open_database('quic://localhost:3141')
     async with client.connection() as conn:
         result, _ = await conn.query("""
             MATCH path = (a1:Account)-[t1:TRANSFER]->(a2:Account)
@@ -577,7 +577,7 @@ for case in fraud_cases:
 ```python
 async def velocity_check(account_id, threshold_multiplier=5):
     """Detect accounts with unusual transaction velocity."""
-    client = geode_client.open_database('geode://localhost:3141')
+    client = geode_client.open_database('quic://localhost:3141')
     async with client.connection() as conn:
         result, _ = await conn.query("""
             MATCH (a:Account {id: $account_id})-[t:TRANSFER]->()
@@ -668,7 +668,7 @@ CREATE INDEX user_city ON :User(city);
 async def paginated_query(page_size=1000):
     """Process large result sets in chunks."""
     offset = 0
-    client = geode_client.open_database('geode://localhost:3141')
+    client = geode_client.open_database('quic://localhost:3141')
     async with client.connection() as conn:
         while True:
             result, _ = await conn.query("""

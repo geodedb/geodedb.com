@@ -1,6 +1,6 @@
 ---
 title: "Introduction and Key Features"
-description: "Production-ready graph database with ISO GQL compliance, ACID transactions, vector/spatial/full-text indexing, enterprise security, and distributed query coordination"
+description: "Production-ready graph database with ISO GQL conformance profile, ACID transactions, vector/spatial/full-text indexing, enterprise security, and distributed query coordination"
 url: /docs/overview/introduction/
 weight: 10
 tags:
@@ -26,13 +26,13 @@ keywords:
 
 # Introduction to Geode
 
-Geode is an enterprise-ready graph database implementing the **ISO/IEC 39075:2024 Graph Query Language (GQL)** standard. Built with Zig for performance and reliability, Geode provides QUIC+TLS transport, ACID transactions, and comprehensive enterprise security features.
+Geode is an enterprise-ready graph database aligned with the **ISO/IEC 39075:2024 Graph Query Language (GQL)** 100% compliance. Built with Zig for performance and reliability, Geode provides QUIC+TLS transport, ACID transactions, and comprehensive enterprise security features.
 
 ## What Geode Is
 
 Geode is a production-ready graph database that combines:
 
-- **100% ISO/IEC 39075:2024 GQL compliance** (70/70 official tests passing)
+- **ISO/IEC 39075:2024 compliance** (see conformance profile)
 - **Enterprise-grade security** with authentication, encryption (TDE/FLE), and audit logging
 - **QUIC+TLS transport** for modern, secure, multiplexed connections
 - **Built with Zig** for memory safety and performance
@@ -42,15 +42,15 @@ Geode is a production-ready graph database that combines:
 
 ### Standards Compliance (GQL)
 
-Geode achieves **100% compliance** with the ISO/IEC 39075:2024 GQL standard:
+Geode maintains 100% ISO/IEC 39075:2024 GQL compliance:
 
-- ✅ Complete pattern matching syntax (`MATCH`, variable-length paths)
-- ✅ Full aggregation support (COUNT, SUM, AVG, MIN, MAX, GROUP BY)
+- ✅ MATCH pattern syntax with variable-length paths (bounded expansions)
+- ✅ Aggregations (COUNT, SUM, AVG, MIN, MAX, GROUP BY)
 - ✅ Set operations (UNION, INTERSECT, EXCEPT)
-- ✅ All 70 official ISO conformance tests passing
 - ✅ Path helper functions (`length()`, `nodes()`, `relationships()`)
+- ✅ Deterministic ordering and pagination policies (see conformance profile)
 
-**Why it matters**: Standards compliance ensures your queries are portable and future-proof, with clear semantics defined by the ISO specification.
+**Why it matters**: Standards alignment keeps queries portable and semantics predictable, with a clearly documented conformance scope.
 
 ### Transaction Integrity
 
@@ -154,7 +154,7 @@ Geode may not be the best fit for:
 
 - **Test Coverage**: 97.4% pass rate (1,644/1,688 integration tests)
 - **Unit Tests**: 100% pass rate (393/393 tests)
-- **GQL Compliance**: 100% (70/70 ISO tests)
+- **GQL conformance profile**: see conformance profile
 - **Governance**: 1,735 CANARY markers tracking requirements with evidence
 
 **Architecture**:

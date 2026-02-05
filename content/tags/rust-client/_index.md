@@ -147,10 +147,10 @@ use geode_client::Client;
 let client = Client::from_dsn("localhost:3141").unwrap();
 
 // With options
-let client = Client::from_dsn("localhost:3141?insecure=true&page_size=500").unwrap();
+let client = Client::from_dsn("localhost:3141?insecure_tls_skip_verify=true&page_size=500").unwrap();
 
 // URL format with authentication
-let client = Client::from_dsn("geode://admin:secret@localhost:3141?insecure=true").unwrap();
+let client = Client::from_dsn("quic://admin:secret@localhost:3141?insecure_tls_skip_verify=true").unwrap();
 ```
 
 ### DSN Options
@@ -161,7 +161,7 @@ let client = Client::from_dsn("geode://admin:secret@localhost:3141?insecure=true
 | `hello_name` | | "geode-rust-quinn" | Client name |
 | `hello_ver` | | "0.1.0" | Client version |
 | `conformance` | | "min" | GQL conformance level |
-| `insecure` | | false | Skip TLS verification |
+| `insecure_tls_skip_verify` | | false | Skip TLS verification |
 | `username` | `user` | | Authentication username |
 | `password` | `pass` | | Authentication password |
 

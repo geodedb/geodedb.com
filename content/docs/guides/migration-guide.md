@@ -27,7 +27,7 @@ Geode provides multiple migration paths depending on your source system and requ
 ### Current Version Status
 
 **Geode v0.1.3** (January 2026) - Production Ready
-- 100% GQL Compliance (ISO/IEC 39075:2024)
+- 100% GQL compliance (ISO/IEC 39075:2024)
 - 97.4% Test Pass Rate (1644/1688 tests)
 - All 7 development phases complete
 

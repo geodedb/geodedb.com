@@ -404,7 +404,7 @@ import (
 )
 
 func queryExample() {
-    db, err := sql.Open("geode", "geode://localhost:3141/mydb")
+    db, err := sql.Open("geode", "quic://localhost:3141")
     if err != nil {
         log.Fatal(err)
     }

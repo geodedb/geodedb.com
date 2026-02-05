@@ -29,7 +29,7 @@ Geode is battle-tested for demanding production workloads:
 
 **Proven Reliability**:
 - 97.4% test coverage (1644/1688 tests passing)
-- 100% GQL compliance (70/70 ISO tests)
+- 100% GQL compliance (see conformance profile)
 - ACID-compliant transactions
 - Production deployments handling high query volumes
 

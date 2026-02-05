@@ -43,6 +43,7 @@ Use this section when you need precise details about specific functionality, err
 
 - **[Complete API Reference](/docs/reference/api-reference-complete/)** - Comprehensive API documentation covering all functions, methods, and interfaces
 - **[CLI and API](/docs/reference/cli-and-api/)** - Command-line interface reference including all CLI commands and options
+- **[DSN Specification](/docs/reference/dsn/)** - Official DSN format for QUIC/gRPC connection strings
 - **[Data Types](/docs/reference/types/)** - All 50+ data types with constructors and storage characteristics
 - **[Index Types](/docs/reference/indexes/)** - B-tree, Hash, Full-text, Spatial, Vector, and specialized indexes
 - **[Statistics and Metrics](/docs/reference/statistics/)** - Query statistics, storage metrics, and Prometheus integration
@@ -246,7 +247,7 @@ Current version: **v0.1.3** (Production Ready)
 
 Key metrics:
 - **Test Coverage**: 97.4% (1,644/1,688 tests passing)
-- **GQL Compliance**: 100% (70/70 ISO tests)
+- **GQL Compliance**: see conformance profile
 - **CANARY Markers**: 1,735 tracking 2,190+ requirements
 
 See [Changelog](/docs/reference/changelog/) for version history.
@@ -394,40 +395,21 @@ See [Configuration Reference](/docs/configuration/) for all options.
 
 ## Protocol Specification
 
-### JSON Line Protocol
+### Protobuf Wire Protocol
 
-Geode uses JSON line protocol (one JSON object per line):
+Geode uses **length-prefixed Protobuf messages** over QUIC (default) or gRPC. The full schema is defined in `src/proto/geode.proto`.
 
 **Client Messages**:
-```json
-{"type": "HELLO", "version": "1.0"}
-{"type": "RUN_GQL", "query": "MATCH (n) RETURN n"}
-{"type": "PULL", "n": 100}
-{"type": "BEGIN"}
-{"type": "COMMIT"}
-```
+- `HelloRequest` / `PingRequest`
+- `ExecuteRequest` (RUN_GQL)
+- `PullRequest`
+- `BeginRequest` / `CommitRequest` / `RollbackRequest`
 
 **Server Responses**:
-```json
-{"type": "SCHEMA", "fields": ["n"]}
-{"type": "BINDINGS", "data": [{"n": {...}}]}
-{"type": "ERROR", "code": "40001", "message": "Syntax error"}
-```
+- `HelloResponse`
+- `ExecutionResponse` (payloads: `SchemaDefinition`, `DataPage`, `Error`, `ExplainPayload`, `ProfilePayload`)
 
-### Message Types
-
-**Client**:
-- HELLO: Connection handshake
-- RUN_GQL: Execute query
-- PULL: Fetch results
-- BEGIN/COMMIT/ROLLBACK: Transaction control
-- PING: Keep-alive
-
-**Server**:
-- SCHEMA: Result schema
-- BINDINGS: Result rows
-- ERROR: Error details
-- EXPLAIN: Query plan
+See [Wire Protocol](/docs/protocol/) for the full specification.
 - PROFILE: Performance metrics
 
 ## Performance Characteristics
@@ -460,7 +442,7 @@ See [Performance Benchmarking](/docs/guides/performance-benchmarking/) for metho
 - ✅ Set operations (UNION, INTERSECT, EXCEPT)
 - ✅ Transaction semantics
 - ✅ Error handling with standard codes
-- ✅ 100% conformance (70/70 tests)
+- ✅ 100% compliance; see conformance profile
 
 ### Other Standards
 

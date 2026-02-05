@@ -320,7 +320,7 @@ for _ in range(10000):
 import "geodedb.com/geode"
 
 // Connection pool configured automatically
-db, err := sql.Open("geode", "geode://localhost:3141/mydb")
+db, err := sql.Open("geode", "quic://localhost:3141")
 if err != nil {
     log.Fatal(err)
 }

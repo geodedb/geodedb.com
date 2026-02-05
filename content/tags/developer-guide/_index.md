@@ -30,7 +30,7 @@ Geode is built on modern, production-ready foundations:
 **Core Technology**:
 - Written in Zig for performance and safety
 - QUIC transport with TLS 1.3 encryption
-- JSON line protocol for client-server communication
+- Protobuf wire protocol for client-server communication
 - ACID-compliant transaction engine
 - ISO/IEC 39075:2024 GQL standard compliance
 
@@ -315,7 +315,7 @@ import (
 )
 
 func main() {
-    db, err := sql.Open("geode", "geode://localhost:3141")
+    db, err := sql.Open("geode", "quic://localhost:3141")
     if err != nil {
         panic(err)
     }
@@ -420,7 +420,7 @@ client = Client(
 
 **Go**:
 ```go
-db, err := sql.Open("geode", "geode://user:pass@localhost:3141?tls=true")
+db, err := sql.Open("geode", "quic://user:pass@localhost:3141?tls=true")
 ```
 
 **Rust**:

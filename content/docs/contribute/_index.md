@@ -493,7 +493,7 @@ The test lab runs automatically on all merge requests and includes:
 |------------|----------|-------------|
 | Unit Tests | ~2 min | Fast, isolated function tests |
 | Integration Tests | ~5 min | Component interaction tests |
-| GQL Conformance | ~10 min | ISO/IEC 39075:2024 compliance (70 tests) |
+| GQL Conformance | ~10 min | ISO/IEC 39075:2024 compliance |
 | Client Tests | ~3 min | Multi-language client validation |
 | Performance | ~15 min | Benchmark regression detection |
 | Security Scan | ~5 min | Static analysis and CVE checks |

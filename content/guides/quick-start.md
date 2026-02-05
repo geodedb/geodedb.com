@@ -280,7 +280,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 import { createClient } from '@geodedb/client';
 
 async function main() {
-    const client = await createClient('geode://localhost:3141');
+    const client = await createClient('quic://localhost:3141');
 
     // Create people
     await client.exec(

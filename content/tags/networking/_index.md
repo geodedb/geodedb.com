@@ -105,12 +105,11 @@ In Go:
 import "geodedb.com/geode"
 
 // Basic connection
-db, err := sql.Open("geode", "geode://localhost:3141/graph")
+db, err := sql.Open("geode", "quic://localhost:3141")
 
 // With TLS configuration
 db, err := sql.Open("geode",
-    "geode://geode.example.com:3141/graph?"+
-    "tls_verify=true&"+
+    "quic://geode.example.com:3141?"+
     "ca_cert=/etc/ssl/certs/geode-ca.pem&"+
     "client_cert=/etc/ssl/certs/client.pem&"+
     "client_key=/etc/ssl/private/client-key.pem")
@@ -302,7 +301,7 @@ import (
     _ "geodedb.com/geode"
 )
 
-db, err := sql.Open("geode", "geode://localhost:3141/graph")
+db, err := sql.Open("geode", "quic://localhost:3141")
 
 // Configure connection pool
 db.SetMaxOpenConns(100)

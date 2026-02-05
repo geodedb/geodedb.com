@@ -1,7 +1,7 @@
 ---
 title: "GQL Specification Reference"
 description: "Complete ISO/IEC 39075:2024 Graph Query Language specification reference with Geode's implementation status, conformance profile, and feature mapping"
-summary: "Comprehensive GQL specification reference documenting ISO/IEC 39075:2024 compliance, feature support matrix, and Geode's conformance profile with 100% compliance (70/70 tests)."
+summary: "Comprehensive GQL specification reference documenting ISO/IEC 39075:2024 conformance, profile scope, and Geode's published conformance profile."
 slug: "specification"
 url: "/docs/gql-reference/specification/"
 date: 2026-01-28
@@ -22,7 +22,7 @@ params:
 
 # GQL Specification Reference
 
-Geode implements the **ISO/IEC 39075:2024 Graph Query Language (GQL)** standard with **100% conformance** (70/70 official tests passing). This reference documents the specification, Geode's implementation status, and conformance profile.
+Geode implements the **ISO/IEC 39075:2024 Graph Query Language (GQL)** 100% compliance. This reference documents the specification and links to Geode's current conformance profile and implementation notes.
 
 ## Standard Overview
 
@@ -53,52 +53,19 @@ The GQL standard comprises multiple parts:
 
 ### Geode Conformance Level
 
-**Conformance Level:** Core + Extensions
+Geode publishes a conformance profile for ISO/IEC 39075:2024 compliance. The profile documents implementation-defined behavior and focuses on deterministic ordering, pagination, and diagnostics.
 
-| Category | Tests | Passing | Status |
-|----------|-------|---------|--------|
-| Core Features | 40 | 40 | 100% |
-| Pattern Matching | 15 | 15 | 100% |
-| Data Types | 10 | 10 | 100% |
-| Extensions | 5 | 5 | 100% |
-| **Total** | **70** | **70** | **100%** |
+**Profile highlights (non-exhaustive):**
 
-### Feature Support Matrix
+- `MATCH` / `OPTIONAL MATCH` with bounded path expansions
+- `WHERE`, `RETURN`, `ORDER BY`
+- `LIMIT` / `OFFSET` (unordered pagination rejected per US001)
+- Set operations: `UNION`, `INTERSECT`, `EXCEPT`
+- Data modification statements (`CREATE`, `INSERT`, `UPDATE`, `DELETE`, `MERGE`)
+- Schema and type system behaviors (labels, property types, constraints, indexes)
+- Transactions, functions, and standardized error codes
 
-#### Query Clauses
-
-| Clause | ISO Section | Support | Notes |
-|--------|-------------|---------|-------|
-| `MATCH` | 7.1 | Full | All pattern types |
-| `OPTIONAL MATCH` | 7.2 | Full | |
-| `WHERE` | 7.3 | Full | All predicates |
-| `RETURN` | 7.4 | Full | |
-| `WITH` | 7.5 | Full | Pipeline stages |
-| `ORDER BY` | 7.6 | Full | Multi-column, ASC/DESC |
-| `LIMIT` | 7.7 | Full | |
-| `SKIP` | 7.8 | Full | |
-| `UNION` | 7.9 | Full | UNION ALL supported |
-| `VALUES` | 7.10 | Full | VALUES clause |
-
-#### Data Manipulation
-
-| Statement | ISO Section | Support | Notes |
-|-----------|-------------|---------|-------|
-| `CREATE` | 8.1 | Full | Nodes, relationships |
-| `SET` | 8.2 | Full | Properties |
-| `REMOVE` | 8.3 | Full | Properties, labels |
-| `DELETE` | 8.4 | Full | DETACH DELETE |
-| `MERGE` | 8.5 | Full | ON CREATE, ON MATCH |
-
-#### Transactions
-
-| Feature | ISO Section | Support | Notes |
-|---------|-------------|---------|-------|
-| `BEGIN` | 9.1 | Full | |
-| `COMMIT` | 9.2 | Full | |
-| `ROLLBACK` | 9.3 | Full | |
-| Savepoints | 9.4 | Full | SAVEPOINT, RELEASE |
-| Isolation Levels | 9.5 | Full | READ COMMITTED, SERIALIZABLE |
+See the [conformance profile](/docs/gql/conformance-profile/) for authoritative scope, diagnostics, and implementation-defined behaviors.
 
 ---
 
@@ -440,25 +407,7 @@ make test-gql-conformance
 
 ### Test Results Summary
 
-```
-GQL Conformance Test Suite
-==========================
-Total Tests: 70
-Passed: 70
-Failed: 0
-Skipped: 0
-
-Pass Rate: 100%
-
-Category Breakdown:
-- Pattern Matching: 15/15
-- Data Types: 10/10
-- Operators: 12/12
-- Functions: 10/10
-- Transactions: 8/8
-- Error Handling: 8/8
-- Set Operations: 7/7
-```
+Conformance tests are tracked against the published ISO/IEC 39075:2024 profile. For current status, diagnostics, and implementation-defined behaviors, see the conformance profile and the CI evidence linked there.
 
 ---
 
@@ -543,4 +492,4 @@ RETURN n.`LIMIT`;
 **Last Updated:** January 28, 2026
 **Geode Version:** v0.1.3+
 **ISO Standard:** ISO/IEC 39075:2024
-**Conformance:** 100% (70/70 tests passing)
+**Conformance Profile:** ISO/IEC 39075:2024 compliance (see conformance profile)

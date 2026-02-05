@@ -318,7 +318,7 @@ geode query "MATCH (p:Person) RETURN count(p)" \
   --password secret123
 ```
 
-**Output:** SCHEMA + BINDINGS JSON lines from server.
+**Output:** SCHEMA + BINDINGS frames over the Protobuf wire protocol (rendered as JSON or text by the CLI formatter).
 
 ### Shell Command
 
@@ -372,7 +372,7 @@ geode query "RETURN 1" --server 192.168.1.100:3141 --user admin --password wrong
 ```bash
 geode query "RETURN 1" --server 127.0.0.1:3141
 # Exit code: 0 (success)
-# Output: SCHEMA and BINDINGS JSON lines from the server
+# Output: SCHEMA and BINDINGS frames from the server (rendered by the CLI formatter)
 ```
 
 ---

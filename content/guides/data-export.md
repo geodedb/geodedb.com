@@ -227,7 +227,7 @@ import { createClient } from '@geodedb/client';
 import { createWriteStream } from 'fs';
 
 async function exportToCSV(filename: string) {
-    const client = await createClient('geode://localhost:3141');
+    const client = await createClient('quic://localhost:3141');
 
     const writeStream = createWriteStream(filename);
 
@@ -605,7 +605,7 @@ interface ExportData {
 }
 
 async function exportToJSON(filename: string) {
-    const client = await createClient('geode://localhost:3141');
+    const client = await createClient('quic://localhost:3141');
 
     const rows = await client.queryAll(`
         MATCH (u:User)

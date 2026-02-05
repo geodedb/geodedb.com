@@ -18,7 +18,7 @@ params:
 
 <!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
 
-Setting up Geode involves installing required dependencies, building from source, configuring the server, and establishing initial deployment parameters. This process transforms the source code into a running production-ready graph database capable of handling enterprise workloads with full GQL compliance.
+Setting up Geode involves installing required dependencies, building from source, configuring the server, and establishing initial deployment parameters. This process transforms the source code into a running production-ready graph database capable of handling enterprise workloads with the 100% GQL compliance.
 
 ## Prerequisites and Requirements
 

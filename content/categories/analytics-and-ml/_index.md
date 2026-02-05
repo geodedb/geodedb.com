@@ -19,7 +19,7 @@ Graph analytics and machine learning represent one of the most powerful applicat
 
 Geode's analytics capabilities leverage its graph structure to efficiently compute metrics that would require complex joins in relational databases. Built-in algorithms for centrality, community detection, pathfinding, and similarity analysis run directly on Geode's storage engine with optimizations for graph traversal. Vector search with HNSW indexing enables semantic similarity queries for AI/ML workloads, while BM25 full-text search powers content discovery and ranking.
 
-The platform's 100% ISO/IEC 39075:2024 GQL compliance ensures that analytics queries use standard syntax, while ACID transactions guarantee data consistency even when updating analytical models. This category explores how to leverage Geode for graph analytics, integrate with ML pipelines, and build intelligent data-driven applications.
+The platform's ISO/IEC 39075:2024 compliance ensures that analytics queries use standard syntax, while ACID transactions guarantee data consistency even when updating analytical models. This category explores how to leverage Geode for graph analytics, integrate with ML pipelines, and build intelligent data-driven applications.
 
 ## Graph Analytics Fundamentals
 

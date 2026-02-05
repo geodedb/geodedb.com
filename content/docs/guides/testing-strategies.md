@@ -27,9 +27,9 @@ Geode maintains comprehensive test coverage across multiple testing frameworks e
 - **Coverage**: All core modules with comprehensive test blocks
 - **CANARY Integration**: 1,735 governance markers tracking 2,190+ requirements
 
-**GQL Compliance**:
-- **ISO/IEC 39075:2024**: 100% compliant (70/70 tests passing)
-- **Standard Conformance**: Full ISO GQL standard compliance
+**GQL Conformance**:
+- **ISO/IEC 39075:2024**: 100% compliance (see conformance profile)
+- **Scope**: Conformance and diagnostics documented in the profile
 
 ## Testing Frameworks
 

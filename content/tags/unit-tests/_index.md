@@ -30,7 +30,7 @@ Geode follows evidence-based development with CANARY markers tracking all implem
 
 **Fast Feedback**: Unit tests complete in 2-3 minutes, providing rapid developer feedback.
 
-**ISO Compliance**: 100% compliance with ISO/IEC 39075:2024 GQL standard (70/70 tests passing).
+**ISO Conformance**: 100% compliance for ISO/IEC 39075:2024 (see conformance profile).
 
 ## Unit Test Structure in Geode
 
@@ -209,7 +209,7 @@ import (
 )
 
 func TestBasicQuery(t *testing.T) {
-    db, err := sql.Open("geode", "geode://localhost:3141/testdb")
+    db, err := sql.Open("geode", "quic://localhost:3141")
     if err != nil {
         t.Fatal(err)
     }
@@ -235,7 +235,7 @@ func TestBasicQuery(t *testing.T) {
 }
 
 func TestPreparedStatement(t *testing.T) {
-    db, err := sql.Open("geode", "geode://localhost:3141/testdb")
+    db, err := sql.Open("geode", "quic://localhost:3141")
     if err != nil {
         t.Fatal(err)
     }
@@ -257,7 +257,7 @@ func TestPreparedStatement(t *testing.T) {
 }
 
 func TestTransaction(t *testing.T) {
-    db, err := sql.Open("geode", "geode://localhost:3141/testdb")
+    db, err := sql.Open("geode", "quic://localhost:3141")
     if err != nil {
         t.Fatal(err)
     }

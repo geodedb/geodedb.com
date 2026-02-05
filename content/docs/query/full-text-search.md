@@ -22,7 +22,7 @@ params:
 
 ## Overview
 
-Geode provides enterprise-grade BM25 scoring integration with the IndexOptimizer, enabling sophisticated full-text search optimization with intelligent cost estimation and query planning. This implementation rivals commercial search engines while maintaining ISO GQL compliance.
+Geode provides enterprise-grade BM25 scoring integration with the IndexOptimizer, enabling sophisticated full-text search optimization with intelligent cost estimation and query planning. This implementation rivals commercial search engines while remaining aligned with the ISO GQL conformance profile.
 
 ### What is BM25?
 

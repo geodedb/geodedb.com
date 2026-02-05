@@ -84,7 +84,7 @@ Use `open_database` with `quic://` URLs when you prefer a single string.
 ```python
 from geode_client import open_database
 
-client = open_database("quic://localhost:3141?skip_verify=true&page_size=500")
+client = open_database("quic://localhost:3141?insecure_tls_skip_verify=true&page_size=500")
 
 async with client.connection() as conn:
     page, _ = await conn.query("RETURN 1 AS ok")

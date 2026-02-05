@@ -36,7 +36,7 @@ db, err := sql.Open("geode", "localhost:3141")
 
 ## DSN Options
 
-Supported options: `page_size`, `hello_name`, `hello_ver`, `conformance`, `ca`, `cert`, `key`, `insecure`.
+Supported options: `page_size`, `hello_name`, `hello_ver`, `conformance`, `ca`, `cert`, `key`, `insecure_tls_skip_verify`.
 
 ## Related Links
 

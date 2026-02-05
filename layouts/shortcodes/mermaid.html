@@ -2,18 +2,18 @@
   Mermaid diagram shortcode
 
   Usage:
-    {{</* mermaid */>}}
+    {{< mermaid >}}
     graph LR
         A[Client] -->|Query| B[Geode Server]
         B --> C{Parse}
         C -->|Valid| D[Execute]
         C -->|Invalid| E[Error]
-    {{</* /mermaid */>}}
+    {{< /mermaid >}}
 
   Or with a title:
-    {{</* mermaid title="Query Flow" */>}}
+    {{< mermaid title="Query Flow" >}}
     ...
-    {{</* /mermaid */>}}
+    {{< /mermaid >}}
 */}}
 
 {{- $title := .Get "title" -}}

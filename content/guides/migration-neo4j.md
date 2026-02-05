@@ -28,7 +28,7 @@ This comprehensive guide walks you through migrating from Neo4j to Geode. Geode 
 | Query Language | Cypher (proprietary) | GQL (ISO standard) |
 | Protocol | Bolt | QUIC + TLS 1.3 |
 | Licensing | Enterprise features require license | Apache 2.0 |
-| Standards Compliance | Partial | 100% GQL compliant |
+| Standards Compliance | Partial | 100% GQL compliance |
 | Performance | Good | Excellent (QUIC benefits) |
 
 ### Migration Steps
@@ -692,7 +692,7 @@ await driver.close();
 ```typescript
 import { createClient } from '@geodedb/client';
 
-const client = await createClient('geode://localhost:3141');
+const client = await createClient('quic://localhost:3141');
 
 const rows = await client.queryAll(
   'MATCH (p:Person {name: $name}) RETURN p.name, p.age',

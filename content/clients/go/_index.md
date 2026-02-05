@@ -82,7 +82,7 @@ func main() {
 ## Connection String
 
 ```
-geode://host:port?options
+quic://host:port?options
 host:port?options
 host:port
 host
@@ -96,7 +96,7 @@ host
 - `ca` - Path to CA certificate
 - `cert` - Path to client certificate (mTLS)
 - `key` - Path to client key (mTLS)
-- `insecure` - Skip TLS verification (testing only)
+- `insecure_tls_skip_verify` - Skip TLS verification (testing only)
 
 **Environment Variables**:
 - `GEODE_HOST` - Default host if DSN is empty
@@ -106,7 +106,7 @@ host
 **Examples**:
 ```go
 // Basic connection
-db, err := sql.Open("geode", "geode://localhost:3141")
+db, err := sql.Open("geode", "quic://localhost:3141")
 
 // With TLS verification
 db, err := sql.Open("geode", "localhost:3141?ca=/path/to/ca.crt")
@@ -251,7 +251,7 @@ func TestWithGeode(t *testing.T) {
     host, _ := container.Host(ctx)
     port, _ := container.MappedPort(ctx, "3141")
 
-    db, err := sql.Open("geode", fmt.Sprintf("geode://%s:%s", host, port.Port()))
+    db, err := sql.Open("geode", fmt.Sprintf("quic://%s:%s", host, port.Port()))
     if err != nil {
         t.Fatal(err)
     }

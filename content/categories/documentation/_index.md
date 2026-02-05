@@ -34,7 +34,7 @@ Complete API documentation for all Geode components:
 - **Server API**: REST and QUIC/TLS endpoints, authentication methods, session management
 - **GQL Language Reference**: Complete ISO/IEC 39075:2024 syntax coverage, operators, functions, expressions
 - **Client Libraries**: Go, Python, Rust, Node.js, and Zig client APIs with usage examples
-- **Protocol Specification**: JSON line protocol details, message formats, error codes
+- **Protocol Specification**: Protobuf wire protocol details, message formats, error codes
 - **Extension APIs**: Plugin interfaces, custom functions, stored procedures
 
 ### Configuration Reference
@@ -352,7 +352,7 @@ import (
     _ "geodedb.com/geode"
 )
 
-db, err := sql.Open("geode", "geode://localhost:3141")
+db, err := sql.Open("geode", "quic://localhost:3141")
 ```
 
 **Python Integration**:
@@ -415,7 +415,7 @@ Documentation welcomes community input:
 ## Further Reading
 
 - **API Reference**: Complete API documentation for all components
-- **GQL Specification**: ISO/IEC 39075:2024 standard compliance details
+- **GQL Specification**: ISO/IEC 39075:2024 conformance profile details
 - **Best Practices**: Recommended patterns for production deployments
 - **Release Notes**: Version history and feature announcements
 - **Contributing Guide**: How to contribute to Geode documentation

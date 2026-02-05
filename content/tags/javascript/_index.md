@@ -25,7 +25,7 @@ params:
 
 # JavaScript Client Library for Geode
 
-The Geode JavaScript client enables Node.js applications to connect to Geode using QUIC + TLS 1.3 transport. It provides async/await patterns, connection pooling, and full GQL query support for building high-performance graph-powered applications.
+The Geode JavaScript client enables Node.js applications to connect to Geode using QUIC + TLS 1.3 transport. It provides async/await patterns, connection pooling, and GQL conformance profile support for building high-performance graph-powered applications.
 
 ## Introduction
 

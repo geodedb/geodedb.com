@@ -324,7 +324,7 @@ async def check_geode_health() -> Dict[str, Any]:
     # Check database connectivity
     try:
         import geode_client
-        client = geode_client.open_database('geode://geode:3141')
+        client = geode_client.open_database('quic://geode:3141')
         async with client.connection() as conn:
             result, _ = await conn.query('MATCH (n) RETURN count(n) LIMIT 1')
             result.rows[0] if result.rows else None
@@ -350,7 +350,7 @@ async def check_geode_health() -> Dict[str, Any]:
 
     # Check replication lag (if applicable)
     try:
-        client = geode_client.open_database('geode://geode:3141')
+        client = geode_client.open_database('quic://geode:3141')
         async with client.connection() as conn:
             result, _ = await conn.query('SHOW REPLICATION STATUS')
             row = result.rows[0] if result.rows else None
@@ -371,7 +371,7 @@ async def liveness_probe():
     """Simple liveness check."""
     try:
         import geode_client
-        client = geode_client.open_database('geode://localhost:3141')
+        client = geode_client.open_database('quic://localhost:3141')
         async with client.connection() as conn:
             await conn.query('RETURN 1 AS ok')
             return {'alive': True}
@@ -394,7 +394,7 @@ from datetime import datetime, timedelta
 
 async def analyze_capacity():
     """Analyze current capacity and project growth."""
-    client = geode_client.open_database('geode://localhost:3141')
+    client = geode_client.open_database('quic://localhost:3141')
     async with client.connection() as conn:
         # Current database size
         result, _ = await conn.query("""

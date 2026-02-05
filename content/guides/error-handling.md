@@ -386,7 +386,7 @@ function handleConnectionError(error: unknown): void {
 }
 
 async function main() {
-    const client = await connectWithRetry('geode://localhost:3141');
+    const client = await connectWithRetry('quic://localhost:3141');
 
     if (!client) {
         return;

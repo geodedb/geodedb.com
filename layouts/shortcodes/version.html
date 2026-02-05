@@ -2,11 +2,11 @@
   Version shortcode - displays version information from data/version.yaml
 
   Usage:
-    {{</* version */>}}                    - Current version (e.g., "0.1.4-alpha.4")
-    {{</* version "display" */>}}          - Display version (e.g., "0.1.4")
-    {{</* version "semver" */>}}           - Full semver (e.g., "0.1.4-alpha.4")
-    {{</* version "docker.stable" */>}}    - Docker stable tag
-    {{</* version "clients.go" */>}}       - Go client version
+    {{< version >}}                    - Current version (e.g., "0.1.4-alpha.4")
+    {{< version "display" >}}          - Display version (e.g., "0.1.4")
+    {{< version "semver" >}}           - Full semver (e.g., "0.1.4-alpha.4")
+    {{< version "docker.stable" >}}    - Docker stable tag
+    {{< version "clients.go" >}}       - Go client version
 */}}
 {{- $key := .Get 0 | default "current" -}}
 {{- $version := site.Data.version -}}

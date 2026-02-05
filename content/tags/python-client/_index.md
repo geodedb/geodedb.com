@@ -1,6 +1,6 @@
 ---
 title: "Tag: Python Async Client"
-description: "Modern async Python client for Geode with asyncio support, connection pooling, query builders, and full GQL compliance for high-performance graph database operations."
+description: "Modern async Python client for Geode with asyncio support, connection pooling, query builders, and GQL conformance profile support for high-performance graph database operations."
 keywords:
   - Python client
   - asyncio
@@ -94,7 +94,7 @@ from geode_client import open_database
 
 async def main():
     # Open database with URL
-    client = open_database("quic://localhost:3141?skip_verify=true")
+    client = open_database("quic://localhost:3141?insecure_tls_skip_verify=true")
 
     async with client.connection() as conn:
         page, _ = await conn.query("MATCH (n) RETURN n LIMIT 10")

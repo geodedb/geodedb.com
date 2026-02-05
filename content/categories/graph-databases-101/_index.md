@@ -659,4 +659,4 @@ Draw your graph model before implementing:
 
 ---
 
-Graph databases provide a natural, efficient way to model and query connected data. By understanding the fundamental concepts of nodes, relationships, and properties, you can leverage graph databases for applications where relationships are as important as the entities themselves. Geode's implementation of the ISO GQL standard makes graph databases accessible and powerful for modern applications.
+Graph databases provide a natural, efficient way to model and query connected data. By understanding the fundamental concepts of nodes, relationships, and properties, you can leverage graph databases for applications where relationships are as important as the entities themselves. Geode's ISO 100% GQL compliance makes graph databases accessible and powerful for modern applications.

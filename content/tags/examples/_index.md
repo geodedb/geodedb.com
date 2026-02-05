@@ -56,7 +56,7 @@ async with client.connection() as conn:
 
 ```go
 // Go: Create a product node
-db, _ := sql.Open("geode", "geode://localhost:3141")
+db, _ := sql.Open("geode", "quic://localhost:3141")
 result, err := db.Exec(`
     CREATE (p:Product {
         id: $id,
@@ -363,7 +363,7 @@ async def fetch_user_data(user_id):
 **Go Connection Pooling**:
 ```go
 // Configure connection pool
-db, _ := sql.Open("geode", "geode://localhost:3141")
+db, _ := sql.Open("geode", "quic://localhost:3141")
 db.SetMaxOpenConns(100)
 db.SetMaxIdleConns(10)
 db.SetConnMaxLifetime(time.Hour)

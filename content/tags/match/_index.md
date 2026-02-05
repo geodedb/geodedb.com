@@ -615,7 +615,7 @@ async with client.connection() as conn:
 import "database/sql"
 import _ "geodedb.com/geode"
 
-db, _ := sql.Open("geode", "geode://localhost:3141")
+db, _ := sql.Open("geode", "quic://localhost:3141")
 
 rows, _ := db.Query(`
     MATCH (u:User)-[:POSTED]->(p:Post)<-[:LIKED]-(liker:User)

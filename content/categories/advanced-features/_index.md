@@ -15,7 +15,7 @@ params:
 
 <!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
 
-Advanced features in Geode represent the cutting edge of graph database technology, providing sophisticated capabilities that go beyond standard query and transaction processing. These features enable enterprise teams to build highly scalable, secure, and intelligent applications that leverage the full power of graph data structures and ISO/IEC 39075:2024 GQL compliance.
+Advanced features in Geode represent the cutting edge of graph database technology, providing sophisticated capabilities that go beyond standard query and transaction processing. These features enable enterprise teams to build highly scalable, secure, and intelligent applications that leverage the full power of graph data structures and the ISO/IEC 39075:2024 GQL conformance profile.
 
 Geode's advanced feature set includes vector search with HNSW indexing for semantic similarity, full-text search with BM25 ranking, distributed architecture with QUIC transport, Row-Level Security (RLS) for fine-grained access control, Change Data Capture (CDC) for real-time streaming, and sophisticated graph algorithms for analytics. Each feature is designed to work seamlessly within Geode's ACID-compliant, production-ready architecture while maintaining the 97.4% test coverage that ensures reliability.
 

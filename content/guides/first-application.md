@@ -397,7 +397,7 @@ export class Repository {
     private connectionString: string;
 
     constructor(host: string = 'localhost', port: number = 3141) {
-        this.connectionString = `geode://${host}:${port}`;
+        this.connectionString = `quic://${host}:${port}`;
     }
 
     async connect(): Promise<void> {

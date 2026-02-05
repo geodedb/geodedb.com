@@ -47,7 +47,7 @@ Stay current with Geode development by reviewing release notes before upgrading.
 
 **Key Highlights**:
 - 97.4% test coverage (1,644/1,688 tests passing)
-- 100% GQL compliance (70/70 ISO tests)
+- 100% GQL compliance (see conformance profile)
 - 1,735 CANARY markers tracking 2,190+ requirements
 
 **Major Features**:
@@ -76,7 +76,7 @@ Geode follows a predictable release schedule:
 
 **v0.1.3** (January 2026)
 - Production ready milestone
-- Complete GQL compliance
+- 100% GQL compliance
 - Enterprise security features
 - Distributed deployment support
 

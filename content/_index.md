@@ -14,13 +14,13 @@ keywords = [
 
 <!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
 
-## 100% ISO GQL Compliance
+## ISO 100% GQL compliance
 
-Geode achieves **100% compliance** with ISO/IEC 39075:2024 GQL standard:
-- All 70 official conformance tests passing
-- Complete pattern matching syntax
-- Full aggregation support
+Geode implements ISO/IEC 39075:2024 GQL with 100% compliance:
+- Deterministic ordering and pagination policies
+- MATCH pattern matching with bounded expansions and OPTIONAL MATCH
 - Set operations (UNION, INTERSECT, EXCEPT)
+- See the [conformance profile](/docs/gql/conformance-profile/) for scope and diagnostics
 
 ## Enterprise-Grade Security
 
@@ -46,7 +46,7 @@ Geode provides official client libraries for multiple programming languages:
 - [**Node.js**](/clients/nodejs/) - TypeScript-first client with pooling
 - [**Zig**](/clients/zig/) - Native Zig implementation
 
-All clients communicate via QUIC+TLS using the JSON line protocol.
+All clients communicate via QUIC+TLS using the Protobuf wire protocol.
 
 ## Getting Started
 

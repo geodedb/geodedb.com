@@ -18,7 +18,7 @@ keywords:
 
 # Geode Go Client Library
 
-A production-ready Go `database/sql` driver for the Geode graph database with full QUIC+TLS support.
+A production-ready Go `database/sql` driver for the Geode graph database with **dual transport support** (QUIC default, gRPC optional) and Protobuf wire protocol.
 
 ## Installation
 
@@ -29,7 +29,9 @@ go get geodedb.com/geode
 ## Features
 
 - ✅ **Full `database/sql` driver** - Standard Go database interface
-- ✅ **QUIC + TLS 1.3** - Modern, secure transport
+- ✅ **Dual transport** - QUIC (default) and gRPC
+- ✅ **Protobuf wire protocol** - Efficient binary messaging
+- ✅ **TLS 1.3 security** - QUIC always uses TLS
 - ✅ **Connection pooling** - Built into `database/sql`
 - ✅ **Prepared statements** - Query parameter support
 - ✅ **Transaction support** - ACID transactions with savepoints
@@ -54,12 +56,15 @@ import (
 )
 
 func main() {
-    // Connect to Geode server
-    db, err := sql.Open("geode", "localhost:3141?insecure=true")
+    // Connect to Geode server (QUIC default)
+    db, err := sql.Open("geode", "quic://localhost:3141?insecure_tls_skip_verify=true")
     if err != nil {
         log.Fatal(err)
     }
     defer db.Close()
+
+    // Or connect via gRPC
+    // db, err := sql.Open("geode", "grpc://localhost:50051?tls=0")
 
     // Configure connection pool
     db.SetMaxOpenConns(10)
@@ -92,11 +97,14 @@ func main() {
 
 ## DSN Format
 
+> **Note**: See the official [DSN specification](/docs/reference/dsn/) for complete details.
+
 The Data Source Name (DSN) supports multiple formats:
 
 ```
-geode://host:port?options
-host:port?options
+quic://host:port?options     # QUIC transport (recommended)
+grpc://host:port?options     # gRPC transport
+host:port?options            # Scheme-less defaults to QUIC
 host:port
 host
 ```
@@ -105,16 +113,16 @@ host
 
 ```go
 // Development (skip TLS verification)
-db, _ := sql.Open("geode", "localhost:3141?insecure=true")
+db, _ := sql.Open("geode", "quic://localhost:3141?insecure_tls_skip_verify=true")
 
 // Production with CA certificate
-db, _ := sql.Open("geode", "localhost:3141?ca=/path/to/ca.crt")
+db, _ := sql.Open("geode", "quic://localhost:3141?ca=/path/to/ca.crt")
 
 // Mutual TLS (mTLS)
-db, _ := sql.Open("geode", "localhost:3141?ca=/path/to/ca.crt&cert=/path/to/client.crt&key=/path/to/client.key")
+db, _ := sql.Open("geode", "quic://localhost:3141?ca=/path/to/ca.crt&cert=/path/to/client.crt&key=/path/to/client.key")
 
 // Custom page size
-db, _ := sql.Open("geode", "localhost:3141?page_size=5000")
+db, _ := sql.Open("geode", "quic://localhost:3141?page_size=5000")
 
 ```
 
@@ -129,7 +137,10 @@ db, _ := sql.Open("geode", "localhost:3141?page_size=5000")
 | `ca` | Path to CA certificate | |
 | `cert` | Path to client certificate (mTLS) | |
 | `key` | Path to client key (mTLS) | |
-| `insecure` | Skip TLS verification (testing only) | false |
+| `insecure_tls_skip_verify` | Skip TLS verification (testing only) | false |
+| `tls` | Enable/disable TLS (gRPC only) | true |
+| `user` / `username` | Authentication username | |
+| `pass` / `password` | Authentication password | |
 
 ### Environment Variables
 
@@ -138,6 +149,9 @@ db, _ := sql.Open("geode", "localhost:3141?page_size=5000")
 | `GEODE_HOST` | Default host |
 | `GEODE_PORT` | Default port |
 | `GEODE_TLS_CA` | Default CA certificate path |
+| `GEODE_TRANSPORT` | Default transport (`quic` or `grpc`) |
+| `GEODE_USERNAME` | Default username |
+| `GEODE_PASSWORD` | Default password |
 
 ## Querying
 
@@ -408,7 +422,7 @@ GEODE_IMAGE="myregistry/geode:tag" go test -v -tags=integration ./...
 ./geode serve --listen 0.0.0.0:3141
 
 # Run tests
-GEODE_TEST_DSN="localhost:3141?insecure=true" go test -v ./...
+GEODE_TEST_DSN="localhost:3141?insecure_tls_skip_verify=true" go test -v ./...
 ```
 
 ### Benchmarks
@@ -518,7 +532,7 @@ Ensure Geode server is running:
 
 For development, skip verification:
 ```go
-db, _ := sql.Open("geode", "localhost:3141?insecure=true")
+db, _ := sql.Open("geode", "localhost:3141?insecure_tls_skip_verify=true")
 ```
 
 For production, provide CA certificate:

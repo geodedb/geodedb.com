@@ -35,8 +35,8 @@ Geode client libraries are designed with common principles:
 - **Secure by Default**: All connections use QUIC with TLS 1.3 encryption
 - **High Performance**: Native async support and connection pooling
 - **Type Safety**: Strong typing appropriate to each language
-- **GQL Standard**: Full ISO/IEC 39075:2024 GQL compliance
-- **Consistent Protocol**: JSON line protocol over QUIC streams
+- **GQL Standard**: ISO/IEC 39075:2024 compliance
+- **Consistent Protocol**: Protobuf wire protocol over QUIC streams
 
 ### Choosing a Client Library
 
@@ -109,11 +109,11 @@ dsn := "localhost:3141?" +
     "page_size=1000&" +
     "hello_name=myapp&" +
     "hello_ver=1.0.0&" +
-    "conformance=strict&" +
+    "conformance=full&" +
     "ca=/path/to/ca.crt&" +
     "cert=/path/to/client.crt&" +
     "key=/path/to/client.key&" +
-    "insecure=false"
+    "insecure_tls_skip_verify=false"
 
 db, err := sql.Open("geode", dsn)
 ```
@@ -127,7 +127,7 @@ db, err := sql.Open("geode", dsn)
 | `ca` | CA certificate path | system CAs |
 | `cert` | Client certificate path | none |
 | `key` | Client private key path | none |
-| `insecure` | Skip TLS verification | false |
+| `insecure_tls_skip_verify` | Skip TLS verification | false |
 
 ### Transactions
 
@@ -613,27 +613,23 @@ async function queryWithPool() {
 
 ## Wire Protocol Overview
 
-All Geode clients use the same JSON line protocol over QUIC streams:
+All Geode clients use the same Protobuf wire protocol over QUIC (default) or gRPC:
 
 ### Message Types
 
 | Client Message | Description |
 |---------------|-------------|
-| `HELLO` | Connection handshake with client info |
-| `RUN_GQL` | Execute GQL query |
-| `PULL` | Fetch result rows |
-| `BEGIN` | Start transaction |
-| `COMMIT` | Commit transaction |
-| `ROLLBACK` | Rollback transaction |
-| `PING` | Keep-alive |
+| `HelloRequest` | Connection handshake with client info |
+| `ExecuteRequest` | Execute GQL query |
+| `PullRequest` | Fetch result rows |
+| `BeginRequest` | Start transaction |
+| `CommitRequest` | Commit transaction |
+| `RollbackRequest` | Rollback transaction |
+| `PingRequest` | Keep-alive |
 
 | Server Response | Description |
 |----------------|-------------|
-| `SCHEMA` | Query result schema |
-| `BINDINGS` | Result rows |
-| `ERROR` | Error with ISO status code |
-| `EXPLAIN` | Query execution plan |
-| `PROFILE` | Performance metrics |
+| `ExecutionResponse` | Response wrapper with schema, data pages, errors, explain, or profile payloads |
 
 ### Connection Security
 

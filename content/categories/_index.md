@@ -41,7 +41,7 @@ This category system organizes over 100 documentation pages by topic and purpose
 
 **[Browse GQL Category →](/categories/gql/)**
 
-Master the ISO/IEC 39075:2024 Graph Query Language standard. This category covers GQL syntax, semantics, pattern matching, data manipulation, and ISO conformance. Geode implements 100% of the GQL specification, passing all 70 ISO test cases.
+Master the ISO/IEC 39075:2024 Graph Query Language standard. This category covers GQL syntax, semantics, pattern matching, data manipulation, and ISO conformance. Geode follows the ISO/IEC 39075:2024 compliance; see the conformance profile for scope.
 
 **Key topics**: GQL basics, pattern matching, MATCH clauses, WHERE filtering, RETURN projection, INSERT/SET/DELETE operations, aggregations, subqueries, path queries, ISO conformance
 

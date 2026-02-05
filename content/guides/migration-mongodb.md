@@ -1297,7 +1297,7 @@ class MongoToGeodeMigration {
 // Run
 const migration = new MongoToGeodeMigration(
   'mongodb://localhost:27017',
-  'geode://localhost:3141'
+  'quic://localhost:3141'
 );
 migration.run('ecommerce').catch(console.error);
 ```

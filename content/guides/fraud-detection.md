@@ -434,7 +434,7 @@ async function findSharedDevices(
 }
 
 async function main() {
-  const client = await createClient('geode://localhost:3141');
+  const client = await createClient('quic://localhost:3141');
 
   const alerts = await findSharedDevices(client, 2);
 

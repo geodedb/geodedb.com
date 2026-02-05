@@ -57,7 +57,7 @@ let mut conn = client.connect().await?;
 ```typescript
 import { createClient } from '@geodedb/client';
 
-const client = await createClient('geode://localhost:3141');
+const client = await createClient('quic://localhost:3141');
 ```
 {{< /tab >}}
 {{< tab "Zig" >}}

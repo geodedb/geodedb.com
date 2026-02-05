@@ -251,7 +251,7 @@ import (
 )
 
 func main() {
-    db, _ := sql.Open("geode", "geode://localhost:3141")
+    db, _ := sql.Open("geode", "quic://localhost:3141")
     defer db.Close()
 
     tx, _ := db.Begin()

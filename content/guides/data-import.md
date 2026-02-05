@@ -266,7 +266,7 @@ import { parse } from 'csv-parse/sync';
 import { readFileSync } from 'fs';
 
 async function importCSV(filename: string) {
-    const client = await createClient('geode://localhost:3141');
+    const client = await createClient('quic://localhost:3141');
 
     const fileContent = readFileSync(filename, 'utf-8');
     const records = parse(fileContent, {
@@ -639,7 +639,7 @@ interface User {
 }
 
 async function importJSON(filename: string) {
-    const client = await createClient('geode://localhost:3141');
+    const client = await createClient('quic://localhost:3141');
 
     const content = readFileSync(filename, 'utf-8');
     const users: User[] = JSON.parse(content);

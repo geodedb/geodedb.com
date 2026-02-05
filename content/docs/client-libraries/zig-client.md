@@ -1,6 +1,6 @@
 ---
 title: "Zig Client"
-description: "Guide to the Geode Zig client for low-level QUIC protocol access"
+description: "Guide to the Geode Zig client for low-level QUIC/gRPC protocol access and Protobuf messaging"
 url: /docs/client-libraries/zig-client/
 weight: 40
 keywords:
@@ -15,7 +15,7 @@ keywords:
 
 # Geode Zig Client Library
 
-The Zig client exposes low-level QUIC primitives for the Geode protocol. It is designed for native integrations and performance-sensitive systems that want direct protocol control.
+The Zig client exposes low-level QUIC and gRPC primitives for the Geode protocol. It is designed for native integrations and performance-sensitive systems that want direct protocol control.
 
 ## Installation
 
@@ -95,6 +95,23 @@ pub fn main() !void {
 
     std.debug.print("{any}\n", .{result.value});
 }
+```
+
+## DSN Parsing
+
+> **Note**: See the official [DSN specification](/docs/reference/dsn/) for complete details.
+
+```zig
+const parseDSN = @import("config").parseDSN;
+
+// QUIC transport (default)
+const cfg1 = try parseDSN(allocator, "quic://admin:secret@localhost:3141?insecure_tls_skip_verify=true");
+
+// gRPC transport
+const cfg2 = try parseDSN(allocator, "grpc://localhost:50051?tls=false");
+
+// Scheme-less (defaults to QUIC)
+const cfg3 = try parseDSN(allocator, "localhost:3141");
 ```
 
 ## Transactions

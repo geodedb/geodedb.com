@@ -9,7 +9,7 @@ keywords:
   - TypeScript GQL driver
   - JavaScript graph database client
   - QUIC TLS 1.3
-  - npm @geode/client
+  - npm @geodedb/client
 series:
   - client-libraries
 ---
@@ -23,7 +23,7 @@ The official Node.js client for Geode provides a high-performance QUIC + TLS 1.3
 ## Installation
 
 ```bash
-npm install @geode/client
+npm install @geodedb/client
 ```
 
 **Requirements**: Node.js 20+
@@ -31,9 +31,9 @@ npm install @geode/client
 ## Quick Start
 
 ```ts
-import { createClient } from '@geode/client';
+import { createClient } from '@geodedb/client';
 
-const client = await createClient('geode://localhost:3141');
+const client = await createClient('quic://localhost:3141');
 
 const rows = await client.queryAll(
   'MATCH (p:Person) RETURN p.name AS name, p.age AS age'
@@ -49,10 +49,10 @@ await client.close();
 ## DSN Options
 
 ```
-geode://[username:password@]host[:port][?options]
+quic://[username:password@]host[:port][?options]
 ```
 
-Supported options: `page_size`, `hello_name`, `hello_ver`, `conformance`, `username`/`user`, `password`/`pass`, `ca`, `cert`, `key`, `insecure`, `server_name`, `connect_timeout`, `request_timeout`.
+Supported options: `page_size`, `hello_name`, `hello_ver`, `conformance`, `username`/`user`, `password`/`pass`, `ca`, `cert`, `key`, `insecure_tls_skip_verify`, `server_name`, `connect_timeout`, `request_timeout`.
 
 ### Environment Defaults
 
@@ -67,7 +67,7 @@ Supported options: `page_size`, `hello_name`, `hello_ver`, `conformance`, `usern
 Pooling is enabled by default. Configure it via `ClientOptions`:
 
 ```ts
-const client = await createClient('geode://localhost:3141', {
+const client = await createClient('quic://localhost:3141', {
   pooling: true,
   pool: {
     min: 2,
@@ -81,7 +81,7 @@ const client = await createClient('geode://localhost:3141', {
 Disable pooling for a single dedicated connection:
 
 ```ts
-const client = await createClient('geode://localhost:3141', { pooling: false });
+const client = await createClient('quic://localhost:3141', { pooling: false });
 ```
 
 ## Queries
@@ -136,7 +136,7 @@ const rows = await stmt.executeAll({ name: 'Alice' });
 ## Query Builder
 
 ```ts
-import { query } from '@geode/client';
+import { query } from '@geodedb/client';
 
 const { query: gql, params } = query()
   .match('(p:Person)')
@@ -155,7 +155,7 @@ import {
   ConfigError,
   SecurityError,
   isRetryableError,
-} from '@geode/client';
+} from '@geodedb/client';
 
 try {
   await client.queryAll('INVALID QUERY');
@@ -197,7 +197,7 @@ try {
 The client provides a comprehensive GQL type system:
 
 ```ts
-import { GQLValue, fromJSON } from '@geode/client';
+import { GQLValue, fromJSON } from '@geodedb/client';
 
 // Create typed values
 const intVal = GQLValue.int(42);
@@ -251,7 +251,7 @@ const value = fromJSON({ name: 'Alice', age: 30 });
 ### Batch Operations
 
 ```ts
-import { batch, batchMap, batchParallel } from '@geode/client';
+import { batch, batchMap, batchParallel } from '@geodedb/client';
 
 // Execute multiple queries in a batch
 const summary = await client.batch([
@@ -277,7 +277,7 @@ await batchMap(conn, 'CREATE (n:Person {name: $name})', people);
 ### Query Explain/Profile
 
 ```ts
-import { explain, profile, formatPlan, formatProfile } from '@geode/client';
+import { explain, profile, formatPlan, formatProfile } from '@geodedb/client';
 
 // Get query execution plan
 const plan = await client.explain('MATCH (n:Person)-[:KNOWS]->(m) RETURN n, m');
@@ -301,7 +301,7 @@ console.log(formatProfile(prof));
 ### Authentication Client
 
 ```ts
-import { AuthClient } from '@geode/client';
+import { AuthClient } from '@geodedb/client';
 
 const auth = await client.auth();
 
@@ -355,7 +355,7 @@ try {
 ## Connection Pool
 
 ```ts
-const client = await createClient('geode://localhost:3141', {
+const client = await createClient('quic://localhost:3141', {
   pooling: true,
   pool: {
     min: 2, // Minimum connections to maintain
@@ -468,4 +468,4 @@ npm run test:integration
 ## Repository
 
 - GitLab: [devnw/codepros/geode/geode-client-nodejs](https://gitlab.com/devnw/codepros/geode/geode-client-nodejs)
-- npm: [@geode/client](https://www.npmjs.com/package/@geode/client)
+- npm: [@geodedb/client](https://www.npmjs.com/package/@geodedb/client)

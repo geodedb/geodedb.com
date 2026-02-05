@@ -23,7 +23,7 @@ params:
 
 Understanding what changes between versions is critical for maintaining stable, secure, and performant graph database deployments. Geode maintains a comprehensive changelog documenting every feature addition, bug fix, performance improvement, and breaking change across all releases. This transparency enables informed upgrade decisions and smooth migration paths.
 
-As an enterprise-ready graph database implementing the ISO/IEC 39075:2024 GQL standard, Geode follows semantic versioning (MAJOR.MINOR.PATCH) and maintains backward compatibility within major versions. This guide explains how to track changes, understand release cycles, and plan upgrades effectively.
+As an enterprise-ready graph database aligned with the ISO/IEC 39075:2024 100% GQL compliance, Geode follows semantic versioning (MAJOR.MINOR.PATCH) and maintains backward compatibility within major versions. This guide explains how to track changes, understand release cycles, and plan upgrades effectively.
 
 ## Understanding the Changelog
 
@@ -47,7 +47,7 @@ Geode's changelog follows the "Keep a Changelog" format with entries organized b
 ### Highlights
 
 - 97.4% Test Coverage (1644/1688 tests passing)
-- 100% GQL Compliance (70/70 ISO/IEC 39075:2024 tests)
+- 100% GQL compliance (see conformance profile)
 - 1,735 CANARY governance markers tracking 2,190+ requirements
 - Enterprise-ready with full ACID transactions
 - QUIC + TLS 1.3 protocol support
@@ -56,7 +56,7 @@ Geode's changelog follows the "Keep a Changelog" format with entries organized b
 ### Added in v0.1.3
 
 **Core Features**:
-- Full ISO/IEC 39075:2024 GQL standard compliance
+- ISO/IEC 39075:2024 100% GQL compliance
 - ACID transaction support with savepoints
 - Row-Level Security (RLS) with policy-based access control
 - Vector similarity search with HNSW indexes
@@ -89,7 +89,7 @@ Geode's changelog follows the "Keep a Changelog" format with entries organized b
 
 - Protocol upgraded to QUIC-only (removed TCP fallback)
 - Default port changed from 8443 to 3141
-- Wire format standardized to JSON line protocol
+- Wire format standardized to Protobuf wire protocol
 - Memory allocator optimized for graph workloads
 - Storage engine redesigned for better concurrency
 
@@ -191,7 +191,7 @@ Each major and significant minor release includes a migration guide:
 2. **Review Breaking Changes**:
    - Protocol changed to QUIC-only (no TCP fallback)
    - Default port changed from 8443 to 3141
-   - Wire format is now JSON line protocol exclusively
+   - Wire format is now Protobuf wire protocol exclusively
 
 3. **Update Client Libraries**:
    ```bash
@@ -272,7 +272,7 @@ None currently. All features in v0.1.3 are stable and supported.
 **Previously Deprecated and Removed**:
 
 - v0.1.2: TCP protocol support (removed in v0.1.3)
-- v0.1.1: Binary wire format (removed in v0.1.2)
+- v0.1.1: Legacy JSON line protocol (removed in v0.1.2; Protobuf required)
 - v0.1.0: Legacy authentication API (removed in v0.1.1)
 
 ## Changelog Best Practices

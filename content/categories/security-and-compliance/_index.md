@@ -52,7 +52,7 @@ Geode supports multiple authentication mechanisms:
 import geode_client
 
 async def connect_with_password():
-    client = geode_client.open_database("geode://localhost:3141")
+    client = geode_client.open_database("quic://localhost:3141")
     async with client.connection() as conn:
         auth = geode_client.AuthClient(conn)
         session = await auth.login("alice", "secure_password")
@@ -73,7 +73,7 @@ client = geode_client.Client(
 **Token-Based Authentication**:
 ```python
 async def login_and_store_token():
-    client = geode_client.open_database("geode://localhost:3141")
+    client = geode_client.open_database("quic://localhost:3141")
     async with client.connection() as conn:
         auth = geode_client.AuthClient(conn)
         session = await auth.login("alice", "secure_password")
@@ -194,7 +194,7 @@ USING (
 Python client example:
 
 ```python
-client = geode_client.open_database("geode://localhost:3141")
+client = geode_client.open_database("quic://localhost:3141")
 async with client.connection() as conn:
     auth = geode_client.AuthClient(conn)
     await auth.login("alice", "password")

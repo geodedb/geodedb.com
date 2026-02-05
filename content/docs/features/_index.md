@@ -1,6 +1,6 @@
 ---
 title: "Features Overview"
-description: "Comprehensive overview of Geode graph database features: GQL compliance, vector search, ACID transactions, security, and enterprise capabilities"
+description: "Comprehensive overview of Geode graph database features: GQL conformance profile, vector search, ACID transactions, security, and enterprise capabilities"
 keywords: ["features", "capabilities", "GQL", "graph database", "vector search", "ACID", "transactions", "security", "performance", "scalability"]
 weight: 5
 slug: "features"
@@ -11,12 +11,12 @@ canonical: "https://geodedb.com/docs/features/"
 
 # Features Overview
 
-Geode is an enterprise-ready graph database with 100% ISO GQL compliance, advanced security, and production-grade performance.
+Geode is an enterprise-ready graph database with ISO 100% GQL compliance, advanced security, and production-grade performance.
 
 ## 🏆 Status: Production Ready (January 2026)
 
 - **✅ 97.4% Test Coverage** (1644/1688 tests passing)
-- **✅ 100% GQL Compliance** (70/70 ISO/IEC 39075:2024 tests)
+- **✅ 100% GQL compliance** (see conformance profile)
 - **✅ 1,735 CANARY Markers** tracking 2,190+ requirements
 - **✅ All Major Features Complete** (Phases 1-7)
 
@@ -24,7 +24,7 @@ Geode is an enterprise-ready graph database with 100% ISO GQL compliance, advanc
 
 ### Graph Query Language (GQL)
 
-**ISO/IEC 39075:2024 Compliant**
+**ISO/IEC 39075:2024 compliance**
 
 - ✅ Pattern matching with complex graph patterns
 - ✅ Variable-length paths (`-[:TYPE*1..5]->`)
@@ -303,7 +303,7 @@ Geode is an enterprise-ready graph database with 100% ISO GQL compliance, advanc
 
 - ✅ 1,644/1,688 tests passing
 - ✅ Geodetestlab comprehensive test suite
-- ✅ ISO GQL compliance tests (70/70)
+- ✅ GQL conformance profile tests (see conformance profile)
 - ✅ Cross-client test harness
 - ✅ Performance benchmarks
 - ✅ Load testing framework
@@ -341,16 +341,14 @@ Geode is an enterprise-ready graph database with 100% ISO GQL compliance, advanc
 
 ### ISO/IEC 39075:2024
 
-**100% GQL Compliance**
+**100% GQL compliance**
 
-- ✅ All 70 official conformance tests passing
-- ✅ Complete pattern matching syntax
-- ✅ Full aggregation support
-- ✅ Set operations
-- ✅ Transaction semantics
-- ✅ Error handling with standard status codes
+- ✅ Deterministic ordering and pagination policies
+- ✅ MATCH pattern matching with bounded expansions and OPTIONAL MATCH
+- ✅ Aggregations and set operations
+- ✅ Diagnostics aligned to the conformance profile
 
-**Learn More**: [GQL Reference](/docs/gql-reference/)
+**Learn More**: [GQL Reference](/docs/gql-reference/) | [Conformance Profile](/docs/gql/conformance-profile/)
 
 ### Apache License 2.0
 
@@ -368,7 +366,7 @@ Geode is an enterprise-ready graph database with 100% ISO GQL compliance, advanc
 
 | Feature | Geode | Neo4j | JanusGraph | TigerGraph |
 |---------|-------|-------|------------|------------|
-| **ISO GQL** | ✅ 100% | ⚠️ Partial | ❌ No | ❌ No |
+| **ISO GQL** | ✅ Conformance profile (MATCH) | ⚠️ Partial | ❌ No | ❌ No |
 | **ACID Transactions** | ✅ Full | ✅ Full | ⚠️ Limited | ⚠️ Limited |
 | **Vector Search** | ✅ HNSW | ⚠️ Plugin | ❌ No | ⚠️ Limited |
 | **Federation** | ✅ Native | ❌ No | ✅ Yes | ✅ Yes |

@@ -444,7 +444,7 @@ async function getCollaborativeRecommendations(
 }
 
 async function main() {
-  const client = await createClient('geode://localhost:3141');
+  const client = await createClient('quic://localhost:3141');
 
   const recs = await getCollaborativeRecommendations(client, 'user-123', 10);
 

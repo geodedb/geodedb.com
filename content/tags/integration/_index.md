@@ -48,7 +48,7 @@ import (
 
 func main() {
     // Standard database/sql interface
-    db, err := sql.Open("geode", "geode://localhost:3141/graph")
+    db, err := sql.Open("geode", "quic://localhost:3141")
     if err != nil {
         panic(err)
     }
@@ -400,8 +400,8 @@ class GeodeClient {
 }
 
 // Usage
-const { createClient } = require('@geode/client');
-const client = await createClient('geode://geode.example.com:3141');
+const { createClient } = require('@geodedb/client');
+const client = await createClient('quic://geode.example.com:3141');
 
 const rows = await client.queryAll(`
     MATCH (u:User {id: $user_id})-[:PURCHASED]->(p:Product)
@@ -739,7 +739,7 @@ async def connect_k8s():
     # Use Kubernetes service DNS
     geode_url = os.getenv("GEODE_SERVICE", "geode.default.svc.cluster.local:3141")
 
-    client = geode_client.open_database(f"geode://{geode_url}")
+    client = geode_client.open_database(f"quic://{geode_url}")
 
     async with client.connection() as conn:
         result, _ = await conn.query("MATCH (n) RETURN COUNT(n) AS total")

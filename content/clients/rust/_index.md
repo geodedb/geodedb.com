@@ -57,11 +57,11 @@ async fn main() -> geode_client::Result<()> {
 use geode_client::Client;
 
 let client = Client::from_dsn("localhost:3141")?;
-let client = Client::from_dsn("localhost:3141?insecure=true&page_size=500")?;
-let client = Client::from_dsn("geode://admin:secret@localhost:3141?insecure=true")?;
+let client = Client::from_dsn("localhost:3141?insecure_tls_skip_verify=true&page_size=500")?;
+let client = Client::from_dsn("quic://admin:secret@localhost:3141?insecure_tls_skip_verify=true")?;
 ```
 
-Supported options: `page_size`, `hello_name`, `hello_ver`, `conformance`, `insecure`, `username`, `password`.
+Supported options: `page_size`, `hello_name`, `hello_ver`, `conformance`, `insecure_tls_skip_verify`, `username`, `password`.
 
 ## Connection Configuration
 

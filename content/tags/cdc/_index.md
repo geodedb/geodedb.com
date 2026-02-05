@@ -240,11 +240,11 @@ Keep caches synchronized:
 
 ```javascript
 const redis = require('redis');
-const { createClient } = require('@geode/client');
+const { createClient } = require('@geodedb/client');
 const cache = redis.createClient();
 
 async function pollChanges() {
-  const geode = await createClient('geode://localhost:3141');
+  const geode = await createClient('quic://localhost:3141');
   let lastSeen = '1970-01-01T00:00:00Z';
 
   while (true) {

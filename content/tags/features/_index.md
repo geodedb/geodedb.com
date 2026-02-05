@@ -449,7 +449,7 @@ async with client.connection() as conn:
 import "database/sql"
 import _ "geodedb.com/geode"
 
-db, _ := sql.Open("geode", "geode://localhost:3141")
+db, _ := sql.Open("geode", "quic://localhost:3141")
 rows, _ := db.Query("MATCH (u:User) RETURN u.name")
 ```
 
@@ -466,13 +466,12 @@ let (page, _) = conn.query("MATCH (u:User) RETURN u").await?;
 
 ### ISO/IEC 39075:2024 GQL
 
-100% compliant with the ISO GQL standard:
+Aligned with the ISO 100% GQL compliance:
 
-- Full GQL syntax support
-- Complete data type system
-- Standard function library
-- Path patterns and traversals
-- Subqueries and CTEs
+- MATCH and OPTIONAL MATCH with bounded expansions
+- Deterministic ORDER BY and pagination policies
+- Set operations (UNION, INTERSECT, EXCEPT)
+- Diagnostics aligned to the conformance profile
 
 ### Interoperability
 
@@ -480,7 +479,7 @@ Standard protocol support:
 
 - QUIC transport (RFC 9000)
 - TLS 1.3 encryption (RFC 8446)
-- JSON line protocol (NDJSON)
+- Protobuf wire protocol
 - OpenCypher compatibility layer
 
 ## Related Topics

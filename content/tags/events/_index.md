@@ -411,7 +411,7 @@ class CDCProcessor:
 # Usage
 async def main():
     processor = CDCProcessor(
-        "geode://localhost:3141",
+        "quic://localhost:3141",
         KafkaOutput("kafka:9092", "geode-cdc")
     )
     await processor.stream_changes(labels=['User', 'Order', 'Product'])

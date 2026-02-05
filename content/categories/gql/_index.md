@@ -23,7 +23,7 @@ params:
 
 # Graph Query Language (GQL)
 
-The **Graph Query Language (GQL)** is the ISO/IEC 39075:2024 international standard for querying property graphs. As the SQL of graph databases, GQL provides declarative syntax for expressing graph patterns, traversals, and analytics. Geode implements 100% of the GQL specification, passing all 70 ISO conformance tests, ensuring standards compliance and application portability across GQL-compliant databases.
+The **Graph Query Language (GQL)** is the ISO/IEC 39075:2024 international standard for querying property graphs. As the SQL of graph databases, GQL provides declarative syntax for expressing graph patterns, traversals, and analytics. Geode follows the ISO/IEC 39075:2024 compliance to provide portable, standards-aligned queries with a clearly documented scope.
 
 ## What is GQL?
 
@@ -45,27 +45,24 @@ GQL is a declarative language designed specifically for property graphs. Unlike 
 
 ## GQL in Geode
 
-Geode provides a complete, production-ready GQL implementation:
+Geode provides a production-ready GQL implementation aligned with the conformance profile:
 
-- **100% ISO Compliance**: Passes all 70 ISO/IEC 39075:2024 conformance tests
-- **Full Feature Support**: All GQL features including pattern matching, CRUD, aggregations, subqueries, and path queries
+- **100% GQL compliance**: Deterministic ordering and pagination policies
 - **Query Optimization**: Cost-based optimizer with index-aware execution planning
 - **EXPLAIN/PROFILE**: Visibility into query execution for performance tuning
 - **Error Messages**: Clear, actionable error messages with ISO status codes
-- **Performance**: Cost-based optimizer with statistics-driven query planning
+- **Performance**: Statistics-driven planning for graph workloads
 
 ### ISO/IEC 39075:2024 Conformance
 
-Geode's GQL implementation is fully conformant with the ISO standard:
+Geode documents conformance and implementation-defined behaviors in the ISO/IEC 39075:2024 conformance profile:
 
-- **Core GQL**: All mandatory features
-- **Pattern Matching**: Complex multi-hop patterns, variable-length paths, optional matches
-- **Data Manipulation**: INSERT, SET, DELETE, MERGE operations
-- **Aggregations**: COUNT, SUM, AVG, MIN, MAX, COLLECT
-- **Subqueries**: Scalar, existential, and list subqueries
-- **Path Queries**: Shortest paths, all paths, path patterns
-- **Graph Types**: Multiple graph support, graph unions
-- **Functions**: All standard functions including string, numeric, temporal, list, and graph functions
+- **Pattern Matching**: MATCH and OPTIONAL MATCH with bounded expansions
+- **Ordering & Pagination**: Deterministic ORDER BY with LIMIT/OFFSET policies
+- **Set Operations**: UNION, INTERSECT, EXCEPT
+- **Diagnostics**: US001 and related ordering diagnostics (see profile)
+
+See the [GQL Conformance Profile](/docs/gql/conformance-profile/) for authoritative scope.
 
 ## GQL Fundamentals
 
@@ -196,7 +193,7 @@ Comprehensive GQL tutorial from basics through advanced features. Learn pattern 
 Advanced pattern matching techniques including variable-length paths, optional matches, complex predicates, and performance optimization.
 
 **[GQL Conformance Profile](/docs/gql/conformance-profile/)**
-Detailed ISO/IEC 39075:2024 conformance documentation showing Geode's compliance with all 70 ISO test cases.
+Detailed ISO/IEC 39075:2024 conformance documentation, including scope and diagnostics.
 
 ### Related Documentation
 
@@ -346,14 +343,11 @@ ORDER BY size DESC
 Geode's GQL implementation is production-ready with all ISO features:
 
 **v0.1.3+ (Current)**:
-- ✅ Full ISO/IEC 39075:2024 compliance
-- ✅ All pattern matching features
-- ✅ Complete CRUD operations
-- ✅ All aggregation functions
-- ✅ Subqueries and CTEs
-- ✅ Path queries and algorithms
-- ✅ Multiple graph support
-- ✅ All standard functions
+- ✅ ISO/IEC 39075:2024 compliance
+- ✅ MATCH and OPTIONAL MATCH with bounded expansions
+- ✅ Aggregations and set operations
+- ✅ Deterministic ordering and pagination policies
+- ✅ Diagnostics aligned to the conformance profile
 
 ## ISO/IEC 39075:2024 Standard
 
@@ -462,6 +456,6 @@ Found a GQL bug? Have a feature request? Contributions welcome:
 ---
 
 **Standard**: ISO/IEC 39075:2024
-**Conformance**: 100% (70/70 ISO tests passing)
+**Conformance Profile**: ISO/IEC 39075:2024 compliance (see conformance profile)
 **Last Updated**: January 2026
 **Geode Version**: v0.1.3+

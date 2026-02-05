@@ -182,7 +182,7 @@ func findPersonNamed(ctx context.Context, db *sql.DB, name string, minAge int) e
 The connection string supports multiple formats:
 
 ```
-geode://host:port?options
+quic://host:port?options
 host:port?options
 host:port
 host
@@ -199,7 +199,7 @@ host
 | `ca` | Path to CA certificate | |
 | `cert` | Path to client certificate (mTLS) | |
 | `key` | Path to client key (mTLS) | |
-| `insecure` | Skip TLS verification (testing only) | false |
+| `insecure_tls_skip_verify` | Skip TLS verification (testing only) | false |
 
 ### Environment Variables
 
@@ -221,11 +221,11 @@ db, _ := sql.Open("geode", "geode.example.com:3141?ca=/etc/geode/ca.crt")
 // With mutual TLS (mTLS)
 db, _ := sql.Open("geode", "geode.example.com:3141?ca=/etc/geode/ca.crt&cert=/etc/geode/client.crt&key=/etc/geode/client.key")
 
-// Development mode (insecure - skip TLS verification)
-db, _ := sql.Open("geode", "localhost:3141?insecure=true")
+// Development mode (skip TLS verification)
+db, _ := sql.Open("geode", "localhost:3141?insecure_tls_skip_verify=true")
 
 // Using URL format
-db, _ := sql.Open("geode", "geode://user:pass@localhost:3141?page_size=500")
+db, _ := sql.Open("geode", "quic://user:pass@localhost:3141?page_size=500")
 ```
 
 ## Transaction Management
@@ -543,7 +543,7 @@ DPLPMTUD probes for optimal MTU size, reducing per-packet overhead. It is enable
 go test -v -short ./...
 
 # Integration tests with manual server
-GEODE_TEST_DSN="localhost:3141?insecure=true" go test -v ./...
+GEODE_TEST_DSN="localhost:3141?insecure_tls_skip_verify=true" go test -v ./...
 
 # Docker-based integration tests (recommended)
 go test -v -tags=integration ./...

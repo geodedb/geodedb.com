@@ -296,7 +296,7 @@ import (
 
 func main() {
     // Configure with multiple endpoints
-    db, err := sql.Open("geode", "geode://primary:3141,replica1:3141,replica2:3141")
+    db, err := sql.Open("geode", "quic://primary:3141,replica1:3141,replica2:3141")
     if err != nil {
         log.Fatal(err)
     }
@@ -500,7 +500,7 @@ server:
 
 **Go**:
 ```go
-db, _ := sql.Open("geode", "geode://localhost:3141")
+db, _ := sql.Open("geode", "quic://localhost:3141")
 
 // Pool configuration
 db.SetMaxOpenConns(100)        // Max connections

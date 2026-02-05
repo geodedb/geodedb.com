@@ -23,7 +23,7 @@ params:
 
 # Geode Overview
 
-Geode is an enterprise-ready graph database that brings standards-based graph query capabilities with production-grade features, ACID guarantees, and high performance. Built from the ground up in Zig for memory safety and efficiency, Geode implements the ISO/IEC 39075:2024 Graph Query Language (GQL) standard and is designed for modern cloud-native deployments.
+Geode is an enterprise-ready graph database that brings standards-based graph query capabilities with production-grade features, ACID guarantees, and high performance. Built from the ground up in Zig for memory safety and efficiency, Geode follows the ISO/IEC 39075:2024 100% GQL compliance and is designed for modern cloud-native deployments.
 
 ## What is Geode?
 
@@ -31,15 +31,15 @@ Geode is a **native graph database** that stores and queries connected data usin
 
 ### Key Differentiators
 
-**Standards-Based**: Full ISO/IEC 39075:2024 GQL implementation, ensuring no vendor lock-in and future-proof query language.
+**Standards-Based**: ISO/IEC 39075:2024 compliance, ensuring no vendor lock-in and future-proof query language.
 
-**Production-Ready**: 97.4% test coverage (1644/1688 tests), 100% GQL compliance (70/70 ISO tests), rigorous governance with 1,735 CANARY markers tracking 2,190+ requirements.
+**Production-Ready**: 97.4% test coverage (1644/1688 tests), 100% GQL compliance (see conformance profile), rigorous governance with 1,735 CANARY markers tracking 2,190+ requirements.
 
 **Enterprise Features**: Row-level security, audit logging, distributed transactions, savepoints, prepared statements, connection pooling.
 
 **High Performance**: QUIC transport (HTTP/3 protocol), parallel query execution, native graph storage with index-free adjacency.
 
-**Modern Architecture**: Memory-safe Zig implementation, QUIC + TLS 1.3 security, JSON line protocol, polyglot client libraries.
+**Modern Architecture**: Memory-safe Zig implementation, QUIC + TLS 1.3 security, Protobuf wire protocol, polyglot client libraries.
 
 ## Architecture
 
@@ -89,7 +89,7 @@ Geode is a **native graph database** that stores and queries connected data usin
 
 **Protocol Layer**:
 - QUIC transport for low-latency, encrypted communication
-- JSON line protocol for language-independent messaging
+- Protobuf wire protocol for language-independent messaging
 - TLS 1.3 for security by default
 - Connection pooling and multiplexing
 
@@ -111,17 +111,13 @@ Geode is a **native graph database** that stores and queries connected data usin
 
 ### Graph Query Language (GQL)
 
-Geode implements the full ISO/IEC 39075:2024 GQL standard:
+Geode follows the ISO/IEC 39075:2024 100% GQL compliance:
 
 ```gql
 -- Pattern matching
 MATCH (p:Person)-[:KNOWS*2..4]->(friend)
 WHERE p.city = 'San Francisco'
 RETURN friend.name, friend.city;
-
--- Path queries
-MATCH path = SHORTEST (a:Person {name: 'Alice'})-[:KNOWS*]-(b:Person {name: 'Bob'})
-RETURN path, length(path) AS hops;
 
 -- Aggregations
 MATCH (u:User)-[:PURCHASED]->(p:Product)
@@ -465,7 +461,7 @@ import (
 )
 
 func main() {
-    db, err := sql.Open("geode", "geode://localhost:3141")
+    db, err := sql.Open("geode", "quic://localhost:3141")
     if err != nil {
         log.Fatal(err)
     }
@@ -606,7 +602,7 @@ All data modifications logged with:
 
 ### Current (v0.1.3)
 
-- Full GQL compliance (100%)
+- 100% GQL compliance
 - Row-level security
 - Distributed transactions
 - Client libraries (Go, Python, Rust, Zig)

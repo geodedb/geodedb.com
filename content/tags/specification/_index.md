@@ -1,6 +1,6 @@
 ---
 title: "ISO/IEC 39075:2024 Specification"
-description: "Complete guide to the ISO/IEC 39075:2024 GQL specification implemented by Geode. Learn about the standard, its features, syntax, semantics, compliance, and how Geode achieves 100% conformance with the international graph query language standard."
+description: "Complete guide to the ISO/IEC 39075:2024 GQL specification implemented by Geode. Learn about the standard, its features, syntax, semantics, conformance, and how Geode follows the ISO/IEC 39075:2024 conformance profile."
 keywords:
   - ISO 39075
   - GQL specification
@@ -23,7 +23,7 @@ params:
 
 # ISO/IEC 39075:2024 Specification
 
-The ISO/IEC 39075:2024 standard, also known as GQL (Graph Query Language), is the international standard for querying property graph databases. Like SQL for relational databases, GQL provides a vendor-neutral, standardized language for graph data manipulation and querying. Geode achieves 100% compliance with this specification (70/70 ISO tests passing).
+The ISO/IEC 39075:2024 standard, also known as GQL (Graph Query Language), is the international standard for querying property graph databases. Like SQL for relational databases, GQL provides a vendor-neutral, standardized language for graph data manipulation and querying. Geode follows the ISO/IEC 39075:2024 compliance — see the conformance profile for scope and diagnostics.
 
 ## Understanding the GQL Standard
 
@@ -461,23 +461,19 @@ Complete specification including:
 - Schema definition
 - Constraints and indexes
 
-**Geode implements Full GQL**: 100% compliance (70/70 ISO tests)
+**Geode publishes a conformance profile**: ISO/IEC 39075:2024 compliance (see conformance profile)
 
 ## Geode's GQL Implementation
 
 ### Compliance
 
-Geode achieves 100% GQL standard compliance:
+Geode maintains 100% GQL compliance:
 
-- ✅ All required syntax
-- ✅ All semantics correctly implemented
-- ✅ Full type system support
-- ✅ Complete pattern matching
-- ✅ Path queries (SHORTEST, ALL SHORTEST, K SHORTEST)
-- ✅ Temporal data types
-- ✅ ACID transactions with savepoints
-- ✅ Schema and constraints
-- ✅ 70/70 ISO conformance tests passing
+- ✅ MATCH and OPTIONAL MATCH with bounded expansions
+- ✅ WHERE, RETURN, ORDER BY
+- ✅ LIMIT/OFFSET policies (US001)
+- ✅ Set operations (UNION, INTERSECT, EXCEPT)
+- ✅ Diagnostics aligned to the conformance profile
 
 ### Extensions
 
@@ -657,7 +653,7 @@ The GQL standard will continue evolving:
 
 ## Conclusion
 
-The ISO/IEC 39075:2024 GQL specification represents a landmark achievement in database standardization, providing a vendor-neutral, rigorously defined language for graph data querying. Geode's 100% compliance ensures your queries are portable, future-proof, and based on international consensus rather than proprietary technology.
+The ISO/IEC 39075:2024 GQL specification represents a landmark achievement in database standardization, providing a vendor-neutral, rigorously defined language for graph data querying. Geode's conformance profile alignment keeps queries portable, future-proof, and based on international consensus rather than proprietary technology.
 
 By learning GQL through Geode, you're investing in a standardized skill set that will remain relevant as the graph database ecosystem matures and more vendors adopt the specification.
 

@@ -281,7 +281,7 @@ geode query --format txt "MATCH (n) RETURN n LIMIT 10"
 
 ```gql
 -- Connect to server
-\connect geode://localhost:3141
+\connect quic://localhost:3141
 
 -- Create a graph
 CREATE GRAPH SocialNetwork;

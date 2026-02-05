@@ -140,7 +140,7 @@ CREATE INDEX employee_id_idx ON :Employee(employee_id)
 
 ### ISO/IEC 39075:2024 Standard
 
-Geode implements 100% of the GQL standard, providing:
+Geode follows the ISO/IEC 39075:2024 compliance, providing:
 - **Pattern matching**: Declarative graph traversal
 - **Read/write operations**: CREATE, MATCH, SET, DELETE
 - **Aggregations**: COUNT, SUM, AVG, MIN, MAX

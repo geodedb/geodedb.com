@@ -17,7 +17,7 @@ params:
 
 Best practices in graph database development represent the collective wisdom gained from real-world production deployments, performance optimization efforts, and lessons learned from building scalable, maintainable systems. This category provides battle-tested patterns, anti-patterns to avoid, and pragmatic guidance for building robust applications with Geode.
 
-These practices span the entire development lifecycle from initial graph modeling and schema design through query optimization, transaction management, security hardening, and operational monitoring. They reflect Geode's 100% ISO/IEC 39075:2024 GQL compliance, 97.4% test coverage achievements, and production deployment experiences across diverse use cases.
+These practices span the entire development lifecycle from initial graph modeling and schema design through query optimization, transaction management, security hardening, and operational monitoring. They reflect Geode's ISO/IEC 39075:2024 compliance, 97.4% test coverage achievements, and production deployment experiences across diverse use cases.
 
 Following these best practices helps teams avoid common pitfalls, achieve optimal performance, maintain data integrity, and build systems that scale gracefully as data and usage grow. Each recommendation is backed by specific examples and explains the rationale behind the practice.
 

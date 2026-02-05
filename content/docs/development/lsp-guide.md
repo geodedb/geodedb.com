@@ -161,7 +161,7 @@ src/cli/lsp/
 - **LSP Specification**: 3.17
 - **Transport**: JSON-RPC 2.0 over stdin/stdout
 - **Text Synchronization**: Full and Incremental modes
-- **Parser Integration**: Uses Geode's 100% ISO/IEC 39075:2024 compliant GQL parser
+- **Parser Integration**: Uses Geode's ISO/IEC 39075:2024 compliance parser
 
 ### Server Capabilities
 
@@ -946,5 +946,5 @@ See `editors/README.md` for complete setup instructions.
 
 **Implementation**: Complete (79/79 tests passing)
 **Protocol**: LSP 3.17, JSON-RPC 2.0
-**Parser**: 100% ISO/IEC 39075:2024 GQL compliance
+**Parser**: ISO/IEC 39075:2024 compliance
 **Status**: Production-ready

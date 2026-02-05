@@ -397,7 +397,7 @@ import (
 )
 
 func main() {
-    db, err := sql.Open("geode", "geode://localhost:3141?tls=true")
+    db, err := sql.Open("geode", "quic://localhost:3141?tls=true")
     if err != nil {
         log.Fatal(err)
     }

@@ -1,6 +1,6 @@
 ---
 title: "Rust Client"
-description: "Complete guide to the Geode Rust client library with tokio + Quinn QUIC support"
+description: "Complete guide to the Geode Rust client library with tokio, QUIC/gRPC transport, and Protobuf wire protocol"
 url: /docs/client-libraries/rust-client/
 weight: 30
 keywords:
@@ -15,7 +15,7 @@ keywords:
 
 # Geode Rust Client Library
 
-The Rust client provides an async tokio interface with Quinn QUIC transport, typed values, prepared statements, and connection pooling.
+The Rust client provides an async tokio interface with QUIC (default) or gRPC transport, typed values, prepared statements, and connection pooling.
 
 ## Installation
 
@@ -30,7 +30,8 @@ use geode_client::Client;
 
 #[tokio::main]
 async fn main() -> geode_client::Result<()> {
-    let client = Client::new("localhost", 3141).skip_verify(true);
+    // QUIC transport (default)
+    let client = Client::from_dsn("quic://localhost:3141?insecure_tls_skip_verify=true")?;
     let mut conn = client.connect().await?;
 
     let (page, _) = conn.query("MATCH (p:Person) RETURN p.name AS name").await?;
@@ -46,15 +47,18 @@ async fn main() -> geode_client::Result<()> {
 
 ## DSN Parsing
 
+> **Note**: See the official [DSN specification](/docs/reference/dsn/) for complete details.
+
 ```rust
 use geode_client::Client;
 
-let client = Client::from_dsn("localhost:3141")?;
-let client = Client::from_dsn("localhost:3141?insecure=true&page_size=500")?;
-let client = Client::from_dsn("geode://admin:secret@localhost:3141?insecure=true")?;
+let client = Client::from_dsn("quic://localhost:3141")?;
+let client = Client::from_dsn("quic://localhost:3141?insecure_tls_skip_verify=true&page_size=500")?;
+let client = Client::from_dsn("grpc://localhost:50051?tls=0")?;
+let client = Client::from_dsn("quic://admin:secret@localhost:3141?insecure_tls_skip_verify=true")?;
 ```
 
-Supported options: `page_size`, `hello_name`, `hello_ver`, `conformance`, `insecure`, `username`, `password`.
+Supported options: `page_size`, `hello_name`, `hello_ver`, `conformance`, `insecure_tls_skip_verify`, `tls`, `ca`, `cert`, `key`, `username`/`user`, `password`/`pass`.
 
 ## Queries
 

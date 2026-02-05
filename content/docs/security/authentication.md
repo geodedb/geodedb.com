@@ -163,7 +163,7 @@ geode query "MATCH (n) RETURN n LIMIT 10" --api-key "$GEODE_API_KEY"
 # In client libraries (Go example)
 import "go.codepros.org/geode"
 
-client, err := geode.Connect("geode://localhost:3141",
+client, err := geode.Connect("quic://localhost:3141",
     geode.WithAPIKey("gsk_live_abc123xyz789..."))
 ```
 

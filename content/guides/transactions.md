@@ -510,7 +510,7 @@ async function criticalOperation(client: GeodeClient): Promise<void> {
 }
 
 async function main() {
-    const client = await createClient('geode://localhost:3141');
+    const client = await createClient('quic://localhost:3141');
 
     try {
         // Transfer with serializable isolation
@@ -984,7 +984,7 @@ async function withTransaction<T>(
 
 // Usage
 async function main() {
-    const client = await createClient('geode://localhost:3141');
+    const client = await createClient('quic://localhost:3141');
 
     try {
         await withTransaction(client, async (tx) => {

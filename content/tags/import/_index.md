@@ -240,7 +240,7 @@ import (
 )
 
 func batchImport(filename string, batchSize int) error {
-    db, err := sql.Open("geode", "geode://localhost:3141/production")
+    db, err := sql.Open("geode", "quic://localhost:3141")
     if err != nil {
         return err
     }

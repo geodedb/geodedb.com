@@ -561,7 +561,7 @@ pnpm add @geodedb/client
 import { createClient } from '@geodedb/client';
 
 async function main() {
-    const client = await createClient('geode://localhost:3141');
+    const client = await createClient('quic://localhost:3141');
 
     const pong = await client.ping();
     console.log(`Connected to Geode! Latency: ${pong.latency}ms`);
@@ -740,7 +740,7 @@ cargo run --example basic_connection
 cat > test_connection.mjs << 'EOF'
 import { createClient } from '@geodedb/client';
 
-const client = await createClient('geode://localhost:3141');
+const client = await createClient('quic://localhost:3141');
 const rows = await client.queryAll('RETURN 1 + 1 AS result');
 console.log(`Query result: ${rows[0].get('result')?.asNumber}`);
 await client.close();
@@ -813,7 +813,7 @@ geode ping localhost:3142
 ```bash
 # 1. For development, skip verification
 # Go
-db, _ := sql.Open("geode", "localhost:3141?skip_verify=true")
+db, _ := sql.Open("geode", "localhost:3141?insecure_tls_skip_verify=true")
 
 # Python
 client = Client(host="localhost", port=3141, skip_verify=True)

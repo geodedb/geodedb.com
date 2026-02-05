@@ -119,7 +119,7 @@ From `REPL_USAGE.md`:
 
 | Command | Description | Example |
 |---------|-------------|---------|
-| `\connect <uri>` | Connect to server | `\connect geode://localhost:3141` |
+| `\connect <uri>` | Connect to server | `\connect quic://localhost:3141` |
 | `\begin` | Start transaction | `\begin` |
 | `\commit` | Commit transaction | `\commit` |
 | `\rollback` | Rollback transaction | `\rollback` |
@@ -132,7 +132,7 @@ From `REPL_USAGE.md`:
 
 ```gql
 -- Connect
-\connect geode://localhost:3141
+\connect quic://localhost:3141
 
 -- Set format
 \format json

@@ -96,7 +96,7 @@ RETURN f.name;  -- Ctrl+Click on 'f' jumps to variable binding
 ```json
 {
   "geode.serverPath": "/usr/local/bin/geode",
-  "geode.connectionString": "geode://localhost:3141",
+  "geode.connectionString": "quic://localhost:3141",
   "geode.enableDiagnostics": true,
   "geode.formatOnSave": true,
   "geode.maxNumberOfProblems": 100,
@@ -148,7 +148,7 @@ RETURN f.name;  -- Ctrl+Click on 'f' jumps to variable binding
 
 ```
 File → Settings → Languages & Frameworks → Geode
-  Connection String: geode://localhost:3141
+  Connection String: quic://localhost:3141
   Username: admin
   Database: default
   Auto-connect: ✓
@@ -463,7 +463,7 @@ tail -f /tmp/geode-lsp.log
 ```json
 // Verify connection in settings
 {
-  "geode.connectionString": "geode://localhost:3141",
+  "geode.connectionString": "quic://localhost:3141",
   "geode.enableDiagnostics": true
 }
 ```

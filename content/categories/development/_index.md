@@ -90,10 +90,10 @@ This category documents the full development experience, from writing your first
 - Prepared statements and parameter binding
 
 **Wire Protocol**
-- JSON line protocol over QUIC
+- Protobuf wire protocol over QUIC (default) or gRPC
 - Multiplexed streams for concurrent queries
-- Request types: HELLO, RUN_GQL, PULL, BEGIN, COMMIT
-- Response types: SCHEMA, BINDINGS, ERROR, DONE
+- Request types: `HelloRequest`, `ExecuteRequest`, `PullRequest`, `BeginRequest`, `CommitRequest`
+- Response type: `ExecutionResponse` (payloads: `SchemaDefinition`, `DataPage`, `Error`, `ExplainPayload`, `ProfilePayload`)
 - Streaming results with flow control
 - Connection migration support
 - 0-RTT resumption for low latency
@@ -158,7 +158,7 @@ import asyncio
 
 async def get_user_recommendations(user_id: int, limit: int = 10):
     """Get product recommendations for a user."""
-    client = geode_client.open_database('geode://localhost:3141')
+    client = geode_client.open_database('quic://localhost:3141')
     async with client.connection() as conn:
         query = """
             MATCH (user:User {id: $user_id})-[:PURCHASED]->(product:Product)
@@ -213,7 +213,7 @@ type Product struct {
 }
 
 func GetRecommendations(userID int, limit int) ([]Product, error) {
-    db, err := sql.Open("geode", "geode://localhost:3141")
+    db, err := sql.Open("geode", "quic://localhost:3141")
     if err != nil {
         return nil, err
     }
@@ -301,7 +301,7 @@ import geode_client
 @pytest.fixture
 async def db():
     """Provide test database connection."""
-    client = geode_client.open_database('geode://localhost:3141')
+    client = geode_client.open_database('quic://localhost:3141')
     async with client.connection() as conn:
         # Setup: Create test data
         await conn.execute("""
@@ -426,7 +426,7 @@ class DatabasePool:
         await self._pool.close()
 
 # Usage
-pool = DatabasePool("geode://localhost:3141")
+pool = DatabasePool("quic://localhost:3141")
 await pool.initialize()
 
 async with pool.acquire() as conn:
@@ -846,7 +846,7 @@ jobs:
 
       - name: Run tests
         env:
-          GEODE_URL: geode://localhost:3141
+          GEODE_URL: quic://localhost:3141
         run: pytest tests/
 
       - name: Upload coverage

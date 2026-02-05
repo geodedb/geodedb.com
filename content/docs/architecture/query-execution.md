@@ -234,7 +234,7 @@ fn reportError(self: *Parser, err: ParserError) void {
 
 ### GQL Compliance
 
-**ISO/IEC 39075:2024 Compliance**: 100% (70/70 tests passing)
+**ISO/IEC 39075:2024 Conformance Profile**: ISO/IEC 39075:2024 compliance (see conformance profile)
 
 **Supported Features**:
 - All GQL keywords (105+)

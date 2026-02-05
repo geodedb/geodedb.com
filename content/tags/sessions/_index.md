@@ -85,7 +85,7 @@ import (
     _ "geodedb.com/geode"
 )
 
-db, err := sql.Open("geode", "geode://geode.example.com:3141")
+db, err := sql.Open("geode", "quic://geode.example.com:3141")
 if err != nil {
     log.Fatal(err)
 }

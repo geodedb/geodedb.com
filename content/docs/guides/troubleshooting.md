@@ -289,7 +289,7 @@ from geode_client import Client
 client = Client(host="localhost", port=3141, skip_verify=True)
 
 # Go client - disable verification (dev only!)
-db, err := sql.Open("geode", "localhost:3141?insecure=true")
+db, err := sql.Open("geode", "localhost:3141?insecure_tls_skip_verify=true")
 
 # Rust client - disable verification (dev only!)
 use geode_client::Client;

@@ -25,7 +25,7 @@ ISO/IEC 39075:2024, officially titled "Information technology — Database langu
 
 The standard emerged from the need for interoperability in the rapidly growing graph database market. Prior to GQL, each vendor implemented proprietary query languages (Cypher, Gremlin, SPARQL variants), creating lock-in and limiting portability. GQL provides a common foundation that enables queries to work across compliant databases, tooling to support multiple backends, and developers to transfer skills between platforms.
 
-Geode achieves 100% compliance with ISO/IEC 39075:2024, passing all 70 official conformance tests in the test suite. This makes Geode one of the first production-ready databases to fully implement the standard, positioning it as a reference implementation for the graph database community. Geode's commitment to standards compliance ensures long-term portability, predictable semantics, and compatibility with emerging GQL tooling.
+Geode follows the ISO/IEC 39075:2024 compliance. The profile documents scope, diagnostics, and implementation-defined behaviors to keep GQL usage portable and predictable.
 
 ## Key Concepts
 
@@ -90,14 +90,14 @@ Geode's development follows a standards-first approach:
 1. **Specification Review**: New features begin with careful ISO specification analysis
 2. **Test-Driven Implementation**: Conformance tests guide implementation
 3. **Semantic Validation**: Edge cases verified against ISO-specified behavior
-4. **Continuous Testing**: All 70 ISO tests run in CI/CD pipeline
+4. **Continuous Testing**: Conformance profile tests run in the CI/CD pipeline
 5. **Specification Tracking**: CANARY markers link code to specification sections
 
 ### Conformance Testing
 
 Geode validates compliance through:
 
-- **Official Test Suite**: All 70 ISO/IEC 39075:2024 conformance tests
+- **Conformance Test Suite**: Profile-based ISO/IEC 39075:2024 tests
 - **Syntax Tests**: Parser validates all legal GQL syntax
 - **Semantic Tests**: Query behavior matches ISO-specified semantics
 - **Error Tests**: Error codes and messages follow ISO conventions
@@ -160,7 +160,7 @@ async def get_user_friends(user_name: str):
         ORDER BY friend.name
     """
 
-    client = geode_client.open_database('geode://localhost:3141')
+    client = geode_client.open_database('quic://localhost:3141')
 
     async with client.connection() as conn:
         result, _ = await conn.query(query, {'name': user_name})
@@ -174,7 +174,7 @@ async def get_user_friends(user_name: str):
 from gql_language_server import GQLServer
 
 server = GQLServer(
-    database_url='geode://localhost:3141',
+    database_url='quic://localhost:3141',
     validate_against='ISO/IEC 39075:2024'
 )
 
@@ -191,7 +191,7 @@ from geode_client import connect
 @pytest.mark.iso_compliance
 async def test_aggregation_semantics():
     """Verify aggregation follows ISO specification."""
-    async with connect('geode://localhost:3141') as conn:
+    async with connect('quic://localhost:3141') as conn:
         # Create test data
         await conn.execute("""
             INSERT (:Product {id: 1, price: 10.0}),
@@ -383,7 +383,7 @@ class ISOComplianceValidator:
         self.test_results = []
 
     async def run_compliance_suite(self):
-        """Execute full ISO compliance test suite."""
+        """Execute ISO conformance profile test suite."""
         await self.test_pattern_matching()
         await self.test_data_manipulation()
         await self.test_aggregation()
@@ -632,7 +632,7 @@ class ComplianceDocGenerator:
 
 ## Executive Summary
 
-Geode Graph Database v0.1.3 achieves **100% compliance** with ISO/IEC 39075:2024
+Geode Graph Database v0.1.3 publishes the ISO/IEC 39075:2024 compliance
 (Graph Query Language) international standard.
 
 ## Test Results Summary
@@ -770,4 +770,3 @@ class ISOCompliantOptimizer:
 
         return True
 ```
-

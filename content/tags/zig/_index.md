@@ -335,7 +335,7 @@ Current statistics:
 ### Test Coverage
 
 - **97.4% pass rate** (1644/1688 integration tests)
-- **100% GQL compliance** (70/70 ISO tests)
+- **100% GQL compliance** (see conformance profile)
 - **393/393 unit tests** passing
 
 ## Zig Client Library

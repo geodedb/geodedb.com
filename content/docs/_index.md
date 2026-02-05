@@ -15,7 +15,7 @@ keywords:
 
 # Geode Documentation
 
-Welcome to the complete documentation for Geode, an enterprise-ready graph database with 100% ISO/IEC 39075:2024 GQL compliance.
+Welcome to the complete documentation for Geode, an enterprise-ready graph database with ISO/IEC 39075:2024 compliance.
 
 ## Quick Links
 
@@ -45,13 +45,14 @@ Welcome to the complete documentation for Geode, an enterprise-ready graph datab
 
 ## Key Features
 
-### 100% GQL Compliance
+### 100% GQL compliance
 
-Geode achieves **100% compliance** with ISO/IEC 39075:2024:
-- ✅ All 70 official conformance tests passing
-- ✅ Complete pattern matching syntax
+Geode maintains 100% ISO/IEC 39075:2024 GQL compliance:
+- ✅ Deterministic ordering and pagination policies
+- ✅ MATCH pattern matching with bounded expansions and OPTIONAL MATCH
 - ✅ Full aggregation support
 - ✅ Set operations (UNION, INTERSECT, EXCEPT)
+- ✅ See the [conformance profile](/docs/gql/conformance-profile/) for scope and diagnostics
 
 ### Enterprise-Grade Security
 
@@ -79,7 +80,7 @@ Over 50 specialized types including:
 
 - **Integration tests**: 97.4% pass rate (1,644/1,688 tests)
 - **Unit tests**: 100% pass rate (393/393 tests)
-- **GQL compliance**: 100% (70/70 ISO tests)
+- **GQL conformance profile**: see conformance profile
 - **CANARY markers**: 1,735 markers tracking 2,190+ requirements
 
 ## Community and Support

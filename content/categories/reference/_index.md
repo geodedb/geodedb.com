@@ -25,7 +25,7 @@ The **API and Technical Reference** category provides authoritative, detailed do
 
 ### Syntax Overview
 
-Geode implements ISO/IEC 39075:2024 Graph Query Language with full compliance. The GQL syntax includes:
+Geode implements ISO/IEC 39075:2024 Graph Query Language aligned to the full GQL conformance profile. The GQL syntax includes:
 
 **Data Manipulation Language (DML)**:
 - `MATCH` - Pattern matching to find graph elements

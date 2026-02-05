@@ -1,6 +1,6 @@
 ---
 title: "Overview"
-description: "Introduction to Geode graph database with ISO/IEC 39075:2024 GQL compliance and enterprise-ready features"
+description: "Introduction to Geode graph database with ISO/IEC 39075:2024 GQL conformance profile and enterprise-ready features"
 summary: "Comprehensive overview of Geode, an enterprise-ready graph database implementing the ISO/IEC 39075:2024 Graph Query Language (GQL) standard with production-grade features."
 weight: 5
 keywords:
@@ -23,14 +23,14 @@ toc: true
 params:
   seo:
     keywords: "geode graph database, GQL database, ISO 39075, enterprise graph database, property graph database"
-    description: "Introduction to Geode, an enterprise-ready graph database with 100% ISO/IEC 39075:2024 GQL compliance and production-grade features"
+    description: "Introduction to Geode, an enterprise-ready graph database with ISO/IEC 39075:2024 compliance and production-grade features"
 ---
 
 <!-- CANARY: REQ=REQ-GQL-001; FEATURE="BasicQuery"; ASPECT=Testing; STATUS=TESTED; OWNER=test; UPDATED=2025-10-02 -->
 
 # Overview
 
-Geode is an enterprise-ready graph database implementing the ISO/IEC 39075:2024 Graph Query Language (GQL) standard. Designed for production workloads, Geode combines standards compliance, high performance, and comprehensive security features.
+Geode is an enterprise-ready graph database implementing the ISO/IEC 39075:2024 Graph Query Language (GQL) 100% compliance. Designed for production workloads, Geode combines standards alignment, high performance, and comprehensive security features.
 
 ## What is Geode?
 
@@ -42,7 +42,7 @@ Built from the ground up in Zig for performance and memory safety, Geode is desi
 
 ### Standards Compliance
 
-- **100% GQL Compliance**: All 70 ISO/IEC 39075:2024 conformance tests passing
+- **100% GQL compliance**: Deterministic ordering and pagination policies with MATCH semantics
 - **Standards-Based**: No vendor-specific query language extensions required
 - **Future-Proof**: Built on internationally recognized standards
 
@@ -149,7 +149,7 @@ Track products, suppliers, logistics, and dependencies across complex supply net
 GQL Parser → Planner (CBO) → Execution Engine → Storage Engine
 ```
 
-- **Parser**: 100% ISO/IEC 39075:2024 compliant
+- **Parser**: ISO/IEC 39075:2024 syntax coverage (see conformance profile)
 - **Planner**: Cost-based optimization with statistics
 - **Execution**: Optimized for graph traversal patterns
 - **Storage**: Memory-mapped I/O with WAL
@@ -165,7 +165,7 @@ GQL Parser → Planner (CBO) → Execution Engine → Storage Engine
 
 - **QUIC Transport**: Modern protocol with multiplexing
 - **TLS 1.3**: Mandatory encryption
-- **JSON Line Protocol**: Simple, extensible wire format
+- **Protobuf Wire Protocol**: Compact binary transport over QUIC or gRPC
 - **Connection Migration**: Support for mobile clients
 
 See [Architecture](/docs/architecture/) for complete details.
@@ -176,7 +176,7 @@ See [Architecture](/docs/architecture/) for complete details.
 
 - **97.4% Integration Test Pass Rate**: 1,644/1,688 tests
 - **100% Unit Test Pass Rate**: 393/393 tests
-- **100% GQL Compliance**: 70/70 ISO tests
+- **GQL conformance profile**: see conformance profile
 - **1,735 CANARY Markers**: Tracking 2,190+ requirements
 
 ### Status Breakdown

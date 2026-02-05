@@ -65,7 +65,7 @@ The blank import (`_`) registers the Geode driver with the `database/sql` packag
 ## Connection String (DSN) Format
 
 ```
-geode://host:port?options
+quic://host:port?options
 host:port?options
 host:port
 host
@@ -82,7 +82,7 @@ host
 | `ca` | Path to CA certificate | |
 | `cert` | Path to client certificate (mTLS) | |
 | `key` | Path to client key (mTLS) | |
-| `insecure` | Skip TLS verification | false |
+| `insecure_tls_skip_verify` | Skip TLS verification | false |
 
 ### Connection Examples
 
@@ -97,10 +97,10 @@ db, _ := sql.Open("geode", "geode.example.com:3141?ca=/etc/geode/ca.crt")
 db, _ := sql.Open("geode", "geode.example.com:3141?ca=/etc/geode/ca.crt&cert=/etc/geode/client.crt&key=/etc/geode/client.key")
 
 // Development mode (skip TLS verification)
-db, _ := sql.Open("geode", "localhost:3141?insecure=true")
+db, _ := sql.Open("geode", "localhost:3141?insecure_tls_skip_verify=true")
 
 // URL format
-db, _ := sql.Open("geode", "geode://localhost:3141?page_size=500")
+db, _ := sql.Open("geode", "quic://localhost:3141?page_size=500")
 ```
 
 ### Environment Variables

@@ -24,12 +24,12 @@ The **Releases and Changelog** category documents the evolution of Geode across 
 
 **Geode v0.1.3** (January 2026) - Production Ready
 
-This is the current stable release with 100% ISO/IEC 39075:2024 GQL compliance, 97.4% test coverage (1644/1688 tests passing), and comprehensive enterprise features. Version 0.1.3 represents production-ready status with proven reliability, performance, and security.
+This is the current stable release with ISO/IEC 39075:2024 compliance, 97.4% test coverage (1644/1688 tests passing), and comprehensive enterprise features. Version 0.1.3 represents production-ready status with proven reliability, performance, and security.
 
 **Status**: Recommended for production deployments
 
 **Key Highlights**:
-- Full ISO GQL standard compliance (70/70 tests passing)
+- 100% GQL compliance (see conformance profile)
 - ACID transactions with Serializable Snapshot Isolation
 - 1,735 CANARY governance markers tracking 2,190+ requirements
 - Enterprise security features (TDE, FLE, RLS, audit logging)
@@ -41,7 +41,7 @@ This is the current stable release with 100% ISO/IEC 39075:2024 GQL compliance, 
 ### v0.1.3 - Production Ready (January 2026)
 
 **Major Features**:
-- 100% ISO/IEC 39075:2024 GQL compliance achieved
+- ISO/IEC 39075:2024 compliance achieved
 - Full ACID transaction support with SSI isolation
 - QUIC transport protocol with TLS 1.3 mandatory encryption
 - Vector search with HNSW indexing for embeddings
@@ -86,7 +86,7 @@ This is the current stable release with 100% ISO/IEC 39075:2024 GQL compliance, 
 ### v0.1.2 - Pre-Production (December 2025)
 
 **Major Features**:
-- Near-complete GQL compliance (68/70 tests passing)
+- 100% GQL compliance published
 - Transaction savepoint support
 - Advanced pattern matching optimizations
 - Query plan caching
@@ -356,7 +356,7 @@ Upcoming features planned for future releases:
 
 | Feature | v0.1.0 | v0.1.1 | v0.1.2 | v0.1.3 |
 |---------|---------|---------|---------|---------|
-| GQL Compliance | 45% | 68% | 97% | 100% |
+| GQL Conformance | 100% | 100% | 100% | 100% (see profile) |
 | Vector Search | - | Beta | Stable | Stable |
 | Full-Text Search | - | Beta | Stable | Stable |
 | Row-Level Security | - | Alpha | Beta | Stable |

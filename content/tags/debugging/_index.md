@@ -154,7 +154,7 @@ logging.basicConfig(level=logging.DEBUG)
 
 async def check_connection():
     try:
-        client = geode_client.open_database("geode://localhost:3141")
+        client = geode_client.open_database("quic://localhost:3141")
         async with client.connection() as conn:
             await asyncio.wait_for(conn.query("RETURN 1 AS ok"), timeout=5.0)
         return "success"
@@ -190,7 +190,7 @@ client = geode_client.Client(
 
 ```python
 # Increase timeout with asyncio wait_for
-client = geode_client.open_database("geode://localhost:3141")
+client = geode_client.open_database("quic://localhost:3141")
 async with client.connection() as conn:
     await asyncio.wait_for(conn.query("RETURN 1 AS ok"), timeout=60.0)
 ```
@@ -199,7 +199,7 @@ async with client.connection() as conn:
 
 ```python
 try:
-    client = geode_client.open_database("geode://localhost:3141")
+    client = geode_client.open_database("quic://localhost:3141")
     async with client.connection() as conn:
         auth = geode_client.AuthClient(conn)
         await auth.login("alice", "wrong_password")

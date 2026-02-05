@@ -23,9 +23,9 @@ Geode offers official clients for Go, Python, Rust, Node.js, and Zig. All client
 | Client | Package | Current Version | Maturity | Best For |
 |--------|---------|-----------------|----------|----------|
 | **Go** | `geodedb.com/geode` | module (rolling) | Production | Server-side Go apps, database/sql integration |
-| **Python** | `geode-client` | 0.1.0 | Beta | Async services, data tooling |
-| **Rust** | `geode-client` | 0.1.0 | Alpha | Performance-critical backends |
-| **Node.js** | `@geode/client` | 1.0.0 | Beta | TypeScript services, APIs |
+| **Python** | `geode-client` | 0.2.0 | Beta | Async services, data tooling |
+| **Rust** | `geode-client` | 0.1.1-alpha.8 | Alpha | Performance-critical backends |
+| **Node.js** | `@geodedb/client` | 1.0.0-alpha.15 | Beta | TypeScript services, APIs |
 | **Zig** | `geode_client_zig` | 0.1.0 | Alpha | Native integrations, low-level control |
 
 ## Feature Comparison

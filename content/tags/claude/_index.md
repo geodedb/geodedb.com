@@ -76,7 +76,7 @@ Configure the Geode LSP in your editor settings:
 ```json
 {
   "geode.lsp.enabled": true,
-  "geode.lsp.connection": "geode://localhost:3141/myapp",
+  "geode.lsp.connection": "quic://localhost:3141",
   "geode.lsp.schemaSync": true,
   "geode.lsp.diagnostics": {
     "level": "warning",

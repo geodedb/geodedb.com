@@ -143,7 +143,7 @@ Parse connection strings in various formats:
 const parseDSN = @import("config").parseDSN;
 
 // URL format with credentials
-const cfg1 = try parseDSN(allocator, "geode://admin:secret@localhost:3141?insecure=true");
+const cfg1 = try parseDSN(allocator, "quic://admin:secret@localhost:3141?insecure_tls_skip_verify=true");
 defer cfg1.deinit(allocator);
 
 // Simple format
@@ -159,7 +159,7 @@ defer cfg3.deinit(allocator);
 
 | Parameter | Aliases | Description |
 |-----------|---------|-------------|
-| `insecure` | `insecure_skip_verify` | Skip TLS verification |
+| `insecure_tls_skip_verify` | - | Skip TLS verification |
 | `page_size` | `pageSize` | Result page size |
 | `timeout` | `timeout_ms` | Connection timeout |
 | `username` | `user` | Authentication username |
@@ -478,7 +478,7 @@ std.debug.print("Code: {s}\n", .{err.status_code});
 
 ## Wire Protocol
 
-The client uses JSON line protocol over QUIC:
+The client uses Protobuf wire protocol over QUIC:
 
 **Client Messages:**
 

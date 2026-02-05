@@ -171,7 +171,7 @@ import (
     _ "geodedb.com/geode"
 )
 
-db, err := sql.Open("geode", "geode://geode.example.com:3141")
+db, err := sql.Open("geode", "quic://geode.example.com:3141")
 if err != nil {
     log.Fatal(err)
 }
@@ -467,10 +467,10 @@ geode cert-verify --cert=/etc/geode/certs/server.crt
 
 ```ts
 // Node.js: configure connect/request timeouts via DSN options
-import { createClient } from '@geode/client';
+import { createClient } from '@geodedb/client';
 
 const client = await createClient(
-  'geode://geode.example.com:3141?connect_timeout=60000&request_timeout=300000'
+  'quic://geode.example.com:3141?connect_timeout=60000&request_timeout=300000'
 );
 ```
 

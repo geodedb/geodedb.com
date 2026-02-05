@@ -20,7 +20,7 @@ params:
 
 <!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
 
-ISO/IEC 39075:2024 is the international standard for GQL (Graph Query Language), defining a vendor-neutral, declarative query language for property graph databases. Geode implements this standard with 100% compliance.
+ISO/IEC 39075:2024 is the international standard for GQL (Graph Query Language), defining a vendor-neutral, declarative query language for property graph databases. Geode follows the ISO/IEC 39075:2024 compliance.
 
 ## Standard Overview
 
@@ -420,10 +420,9 @@ While compliant, implementations may add:
 ## Implementation in Geode
 
 Geode provides:
-- **100% Compliance**: All 70 ISO tests passing
-- **Full Feature Support**: Core + Enhanced + Full
+- **100% compliance**: Documented scope and diagnostics
 - **Standards Documentation**: ISO section references throughout
-- **Test Verification**: Continuous compliance testing
+- **Test Verification**: Continuous profile-based testing
 
 ## Related Topics
 

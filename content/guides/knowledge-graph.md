@@ -466,7 +466,7 @@ async function createPerson(client: Client, person: Partial<Person>): Promise<st
 }
 
 async function main() {
-  const client = await createClient('geode://localhost:3141');
+  const client = await createClient('quic://localhost:3141');
 
   const personId = await createPerson(client, {
     name: 'Marie Curie',

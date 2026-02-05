@@ -71,7 +71,7 @@ import (
     _ "geodedb.com/geode"
 )
 
-db, err := sql.Open("geode", "geode://localhost:3141")
+db, err := sql.Open("geode", "quic://localhost:3141")
 if err != nil {
     log.Fatal(err)
 }
@@ -266,7 +266,7 @@ All client libraries provide automatic connection pooling:
 
 **Go Example:**
 ```go
-db, _ := sql.Open("geode", "geode://localhost:3141?max_conns=50")
+db, _ := sql.Open("geode", "quic://localhost:3141?max_conns=50")
 db.SetMaxIdleConns(10)
 db.SetConnMaxLifetime(time.Hour)
 ```

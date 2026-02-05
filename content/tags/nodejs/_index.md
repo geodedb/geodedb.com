@@ -10,7 +10,7 @@ keywords:
   - connection pooling
   - prepared statements
   - query builder
-  - "@geode/client"
+  - "@geodedb/client"
   - GQL driver
 params:
   seo:
@@ -27,15 +27,15 @@ The Geode Node.js client delivers a TypeScript-first API for QUIC + TLS 1.3 acce
 ## Install
 
 ```bash
-npm install @geode/client
+npm install @geodedb/client
 ```
 
 ## Quick Start
 
 ```ts
-import { createClient } from '@geode/client';
+import { createClient } from '@geodedb/client';
 
-const client = await createClient('geode://localhost:3141');
+const client = await createClient('quic://localhost:3141');
 const rows = await client.queryAll('RETURN 1 AS ok');
 console.log(rows[0].ok);
 ```

@@ -30,7 +30,7 @@ Learn Geode's implementation of the ISO/IEC 39075:2024 Graph Query Language (GQL
 
 ## What GQL is in Geode
 
-Geode implements **100% ISO/IEC 39075:2024 GQL compliance** (70/70 official conformance tests passing):
+Geode implements **ISO/IEC 39075:2024 compliance**:
 
 - Complete pattern matching syntax
 - Full aggregation and grouping support
@@ -201,10 +201,10 @@ RETURN
 
 **🔧 Extension**: Geode enforces deterministic ordering for pagination (from `match_tutorial.md`).
 
-**Policy**: When using `LIMIT` or `OFFSET` without `ORDER BY`, Geode applies an implicit stable ordering based on internal node/edge IDs to ensure consistent pagination results.
+**Policy**: `LIMIT` or `OFFSET` **requires** an explicit `ORDER BY`. Queries without an order clause are rejected with diagnostic `US001` to prevent non-deterministic pagination.
 
 ```gql
--- Explicit ordering (recommended)
+-- Explicit ordering (required)
 MATCH (p:Person)
 RETURN p.name, p.age
 ORDER BY p.age DESC, p.name ASC
@@ -216,10 +216,10 @@ RETURN p.name, p.age
 ORDER BY p.age DESC
 LIMIT 10 OFFSET 20;
 
--- Implicit ordering (Geode applies stable order)
+-- ❌ Unordered pagination (rejected with US001)
 MATCH (p:Person)
 RETURN p.name
-LIMIT 10;  -- Geode ensures same 10 nodes each time
+LIMIT 10;
 ```
 
 ## Aggregations and Grouping

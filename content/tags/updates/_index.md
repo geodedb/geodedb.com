@@ -43,7 +43,7 @@ Geode version numbers follow the format `MAJOR.MINOR.PATCH`:
 **Production Releases**
 - Full feature set with comprehensive testing
 - 97.4% test coverage (1644/1688 tests passing)
-- 100% GQL compliance (70/70 ISO tests)
+- 100% GQL compliance (see conformance profile)
 - Suitable for enterprise production environments
 
 **Release Candidates (RC)**
@@ -324,7 +324,7 @@ Understand compatibility between server and client library versions.
 
 ### Protocol Compatibility
 
-Geode's JSON line protocol maintains backward compatibility within major versions:
+Geode's Protobuf wire protocol maintains backward compatibility within major versions:
 
 - **Wire Protocol:** v1.x compatible across all v0.x releases
 - **QUIC/TLS:** TLS 1.3 required (consistent across versions)
@@ -334,9 +334,9 @@ Geode's JSON line protocol maintains backward compatibility within major version
 
 Geode tracks GQL standard evolution:
 
-- **v0.1.3:** ISO/IEC 39075:2024 (100% compliance)
-- **v0.1.2:** ISO/IEC 39075:2024 (95% compliance)
-- **v0.1.1:** ISO/IEC 39075:2024 Draft (85% compliance)
+- **v0.1.3:** ISO/IEC 39075:2024 compliance
+- **v0.1.2:** ISO/IEC 39075:2024 alignment (pre-profile)
+- **v0.1.1:** ISO/IEC 39075:2024 draft alignment (pre-profile)
 
 Queries written for v0.1.1+ remain valid in newer versions unless they rely on deprecated features.
 

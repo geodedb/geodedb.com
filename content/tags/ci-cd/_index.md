@@ -64,10 +64,10 @@ Performance Benchmarks → Client Tests → Deploy to Staging → Production
 - Transaction isolation tests
 - Concurrent access tests
 
-**Stage 4: Compliance Testing** (3-5 minutes)
-- ISO/IEC 39075:2024 GQL tests (70 tests)
-- Standards conformance validation
-- 100% compliance requirement
+**Stage 4: Conformance Testing** (3-5 minutes)
+- ISO/IEC 39075:2024 conformance profile tests (full GQL)
+- Standards conformance validation (profile-based)
+- Conformance profile gating
 
 **Stage 5: Performance Testing** (10-20 minutes)
 - Benchmark suite execution
@@ -173,7 +173,7 @@ jobs:
         working-directory: geode
         run: |
           make gql-compliance-tests
-          # Requires 70/70 tests passing
+          # Requires see conformance profile
 
       - name: Upload Test Results
         if: always()

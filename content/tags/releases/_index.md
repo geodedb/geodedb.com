@@ -72,7 +72,7 @@ Examples:
 
 **Enterprise Readiness**:
 - 97.4% Test Coverage (1644/1688 tests passing)
-- 100% GQL Compliance (70/70 ISO tests)
+- 100% GQL compliance (see conformance profile)
 - Production-validated with 1,735 CANARY governance markers
 - Full ACID transaction support
 - Row-Level Security (RLS)
@@ -84,7 +84,7 @@ Examples:
 
 **Protocol**:
 - QUIC + TLS 1.3 (mandatory)
-- JSON line protocol
+- Protobuf wire protocol
 - Default port: 3141
 - Bidirectional streaming support
 
@@ -99,7 +99,7 @@ Examples:
 **Breaking Changes**:
 1. TCP protocol removed (QUIC only)
 2. Default port changed from 8443 to 3141
-3. Binary wire format removed (JSON line only)
+3. Legacy JSON line protocol removed (Protobuf wire protocol only)
 
 **Migration Steps**:
 ```bash
@@ -237,7 +237,7 @@ Before any release, Geode undergoes comprehensive testing:
 **Test Suite**:
 1. Unit tests (1,688 tests, 97.4% passing)
 2. Integration tests (cross-client validation)
-3. GQL compliance tests (70/70 ISO tests)
+3. GQL compliance tests (see conformance profile)
 4. Performance benchmarks
 5. Concurrency stress tests
 6. Memory leak detection

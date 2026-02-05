@@ -190,17 +190,17 @@ gql-compliance:
         ./geode serve --listen 0.0.0.0:3141 &
         sleep 5
 
-    - name: Run ISO Compliance Tests
+    - name: Run Conformance Profile Tests
       run: |
-        # Must pass 70/70 tests
+        # Must pass profile scope (see conformance profile)
         python gql/iso-tests/run-suite.py \
           --host localhost:3141 \
           --strict
 
-    - name: Verify 100% Compliance
+    - name: Enforce Conformance Profile
       run: |
         if [ $? -ne 0 ]; then
-          echo "GQL compliance test failed - blocking merge"
+          echo "GQL conformance profile tests failed - blocking merge"
           exit 1
         fi
 ```

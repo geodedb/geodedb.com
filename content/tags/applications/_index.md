@@ -738,7 +738,7 @@ services:
     depends_on:
       - geode
     environment:
-      - GEODE_URL=geode://geode:3141
+      - GEODE_URL=quic://geode:3141
 
 volumes:
   geode-data:

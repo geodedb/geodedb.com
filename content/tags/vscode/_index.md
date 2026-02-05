@@ -88,7 +88,7 @@ Configure the extension in VS Code settings (`settings.json`):
 {
   // Server connection
   "geode.serverPath": "/usr/local/bin/geode",
-  "geode.connectionString": "geode://localhost:3141",
+  "geode.connectionString": "quic://localhost:3141",
   "geode.defaultDatabase": "default",
   "geode.username": "",
   "geode.password": "",
@@ -138,7 +138,7 @@ Create workspace-specific settings for different projects:
 ```json
 // .vscode/settings.json
 {
-  "geode.connectionString": "geode://dev-server:3141",
+  "geode.connectionString": "quic://dev-server:3141",
   "geode.defaultDatabase": "project_db",
   "[gql]": {
     "editor.formatOnSave": true,
@@ -155,19 +155,19 @@ Use VS Code profiles or workspace settings for different environments:
 ```json
 // Development
 {
-  "geode.connectionString": "geode://localhost:3141",
+  "geode.connectionString": "quic://localhost:3141",
   "geode.defaultDatabase": "dev"
 }
 
 // Staging
 {
-  "geode.connectionString": "geode://staging.example.com:3141",
+  "geode.connectionString": "quic://staging.example.com:3141",
   "geode.defaultDatabase": "staging"
 }
 
 // Production (read-only)
 {
-  "geode.connectionString": "geode://prod.example.com:3141",
+  "geode.connectionString": "quic://prod.example.com:3141",
   "geode.defaultDatabase": "production",
   "geode.execution.readOnly": true
 }

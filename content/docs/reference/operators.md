@@ -868,4 +868,4 @@ RETURN p.name, p.friends[1].name AS second_friend;
 
 **Last Updated:** January 24, 2026
 **Geode Version:** v0.1.3+
-**ISO GQL Compliance:** 100% (70/70 tests passing)
+**ISO GQL Conformance Profile:** ISO/IEC 39075:2024 compliance (see conformance profile)

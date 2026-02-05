@@ -162,7 +162,7 @@ import (
 )
 
 func main() {
-    db, err := sql.Open("geode", "geode://localhost:3141")
+    db, err := sql.Open("geode", "quic://localhost:3141")
     if err != nil {
         panic(err)
     }
@@ -520,7 +520,7 @@ client = Client(
 
 ```go
 // Go - database/sql automatically pools
-db, err := sql.Open("geode", "geode://localhost:3141")
+db, err := sql.Open("geode", "quic://localhost:3141")
 db.SetMaxOpenConns(50)
 db.SetMaxIdleConns(10)
 ```

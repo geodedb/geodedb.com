@@ -62,7 +62,7 @@ Geode is an enterprise-ready graph database built with a modular, high-performan
 ### Query Processing Pipeline
 
 **1. GQL Parser** (`src/gql/`)
-- **ISO/IEC 39075:2024 Compliance**: 100% (70/70 tests)
+- **ISO/IEC 39075:2024 Compliance**: see conformance profile
 - Lexer with complete token support
 - Recursive descent parser
 - AST generation
@@ -184,9 +184,9 @@ Geode is an enterprise-ready graph database built with a modular, high-performan
 - Low latency transport
 
 **Protocol** (`src/protocol.zig`)
-- JSON line protocol
-- Message types: HELLO, RUN_GQL, PULL, BEGIN, COMMIT, ROLLBACK, PING
-- Response types: SCHEMA, BINDINGS, ERROR, EXPLAIN, PROFILE
+- Protobuf wire protocol
+- Message types: `HelloRequest`, `ExecuteRequest`, `PullRequest`, `BeginRequest`, `CommitRequest`, `RollbackRequest`, `PingRequest`
+- Response type: `ExecutionResponse` (payloads: `SchemaDefinition`, `DataPage`, `Error`, `ExplainPayload`, `ProfilePayload`)
 - Multi-tenancy support with tenant_id in HELLO message
 
 ### Advanced Features
@@ -259,7 +259,7 @@ src/
 
 - **Integration tests**: 97.4% pass rate (1,644/1,688 tests)
 - **Unit tests**: 100% pass rate (393/393 tests)
-- **GQL compliance**: 100% (70/70 ISO tests)
+- **GQL conformance profile**: see conformance profile
 - **CANARY markers**: 1,735 markers tracking 2,190+ requirements
 
 ### Status Breakdown

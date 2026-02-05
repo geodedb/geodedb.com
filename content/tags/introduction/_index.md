@@ -38,7 +38,7 @@ Geode is a modern graph database designed for production workloads that require:
 
 **Production Ready**:
 - 97.4% test coverage (1644/1688 tests passing)
-- 100% GQL compliance (70/70 ISO tests)
+- 100% GQL compliance (see conformance profile)
 - Active development with rigorous governance
 
 **Modern Architecture**:

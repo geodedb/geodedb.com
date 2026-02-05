@@ -279,7 +279,7 @@ async with client.connection() as conn:
 ### Go Client Modeling
 
 ```go
-db, _ := sql.Open("geode", "geode://localhost:3141")
+db, _ := sql.Open("geode", "quic://localhost:3141")
 
 // Schema definition
 _, err := db.Exec(`

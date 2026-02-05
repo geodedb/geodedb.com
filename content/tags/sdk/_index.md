@@ -71,7 +71,7 @@ import (
 
 func main() {
     // Open connection (implements database/sql)
-    db, err := sql.Open("geode", "geode://localhost:3141/graph")
+    db, err := sql.Open("geode", "quic://localhost:3141")
     if err != nil {
         log.Fatal(err)
     }
@@ -245,15 +245,15 @@ Full Rust SDK documentation: [Rust Client Guide](/docs/client-libraries/rust-cli
 ### Installation
 
 ```bash
-npm install @geode/client
+npm install @geodedb/client
 ```
 
 ### Quick Start
 
 ```ts
-import { createClient } from '@geode/client';
+import { createClient } from '@geodedb/client';
 
-const client = await createClient('geode://localhost:3141');
+const client = await createClient('quic://localhost:3141');
 const rows = await client.queryAll(
   'MATCH (p:Person) RETURN p.name AS name, p.age AS age'
 );
@@ -348,7 +348,7 @@ Full Zig SDK documentation: [Zig Client Guide](/docs/client-libraries/zig-client
 
 **Go**:
 ```go
-db, err := sql.Open("geode", "geode://localhost:3141/graph")
+db, err := sql.Open("geode", "quic://localhost:3141")
 db.SetMaxOpenConns(100)
 db.SetMaxIdleConns(10)
 db.SetConnMaxLifetime(time.Hour)

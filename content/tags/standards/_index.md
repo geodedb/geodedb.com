@@ -31,13 +31,11 @@ As an enterprise-ready graph database, Geode doesn't just implement standards—
 
 The Graph Query Language (GQL) is the international standard for querying property graphs, ratified by ISO/IEC in 2024. GQL provides a declarative, SQL-inspired syntax specifically designed for graph data, enabling pattern matching, path finding, and graph analytics with a consistent, portable query language.
 
-**Geode's GQL Compliance**:
+**Geode's GQL Conformance**:
 
-- **100% Compliance**: Passes all 70 ISO/IEC 39075:2024 compliance tests
-- **Complete Syntax Support**: Implements full GQL grammar and semantics
-- **Standard Functions**: All required functions, operators, and expressions
-- **Type System**: Complete implementation of GQL type system
-- **Error Codes**: Standard error codes and messages
+- **100% compliance**: Documented scope and diagnostics (see conformance profile)
+- **Deterministic Ordering & Pagination**: ORDER BY + LIMIT/OFFSET policies
+- **Standard Error Codes**: ISO GQL status codes and handling
 
 **GQL Features Implemented**:
 
@@ -73,14 +71,14 @@ MATCH (u:User {inactive: true})
 DELETE u;
 ```
 
-**Standard Compliance Validation**:
+**Conformance Profile Validation**:
 
 ```bash
 # Run ISO compliance test suite
 cd geode-test-harness
 make test-gql-compliance
 
-# Results: 70/70 tests passing (100%)
+# Results: see conformance profile (100%)
 # - Pattern matching: 15/15
 # - Path expressions: 10/10
 # - Aggregations: 8/8
@@ -207,7 +205,7 @@ While Geode implements GQL (not SQL), it maintains conceptual compatibility with
 - Fragment identifier support
 
 ```
-geode://username:password@host:3141/graph?param=value
+quic://username:password@host:3141?param=value
 ```
 
 ## Data Type Standards

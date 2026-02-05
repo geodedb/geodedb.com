@@ -1,13 +1,13 @@
 ---
 title: "Node.js Client Library"
-description: "Complete guide to the Geode Node.js and TypeScript client with QUIC + TLS support"
+description: "Complete guide to the Geode Node.js and TypeScript client with QUIC/gRPC transport and Protobuf wire protocol"
 url: /docs/client-libraries/nodejs-client/
 keywords:
   - Geode Node.js client
   - TypeScript GQL driver
   - JavaScript graph database
   - QUIC TLS 1.3
-  - npm @geode/client
+  - npm @geodedb/client
 weight: 25
 slug: "nodejs-client"
 ---
@@ -16,20 +16,20 @@ slug: "nodejs-client"
 
 # Node.js Client Library
 
-The Node.js client provides a TypeScript-first API for Geode with QUIC + TLS 1.3 transport, pooling, query builders, and prepared statements.
+The Node.js client provides a TypeScript-first API for Geode with QUIC + TLS 1.3 (default) or gRPC transport, pooling, query builders, and prepared statements.
 
 ## Installation
 
 ```bash
-npm install @geode/client
+npm install @geodedb/client
 ```
 
 ## Quick Start
 
 ```ts
-import { createClient } from '@geode/client';
+import { createClient } from '@geodedb/client';
 
-const client = await createClient('geode://localhost:3141');
+const client = await createClient('quic://localhost:3141');
 
 const rows = await client.queryAll(
   'MATCH (p:Person) RETURN p.name AS name, p.age AS age'
@@ -44,20 +44,24 @@ await client.close();
 
 ## DSN Format
 
+> **Note**: See the official [DSN specification](/docs/reference/dsn/) for complete details.
+
 ```
-geode://[username:password@]host[:port][?options]
+quic://[username:password@]host[:port][?options]   # QUIC transport (default port: 3141)
+grpc://[username:password@]host[:port][?options]   # gRPC transport (default port: 50051)
+host:port                                          # Scheme-less (defaults to QUIC)
 ```
 
-Supported options: `page_size`, `hello_name`, `hello_ver`, `conformance`, `username`/`user`, `password`/`pass`, `ca`, `cert`, `key`, `insecure`, `server_name`, `connect_timeout`, `request_timeout`.
+Supported options: `page_size`, `hello_name`, `hello_ver`, `conformance`, `username`/`user`, `password`/`pass`, `ca`, `cert`, `key`, `insecure_tls_skip_verify`, `server_name`, `connect_timeout`, `request_timeout`, `tls` (gRPC only).
 
-Environment defaults: `GEODE_HOST`, `GEODE_PORT`, `GEODE_TLS_CA`, `GEODE_USERNAME`, `GEODE_PASSWORD`.
+Environment defaults: `GEODE_HOST`, `GEODE_PORT`, `GEODE_TRANSPORT`, `GEODE_TLS_CA`, `GEODE_USERNAME`, `GEODE_PASSWORD`.
 
 ## Pooling
 
 Pooling is enabled by default. Configure it via `ClientOptions`:
 
 ```ts
-const client = await createClient('geode://localhost:3141', {
+const client = await createClient('quic://localhost:3141', {
   pooling: true,
   pool: {
     min: 2,
@@ -71,7 +75,7 @@ const client = await createClient('geode://localhost:3141', {
 Disable pooling for a single connection:
 
 ```ts
-const client = await createClient('geode://localhost:3141', { pooling: false });
+const client = await createClient('quic://localhost:3141', { pooling: false });
 ```
 
 ## Queries
@@ -150,7 +154,7 @@ stmt.close();
 ## Query Builder
 
 ```ts
-import { query } from '@geode/client';
+import { query } from '@geodedb/client';
 
 const { query: gql, params } = query()
   .match('(p:Person)')
@@ -163,7 +167,7 @@ const rows = await client.queryAll(gql, { params });
 ## Explain and Profile
 
 ```ts
-import { explain, profile } from '@geode/client';
+import { explain, profile } from '@geodedb/client';
 
 await client.withConnection(async (conn) => {
   const plan = await explain(conn, 'MATCH (p:Person) RETURN p');
@@ -175,7 +179,7 @@ await client.withConnection(async (conn) => {
 ## Authentication Helpers
 
 ```ts
-import { createAuthClient } from '@geode/client';
+import { createAuthClient } from '@geodedb/client';
 
 await client.withConnection(async (conn) => {
   const auth = createAuthClient(conn);
@@ -196,7 +200,7 @@ await client.withConnection(async (conn) => {
 ## Error Handling
 
 ```ts
-import { isGeodeError, DriverError } from '@geode/client';
+import { isGeodeError, DriverError } from '@geodedb/client';
 
 try {
   await client.exec('INVALID QUERY');
@@ -219,4 +223,4 @@ try {
 ## Repository
 
 - GitLab: [devnw/geode/geode-client-nodejs](https://gitlab.com/devnw/geode/geode-client-nodejs)
-- npm: [@geode/client](https://www.npmjs.com/package/@geode/client)
+- npm: [@geodedb/client](https://www.npmjs.com/package/@geodedb/client)

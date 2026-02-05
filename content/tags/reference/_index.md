@@ -188,7 +188,7 @@ import (
 )
 
 // Open connection
-db, err := sql.Open("geode", "geode://localhost:3141?sslmode=disable")
+db, err := sql.Open("geode", "quic://localhost:3141?insecure_tls_skip_verify=true")
 defer db.Close()
 
 // Query execution

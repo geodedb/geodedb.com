@@ -141,10 +141,10 @@ input CreateCommentInput {
 
 ```javascript
 const { ApolloServer } = require('apollo-server');
-const { createClient } = require('@geode/client');
+const { createClient } = require('@geodedb/client');
 
 // Initialize Geode client
-const geode = createClient('geode://localhost:3141');
+const geode = createClient('quic://localhost:3141');
 
 const resolvers = {
   Query: {

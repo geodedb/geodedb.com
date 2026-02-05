@@ -413,7 +413,7 @@ import (
 
 func main() {
     // Connection string with multiple hosts
-    dsn := "geode://node1:3141,node2:3141,node3:3141/mydb?failover=true"
+    dsn := "quic://node1:3141,node2:3141,node3:3141?failover=true"
 
     db, err := sql.Open("geode", dsn)
     if err != nil {

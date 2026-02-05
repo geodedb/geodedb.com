@@ -140,10 +140,10 @@ cat README.md
 
 ### Standards Documentation
 
-Geode implements the **ISO/IEC 39075:2024 Graph Query Language (GQL)** standard. While the standard itself requires purchase from ISO, Geode documentation provides practical guidance on GQL compliance:
+Geode implements the **ISO/IEC 39075:2024 Graph Query Language (GQL)** 100% compliance. While the standard itself requires purchase from ISO, Geode documentation provides practical guidance on GQL conformance:
 
 - GQL syntax reference with examples
-- Compliance test results (70/70 passing)
+- Conformance profile details (see conformance profile)
 - Extensions beyond the standard
 - Migration guides from other query languages
 

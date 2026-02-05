@@ -22,11 +22,11 @@ params:
 
 ## Overview
 
-This document provides a complete reference for Geode's GQL (Graph Query Language) implementation, including all keywords, functions, types, and procedures. All features conform to the ISO/IEC 39075:2024 GQL standard.
+This document provides a complete reference for Geode's GQL (Graph Query Language) implementation, including all keywords, functions, types, and procedures. Features align with the ISO/IEC 39075:2024 compliance.
 
 **Auto-generated from**: `src/gql/language_metadata.zig`
 **Last updated**: 2026-01-03
-**GQL Compliance**: 100% (70/70 ISO tests passing)
+**GQL Conformance Profile**: ISO/IEC 39075:2024 compliance (see conformance profile)
 
 ### Quick Navigation
 
@@ -1134,13 +1134,13 @@ RETURN p {.name, .age, friends: size((p)-[:KNOWS]->())}
 
 **Standards**:
 - ISO/IEC 39075:2024 GQL Standard
-- 100% compliance (70/70 tests passing)
+- 100% compliance (see conformance profile)
 
 ---
 
 **Generated from**: `src/gql/language_metadata.zig`
 **Last updated**: 2026-01-03
-**GQL Compliance**: 100% (70/70 ISO tests)
+**GQL Conformance Profile**: see conformance profile
 **Functions**: 100+
 **Keywords**: 60+
 **Data Types**: 19

@@ -21,7 +21,7 @@ Complete version history and release notes for Geode graph database.
 Geode has achieved **production-ready status** with comprehensive compliance and testing:
 
 - ✅ **97.4% Test Coverage** (1644/1688 tests passing)
-- ✅ **100% GQL Compliance** (70/70 ISO/IEC 39075:2024 official tests)
+- ✅ **100% GQL compliance** (see conformance profile)
 - ✅ **1,735 CANARY Markers** tracking 2,190+ requirements (81.4% tested)
 - ✅ **Enterprise Features** complete (TDE, audit, vector search, cloud backup, enhanced RLS)
 - ✅ **All Development Phases** complete (Phases 2-7)
@@ -67,7 +67,7 @@ This release marks Geode's transition to production-ready status with comprehens
 **Architecture & Infrastructure**:
 - Unified CLI architecture (eliminated subprocess spawning)
 - REPL QUIC integration with real-time interactive shell
-- Complete ISO/IEC 39075:2024 compliance (70/70 tests)
+- ISO/IEC 39075:2024 compliance (see conformance profile)
 - SIMD acceleration for vector operations
 - Support for up to 65,535 vector dimensions
 
@@ -289,10 +289,10 @@ None. This is a major release with no deprecations.
 
 ### Supported Versions
 
-| Version | Status | Support End | GQL Compliance | Test Coverage |
+| Version | Status | Support End | GQL Conformance | Test Coverage |
 |---------|--------|-------------|----------------|---------------|
-| v0.1.x | Production Ready | Active | 100% (70/70) | 97.4% |
-| v0.1.x | Maintenance | June 2026 | 100% (70/70) | 95%+ |
+| v0.1.x | Production Ready | Active | 100% compliance | 97.4% |
+| v0.1.x | Maintenance | June 2026 | 100% compliance | 95%+ |
 
 ### Upgrade Policy
 

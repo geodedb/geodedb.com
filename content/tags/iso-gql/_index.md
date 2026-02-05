@@ -544,4 +544,4 @@ fn executeParallel(ops: []Operation) ![]Result {
 - [GQL Syntax](/tags/gql-syntax/) - Syntax guide
 - [Testing](/tags/testing/) - Test methodology
 
-Implementing ISO/IEC 39075:2024 requires careful attention to specification details, comprehensive testing, and continuous validation against the standard to ensure full compliance and interoperability.
+Implementing ISO/IEC 39075:2024 requires careful attention to specification details, comprehensive testing, and continuous validation against the conformance profile to ensure interoperability.

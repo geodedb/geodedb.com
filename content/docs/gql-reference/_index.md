@@ -1,6 +1,6 @@
 ---
 title: "GQL Query Language Reference"
-description: "Complete reference for the Graph Query Language (GQL) with ISO/IEC 39075:2024 compliance"
+description: "Complete reference for the Graph Query Language (GQL) with ISO/IEC 39075:2024 conformance profile guidance"
 weight: 30
 
 keywords:
@@ -15,7 +15,7 @@ keywords:
 
 # GQL Query Language Reference
 
-Geode implements the complete ISO/IEC 39075:2024 Graph Query Language (GQL) standard with 100% compliance (70/70 official tests passing).
+Geode implements the ISO/IEC 39075:2024 Graph Query Language (GQL) 100% compliance. See the conformance profile for scope and diagnostics.
 
 ## Overview
 
@@ -107,16 +107,15 @@ For comprehensive GQL coverage, see also:
 - **[Query Performance Tuning](/docs/query/performance-tuning/)** - Optimization guide
 - **[Troubleshooting Guide](/docs/guides/troubleshooting/)** - Common query issues
 
-## ISO/IEC 39075:2024 Compliance
+## ISO/IEC 39075:2024 Conformance Profile
 
-Geode achieves **100% compliance** with the ISO GQL standard:
+Geode publishes the ISO GQL conformance profile:
 
-- ✅ All 70 official conformance tests passing
-- ✅ Complete pattern matching syntax
-- ✅ Full aggregation support
-- ✅ Set operations
+- ✅ Deterministic ordering and pagination policies
+- ✅ MATCH pattern matching with bounded expansions and OPTIONAL MATCH
+- ✅ Aggregations and set operations
 - ✅ Transaction semantics
-- ✅ Error handling with standard status codes
+- ✅ Diagnostics aligned to the conformance profile
 
 ## Examples
 

@@ -19,7 +19,7 @@ Geode's native protocol uses QUIC over TLS for efficient, secure communication:
 
 **Transport** - QUIC (UDP-based, multiplexed)
 **Security** - TLS 1.3 required
-**Format** - JSON line protocol
+**Format** - Protobuf wire protocol
 **Port** - 3141 (standard) or 8443 (alternative)
 
 ```
@@ -43,7 +43,7 @@ import (
 )
 
 // Open connection
-db, err := sql.Open("geode", "geode://localhost:3141?tls=true")
+db, err := sql.Open("geode", "quic://localhost:3141?tls=true")
 if err != nil {
     log.Fatal(err)
 }

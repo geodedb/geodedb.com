@@ -55,7 +55,7 @@ This layered design enables independent optimization and testing of each compone
 
 **Evidence-Based Development**: All features backed by tests. CANARY markers track requirements and evidence throughout the codebase.
 
-**Standards Compliance**: Full ISO/IEC 39075:2024 GQL compliance ensures portability and predictable behavior.
+**Standards Compliance**: ISO/IEC 39075:2024 compliance ensures portability and predictable behavior.
 
 ### Key Architectural Decisions
 
@@ -269,25 +269,21 @@ Command-line interface architecture including REPL implementation, shell integra
 
 ### Wire Protocol
 
-**Message Format**: JSON line protocol:
-- One JSON object per line
-- Request/response correlation via stream ID
-- Type field indicates message kind
-- Payload contains message-specific data
+**Message Format**: Protobuf wire protocol over QUIC (default) or gRPC.
 
 **Client Messages**:
-- **HELLO**: Initial handshake with version negotiation
-- **RUN_GQL**: Execute GQL query with parameters
-- **PULL**: Fetch next batch of results
-- **BEGIN/COMMIT/ROLLBACK**: Transaction control
-- **PING**: Connection keepalive
+- `HelloRequest`: initial handshake + authentication
+- `ExecuteRequest`: execute GQL query with parameters
+- `PullRequest`: fetch next batch of results
+- `BeginRequest` / `CommitRequest` / `RollbackRequest`: transaction control
+- `PingRequest`: connection keepalive
 
-**Server Responses**:
-- **SCHEMA**: Query schema (column names, types)
-- **BINDINGS**: Result rows (batched)
-- **ERROR**: Error response with ISO status code
-- **EXPLAIN**: Query execution plan
-- **PROFILE**: Performance metrics
+**Server Responses** (via `ExecutionResponse`):
+- `SchemaDefinition`: query schema (column names, types)
+- `DataPage`: result rows (batched)
+- `Error`: error response with ISO status code
+- `ExplainPayload`: query execution plan
+- `ProfilePayload`: performance metrics
 
 **Error Handling**:
 - ISO GQL status codes for errors
@@ -507,12 +503,12 @@ geode/src/
 **Test Pyramid**:
 - **Unit tests**: 1,000+ tests for individual functions
 - **Integration tests**: 500+ tests for component interactions
-- **System tests**: 70 ISO GQL conformance tests
+- **System tests**: GQL conformance profile tests (ISO/IEC 39075:2024)
 - **Performance tests**: Benchmark suite
 
 **Test Coverage**: 97.4% (1,644/1,688 tests passing)
 
-**ISO Conformance**: 100% (70/70 ISO tests passing)
+**ISO Conformance Profile**: ISO/IEC 39075:2024 compliance (see conformance profile)
 
 ## Related Documentation
 
@@ -608,6 +604,6 @@ Understanding Geode's architecture enables effective contributions:
 **Concurrency**: MVCC with SSI
 **Protocol**: QUIC with TLS 1.3
 **Test Coverage**: 97.4%
-**ISO Compliance**: 100%
+**ISO Conformance Profile**: ISO/IEC 39075:2024 compliance
 **Last Updated**: January 2026
 **Geode Version**: v0.1.3+
