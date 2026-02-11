@@ -10,7 +10,7 @@
 image: ubuntu:24.04
 
 include:
-  - component: gitlab.com/devnw/ci-catalog/cloudflare-pages-deploy@~latest
+  - component: gitlab.com/devnw/ci-catalog/cloudflare-pages-deploy@v1.19.1
     inputs:
       stage: deploy
       project_name: geodedb-com
