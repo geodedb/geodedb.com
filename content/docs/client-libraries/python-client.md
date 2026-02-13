@@ -70,11 +70,30 @@ from geode_client import open_database
 client = open_database("grpc://localhost:50051")
 ```
 
+> **Note (v0.3.19+):** The gRPC transport now properly handles server-streaming
+> responses. The Execute RPC streams a schema message followed by one or more data
+> pages; earlier versions only read the first message, returning correct column
+> metadata but empty rows. Upgrade to **0.3.19** or later for complete query results
+> over gRPC.
+
+#### TLS with Self-Signed Certificates
+
+When `skip_verify=True` is set and the server uses a self-signed certificate, the
+gRPC transport automatically extracts the certificate's Common Name (CN) and uses
+it for `ssl_target_name_override`. This means the hostname override matches the
+cert's CN (e.g. `geode.local`) rather than the connection hostname, so TLS
+negotiation succeeds without additional configuration.
+
+```python
+# skip_verify trusts the server cert and derives the hostname override from its CN
+client = Client(host="10.0.0.5", port=50051, transport="grpc", skip_verify=True)
+```
+
 ## DSN Format
 
 > **Note**: See the official [DSN specification](/docs/reference/dsn/) for complete details.
 
-```
+```text
 quic://[username:password@]host[:port][?options]   # QUIC transport (default port: 3141)
 grpc://[username:password@]host[:port][?options]   # gRPC transport (default port: 50051)
 host:port                                          # Scheme-less (defaults to QUIC)

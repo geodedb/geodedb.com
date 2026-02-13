@@ -14,19 +14,72 @@ canonical: "https://geodedb.com/docs/reference/changelog/"
 
 Complete version history and release notes for Geode graph database.
 
-## Current Status (January 2026)
+## Current Status (February 2026)
 
 **Version**: v0.1.3+ (Production Ready)
 
 Geode has achieved **production-ready status** with comprehensive compliance and testing:
 
-- ✅ **97.4% Test Coverage** (1644/1688 tests passing)
+- ✅ **95.9% Test Coverage** (3395/3540 tests passing)
 - ✅ **100% GQL compliance** (see conformance profile)
 - ✅ **1,735 CANARY Markers** tracking 2,190+ requirements (81.4% tested)
 - ✅ **Enterprise Features** complete (TDE, audit, vector search, cloud backup, enhanced RLS)
 - ✅ **All Development Phases** complete (Phases 2-7)
 
 ## Version History
+
+### [v0.1.3-patch] - February 2026
+
+**Status**: Patch release - Critical bug fixes, security remediation, and stability improvements
+
+This patch addresses thread safety, memory safety, and platform-specific issues discovered during production hardening across Geode core, client libraries, and test infrastructure.
+
+#### Bug Fixes
+
+**Thread Safety & Concurrency**:
+
+- Fixed non-thread-safe PRNG in `generateTimeBasedId` that was accessed concurrently, causing data races and duplicate node IDs
+- Relaxed flaky graph persistence test assertion caused by race conditions in shared global singletons during concurrent execution
+- Updated grpc-zig dependency to support concurrent connections, preventing "Connection reset by peer" errors with thread-per-connection fix
+
+**Memory Safety**:
+
+- Fixed double-free in protobuf `DecimalValue` serialization where both `coeff` and `orig_repr` pointed to the same memory
+- Fixed segfault from dangling self-referential pointer in `InitContext` (GAP-0426) — stack copy invalidated self-referential pointer causing segfault after ~10 queries
+- Resolved CLI memory leaks, type conversion gaps, and test runner float comparison — `ArenaAllocator` for JSON, `RealLit`/`DoubleLit` eval, tolerance-based numeric comparison (test results improved from 82.9% to 95.5%)
+
+**Platform-Specific**:
+
+- Fixed gRPC segfault on aarch64 under rapid sequential writes (#479) with write-all I/O wrappers for TLS and plaintext connections
+- Fixed segfault on aarch64 by skipping `SSL_shutdown` in `sslClose` when peer disconnects abruptly
+
+**CI & Testing**:
+
+- Resolved CI GQL compliance timeouts and flaky unit test — increased CLI query timeout from 10s to 30s, reduced QUIC poll interval
+- Excluded vendored zig packages from feature flag check and modernized typing
+
+#### Security
+
+- Removed `.env` file containing hardcoded plaintext credentials and applied gap analysis remediations
+
+#### Infrastructure
+
+- Pre-populated Zig package cache for Docker builds to enable reproducible builds without network-dependent git fetching
+
+#### Client Libraries
+
+**Python Client (v0.3.19)**:
+
+- Added `read_next()` to `GrpcTransport` for multi-message streaming — gRPC queries previously returned empty rows because only the first message was read
+- Fixed certificate CN preference over config `server_name` for `skip_verify` override — self-signed cert CN now takes priority
+- Extracted cert CN for gRPC `ssl_target_name_override` — hostname override must match certificate's CN
+
+#### Testing
+
+- Increased GQL compliance spec timeout to 30s for CI environments
+- Added `geodetestlab` spec for rapid sequential writes regression (#479) — 29 tests covering bulk MERGE/CREATE, relationship chains, and mixed operations
+
+---
 
 ### [v0.1.3] - Production Ready Release (January 2026)
 
@@ -37,6 +90,7 @@ This release marks Geode's transition to production-ready status with comprehens
 #### All Major Features Completed (October-December 2025)
 
 **Enterprise & Security**:
+
 - Enhanced Row-Level Security (RLS) with policy evaluation and optimization
 - Advanced user authentication (RBAC/ABAC with MFA support)
 - KMS provider system for enterprise key management
@@ -44,6 +98,7 @@ This release marks Geode's transition to production-ready status with comprehens
 - Transparent Data Encryption (TDE) with AES-256-GCM
 
 **Advanced Query & Optimization**:
+
 - Cost-based query optimizer with statistics integration
 - Distributed query coordination with federation-aware optimization
 - Materialized views with 3 refresh strategies (immediate, deferred, manual)
@@ -51,6 +106,7 @@ This release marks Geode's transition to production-ready status with comprehens
 - IndexOptimizer with logarithmic cost scaling
 
 **Machine Learning & Analytics**:
+
 - ML graph embeddings (Node2Vec, GraphSAGE, DeepWalk)
 - Real-time analytics with streaming pattern detection
 - Anomaly detection and trend analysis
@@ -58,6 +114,7 @@ This release marks Geode's transition to production-ready status with comprehens
 - Vector operations with HNSW indexing and 6 distance metrics
 
 **Storage & Performance**:
+
 - S3 cloud backup with Digital Ocean Spaces integration
 - Memory-mapped operations for efficient I/O
 - Enhanced transaction isolation (SSI, phantom read prevention)
@@ -65,6 +122,7 @@ This release marks Geode's transition to production-ready status with comprehens
 - Page cache optimization for read-heavy workloads
 
 **Architecture & Infrastructure**:
+
 - Unified CLI architecture (eliminated subprocess spawning)
 - REPL QUIC integration with real-time interactive shell
 - ISO/IEC 39075:2024 compliance (see conformance profile)
@@ -85,8 +143,10 @@ All 7 TODO.md phases completed (~13,554+ lines of production code):
 #### Breaking Changes
 
 **CLI Architecture**:
+
 - **REMOVED**: `geodec` and `geoded` binaries (unified into single `geode` binary)
 - **MIGRATION**: Replace all `geodec`/`geoded` calls with `geode` subcommands
+
   ```bash
   # Old
   geodec query "MATCH (n) RETURN n"
@@ -96,11 +156,13 @@ All 7 TODO.md phases completed (~13,554+ lines of production code):
   ```
 
 **Server-Only Mode**:
+
 - All CLI operations now require connection to QUIC server
 - No standalone execution mode
 - **MIGRATION**: Ensure `geode serve` is running before CLI commands
 
 **Test Infrastructure**:
+
 - Removed mock data and simulations from test harness
 - All tests now execute against real server implementation
 - **IMPACT**: Test execution requires running server instance
@@ -108,6 +170,7 @@ All 7 TODO.md phases completed (~13,554+ lines of production code):
 #### New Features
 
 **Query Language**:
+
 - Map literal syntax: `{key: value, nested: {a: 1}}`
 - Deep nesting support (8+ levels validated)
 - Reserved keywords as parameter names (`$count`, `$name`, etc.)
@@ -115,6 +178,7 @@ All 7 TODO.md phases completed (~13,554+ lines of production code):
 - Time-series value access: `timeseries.value()` GQL function
 
 **Data Types**:
+
 - VectorF32: Single-precision floating-point vectors with SIMD
 - VectorI32: Integer vectors for discrete data
 - Network types: IPv4/IPv6, CIDR, MAC (<1μs parsing)
@@ -123,6 +187,7 @@ All 7 TODO.md phases completed (~13,554+ lines of production code):
 - Temporal types: DateTime with timezone, intervals, duration arithmetic
 
 **Indexing**:
+
 - HNSW index for vector similarity search
 - R-tree spatial index for geographic queries
 - BM25 full-text search index
@@ -131,6 +196,7 @@ All 7 TODO.md phases completed (~13,554+ lines of production code):
 - Automatic index selection via cost-based optimizer
 
 **Backup & Recovery**:
+
 - Full and incremental backup modes
 - S3-compatible cloud storage support
 - AES-256-GCM encryption for backup files
@@ -139,6 +205,7 @@ All 7 TODO.md phases completed (~13,554+ lines of production code):
 - WAL replay for incremental recovery
 
 **Monitoring & Observability**:
+
 - Prometheus metrics endpoint (port 9090)
 - Health check endpoints (/health, /ready, /live)
 - Structured JSON logging
@@ -167,12 +234,14 @@ All 7 TODO.md phases completed (~13,554+ lines of production code):
 #### Security
 
 **Encryption**:
+
 - TDE for data at rest with AES-256-GCM
 - TLS 1.3 for all network connections
 - Backup encryption with `GEODE_TDE_KEY` support
 - Key rotation support via KMS providers
 
 **Authentication & Authorization**:
+
 - Multi-factor authentication (TOTP)
 - Certificate-based authentication (mTLS)
 - Password policies (length, complexity, expiration)
@@ -188,6 +257,7 @@ None. This is a major release with no deprecations.
 **From Pre-v0.1.3 Versions**:
 
 1. **Update CLI Usage**:
+
    ```bash
    # Replace geodec/geoded with unified geode binary
    which geodec && echo "Remove geodec from PATH"
@@ -198,6 +268,7 @@ None. This is a major release with no deprecations.
    ```
 
 2. **Start Server First**:
+
    ```bash
    # All CLI operations require server
    geode serve --listen 0.0.0.0:3141
@@ -208,6 +279,7 @@ None. This is a major release with no deprecations.
    ```
 
 3. **Update Backup Scripts**:
+
    ```bash
    # Old (may have used shim compression)
    geode backup --dest /backups/
@@ -217,6 +289,7 @@ None. This is a major release with no deprecations.
    ```
 
 4. **Enable TDE for Backups**:
+
    ```bash
    # Set encryption key
    export GEODE_TDE_KEY='your-256-bit-hex-key'
@@ -226,6 +299,7 @@ None. This is a major release with no deprecations.
    ```
 
 5. **Update Configuration Files**:
+
    ```yaml
    # Add new security settings
    security:
@@ -309,6 +383,7 @@ Geode follows semantic versioning (SemVer):
 - **Patch releases**: Bug fixes, security updates, no new features
 
 Typical release cadence:
+
 - **Minor releases**: Every 2-3 months
 - **Patch releases**: As needed for critical fixes
 - **Security updates**: Within 48 hours of vulnerability disclosure
@@ -318,8 +393,8 @@ Typical release cadence:
 ### Subscribe to Updates
 
 - **GitHub Releases**: Watch the repository for release notifications
-- **Mailing List**: Subscribe to geode-announce@codepros.org
-- **RSS Feed**: https://geodedb.com/docs/changelog/feed.xml
+- **Mailing List**: Subscribe to <geode-announce@codepros.org>
+- **RSS Feed**: <https://geodedb.com/docs/changelog/feed.xml>
 - **Changelog RSS**: /docs/releases/index.xml
 
 ### Testing Pre-Release Versions
@@ -342,6 +417,7 @@ make geodetestlab-comprehensive
 ### v0.1.3 Breaking Changes
 
 **CLI Architecture**:
+
 - Removed `geodec` and `geoded` binaries
 - All operations require running server
 
@@ -351,13 +427,23 @@ make geodetestlab-comprehensive
 
 ## Feature Timeline
 
+### February 2026 (v0.1.3-patch)
+
+- ✅ Critical thread safety and memory safety fixes
+- ✅ 95.9% test coverage (3395/3540 tests)
+- ✅ Security remediation (removed committed credentials)
+- ✅ Python client v0.3.19 with streaming fix
+- ✅ aarch64 platform stability improvements
+
 ### January 2026 (v0.1.3+)
+
 - ✅ Production-ready status achieved
 - ✅ 97.4% test coverage (1644/1688 tests)
 - ✅ All 7 development phases complete
 - ✅ Enterprise features complete
 
 ### October-December 2025 (v0.1.3 development)
+
 - Enhanced RLS with policy optimization
 - ML graph embeddings (Node2Vec, GraphSAGE, DeepWalk)
 - Real-time analytics with streaming detection
@@ -365,6 +451,7 @@ make geodetestlab-comprehensive
 - REPL QUIC integration
 
 ### October 2025 (v0.1.2)
+
 - Backup encryption (AES-256-GCM)
 - Time-series integration
 - WAL replay logic
@@ -384,7 +471,7 @@ Each release includes documentation updates in:
 
 See [Known Test Issues](/docs/guides/troubleshooting/#known-issues) for current test failures and workarounds.
 
-**Current**: 44 test failures out of 1688 total (97.4% pass rate)
+**Current**: 145 test failures out of 3540 total (95.9% pass rate)
 
 Most failures are non-critical edge cases or known limitations documented in issue tracker.
 
@@ -399,19 +486,21 @@ Most failures are non-critical edge cases or known limitations documented in iss
 ## Version Archive
 
 Full version history available at:
-- **GitHub Tags**: https://github.com/codeprosorg/geode/tags
-- **GitHub Releases**: https://github.com/codeprosorg/geode/releases
-- **Documentation Archive**: https://geodedb.com/docs/archive/
+
+- **GitHub Tags**: <https://github.com/codeprosorg/geode/tags>
+- **GitHub Releases**: <https://github.com/codeprosorg/geode/releases>
+- **Documentation Archive**: <https://geodedb.com/docs/archive/>
 
 ## Feedback
 
 Report issues or request features:
-- **Issue Tracker**: https://gitlab.com/devnw/codepros/geode/-/issues
-- **Discussions**: https://gitlab.com/devnw/codepros/geode/-/issues
-- **Email**: support@codepros.org
+
+- **Issue Tracker**: <https://gitlab.com/devnw/codepros/geode/-/issues>
+- **Discussions**: <https://gitlab.com/devnw/codepros/geode/-/issues>
+- **Email**: <support@codepros.org>
 
 ---
 
 **License**: Apache License 2.0
-**Copyright**: 2024-2025 CodePros
-**Last Updated**: January 2026
+**Copyright**: 2024-2026 CodePros
+**Last Updated**: February 2026

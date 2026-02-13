@@ -98,6 +98,7 @@ geode query "MATCH (n) RETURN n" --server geode.example.com:3141
 | `-f, --file <path>` | Read query from file | - |
 | `--format <fmt>` | Output format (txt\|json) | `txt` |
 | `--timing` | Show execution time | `false` |
+| `--timeout <seconds>` | Query timeout in seconds (increased from 10s to accommodate QUIC handshake latency in Docker/CI environments) | `30` |
 | `--server <addr:port>` | Server address | `127.0.0.1:3141` |
 | `--help` | Show help | - |
 
@@ -198,6 +199,7 @@ geode restore \
 From `API_REFERENCE_GENERATED.md`, key GQL keywords:
 
 **Query Keywords**:
+
 - `MATCH` - Pattern matching
 - `WHERE` - Filter predicates
 - `RETURN` - Projection
@@ -208,6 +210,7 @@ From `API_REFERENCE_GENERATED.md`, key GQL keywords:
 - `DISTINCT` - Remove duplicates
 
 **Write Keywords**:
+
 - `CREATE` - Create nodes/relationships
 - `DELETE` - Delete nodes/relationships
 - `DETACH DELETE` - Delete node and relationships
@@ -217,6 +220,7 @@ From `API_REFERENCE_GENERATED.md`, key GQL keywords:
 - `ON MATCH` - Merge onMatch clause
 
 **Transaction Keywords**:
+
 - `START TRANSACTION` - Begin transaction
 - `COMMIT` - Commit changes
 - `ROLLBACK` - Rollback changes
@@ -224,12 +228,14 @@ From `API_REFERENCE_GENERATED.md`, key GQL keywords:
 - `ROLLBACK TO SAVEPOINT` - Partial rollback (extension)
 
 **Set Operations**:
+
 - `UNION` - Combine results (remove duplicates)
 - `UNION ALL` - Combine results (keep duplicates)
 - `INTERSECT` - Common results
 - `EXCEPT` - Set difference
 
 **Graph Operations**:
+
 - `CREATE GRAPH` - Create graph
 - `USE` - Select graph
 - `DROP GRAPH` - Delete graph
@@ -285,6 +291,7 @@ From `API_REFERENCE_GENERATED.md`, key GQL keywords:
 From `TYPES_AND_FUNCTIONS.md`:
 
 **Core Types**:
+
 - `Null` - Null value
 - `Boolean` - true/false
 - `Integer` - Signed integer (Int8/16/32/64)
@@ -293,6 +300,7 @@ From `TYPES_AND_FUNCTIONS.md`:
 - `Decimal` - Arbitrary precision decimal
 
 **Advanced Types**:
+
 - `Date` - Calendar date
 - `Time` - Time of day
 - `Timestamp` - Date + time with timezone
@@ -312,6 +320,7 @@ See [Data Model and Types](/docs/model/data-model-and-types) for details.
 From `API_REFERENCE_GENERATED.md`:
 
 **Graph Algorithms**:
+
 - `graph.pageRank()` - PageRank centrality
 - `graph.betweenness()` - Betweenness centrality
 - `graph.closeness()` - Closeness centrality

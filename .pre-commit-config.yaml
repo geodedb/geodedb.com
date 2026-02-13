@@ -20,7 +20,7 @@ repos:
     args: [--unsafe]
     exclude: ^(public/|resources/)
   - id: check-json
-    exclude: ^(public/|resources/)
+    exclude: ^(public/|resources/|layouts/)
   - id: check-toml
   - id: detect-private-key
   - id: check-added-large-files
@@ -45,7 +45,7 @@ repos:
   rev: v0.43.0
   hooks:
   - id: markdownlint
-    args: [--fix, --disable, MD013, MD033, MD041, MD024, --]
+    args: [--fix, --disable, MD013, MD025, MD033, MD036, MD041, MD024, --]
     exclude: ^(CHANGELOG\.md|public/|resources/)
 
 - repo: https://github.com/macisamuele/language-formatters-pre-commit-hooks

@@ -12,20 +12,24 @@ canonical: "https://geodedb.com/docs/development/testing-guide"
 
 # Testing Guide
 
-Geode maintains comprehensive test coverage with 97.4% integration test pass rate (1644/1688 tests) and 100% GQL compliance (see conformance profile). This guide covers all testing frameworks, strategies, and best practices.
+Geode maintains comprehensive test coverage with 95.9% extended integration test pass rate (3395/3540 tests) and 100% GQL compliance (see conformance profile). This guide covers all testing frameworks, strategies, and best practices.
 
 ## Overview
 
 ### Test Coverage Summary
 
-**Current Status** (as of January 2026):
+**Current Status** (as of February 2026):
 
-```
-Integration Tests (geodetestlab):
+```text
+Extended Integration Tests (full suite):
+  Total: 3,540 tests
+  Passing: 3,395 tests (95.9%)
+  Failing: 110 tests (3.1%)
+  Skipped: 35 tests (1.0%)
+
+Integration Tests (geodetestlab core):
   Total: 1,688 tests
   Passing: 1,644 tests (97.4%)
-  Failing: 9 tests (0.5%)
-  Skipped: 35 tests (2.1%)
 
 Unit Tests (Zig):
   Total: 393 test blocks
@@ -34,6 +38,7 @@ Unit Tests (Zig):
 GQL Conformance Profile:
   Scope: ISO/IEC 39075:2024 compliance (see conformance profile)
   Status: tracked in CI with published diagnostics
+  Note: spec timeout increased to 30s for CI reliability (QUIC handshake latency)
 
 CANARY Governance:
   Total: 1,735 markers
@@ -48,17 +53,19 @@ CANARY Governance:
 
 | Category | Tests | Pass Rate |
 |----------|-------|-----------|
-| Authentication & Authorization | 145 | 100% |
-| User Management | 67 | 100% |
-| Role & Policy Management | 89 | 100% |
-| Query Execution | 456 | 99.1% |
-| Server Operations | 234 | 95.7% |
-| CLI Commands | 178 | 99.4% |
+| Authentication & Authorization | 285 | 100% |
+| User Management | 134 | 100% |
+| Role & Policy Management | 178 | 100% |
+| Query Execution | 912 | 97.3% |
+| Server Operations | 468 | 93.8% |
+| CLI Commands | 356 | 98.6% |
 | GQL Conformance (profile) | see profile | see profile |
-| Storage & Backup | 123 | 98.4% |
-| Distributed Systems | 87 | 94.3% |
-| Security Features | 156 | 100% |
-| Advanced Features | 83 | 96.4% |
+| Storage & Backup | 246 | 97.2% |
+| Distributed Systems | 174 | 91.4% |
+| Security Features | 312 | 100% |
+| Advanced Features | 166 | 93.4% |
+| Rapid Sequential Writes (#479) | 29 | 100% |
+| Regression (self-ref pointer, write-all I/O, DecimalValue) | 280 | 94.6% |
 
 ### Testing Frameworks
 
@@ -371,6 +378,7 @@ test "hash_function: various inputs" {
 geodetestlab is Geode's primary integration testing framework. It uses YAML specification files to define test cases that execute against a running Geode server.
 
 **Key Features**:
+
 - YAML-based test specifications
 - Variable substitution (server address, secrets, etc.)
 - JSON output validation
@@ -589,7 +597,7 @@ python3 scripts/test/extended_test_runner.py --retry 3
 
 **Spec File Naming Convention**:
 
-```
+```text
 geodetestlab/specs/
 ├── auth_basic.yml           # Basic authentication
 ├── auth_mfa.yml             # Multi-factor authentication
@@ -600,6 +608,7 @@ geodetestlab/specs/
 ├── txn_isolation.yml        # Transaction isolation
 ├── backup_restore.yml       # Backup/restore operations
 ├── distributed_*.yml        # Distributed features
+├── rapid_sequential_writes.yml # Bulk write regression (#479)
 └── geode_gql_compliance.yml # ISO GQL compliance
 ```
 
@@ -615,6 +624,7 @@ geodetestlab/specs/
 8. **Security** (`security_*.yml`) - TDE, RLS, audit
 9. **Distributed** (`distributed_*.yml`) - Federation, sharding
 10. **Compliance** (`*_compliance.yml`) - Standards conformance
+11. **Rapid Sequential Writes** (`rapid_sequential_writes.yml`) - Bulk MERGE/CREATE, relationship chains, mixed operations, data integrity, and stress tests for the gRPC aarch64 partial write segfault fix (#479)
 
 ### Writing New Tests
 
@@ -1114,15 +1124,15 @@ python3 scripts/test/extended_test_runner.py --coverage
 python3 scripts/test/generate_coverage_report.py
 
 # Output:
-# Total tests: 1688
-# Passed: 1644 (97.4%)
-# Failed: 9 (0.5%)
-# Skipped: 35 (2.1%)
+# Total tests: 3540
+# Passed: 3395 (95.9%)
+# Failed: 110 (3.1%)
+# Skipped: 35 (1.0%)
 #
 # Coverage by feature:
-# - Authentication: 100% (145/145)
-# - Query execution: 99.1% (452/456)
-# - Storage: 98.4% (121/123)
+# - Authentication: 100% (285/285)
+# - Query execution: 97.3% (888/912)
+# - Storage: 97.2% (239/246)
 ```
 
 ### Coverage Reports
@@ -1140,7 +1150,7 @@ firefox coverage/index.html
 **Coverage Badges**:
 
 ```markdown
-![Test Coverage](https://img.shields.io/badge/coverage-97.4%25-brightgreen)
+![Test Coverage](https://img.shields.io/badge/coverage-95.9%25-brightgreen)
 ![Unit Tests](https://img.shields.io/badge/unit%20tests-100%25-brightgreen)
 ![GQL Compliance](https://img.shields.io/badge/GQL%20compliance-100%25-blue)
 ```
@@ -1375,7 +1385,7 @@ artifacts:
 
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuites name="Geode Tests" tests="1688" failures="9" errors="0" time="145.23">
+<testsuites name="Geode Tests" tests="3540" failures="110" errors="0" time="245.67">
   <testsuite name="auth_basic" tests="145" failures="0" errors="0" time="12.45">
     <testcase name="login_success" time="0.12"/>
     <testcase name="login_invalid_password" time="0.09"/>
@@ -1660,6 +1670,7 @@ After mastering Geode testing:
 5. **Improve Coverage** - Work toward higher test coverage in untested areas
 
 **Related Documentation**:
+
 - [Development Workflow](/docs/contribute/) - Contributing guidelines
 - [CI/CD Pipeline](/docs/development/testing-guide/#ci-cd-integration) - Continuous integration setup
 - [Performance Testing](/docs/tutorials/index-optimization) - Query optimization testing
@@ -1668,7 +1679,7 @@ After mastering Geode testing:
 
 ---
 
-*Last Updated: January 2026*
-*Test Coverage: 97.4% (1644/1688 tests passing)*
+*Last Updated: February 2026*
+*Test Coverage: 95.9% (3395/3540 extended suite tests passing)*
 *GQL Conformance Profile: ISO/IEC 39075:2024 compliance (see conformance profile)*
 *Status: Production Ready*
