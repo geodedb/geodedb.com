@@ -121,6 +121,14 @@ cloudflare-pages-deploy:
   image: ubuntu:24.04
   script:
     - hugo -b https://geodedb.com --minify --gc
+    # Vault secrets are file-type variables; read contents for wrangler
+    - |
+      if [ -f "$CLOUDFLARE_ACCOUNT_ID" ]; then
+        export CLOUDFLARE_ACCOUNT_ID=$(cat "$CLOUDFLARE_ACCOUNT_ID")
+      fi
+      if [ -f "$CLOUDFLARE_API_TOKEN" ]; then
+        export CLOUDFLARE_API_TOKEN=$(cat "$CLOUDFLARE_API_TOKEN")
+      fi
     - npx wrangler pages deploy public --project-name=geodedb-com --branch=release --commit-dirty=true
   rules:
     # Automatically deploy on release branch
