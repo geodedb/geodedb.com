@@ -1,15 +1,5 @@
 {{/* ───────────────────────── Site Search ───────────────────────── */}}
-
-<!-- Search Trigger Button -->
-<button
-  type="button"
-  class="btn btn-link search-trigger"
-  id="searchTrigger"
-  aria-label="Open search"
-  title="Search (/ or Ctrl+K)"
->
-  <wa-icon name="magnifying-glass" aria-hidden="true"></wa-icon>
-</button>
+{{/* Include this partial ONCE. Use search-trigger.html for trigger buttons. */}}
 
 <!-- Search Modal Overlay -->
 <div class="search-overlay" id="searchOverlay" role="dialog" aria-modal="true" aria-labelledby="searchLabel">
@@ -487,7 +477,7 @@
 <script>
 (function() {
   // Elements
-  const trigger = document.getElementById('searchTrigger');
+  const triggers = document.querySelectorAll('.search-trigger');
   let overlay = document.getElementById('searchOverlay');
   const input = document.getElementById('searchInput');
   const closeBtn = document.getElementById('searchClose');
@@ -705,7 +695,7 @@
   }
 
   // Event listeners
-  trigger?.addEventListener('click', openSearch);
+  triggers.forEach(t => t.addEventListener('click', openSearch));
   closeBtn?.addEventListener('click', closeSearch);
 
   overlay?.addEventListener('click', (e) => {

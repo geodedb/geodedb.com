@@ -65,7 +65,7 @@ repos:
   hooks:
   - id: hugo-build
     name: hugo build (check)
-    entry: hugo --minify
+    entry: bash -c 'hugo --minify; rc=$?; git checkout -- hugo_stats.json 2>/dev/null; exit $rc'
     language: system
     files: \.(html|md|toml|yaml|json)$
     exclude: ^(public/|resources/)

@@ -45,7 +45,7 @@
     <div class="d-flex align-items-center d-lg-none">
       {{/* Mobile search button */}}
       <div class="me-2">
-        {{ partial "search.html" . }}
+        {{ partial "search-trigger.html" . }}
       </div>
 
       <!-- Mobile toggler -->
@@ -176,7 +176,7 @@
 
           {{/* Search button (desktop) */}}
           <li class="nav-item ms-lg-2 d-none d-lg-flex">
-            {{ partial "search.html" . }}
+            {{ partial "search-trigger.html" . }}
           </li>
 
           {{/* Quick action buttons (desktop) */}}
@@ -244,7 +244,7 @@
           {{ end }}
 
           {{/* ===== MOBILE-ONLY SECTION ===== */}}
-          
+
           {{/* Mobile CTAs */}}
           <li class="nav-item mobile-cta-section d-lg-none">
             <a href="/docs/getting-started/" class="mobile-cta-btn mobile-cta-primary">
@@ -315,6 +315,9 @@
     </div>
   </div>
 </nav>
+
+{{/* Search overlay + script (rendered once, triggers found by class) */}}
+{{ partial "search.html" . }}
 
 <style>
   /* Enhanced navigation styles */
@@ -633,7 +636,7 @@
   (function() {
     const mobileToggle = document.getElementById('themeToggleMobile');
     const desktopToggle = document.getElementById('themeToggle');
-    
+
     if (mobileToggle && desktopToggle) {
       mobileToggle.addEventListener('click', function() {
         // Trigger click on desktop toggle to use existing theme logic
@@ -644,7 +647,7 @@
       mobileToggle.addEventListener('click', function() {
         const html = document.documentElement;
         const current = html.getAttribute('data-bs-theme');
-        
+
         if (current === 'dark') {
           html.setAttribute('data-bs-theme', 'light');
           localStorage.setItem('theme', 'light');
