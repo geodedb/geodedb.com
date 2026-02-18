@@ -28,11 +28,13 @@ Get Geode running locally in minutes, from zero to executing your first GQL quer
 ### System Requirements
 
 **Minimum**:
+
 - CPU: 2 cores
 - RAM: 4GB
 - Disk: 2GB free space
 
 **Recommended**:
+
 - CPU: 4+ cores
 - RAM: 8GB+
 - Disk: 10GB+ free space (SSD preferred)
@@ -51,6 +53,7 @@ Get Geode running locally in minutes, from zero to executing your first GQL quer
 {{< tab "Linux" >}}
 {{< tabs >}}
 {{< tab "Debian/Ubuntu" >}}
+
 ```bash
 # Add GPG signing key
 curl -fsSL https://apt.geodedb.com/geode.gpg | \
@@ -64,30 +67,37 @@ echo "deb [signed-by=/usr/share/keyrings/geode-archive-keyring.gpg] https://apt.
 sudo apt update
 sudo apt install geode
 ```
+
 {{< /tab >}}
 {{< tab "RHEL/Fedora" >}}
+
 ```bash
 curl -L -o geode.rpm https://gitlab.com/devnw/codepros/geode/geode/-/releases/latest/download/geode-linux-x86_64.rpm
 sudo rpm -i geode.rpm
 ```
+
 {{< /tab >}}
 {{< tab "Generic" >}}
+
 ```bash
 curl -L -o geode-linux-amd64 https://gitlab.com/devnw/codepros/geode/geode/-/releases/latest/download/geode-linux-amd64
 chmod +x geode-linux-amd64
 sudo install -m 0755 geode-linux-amd64 /usr/local/bin/geode
 ```
+
 {{< /tab >}}
 {{< /tabs >}}
 {{< /tab >}}
 {{< tab "macOS" >}}
+
 ```bash
 # Install via Homebrew (recommended)
-brew tap geodedb/geode
-brew install geode
+brew install geodedb/geode/geode
 ```
+
 {{< /tab >}}
 {{< tab "Windows (WSL)" >}}
+
 ```bash
 # PowerShell
 wsl --install -d Ubuntu
@@ -105,6 +115,7 @@ echo "deb [signed-by=/usr/share/keyrings/geode-archive-keyring.gpg] https://apt.
 sudo apt update
 sudo apt install geode
 ```
+
 {{< /tab >}}
 {{< /tabs >}}
 
@@ -165,6 +176,7 @@ geode --version
 ```
 
 **Make targets** (from `QUICK_REFERENCE.md`):
+
 - `make build` - Debug build with symbols
 - `make release` - ReleaseSafe build (recommended)
 - `make test` - Run core unit tests
@@ -185,6 +197,7 @@ geode serve
 ```
 
 **Default behavior**:
+
 - Listens on `127.0.0.1:3141` (QUIC+TLS only, no TCP)
 - Data directory: `./geode-data` (current directory)
 - Auto-generates self-signed certificates if none provided
@@ -249,6 +262,7 @@ geode query --format txt "MATCH (n) RETURN n LIMIT 10"
 ```
 
 **Output formats** (from `USAGE.md`):
+
 - `txt` - Human-readable table format (default)
 - `json` - JSON lines (one object per row)
 
@@ -272,8 +286,8 @@ geode query --format txt "MATCH (n) RETURN n LIMIT 10"
 | `\begin` | Start transaction |
 | `\commit` | Commit transaction |
 | `\rollback` | Rollback transaction |
-| `\format json|txt` | Set output format |
-| `\timing on|off` | Show query execution time |
+| `\format json\|txt` | Set output format |
+| `\timing on\|off` | Show query execution time |
 | `\help` | Show help |
 | `\quit` | Exit shell |
 
@@ -360,16 +374,19 @@ kill -9 <PID>
 **Checklist**:
 
 1. **Server running?**
+
    ```bash
    ps aux | grep geode
    ```
 
 2. **Correct port?**
+
    ```bash
    # Check server logs for listening address
    ```
 
 3. **Firewall blocking?**
+
    ```bash
    # Check firewall rules
    sudo ufw status  # Ubuntu/Debian

@@ -85,6 +85,7 @@ Run Geode in Docker containers for isolated, reproducible deployments. Docker in
 ### Linux
 
 **Distributions**:
+
 - Ubuntu 20.04+ (LTS recommended)
 - Debian 11+ (Bullseye or later)
 - RHEL 8+ / CentOS Stream 8+
@@ -136,6 +137,7 @@ Run Geode in Docker containers for isolated, reproducible deployments. Docker in
 {{< tab "Linux" >}}
 {{< tabs >}}
 {{< tab "Debian/Ubuntu" >}}
+
 ```bash
 # Add GPG signing key
 curl -fsSL https://apt.geodedb.com/geode.gpg | \
@@ -149,30 +151,37 @@ echo "deb [signed-by=/usr/share/keyrings/geode-archive-keyring.gpg] https://apt.
 sudo apt update
 sudo apt install geode
 ```
+
 {{< /tab >}}
 {{< tab "RHEL/Fedora" >}}
+
 ```bash
 curl -L -o geode.rpm https://gitlab.com/devnw/codepros/geode/geode/-/releases/latest/download/geode-linux-x86_64.rpm
 sudo rpm -i geode.rpm
 ```
+
 {{< /tab >}}
 {{< tab "Generic" >}}
+
 ```bash
 curl -L -o geode-linux-amd64 https://gitlab.com/devnw/codepros/geode/geode/-/releases/latest/download/geode-linux-amd64
 chmod +x geode-linux-amd64
 sudo install -m 0755 geode-linux-amd64 /usr/local/bin/geode
 ```
+
 {{< /tab >}}
 {{< /tabs >}}
 {{< /tab >}}
 {{< tab "macOS" >}}
+
 ```bash
 # Install via Homebrew (recommended)
-brew tap geodedb/geode
-brew install geode
+brew install geodedb/geode/geode
 ```
+
 {{< /tab >}}
 {{< tab "Windows (WSL)" >}}
+
 ```bash
 # PowerShell
 wsl --install -d Ubuntu
@@ -190,6 +199,7 @@ echo "deb [signed-by=/usr/share/keyrings/geode-archive-keyring.gpg] https://apt.
 sudo apt update
 sudo apt install geode
 ```
+
 {{< /tab >}}
 {{< /tabs >}}
 
@@ -248,7 +258,8 @@ RETURN 1 AS x;
 ```
 
 Expected output:
-```
+
+```text
 ┌───┐
 │ x │
 ├───┤
@@ -292,6 +303,7 @@ geode serve --data-dir /var/lib/geode
 For production, set up Geode as a system service:
 
 **systemd** (Linux):
+
 ```bash
 # Create service file
 sudo vim /etc/systemd/system/geode.service
@@ -316,6 +328,7 @@ See [Deployment Guide](/docs/ops/deployment/) for complete service configuration
 **Symptom**: "address already in use" when starting server
 
 **Solution**: Check if another process is using port 3141:
+
 ```bash
 lsof -i :3141
 kill -9 <PID>
@@ -326,6 +339,7 @@ kill -9 <PID>
 **Symptom**: "permission denied" when accessing data directory
 
 **Solution**: Ensure proper ownership and permissions:
+
 ```bash
 sudo chown -R $(whoami):$(whoami) /var/lib/geode
 chmod 755 /var/lib/geode

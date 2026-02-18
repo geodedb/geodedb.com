@@ -179,20 +179,20 @@ For production Linux servers, use the official APT repository.
 curl -fsSL https://apt.geodedb.com/geode.gpg | sudo gpg --dearmor -o /usr/share/keyrings/geode-archive-keyring.gpg
 ```
 
-2. **Add the repository**:
+1. **Add the repository**:
 
 ```bash
 echo "deb [signed-by=/usr/share/keyrings/geode-archive-keyring.gpg] https://apt.geodedb.com stable main" | sudo tee /etc/apt/sources.list.d/geode.list
 ```
 
-3. **Install Geode**:
+1. **Install Geode**:
 
 ```bash
 sudo apt update
 sudo apt install geode
 ```
 
-4. **Enable and start the service**:
+1. **Enable and start the service**:
 
 ```bash
 sudo systemctl enable geode
@@ -271,8 +271,7 @@ The recommended way to install Geode on macOS is via Homebrew:
 
 ```bash
 # Install via Homebrew
-brew tap geodedb/geode
-brew install geode
+brew install geodedb/geode/geode
 
 # Verify installation
 geode version
@@ -405,15 +404,19 @@ Geode supports multiple programming languages. Install the client for your prefe
 
 {{< tabs >}}
 {{< tab "go get" >}}
+
 ```bash
 go get geodedb.com/geode
 ```
+
 {{< /tab >}}
 {{< tab "go.mod" >}}
+
 ```go
 // Add to your go.mod
 require geodedb.com/geode v0.1.3
 ```
+
 {{< /tab >}}
 {{< /tabs >}}
 
@@ -451,24 +454,32 @@ func main() {
 
 {{< tabs >}}
 {{< tab "pip" >}}
+
 ```bash
 pip install geode-client
 ```
+
 {{< /tab >}}
 {{< tab "poetry" >}}
+
 ```bash
 poetry add geode-client
 ```
+
 {{< /tab >}}
 {{< tab "pipenv" >}}
+
 ```bash
 pipenv install geode-client
 ```
+
 {{< /tab >}}
 {{< tab "requirements.txt" >}}
+
 ```text
 geode-client>=0.1.3
 ```
+
 {{< /tab >}}
 {{< /tabs >}}
 
@@ -493,17 +504,21 @@ asyncio.run(main())
 
 {{< tabs >}}
 {{< tab "Cargo.toml" >}}
+
 ```toml
 [dependencies]
 geode-client = "0.18"
 tokio = { version = "1", features = ["full"] }
 ```
+
 {{< /tab >}}
 {{< tab "cargo add" >}}
+
 ```bash
 cargo add geode-client
 cargo add tokio --features full
 ```
+
 {{< /tab >}}
 {{< /tabs >}}
 
@@ -530,21 +545,28 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 {{< tabs >}}
 {{< tab "npm" >}}
+
 ```bash
 npm install @geodedb/client
 ```
+
 {{< /tab >}}
 {{< tab "yarn" >}}
+
 ```bash
 yarn add @geodedb/client
 ```
+
 {{< /tab >}}
 {{< tab "pnpm" >}}
+
 ```bash
 pnpm add @geodedb/client
 ```
+
 {{< /tab >}}
 {{< tab "package.json" >}}
+
 ```json
 {
   "dependencies": {
@@ -552,6 +574,7 @@ pnpm add @geodedb/client
   }
 }
 ```
+
 {{< /tab >}}
 {{< /tabs >}}
 
@@ -578,6 +601,7 @@ main();
 
 {{< tabs >}}
 {{< tab "build.zig.zon" >}}
+
 ```zig
 .{
     .name = "my-project",
@@ -590,8 +614,10 @@ main();
     },
 }
 ```
+
 {{< /tab >}}
 {{< tab "build.zig" >}}
+
 ```zig
 const std = @import("std");
 
@@ -615,6 +641,7 @@ pub fn build(b: *std.Build) void {
     b.installArtifact(exe);
 }
 ```
+
 {{< /tab >}}
 {{< /tabs >}}
 
@@ -676,6 +703,7 @@ geode> \exit
 
 {{< tabs >}}
 {{< tab "Go" >}}
+
 ```bash
 # Create test file
 cat > test_connection.go << 'EOF'
@@ -707,8 +735,10 @@ EOF
 
 go run test_connection.go
 ```
+
 {{< /tab >}}
 {{< tab "Python" >}}
+
 ```bash
 # Create test file
 cat > test_connection.py << 'EOF'
@@ -727,14 +757,18 @@ EOF
 
 python test_connection.py
 ```
+
 {{< /tab >}}
 {{< tab "Rust" >}}
+
 ```bash
 # In a Cargo project
 cargo run --example basic_connection
 ```
+
 {{< /tab >}}
 {{< tab "Node.js" >}}
+
 ```bash
 # Create test file
 cat > test_connection.mjs << 'EOF'
@@ -748,6 +782,7 @@ EOF
 
 node test_connection.mjs
 ```
+
 {{< /tab >}}
 {{< /tabs >}}
 
@@ -876,6 +911,7 @@ docker run -d \
 ### Client Library Build Errors
 
 **Go**:
+
 ```bash
 # Clear module cache
 go clean -modcache
@@ -883,6 +919,7 @@ go mod download
 ```
 
 **Python**:
+
 ```bash
 # Upgrade pip and reinstall
 pip install --upgrade pip
@@ -890,6 +927,7 @@ pip install --force-reinstall geode-client
 ```
 
 **Rust**:
+
 ```bash
 # Update dependencies
 cargo update
@@ -898,6 +936,7 @@ cargo build
 ```
 
 **Zig**:
+
 ```bash
 # Clear cache
 rm -rf zig-cache .zig-cache

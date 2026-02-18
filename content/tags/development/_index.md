@@ -30,16 +30,19 @@ This comprehensive guide covers everything developers need to build applications
 ### Prerequisites
 
 **System Requirements**:
+
 - Linux, macOS, or Windows (WSL2)
 - 4GB RAM minimum (8GB+ recommended)
 - 2GB free disk space
 - Modern compiler toolchain
 
 **For Server Development**:
+
 - Zig 0.1.0+ (for building from source)
 - Git
 
 **For Client Development**:
+
 - Go 1.24+ (for Go client)
 - Python 3.9+ (for Python client)
 - Rust 1.70+ (for Rust client)
@@ -48,6 +51,7 @@ This comprehensive guide covers everything developers need to build applications
 ### Installation
 
 **Option 1: Docker (Fastest)**:
+
 ```bash
 # Pull and run Geode
 docker pull geodedb/geode:latest
@@ -58,6 +62,7 @@ docker logs geode
 ```
 
 **Option 2: Build from Source**:
+
 ```bash
 # Clone repository
 git clone https://github.com/codeprosorg/geode
@@ -74,9 +79,10 @@ make build
 ```
 
 **Option 3: Package Manager** (coming soon):
+
 ```bash
 # Homebrew (macOS/Linux)
-brew install geodedb/tap/geode
+brew install geodedb/geode/geode
 
 # APT (Debian/Ubuntu)
 sudo apt install geode
@@ -96,20 +102,21 @@ Create a development configuration:
 server:
   listen: "127.0.0.1:3141"
   log_level: "debug"
-  
+
 storage:
   data_dir: "./data/dev"
   wal_dir: "./data/wal"
-  
+
 security:
   tls_enabled: false  # Disable for local dev only
-  
+
 performance:
   query_timeout: 30s
   max_connections: 100
 ```
 
 Start server:
+
 ```bash
 ./geode serve --config config/dev.yaml
 ```
@@ -127,6 +134,7 @@ The interactive shell is essential for development:
 ```
 
 Shell commands:
+
 ```gql
 -- Execute queries
 MATCH (p:Person) RETURN p.name LIMIT 10;
@@ -152,11 +160,13 @@ MATCH (p:Person) RETURN p;
 ### Go Client
 
 **Installation**:
+
 ```bash
 go get geodedb.com/geode
 ```
 
 **Basic Usage**:
+
 ```go
 package main
 
@@ -165,7 +175,7 @@ import (
     "database/sql"
     "fmt"
     "log"
-    
+
     _ "geodedb.com/geode"
 )
 
@@ -176,12 +186,12 @@ func main() {
         log.Fatal(err)
     }
     defer db.Close()
-    
+
     // Ping to verify connection
     if err := db.PingContext(context.Background()); err != nil {
         log.Fatal(err)
     }
-    
+
     // Execute query
     rows, err := db.QueryContext(
         context.Background(),
@@ -192,7 +202,7 @@ func main() {
         log.Fatal(err)
     }
     defer rows.Close()
-    
+
     // Process results
     for rows.Next() {
         var name, city string
@@ -205,6 +215,7 @@ func main() {
 ```
 
 **Advanced Features**:
+
 ```go
 // Transactions
 tx, err := db.BeginTx(context.Background(), nil)
@@ -236,11 +247,13 @@ for _, id := range userIDs {
 ### Python Client
 
 **Installation**:
+
 ```bash
 pip install geode-client
 ```
 
 **Basic Usage**:
+
 ```python
 import asyncio
 from geode_client import Client
@@ -254,7 +267,7 @@ async def main():
             "MATCH (p:Person) WHERE p.age > $age RETURN p.name, p.city",
             parameters={"age": 30}
         )
-        
+
         # Process results
         for row in result.rows:
             print(f"{row['p.name']} from {row['p.city']}")
@@ -263,6 +276,7 @@ asyncio.run(main())
 ```
 
 **Advanced Features**:
+
 ```python
 # Transactions
 async with client.connection() as tx:
@@ -302,6 +316,7 @@ result, _ = await tx.query(query.build(), {"age": 30})
 ### Rust Client
 
 **Installation**:
+
 ```toml
 [dependencies]
 geode-client = "0.1"
@@ -309,6 +324,7 @@ tokio = { version = "1", features = ["full"] }
 ```
 
 **Basic Usage**:
+
 ```rust
 use geode_client::{Client, Error, Value};
 use std::collections::HashMap;
@@ -318,7 +334,7 @@ async fn main() -> Result<(), Error> {
     // Connect
     let client = Client::from_dsn("localhost:3141")?;
     let mut conn = client.connect().await?;
-    
+
     // Execute query
     let mut params = HashMap::new();
     params.insert("age".to_string(), Value::int(30));
@@ -328,7 +344,7 @@ async fn main() -> Result<(), Error> {
             &params,
         )
         .await?;
-    
+
     // Process results
     for row in &page.rows {
         println!(
@@ -337,12 +353,13 @@ async fn main() -> Result<(), Error> {
             row.get(\"p.city\").unwrap().as_string()?
         );
     }
-    
+
     Ok(())
 }
 ```
 
 **Advanced Features**:
+
 ```rust
 // Transactions
 use geode_client::Value;
@@ -393,6 +410,7 @@ cargo run
 ### Hot Reload (for application code)
 
 **Go with Air**:
+
 ```yaml
 # .air.toml
 [build]
@@ -403,6 +421,7 @@ cargo run
 ```
 
 **Python with watchdog**:
+
 ```python
 # run_dev.py
 from watchdog.observers import Observer
@@ -421,6 +440,7 @@ observer.start()
 ### Testing Strategy
 
 **Unit Tests** (test queries in isolation):
+
 ```python
 import pytest
 from geode_client import Client
@@ -435,13 +455,13 @@ async def client():
 async def test_create_user(client):
     # Setup
     await c.query("DELETE (u:User {email: 'test@example.com'})")
-    
+
     # Execute
     await c.query(
         "INSERT (u:User {email: $email, name: $name})",
         {"email": "test@example.com", "name": "Test User"}
     )
-    
+
     # Verify
     result, _ = await c.query(
         "MATCH (u:User {email: $email}) RETURN u.name",
@@ -453,6 +473,7 @@ async def test_create_user(client):
 ```
 
 **Integration Tests** (test complete workflows):
+
 ```python
 @pytest.mark.integration
 async def test_order_creation_workflow(client):
@@ -463,7 +484,7 @@ async def test_order_creation_workflow(client):
     await tx.query(
         "INSERT (p:Product {id: 'test_prod', price: 99.99})"
     )
-    
+
     # Execute workflow
     async with client.connection() as tx:
         await tx.begin()
@@ -475,7 +496,7 @@ async def test_order_creation_workflow(client):
             "INSERT (u)-[:PLACED]->(o)"
         )
         await tx.commit()
-    
+
     # Verify
     result, _ = await tx.query(
         "MATCH (u:User {id: 'test_user'})-[:PLACED]->(o:Order) "
@@ -487,23 +508,24 @@ async def test_order_creation_workflow(client):
 ```
 
 **Load Tests** (test performance):
+
 ```python
 import asyncio
 from time import time
 
 async def load_test(client, num_queries=1000):
     start = time()
-    
+
     tasks = [
         client.query("MATCH (p:Person) RETURN p.name LIMIT 1")
         for _ in range(num_queries)
     ]
-    
+
     results = await asyncio.gather(*tasks)
-    
+
     duration = time() - start
     qps = num_queries / duration
-    
+
     print(f"Executed {num_queries} queries in {duration:.2f}s ({qps:.0f} QPS)")
 ```
 
@@ -512,6 +534,7 @@ async def load_test(client, num_queries=1000):
 ### Enable Debug Logging
 
 **Server-side**:
+
 ```yaml
 # config/dev.yaml
 server:
@@ -519,6 +542,7 @@ server:
 ```
 
 **Client-side** (Python):
+
 ```python
 import logging
 
@@ -539,6 +563,7 @@ RETURN friend.name;
 ```
 
 Analyze output:
+
 - Execution plan
 - Operator costs
 - Index usage
@@ -560,6 +585,7 @@ top -p $(pidof geode)
 ### Common Issues
 
 **Connection refused**:
+
 ```bash
 # Check server is running
 ps aux | grep geode
@@ -572,6 +598,7 @@ sudo ufw status
 ```
 
 **Slow queries**:
+
 ```gql
 -- Check for missing indexes
 PROFILE
@@ -582,6 +609,7 @@ CREATE INDEX person_email ON Person(email);
 ```
 
 **Out of memory**:
+
 ```yaml
 # Increase memory limit (config/dev.yaml)
 performance:
@@ -630,7 +658,7 @@ async def get_friends(user_id: str):
         "RETURN friend.id, friend.name",
         {"id": user_id}
     )
-    
+
     friends = [
         {"id": row['friend.id'], "name": row['friend.name']}
         for row in result.rows
@@ -647,7 +675,7 @@ async def get_friend_recommendations(user_id: str):
         "LIMIT 10",
         {"id": user_id}
     )
-    
+
     recommendations = [
         {
             "id": row['f2.id'],
@@ -664,6 +692,7 @@ if __name__ == "__main__":
 ```
 
 Run:
+
 ```bash
 # Install dependencies
 pip install fastapi uvicorn geode-client
@@ -673,6 +702,7 @@ python app.py
 ```
 
 Test:
+
 ```bash
 # Create users
 curl -X POST http://localhost:8000/users \
@@ -705,6 +735,7 @@ make geodetestlab-comprehensive
 ### Code Style
 
 Follow existing patterns:
+
 - Zig: Standard Zig formatting (`zig fmt`)
 - Go: `gofmt` and `golint`
 - Python: `black` and `pylint`
@@ -730,21 +761,21 @@ git push origin feature/my-feature
 
 ### Documentation
 
-- API Reference: https://geodedb.com/docs/api/
-- GQL Syntax: https://geodedb.com/docs/gql/
-- Client Libraries: https://geodedb.com/docs/clients/
+- API Reference: <https://geodedb.com/docs/api/>
+- GQL Syntax: <https://geodedb.com/docs/gql/>
+- Client Libraries: <https://geodedb.com/docs/clients/>
 
 ### Community
 
-- Forum: https://forum.geodedb.com
-- Chat: https://discord.gg/geodedb
-- Issue Tracker: https://gitlab.com/devnw/codepros/geode/issues
+- Forum: <https://forum.geodedb.com>
+- Chat: <https://discord.gg/geodedb>
+- Issue Tracker: <https://gitlab.com/devnw/codepros/geode/issues>
 
 ### Examples
 
-- Sample Applications: https://github.com/geodedb/examples
+- Sample Applications: <https://github.com/geodedb/examples>
 - Client Examples: Each client repo includes examples/
-- Tutorial Series: https://geodedb.com/tutorials/
+- Tutorial Series: <https://geodedb.com/tutorials/>
 
 ## Conclusion
 

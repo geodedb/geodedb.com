@@ -378,14 +378,10 @@ geode shell`}}</code></pre>
                   role="tabpanel"
                   aria-labelledby="home-install-macos-tab"
                 >
-                  <pre class="mb-0"><code class="language-bash">{{`# Apple Silicon
-curl -L -o geode-darwin-arm64 https://gitlab.com/devnw/codepros/geode/geode/-/releases/latest/download/geode-darwin-arm64
-sudo install -m 0755 geode-darwin-arm64 /usr/local/bin/geode
+                  <pre class="mb-0"><code class="language-bash">{{`# Install via Homebrew (recommended)
+brew install geodedb/geode/geode
 
-# Intel
-curl -L -o geode-darwin-amd64 https://gitlab.com/devnw/codepros/geode/geode/-/releases/latest/download/geode-darwin-amd64
-sudo install -m 0755 geode-darwin-amd64 /usr/local/bin/geode
-
+# Start the server and connect
 geode serve --listen 0.0.0.0:3141
 geode shell`}}</code></pre>
                 </div>

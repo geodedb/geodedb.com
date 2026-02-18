@@ -39,7 +39,7 @@ sudo apt-get update
 sudo apt-get install geode
 
 # Install from package manager (macOS)
-brew install geode
+brew install geodedb/geode/geode
 
 # Verify installation
 geode version
@@ -91,7 +91,7 @@ geode shell --database mydb
 
 Shell session example:
 
-```
+```text
 Geode Shell v0.1.3
 Connected to localhost:3141
 Database: graph

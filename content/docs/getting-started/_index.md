@@ -29,6 +29,7 @@ This guide will help you get started with Geode in under 5 minutes.
 
 {{< tabs >}}
 {{< tab "Linux (Debian/Ubuntu)" >}}
+
 ```bash
 # Add GPG signing key
 curl -fsSL https://apt.geodedb.com/geode.gpg | \
@@ -42,28 +43,35 @@ echo "deb [signed-by=/usr/share/keyrings/geode-archive-keyring.gpg] https://apt.
 sudo apt update
 sudo apt install geode
 ```
+
 {{< /tab >}}
 {{< tab "Linux (RHEL/Fedora)" >}}
+
 ```bash
 curl -L -o geode.rpm https://gitlab.com/devnw/codepros/geode/geode/-/releases/latest/download/geode-linux-x86_64.rpm
 sudo rpm -i geode.rpm
 ```
+
 {{< /tab >}}
 {{< tab "Linux (Generic)" >}}
+
 ```bash
 curl -L -o geode-linux-amd64 https://gitlab.com/devnw/codepros/geode/geode/-/releases/latest/download/geode-linux-amd64
 chmod +x geode-linux-amd64
 sudo install -m 0755 geode-linux-amd64 /usr/local/bin/geode
 ```
+
 {{< /tab >}}
 {{< tab "macOS" >}}
+
 ```bash
 # Install via Homebrew (recommended)
-brew tap geodedb/geode
-brew install geode
+brew install geodedb/geode/geode
 ```
+
 {{< /tab >}}
 {{< tab "Windows (WSL)" >}}
+
 ```bash
 # PowerShell
 wsl --install -d Ubuntu
@@ -81,6 +89,7 @@ echo "deb [signed-by=/usr/share/keyrings/geode-archive-keyring.gpg] https://apt.
 sudo apt update
 sudo apt install geode
 ```
+
 {{< /tab >}}
 {{< /tabs >}}
 

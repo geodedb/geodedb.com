@@ -54,6 +54,7 @@ ORDER BY friend.name
 ```
 
 This standards alignment means:
+
 - **No vendor lock-in**: Your queries work across any GQL-compliant database
 - **Professional support**: The ISO committee maintains and evolves the language
 - **Future-proof**: New features arrive through standardized extensions
@@ -163,9 +164,9 @@ make build
 docker pull codepros/geode:latest
 docker run -p 3141:3141 codepros/geode:latest
 
-# Using package managers (upcoming)
-# brew install geode
-# apt install geode
+# Using package managers
+brew install geodedb/geode/geode  # macOS
+# apt install geode               # Debian/Ubuntu
 ```
 
 ### First Steps
@@ -252,7 +253,7 @@ Geode's storage layer implements a custom graph-optimized format designed for ef
 
 Unlike relational databases that decompose graphs into multiple tables with expensive joins, Geode stores nodes and relationships in adjacency structures that mirror the graph's natural topology. Each node maintains direct pointers to its relationships, enabling constant-time traversal to neighbors.
 
-```
+```text
 Node Structure:
 - Node ID (8 bytes)
 - Labels bitmap (variable)
@@ -274,7 +275,7 @@ This layout enables efficient pattern matching: traversing from a node to its ne
 
 Every transaction is recorded to a Write-Ahead Log before modifying the database. The WAL guarantees durability: even if the server crashes mid-transaction, committed changes can be replayed from the log on restart.
 
-```
+```text
 WAL Entry Structure:
 [Transaction ID | Timestamp | Operation Type | Data | Checksum]
 ```
@@ -285,7 +286,7 @@ WAL entries are written sequentially, maximizing disk throughput. Background pro
 
 Multi-Version Concurrency Control maintains multiple versions of data, allowing transactions to see consistent snapshots without blocking each other. When a transaction modifies a node, Geode creates a new version rather than overwriting:
 
-```
+```text
 Version Chain:
 v3 (current) -> v2 (committed) -> v1 (committed) -> v0 (initial)
 ```
@@ -338,7 +339,7 @@ Traditional databases use TCP, which suffers from head-of-line blocking: a lost 
 
 **Connection Establishment**
 
-```
+```text
 Client                          Server
   |                               |
   |--- Initial (HELLO) ---------->|
@@ -602,6 +603,7 @@ curl http://localhost:9090/metrics
 **Grafana Dashboards**
 
 Pre-built dashboards visualize:
+
 - Query throughput and latency
 - Transaction commit/abort rates
 - Index usage statistics
@@ -658,11 +660,13 @@ const resolvers = {
 ### vs. Relational Databases
 
 **Strengths of Geode**:
+
 - Native graph traversals (no joins)
 - Flexible schema evolution
 - Natural modeling of connected data
 
 **When to use relational**:
+
 - Tabular data with few relationships
 - Complex aggregations over flat data
 - Regulatory requirements for SQL
@@ -670,12 +674,14 @@ const resolvers = {
 ### vs. Proprietary Graph Databases
 
 **Geode Advantages**:
+
 - ISO standard query language (no vendor lock-in)
 - Apache 2.0 license (fully open source)
 - Modern architecture (QUIC, Zig)
 - Smaller resource footprint
 
 **Competitor Advantages**:
+
 - Larger ecosystems and community
 - More mature visualization tools
 - Enterprise support contracts
@@ -683,12 +689,14 @@ const resolvers = {
 ## Roadmap and Future Development
 
 **Upcoming in v0.1.4**:
+
 - Distributed mode with automatic sharding
 - Improved query optimizer with machine learning
 - Additional graph algorithm library
 - Enhanced monitoring dashboards
 
 **Planned for v1.0.0**:
+
 - API stability guarantees
 - Extended long-term support
 - Enterprise certifications

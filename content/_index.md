@@ -17,6 +17,7 @@ keywords = [
 ## ISO 100% GQL compliance
 
 Geode implements ISO/IEC 39075:2024 GQL with 100% compliance:
+
 - Deterministic ordering and pagination policies
 - MATCH pattern matching with bounded expansions and OPTIONAL MATCH
 - Set operations (UNION, INTERSECT, EXCEPT)
@@ -54,6 +55,7 @@ All clients communicate via QUIC+TLS using the Protobuf wire protocol.
 {{< tab "Linux" >}}
 {{< tabs >}}
 {{< tab "Debian/Ubuntu" >}}
+
 ```bash
 # Add GPG signing key
 curl -fsSL https://apt.geodedb.com/geode.gpg | \
@@ -67,30 +69,37 @@ echo "deb [signed-by=/usr/share/keyrings/geode-archive-keyring.gpg] https://apt.
 sudo apt update
 sudo apt install geode
 ```
+
 {{< /tab >}}
 {{< tab "RHEL/Fedora" >}}
+
 ```bash
 curl -L -o geode.rpm https://gitlab.com/devnw/codepros/geode/geode/-/releases/latest/download/geode-linux-x86_64.rpm
 sudo rpm -i geode.rpm
 ```
+
 {{< /tab >}}
 {{< tab "Generic" >}}
+
 ```bash
 curl -L -o geode-linux-amd64 https://gitlab.com/devnw/codepros/geode/geode/-/releases/latest/download/geode-linux-amd64
 chmod +x geode-linux-amd64
 sudo install -m 0755 geode-linux-amd64 /usr/local/bin/geode
 ```
+
 {{< /tab >}}
 {{< /tabs >}}
 {{< /tab >}}
 {{< tab "macOS" >}}
+
 ```bash
 # Install via Homebrew (recommended)
-brew tap geodedb/geode
-brew install geode
+brew install geodedb/geode/geode
 ```
+
 {{< /tab >}}
 {{< tab "Windows (WSL)" >}}
+
 ```bash
 # PowerShell
 wsl --install -d Ubuntu
@@ -108,6 +117,7 @@ echo "deb [signed-by=/usr/share/keyrings/geode-archive-keyring.gpg] https://apt.
 sudo apt update
 sudo apt install geode
 ```
+
 {{< /tab >}}
 {{< /tabs >}}
 

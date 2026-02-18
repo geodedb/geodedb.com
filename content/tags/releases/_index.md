@@ -29,7 +29,7 @@ As an ISO/IEC 39075:2024 GQL-compliant graph database, Geode's release strategy 
 
 Geode uses semantic versioning (SemVer) for all releases:
 
-```
+```text
 MAJOR.MINOR.PATCH[-PRERELEASE][+BUILD]
 
 Examples:
@@ -42,6 +42,7 @@ Examples:
 **Version Components**:
 
 **MAJOR** (Breaking Changes):
+
 - Incompatible API changes
 - Protocol breaking changes
 - Removal of deprecated features
@@ -49,6 +50,7 @@ Examples:
 - Migration required
 
 **MINOR** (New Features):
+
 - New features (backward-compatible)
 - New APIs (backward-compatible)
 - Performance improvements
@@ -56,6 +58,7 @@ Examples:
 - No breaking changes
 
 **PATCH** (Bug Fixes):
+
 - Bug fixes (backward-compatible)
 - Security patches
 - Documentation corrections
@@ -71,6 +74,7 @@ Examples:
 ### Key Features
 
 **Enterprise Readiness**:
+
 - 97.4% Test Coverage (1644/1688 tests passing)
 - 100% GQL compliance (see conformance profile)
 - Production-validated with 1,735 CANARY governance markers
@@ -78,17 +82,20 @@ Examples:
 - Row-Level Security (RLS)
 
 **Architecture**:
+
 - Memory-mapped I/O with page-level caching
 - Connection pooling
 - Cost-based query optimization
 
 **Protocol**:
+
 - QUIC + TLS 1.3 (mandatory)
 - Protobuf wire protocol
 - Default port: 3141
 - Bidirectional streaming support
 
 **Client Libraries**:
+
 - Go client v1.0.0 (database/sql driver)
 - Python client v1.0.0 (async/await)
 - Rust client v1.0.0 (tokio-based)
@@ -97,11 +104,13 @@ Examples:
 ### Upgrade from v0.1.x
 
 **Breaking Changes**:
+
 1. TCP protocol removed (QUIC only)
 2. Default port changed from 8443 to 3141
 3. Legacy JSON line protocol removed (Protobuf wire protocol only)
 
 **Migration Steps**:
+
 ```bash
 # 1. Backup existing database
 geode backup create --output pre-v0.18-backup.tar.gz
@@ -130,24 +139,28 @@ cargo update geode-client
 Geode provides multiple release channels for different use cases:
 
 **Stable** (Recommended for Production):
+
 - Fully tested and validated
 - Long-term support
 - Security updates guaranteed
 - Example: v0.1.3
 
 **Beta** (Early Access):
+
 - Feature-complete but undergoing final testing
 - Preview upcoming features
 - Not recommended for production
 - Example: v0.1.4-beta.1
 
 **Alpha** (Experimental):
+
 - Early development builds
 - APIs may change
 - For testing only
 - Example: v0.1.4-alpha.3
 
 **Nightly** (Development):
+
 - Daily builds from main branch
 - Bleeding edge features
 - Unstable, for development only
@@ -156,23 +169,27 @@ Geode provides multiple release channels for different use cases:
 ## Release Schedule
 
 **Major Releases** (Annually):
+
 - January of each year
 - Breaking changes allowed
 - 12-month support window
 - Migration guides provided
 
 **Minor Releases** (Quarterly):
+
 - January, April, July, October
 - New features and enhancements
 - Backward-compatible
 - No migration required
 
 **Patch Releases** (As Needed):
+
 - Released as bugs are discovered and fixed
 - Typically within 1-2 weeks of bug report
 - Security patches released immediately
 
 **Long-Term Support (LTS)**:
+
 - Every major version receives LTS status
 - 24 months of security updates
 - 12 months of feature updates
@@ -200,8 +217,7 @@ sudo rpm -i geode.rpm
 
 ```bash
 # Install via Homebrew (recommended)
-brew tap geodedb/geode
-brew install geode
+brew install geodedb/geode/geode
 ```
 
 **From Source**:
@@ -235,6 +251,7 @@ Additional package managers are not currently published; use release artifacts, 
 Before any release, Geode undergoes comprehensive testing:
 
 **Test Suite**:
+
 1. Unit tests (1,688 tests, 97.4% passing)
 2. Integration tests (cross-client validation)
 3. GQL compliance tests (see conformance profile)
@@ -244,6 +261,7 @@ Before any release, Geode undergoes comprehensive testing:
 7. Security scanning
 
 **Validation Criteria**:
+
 - All unit tests passing
 - Zero critical bugs
 - Performance benchmarks within 5% of baseline
@@ -254,6 +272,7 @@ Before any release, Geode undergoes comprehensive testing:
 ## Support Policy
 
 **Current Versions**:
+
 - v0.1.x: Full support (new features, bug fixes, security)
 - v0.1.x: Maintenance mode (bug fixes, security only)
 - v0.1.x: End of life (no updates)
@@ -261,18 +280,21 @@ Before any release, Geode undergoes comprehensive testing:
 **Support Levels**:
 
 **Full Support**:
+
 - Latest major version
 - New features and enhancements
 - Bug fixes and security patches
 - Duration: 12 months from release
 
 **Maintenance Mode**:
+
 - Previous major version
 - Critical bug fixes only
 - Security patches
 - Duration: 12 months after full support
 
 **End of Life (EOL)**:
+
 - No updates or patches
 - Upgrade to supported version recommended
 
@@ -320,18 +342,21 @@ Each release includes detailed release notes:
 ## Roadmap and Future Releases
 
 **v0.1.4** (Planned: April 2026):
+
 - Enhanced vector search capabilities
 - Graph algorithms library
 - Query result caching
 - Additional client language support
 
 **v0.2.0** (Planned: July 2026):
+
 - Distributed query execution
 - Sharding and partitioning
 - Advanced analytics functions
 - Time-travel queries
 
 **v1.0.0** (Planned: January 2027):
+
 - First LTS major version
 - API stability guarantee
 - Enterprise support packages
@@ -340,6 +365,7 @@ Each release includes detailed release notes:
 ## Upgrade Best Practices
 
 **Pre-Upgrade Checklist**:
+
 1. Review release notes and breaking changes
 2. Check compatibility matrix for client libraries
 3. Backup database and configuration
@@ -348,6 +374,7 @@ Each release includes detailed release notes:
 6. Prepare rollback plan
 
 **Upgrade Execution**:
+
 1. Announce maintenance window to users
 2. Create backup immediately before upgrade
 3. Stop application traffic
@@ -358,6 +385,7 @@ Each release includes detailed release notes:
 8. Monitor metrics and logs
 
 **Post-Upgrade Validation**:
+
 1. Verify all services started correctly
 2. Run integration test suite
 3. Check query performance benchmarks
