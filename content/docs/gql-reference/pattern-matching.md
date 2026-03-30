@@ -468,6 +468,7 @@ RETURN a.name, b.name;
 ### Best Practices
 
 1. **Start with selective patterns**
+
    ```gql
    -- Good: Start with specific node
    MATCH (a:Person {email: 'alice@example.com'})-[:KNOWS]->(b)
@@ -477,6 +478,7 @@ RETURN a.name, b.name;
    ```
 
 2. **Use labels**
+
    ```gql
    -- Good: Labels enable index usage
    MATCH (p:Person)-[:KNOWS]->(f:Person)
@@ -486,6 +488,7 @@ RETURN a.name, b.name;
    ```
 
 3. **Limit variable-length paths**
+
    ```gql
    -- Good: Bounded length
    MATCH (a)-[:KNOWS*1..5]->(b)
@@ -495,6 +498,7 @@ RETURN a.name, b.name;
    ```
 
 4. **Filter early**
+
    ```gql
    -- Good: Filter in pattern
    MATCH (p:Person {status: 'active'})-[:KNOWS]->(f)
@@ -569,5 +573,5 @@ RETURN e2.name, [rel IN r | type(rel)] AS connection_types;
 ---
 
 **Last Updated:** January 28, 2026
-**Geode Version:** v0.1.3+
+**Geode Version:** **GEODE_TAG**+
 **GQL Compliance:** ISO/IEC 39075:2024

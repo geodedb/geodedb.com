@@ -195,6 +195,7 @@ RESET SESSION ALL;
 ### Session Variable Scope
 
 Session variables are accessible to:
+
 - All queries in the session
 - All transactions in the session
 - Row-Level Security policies
@@ -491,7 +492,7 @@ Example audit log:
   "ip_address": "192.168.1.100",
   "timestamp": "2026-01-24T10:15:32.123Z",
   "client_info": {
-    "user_agent": "geode-client-python/0.1.3",
+    "user_agent": "geode-client-python/0.3.19",
     "platform": "linux"
   }
 }

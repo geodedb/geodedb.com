@@ -32,6 +32,7 @@ Tutorials span beginner through advanced levels. Beginners learn installation, R
 ### Getting Started Tutorials
 
 **Installation and Setup**
+
 - Installing Geode (Docker, binary, source)
 - Starting the database server
 - Connecting with the REPL shell
@@ -40,6 +41,7 @@ Tutorials span beginner through advanced levels. Beginners learn installation, R
 - Understanding graph structure
 
 **REPL Basics**
+
 - Interactive shell features
 - Multi-line query editing
 - Result formatting options
@@ -50,6 +52,7 @@ Tutorials span beginner through advanced levels. Beginners learn installation, R
 ### Query Language Tutorials
 
 **Pattern Matching Fundamentals**
+
 - Basic node patterns
 - Relationship patterns
 - Variable-length paths
@@ -58,6 +61,7 @@ Tutorials span beginner through advanced levels. Beginners learn installation, R
 - Filtering with WHERE
 
 **Data Manipulation**
+
 - Inserting nodes and relationships
 - Updating properties with SET
 - Removing properties
@@ -66,6 +70,7 @@ Tutorials span beginner through advanced levels. Beginners learn installation, R
 - Bulk operations
 
 **Aggregations and Analytics**
+
 - COUNT, SUM, AVG, MIN, MAX
 - GROUP BY for grouping
 - COLLECT for arrays
@@ -76,6 +81,7 @@ Tutorials span beginner through advanced levels. Beginners learn installation, R
 ### Advanced Tutorials
 
 **Indexing Strategies**
+
 - Creating B+tree indexes
 - Unique constraints
 - Composite indexes
@@ -84,6 +90,7 @@ Tutorials span beginner through advanced levels. Beginners learn installation, R
 - Index selection and optimization
 
 **Transaction Management**
+
 - BEGIN/COMMIT/ROLLBACK
 - Savepoints for partial rollback
 - Transaction isolation levels
@@ -92,6 +99,7 @@ Tutorials span beginner through advanced levels. Beginners learn installation, R
 - Concurrent access patterns
 
 **Graph Algorithms**
+
 - PageRank for centrality
 - Community detection
 - Shortest path algorithms
@@ -100,6 +108,7 @@ Tutorials span beginner through advanced levels. Beginners learn installation, R
 - Custom algorithm implementation
 
 **Vector Search**
+
 - Storing embeddings
 - Creating HNSW indexes
 - Similarity search queries
@@ -110,6 +119,7 @@ Tutorials span beginner through advanced levels. Beginners learn installation, R
 ### Production Tutorials
 
 **Performance Optimization**
+
 - Query profiling with EXPLAIN/PROFILE
 - Index optimization
 - Query rewriting for performance
@@ -118,6 +128,7 @@ Tutorials span beginner through advanced levels. Beginners learn installation, R
 - Caching strategies
 
 **Security Configuration**
+
 - Setting up authentication
 - Configuring Row-Level Security
 - Enabling encryption (TDE/FLE)
@@ -126,6 +137,7 @@ Tutorials span beginner through advanced levels. Beginners learn installation, R
 - Security best practices
 
 **Deployment Patterns**
+
 - Docker deployment
 - Kubernetes deployment
 - High availability setup
@@ -244,6 +256,7 @@ for emp in employees:
 Tutorials include exercises for skill reinforcement:
 
 **Exercise: Friend Recommendations**
+
 ```gql
 -- TODO: Write a query that finds friends-of-friends
 -- who share at least 2 common interests with the user
@@ -253,6 +266,7 @@ MATCH (user:Person {name: 'Alice'})...
 ```
 
 **Exercise: Performance Optimization**
+
 ```gql
 -- TODO: Optimize this slow query using indexes
 -- Current execution time: 2.5 seconds
@@ -294,7 +308,7 @@ RETURN p.name, p.email
 
 ```bash
 geode shell
-Connected to Geode v0.1.3
+Connected to Geode __GEODE_TAG__
 geode>
 ```
 
@@ -463,6 +477,7 @@ for rec in recs:
 ```
 
 **Expected Output**:
+
 ```
 Interstellar: 5.0 (confidence: 2 users)
 The Shawshank Redemption: 5.0 (confidence: 1 user)
@@ -608,6 +623,7 @@ if alert:
 While primarily text-based, Geode tutorials benefit from visual demonstrations:
 
 **Available Video Tutorials**:
+
 1. "Getting Started with Geode" (15 minutes)
 2. "Pattern Matching Deep Dive" (30 minutes)
 3. "Building a Social Network" (45 minutes)
@@ -627,6 +643,7 @@ Error: connection refused at localhost:3141
 ```
 
 **Solution**:
+
 ```bash
 # Check if server is running
 ps aux | grep geode

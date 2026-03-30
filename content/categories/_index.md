@@ -347,5 +347,5 @@ Found an error? Have a suggestion? Documentation contributions are welcome. See 
 ---
 
 **Last Updated**: January 2026
-**Documentation Version**: Geode v0.1.3+
+**Documentation Version**: Geode {{< version "tag" >}}+
 **Coverage**: 100+ documentation pages across 31 categories

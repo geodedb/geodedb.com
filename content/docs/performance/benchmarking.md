@@ -79,6 +79,7 @@ objectives:
 ### Hardware Requirements
 
 **Benchmark Server**:
+
 ```yaml
 # Recommended for benchmarking
 cpu: 16+ cores (same SKU as production)
@@ -88,6 +89,7 @@ network: 10Gbps+
 ```
 
 **Load Generator**:
+
 ```yaml
 # Separate machine for load generation
 cpu: 8+ cores
@@ -321,6 +323,7 @@ func BenchmarkWriteQuery(b *testing.B) {
 ### Load Generation Tools
 
 **wrk2**:
+
 ```bash
 # Install wrk2
 git clone https://github.com/giltene/wrk2.git
@@ -334,6 +337,7 @@ cd wrk2 && make
 ```
 
 **hey**:
+
 ```bash
 # HTTP-based benchmark
 hey -n 100000 -c 100 -m POST \
@@ -715,7 +719,7 @@ if __name__ == "__main__":
 
 ## Configuration
 - **Baseline**: v0.1.2
-- **Current**: v0.1.3
+- **Current**: __GEODE_TAG__
 - **Hardware**: 16 cores, 64GB RAM, NVMe SSD
 - **Data**: 1M nodes, 10M relationships
 
@@ -730,7 +734,7 @@ if __name__ == "__main__":
 | Peak Memory | 12GB | 11GB | -8.3% |
 
 ## Conclusion
-Version 0.1.3 shows improvements across all metrics, with
+Version __GEODE_VERSION__ shows improvements across all metrics, with
 particularly notable improvements in P99 latency (-15.3%).
 No regressions detected.
 ```

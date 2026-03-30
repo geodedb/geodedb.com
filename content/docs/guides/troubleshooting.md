@@ -26,6 +26,7 @@ params:
 This guide helps you diagnose and resolve common issues with Geode database installation, connectivity, queries, performance, and operations. Issues are organized by category with step-by-step solutions.
 
 **Quick Links:**
+
 - [Installation Issues](#installation-issues)
 - [Server Startup Problems](#server-startup-problems)
 - [Connectivity & QUIC/TLS](#connectivity-quic-tls)
@@ -44,6 +45,7 @@ This guide helps you diagnose and resolve common issues with Geode database inst
 **Symptom**: Build fails with error about Zig version mismatch.
 
 **Solution**:
+
 ```bash
 # Check your Zig version
 zig version
@@ -69,6 +71,7 @@ make build
 **Symptom**: Build fails with missing library errors (libssl, etc.).
 
 **Solution for Ubuntu/Debian**:
+
 ```bash
 sudo apt-get update
 sudo apt-get install -y \
@@ -80,6 +83,7 @@ sudo apt-get install -y \
 ```
 
 **Solution for macOS**:
+
 ```bash
 brew install openssl pkg-config
 ```
@@ -89,6 +93,7 @@ brew install openssl pkg-config
 **Symptom**: Build process killed or fails with OOM errors.
 
 **Solution**:
+
 ```bash
 # For debug build (requires less memory):
 make build
@@ -113,6 +118,7 @@ make release
 **Symptom**: Server fails to start with "address already in use" error.
 
 **Diagnosis**:
+
 ```bash
 # Check what's using port 3141
 lsof -i :3141
@@ -125,6 +131,7 @@ kill -9 <PID>
 ```
 
 **Solution**:
+
 ```bash
 # Option 1: Use a different port
 geode serve --listen 0.0.0.0:8443
@@ -142,6 +149,7 @@ geode serve --listen 0.0.0.0:3141
 **Symptom**: Server fails with "permission denied" when accessing data directory.
 
 **Diagnosis**:
+
 ```bash
 # Check data directory permissions
 ls -la /var/geode/data
@@ -151,6 +159,7 @@ stat /var/geode/data
 ```
 
 **Solution**:
+
 ```bash
 # Option 1: Fix permissions
 sudo chown -R $USER:$USER /var/geode/data
@@ -168,6 +177,7 @@ geode serve \
 **Symptom**: Server fails with "cannot load TLS certificate" or similar.
 
 **Diagnosis**:
+
 ```bash
 # Check if certificate files exist
 ls -la server.crt server.key
@@ -182,6 +192,7 @@ openssl rsa -noout -modulus -in server.key | openssl md5
 ```
 
 **Solution - Generate Self-Signed Certificate**:
+
 ```bash
 # Generate self-signed certificate for development
 openssl req -x509 -newkey rsa:4096 \
@@ -199,6 +210,7 @@ geode serve \
 ```
 
 **Solution - Use Let's Encrypt for Production**:
+
 ```bash
 # Install certbot
 sudo apt-get install certbot
@@ -222,6 +234,7 @@ sudo geode serve \
 **Symptom**: Server starts then immediately exits or crashes.
 
 **Diagnosis**:
+
 ```bash
 # Run with debug logging
 geode serve \
@@ -237,6 +250,7 @@ coredumpctl info <ID>
 ```
 
 **Common Causes**:
+
 1. **Corrupted data directory**: Delete `data/` and restart
 2. **Insufficient file descriptors**: Increase limits with `ulimit -n 65536`
 3. **Missing shared libraries**: Check `ldd geode`
@@ -250,6 +264,7 @@ coredumpctl info <ID>
 **Symptom**: Client gets "connection refused" error.
 
 **Diagnosis**:
+
 ```bash
 # Verify server is running
 ps aux | grep geode
@@ -265,6 +280,7 @@ sudo iptables -L | grep 3141
 ```
 
 **Solution**:
+
 ```bash
 # If server isn't running, start it
 geode serve --listen 0.0.0.0:3141
@@ -283,6 +299,7 @@ geode serve --listen 0.0.0.0:3141
 **Symptom**: Client fails with "TLS handshake failed" or certificate verification errors.
 
 **For Development (Self-Signed Certificates)**:
+
 ```bash
 # Python client - disable verification (dev only!)
 from geode_client import Client
@@ -298,6 +315,7 @@ let mut conn = client.connect().await?;
 ```
 
 **For Production (Proper CA)**:
+
 ```bash
 # Provide CA certificate path
 # Python
@@ -318,6 +336,7 @@ let mut conn = client.connect().await?;
 **Symptom**: Client times out during connection establishment.
 
 **Diagnosis**:
+
 ```bash
 # Check if QUIC port (UDP) is accessible
 nc -zu <server-ip> 3141
@@ -330,6 +349,7 @@ sudo tcpdump -i any udp port 3141
 ```
 
 **Solution**:
+
 ```bash
 # Validate UDP connectivity and QUIC MTU settings
 
@@ -344,6 +364,7 @@ ping -M do -s 1400 <server-ip>
 **Symptom**: Client gets "no available connections" or "pool exhausted" error.
 
 **Solution**:
+
 ```bash
 # Increase max connections on server
 geode serve \
@@ -376,6 +397,7 @@ let pool = ConnectionPool::new("localhost", 3141, 100);
 **Common Causes & Solutions**:
 
 **1. Reserved Keywords as Identifiers**:
+
 ```gql
 -- WRONG: Using reserved keyword without backticks
 MATCH (return:Person) RETURN return.name
@@ -385,6 +407,7 @@ MATCH (`return`:Person) RETURN `return`.name
 ```
 
 **2. Missing Backticks for Multi-Word Labels**:
+
 ```gql
 -- WRONG
 MATCH (n:Social Network) RETURN n
@@ -394,6 +417,7 @@ MATCH (n:`Social Network`) RETURN n
 ```
 
 **3. Parameter Syntax Errors**:
+
 ```gql
 -- WRONG: Missing $ for parameters
 MATCH (n:Person {name: name_param}) RETURN n
@@ -403,6 +427,7 @@ MATCH (n:Person {name: $name_param}) RETURN n
 ```
 
 **Debugging Tip**:
+
 ```bash
 # Use EXPLAIN to see where parser fails
 geode query "EXPLAIN <your query here>"
@@ -415,6 +440,7 @@ geode query "EXPLAIN <your query here>"
 **Cause**: Referencing nodes/relationships that don't exist.
 
 **Solution**:
+
 ```gql
 -- First, check what labels exist
 MATCH (n) RETURN DISTINCT labels(n) AS existing_labels;
@@ -435,6 +461,7 @@ ON MATCH SET p.lastSeen = timestamp();
 **Common Cases**:
 
 **1. Comparing Incompatible Types**:
+
 ```gql
 -- WRONG: Comparing string to number
 MATCH (p:Person) WHERE p.age = "30" RETURN p
@@ -444,6 +471,7 @@ MATCH (p:Person) WHERE p.age = 30 RETURN p
 ```
 
 **2. Arithmetic on Non-Numeric Types**:
+
 ```gql
 -- WRONG
 RETURN "hello" + 5
@@ -453,6 +481,7 @@ RETURN toInt("123") + 5
 ```
 
 **3. NULL Handling**:
+
 ```gql
 -- NULL comparisons require IS NULL / IS NOT NULL
 MATCH (p:Person) WHERE p.age IS NOT NULL RETURN p
@@ -472,6 +501,7 @@ RETURN 5 + null  -- Returns null
 **Cause**: Multiple `MATCH` clauses without connecting them.
 
 **Example of Problem**:
+
 ```gql
 -- WARNING: Cartesian product (every person × every book)
 MATCH (p:Person)
@@ -481,6 +511,7 @@ RETURN p.name, b.title
 ```
 
 **Solution**:
+
 ```gql
 -- Connect the patterns
 MATCH (p:Person)-[:READ]->(b:Book)
@@ -499,12 +530,14 @@ RETURN p.name, b.title
 ### Slow Query Execution
 
 **Step 1: Identify the Problem**
+
 ```bash
 # Use PROFILE to see execution metrics
 geode query "PROFILE MATCH (n:Person) RETURN n"
 ```
 
 **Step 2: Analyze Query Plan**
+
 ```bash
 # Use EXPLAIN to see query plan
 geode query "EXPLAIN MATCH (n:Person WHERE n.age > 30) RETURN n"
@@ -516,6 +549,7 @@ geode query "EXPLAIN MATCH (n:Person WHERE n.age > 30) RETURN n"
 ```
 
 **Step 3: Add Indexes**
+
 ```gql
 -- Create index on frequently queried properties
 CREATE INDEX person_age ON Person(age);
@@ -535,6 +569,7 @@ SHOW INDEXES;
 ```
 
 **Step 4: Rewrite Inefficient Queries**
+
 ```gql
 -- SLOW: Filtering after collecting all data
 MATCH (p:Person)
@@ -554,6 +589,7 @@ MATCH (p:Person) WHERE p.age > 30 RETURN p
 ### High Memory Usage
 
 **Diagnosis**:
+
 ```bash
 # Monitor server memory
 ps aux | grep geode
@@ -568,6 +604,7 @@ curl http://localhost:9090/metrics | grep memory
 **Solutions**:
 
 **1. Reduce Page Cache**:
+
 ```bash
 # Default is 1024MB, reduce if needed
 geode serve \
@@ -576,6 +613,7 @@ geode serve \
 ```
 
 **2. Limit Query Results**:
+
 ```gql
 -- Always use LIMIT for large result sets
 MATCH (n) RETURN n LIMIT 1000
@@ -589,6 +627,7 @@ LIMIT 100
 ```
 
 **3. Use Streaming for Large Data**:
+
 ```python
 # Python - stream results instead of loading all
 for row in client.rows.query_stream("MATCH (n:Person) RETURN n"):
@@ -598,6 +637,7 @@ for row in client.rows.query_stream("MATCH (n:Person) RETURN n"):
 ### Index Not Being Used
 
 **Diagnosis**:
+
 ```bash
 # Check if index exists
 geode query "SHOW INDEXES"
@@ -615,12 +655,14 @@ geode query "
 **Common Reasons Index Isn't Used**:
 
 **1. Index doesn't exist for that property**:
+
 ```gql
 -- Create it
 CREATE INDEX person_email ON Person(email);
 ```
 
 **2. Query pattern doesn't match index**:
+
 ```gql
 -- Index on "name" won't help this query:
 MATCH (p:Person) WHERE p.email = '...' RETURN p
@@ -630,6 +672,7 @@ CREATE INDEX person_email ON Person(email);
 ```
 
 **3. Function on indexed property**:
+
 ```gql
 -- WRONG: Function prevents index usage
 MATCH (p:Person) WHERE toLower(p.name) = 'alice' RETURN p
@@ -646,6 +689,7 @@ CREATE INDEX person_name_lower ON Person(toLower(name));
 **Problem**: `count()`, `sum()`, `avg()` queries are slow.
 
 **Solution**:
+
 ```gql
 -- SLOW: Count all nodes of a label
 MATCH (p:Person) RETURN count(p)
@@ -659,6 +703,7 @@ SET stats.count = stats.count + 1
 ```
 
 **For Large Aggregations**:
+
 ```gql
 -- Use materialized views (if available)
 CREATE MATERIALIZED VIEW person_stats AS
@@ -684,6 +729,7 @@ SELECT * FROM person_stats;
 **Cause**: Two or more transactions waiting for each other to release locks.
 
 **Solution 1: Retry with Exponential Backoff**:
+
 ```python
 import time
 import random
@@ -708,6 +754,7 @@ async def execute_with_retry(conn, query, max_retries=3):
 ```
 
 **Solution 2: Consistent Lock Ordering**:
+
 ```gql
 -- BAD: Inconsistent ordering across transactions
 -- Transaction 1: Locks Alice, then Bob
@@ -728,6 +775,7 @@ COMMIT;
 **Symptom**: Long-running transaction aborts with timeout.
 
 **Solution 1: Increase Timeout**:
+
 ```bash
 # Server-side timeout configuration
 geode serve \
@@ -736,6 +784,7 @@ geode serve \
 ```
 
 **Solution 2: Break into Smaller Transactions**:
+
 ```python
 # SLOW: One huge transaction
 async with client.connection() as tx:
@@ -759,6 +808,7 @@ for i in range(0, 100000, batch_size):
 **Symptom**: `ROLLBACK TO SAVEPOINT` doesn't restore expected state.
 
 **Common Mistake**:
+
 ```gql
 BEGIN TRANSACTION;
   CREATE (a:Person {name: "Alice"});
@@ -770,6 +820,7 @@ BEGIN TRANSACTION;
 ```
 
 **Solution**: Understand savepoint scope:
+
 ```gql
 BEGIN TRANSACTION;
   SAVEPOINT sp1;
@@ -789,6 +840,7 @@ COMMIT;  -- Only Charlie persists
 **Symptom**: `RuntimeError: Event loop is closed` or similar.
 
 **Solution**:
+
 ```python
 import asyncio
 
@@ -816,6 +868,7 @@ finally:
 **Symptom**: Queries hang or timeout waiting for connection.
 
 **Solution**:
+
 ```go
 import (
     "database/sql"
@@ -845,6 +898,7 @@ rows, err := db.QueryContext(ctx, "MATCH (n) RETURN n LIMIT 10")
 **Symptom**: Connection fails with Quinn-specific errors.
 
 **Solution**:
+
 ```rust
 use geode_client::{Client, Error};
 
@@ -869,6 +923,7 @@ while retries > 0 {
 **Symptom**: Zig client panics with OOM or allocation error.
 
 **Solution**:
+
 ```zig
 const std = @import("std");
 const geode = @import("geode_client");
@@ -939,6 +994,7 @@ pub fn main() !void {
 ## Diagnostic Commands
 
 ### Server Health Check
+
 ```bash
 # Check if server is responsive
 curl http://localhost:9090/health
@@ -951,6 +1007,7 @@ curl http://localhost:9090/metrics
 ```
 
 ### Log Analysis
+
 ```bash
 # View recent errors
 journalctl -u geode -n 100 | grep ERROR
@@ -966,6 +1023,7 @@ grep "GQLSTATUS 42000" /var/log/geode/server.log
 ```
 
 ### Connection Testing
+
 ```bash
 # Test QUIC connectivity (requires netcat with QUIC support)
 nc -zu <server-ip> 3141
@@ -979,6 +1037,7 @@ geode query "RETURN 1"
 ```
 
 ### Performance Profiling
+
 ```gql
 -- Profile a slow query
 PROFILE
@@ -1005,6 +1064,7 @@ CALL db.transactions();
 ## Getting Help
 
 ### Check Documentation
+
 - [Installation Guide](/guides/installation/)
 - [Configuration Reference](/docs/configuration/server-configuration/)
 - [GQL Guide](/docs/gql/guide/)
@@ -1012,9 +1072,10 @@ CALL db.transactions();
 - [Security Overview](/docs/security/overview/)
 
 ### Community & Support
-- **GitLab Issues**: https://gitlab.com/devnw/codepros/geode/geode/issues
-- **Discussions**: https://gitlab.com/devnw/codepros/geode/geode/discussions
-- **GitLab**: https://gitlab.com/devnw/codepros/geode/
+
+- **GitLab Issues**: <https://gitlab.com/devnw/codepros/geode/geode/issues>
+- **Discussions**: <https://gitlab.com/devnw/codepros/geode/geode/discussions>
+- **GitLab**: <https://gitlab.com/devnw/codepros/geode/>
 
 ### Reporting Bugs
 
@@ -1029,8 +1090,9 @@ When reporting an issue, include:
 7. **Configuration** (anonymize sensitive data)
 
 **Example Bug Report**:
+
 ```markdown
-**Geode Version**: v0.1.3
+**Geode Version**: __GEODE_TAG__
 **OS**: Ubuntu 22.04 LTS
 **Zig Version**: 0.1.0
 
@@ -1043,17 +1105,20 @@ RETURN p.name, CASE WHEN p.age < 30 THEN 'young' ELSE 'senior' END AS category
 ```
 
 **Error**:
+
 ```
 GQLSTATUS 42000: Syntax error near 'CASE'
 ```
 
 **Server Logs**:
+
 ```
 [ERROR] Parser failed at line 2, column 20
 ```
 
 **Expected**: Query should categorize people by age
 **Actual**: Syntax error
+
 ```
 
 ---

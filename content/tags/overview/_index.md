@@ -88,18 +88,21 @@ Geode is a **native graph database** that stores and queries connected data usin
 ### Core Components
 
 **Protocol Layer**:
+
 - QUIC transport for low-latency, encrypted communication
 - Protobuf wire protocol for language-independent messaging
 - TLS 1.3 for security by default
 - Connection pooling and multiplexing
 
 **Query Engine**:
+
 - GQL parser implementing ISO/IEC 39075:2024
 - Cost-based query optimizer
 - Parallel execution engine (multi-core support)
 - Prepared statement caching
 
 **Storage Engine**:
+
 - Native graph storage with adjacency lists
 - Index-free adjacency for O(1) traversals
 - B-tree indexes for property lookups
@@ -340,6 +343,7 @@ ORDER BY affected.criticality DESC;
 ### Benchmarks
 
 **Query Types**:
+
 - Short paths (1-2 hops)
 - Multi-hop paths with filters
 - Large aggregations
@@ -424,24 +428,28 @@ Multi-instance deployment with replication (enterprise feature):
 ### Supported Languages
 
 **Go**: `geodedb.com/geode`
+
 - database/sql driver interface
 - Connection pooling
 - Prepared statements
 - Full type safety
 
 **Python**: `geode-client` (PyPI)
+
 - Async/await with asyncio
 - Connection pooling
 - Type hints
 - RLS policy management
 
 **Rust**: `geode-client` (crates.io)
+
 - Tokio-based async
 - Zero-cost abstractions
 - Type-safe builders
 - Connection pooling
 
 **Zig**: Native client library
+
 - QUIC implementation included
 - Memory-safe
 - Zero dependencies
@@ -539,6 +547,7 @@ Structured logging with configurable levels:
 ### Audit Logging
 
 All data modifications logged with:
+
 - User identity
 - Timestamp
 - Query executed
@@ -600,7 +609,7 @@ All data modifications logged with:
 
 ## Roadmap
 
-### Current (v0.1.3)
+### Current (**GEODE_TAG**)
 
 - 100% GQL compliance
 - Row-level security

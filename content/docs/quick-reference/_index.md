@@ -652,5 +652,5 @@ DROP GRAPH my_graph
 ---
 
 **Last Updated:** January 28, 2026
-**Geode Version:** v0.1.3+
+**Geode Version:** **GEODE_TAG**+
 **GQL Compliance:** ISO/IEC 39075:2024

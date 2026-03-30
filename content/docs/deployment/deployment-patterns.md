@@ -31,12 +31,14 @@ This guide covers production-ready deployment patterns with best practices for s
 ### Prerequisites
 
 **System Requirements**:
+
 - Docker 20.10+ and Docker Compose 1.29+
 - 8GB RAM minimum (16GB recommended for production)
 - 50GB disk space for data and backups
 - NVIDIA GPU with drivers + nvidia-docker2 (GPU deployment only)
 
 **Network Requirements**:
+
 - Port 3141 (standard) or 8443 (alternative) for Geode QUIC+TLS
 - Firewall rules configured for inter-node communication (distributed)
 - Valid TLS certificates (self-signed for development, CA-signed for production)
@@ -61,6 +63,7 @@ echo "127.0.0.1 geode.local grafana.geode.local prometheus.geode.local minio.geo
 ### Start Services
 
 **Standard Deployment**:
+
 ```bash
 # Start full stack (Geode + infrastructure)
 docker-compose up -d
@@ -73,6 +76,7 @@ docker-compose logs -f geode
 ```
 
 **GPU-Accelerated Deployment**:
+
 ```bash
 # Install NVIDIA Container Toolkit
 distribution=$(. /etc/os-release;echo $ID$VERSION_ID)
@@ -364,16 +368,19 @@ docker-compose start geode
 ### Use Cases
 
 **Development & Testing**:
+
 - Local development with hot reloading
 - Integration testing with realistic infrastructure
 - Feature validation before production
 
 **Small Production Deployments**:
+
 - Startups and small teams (< 10,000 queries/day)
 - Internal tools and dashboards
 - Proof of concept and prototypes
 
 **Edge Computing**:
+
 - On-premises installations with limited resources
 - IoT gateway aggregation
 - Offline-capable applications
@@ -1765,24 +1772,28 @@ geode admin reindex
 ### Regular Maintenance Tasks
 
 **Daily**:
+
 - Monitor metrics and alerts
 - Review error logs
 - Check backup completion
 - Verify cluster health
 
 **Weekly**:
+
 - Review slow query logs
 - Analyze storage growth
 - Update statistics
 - Rotate logs
 
 **Monthly**:
+
 - Vacuum database
 - Update Docker images
 - Review and update secrets
 - Test disaster recovery
 
 **Quarterly**:
+
 - Security audit
 - Performance benchmarks
 - Capacity planning review
@@ -1907,6 +1918,7 @@ After successful deployment:
 6. **Train Team** - Ensure operations team is familiar with Geode deployment
 
 **Related Documentation**:
+
 - [Performance Tuning Guide](/docs/tutorials/index-optimization) - Query optimization with EXPLAIN
 - [Security Configuration](/docs/security/overview/) - Advanced security features
 - [Monitoring Setup](/docs/ops/observability/) - Metrics and alerting
@@ -1916,6 +1928,5 @@ After successful deployment:
 ---
 
 *Last Updated: January 2026*
-*Geode Version: 0.1.3+*
+*Geode Version: **GEODE_VERSION**+*
 *Status: Production Ready*
-

@@ -1,24 +1,30 @@
 {{/*
-  Version shortcode - displays version information from data/version.yaml
+  Version shortcode - displays version information from GitLab with data/version.yaml fallback
 
   Usage:
-    {{< version >}}                    - Current version (e.g., "0.1.4-alpha.4")
-    {{< version "display" >}}          - Display version (e.g., "0.1.4")
-    {{< version "semver" >}}           - Full semver (e.g., "0.1.4-alpha.4")
+    {{< version >}}                    - Current version from latest GitLab tag
+    {{< version "display" >}}          - Display version (e.g., "0.2.16")
+    {{< version "tag" >}}              - Tag version (e.g., "v0.2.16")
     {{< version "docker.stable" >}}    - Docker stable tag
     {{< version "clients.go" >}}       - Go client version
 */}}
 {{- $key := .Get 0 | default "current" -}}
-{{- $version := site.Data.version -}}
+{{- $version := partialCached "geode/version-data.html" site "geode-version-data" | transform.Unmarshal -}}
 
 {{- if eq $key "current" -}}
   {{- $version.current -}}
 {{- else if eq $key "display" -}}
   {{- $version.display -}}
+{{- else if eq $key "tag" -}}
+  {{- $version.tag -}}
 {{- else if eq $key "semver" -}}
   {{- $version.semver -}}
 {{- else if eq $key "release_date" -}}
   {{- $version.release_date -}}
+{{- else if eq $key "release_date_long" -}}
+  {{- $version.release_date_long -}}
+{{- else if eq $key "release_month_year" -}}
+  {{- $version.release_month_year -}}
 {{- else if hasPrefix $key "clients." -}}
   {{- $client := strings.TrimPrefix "clients." $key -}}
   {{- index $version.clients $client -}}

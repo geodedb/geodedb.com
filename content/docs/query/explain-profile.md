@@ -53,6 +53,7 @@ EXPLAIN <statement>
 ### How It Works
 
 When you prefix a query with `EXPLAIN`, Geode:
+
 1. Parses the query to build an Abstract Syntax Tree (AST)
 2. Generates a logical execution plan
 3. Returns a textual representation of the plan
@@ -71,6 +72,7 @@ EXPLAIN MATCH (p:Person) RETURN p.name
 ```
 
 **Output:**
+
 ```
 | plan              |
 |-------------------|
@@ -82,6 +84,7 @@ EXPLAIN MATCH (p:Person) RETURN p.name
 ```
 
 **Interpretation:**
+
 - `NodeScan`: Scans all nodes with the `Person` label
 - `Project`: Selects and transforms `p.name` for the RETURN clause
 
@@ -94,6 +97,7 @@ RETURN p.name, p.age
 ```
 
 **Output:**
+
 ```
 | plan              |
 |-------------------|
@@ -106,6 +110,7 @@ RETURN p.name, p.age
 ```
 
 **New Operator:**
+
 - `Filter`: Applies the `WHERE p.age > 25` predicate to filter results
 
 ### Relationship Traversal
@@ -116,6 +121,7 @@ RETURN p.name, c.name
 ```
 
 **Output:**
+
 ```
 | plan                    |
 |-------------------------|
@@ -128,6 +134,7 @@ RETURN p.name, c.name
 ```
 
 **New Operator:**
+
 - `ExpandRelationships`: Traverses `WORKS_FOR` relationships from `Person` nodes
 
 ### Complex Query with Aggregation
@@ -141,6 +148,7 @@ LIMIT 10
 ```
 
 **Output:**
+
 ```
 | plan                    |
 |-------------------------|
@@ -157,6 +165,7 @@ LIMIT 10
 ```
 
 **Additional Operators:**
+
 - `Aggregate`: Groups by `c.name` and computes `count(p)`
 - `Sort`: Orders results by `employee_count DESC`
 - `Limit`: Restricts output to 10 rows
@@ -197,6 +206,7 @@ EXPLAIN CREATE (p:Person {name: 'Alice', age: 30})
 ```
 
 **Output:**
+
 ```
 | plan                    |
 |-------------------------|
@@ -215,6 +225,7 @@ DELETE p
 ```
 
 **Output:**
+
 ```
 | plan                    |
 |-------------------------|
@@ -232,6 +243,7 @@ ON MATCH SET p.accessed = now()
 ```
 
 **Output:**
+
 ```
 | plan                    |
 |-------------------------|
@@ -256,6 +268,7 @@ PROFILE <statement>
 ### How It Works
 
 When you prefix a query with `PROFILE`, Geode:
+
 1. Executes the query normally
 2. Collects execution metrics (rows returned, execution time, column count)
 3. Returns statistics as a result set
@@ -272,6 +285,7 @@ PROFILE MATCH (p:Person) RETURN p.name
 ```
 
 **Output:**
+
 ```
 | metric              | value |
 |---------------------|-------|
@@ -281,6 +295,7 @@ PROFILE MATCH (p:Person) RETURN p.name
 ```
 
 **Metrics Explained:**
+
 - `rows_returned`: Number of rows returned by the query (42 Person nodes)
 - `columns`: Number of columns in the result set (1: `p.name`)
 - `execution_time_ms`: Execution time in milliseconds (placeholder in current implementation)
@@ -293,6 +308,7 @@ RETURN count(p) AS person_count
 ```
 
 **Output:**
+
 ```
 | metric              | value |
 |---------------------|-------|
@@ -312,6 +328,7 @@ RETURN p.name, c.name
 ```
 
 **Output:**
+
 ```
 | metric              | value |
 |---------------------|-------|
@@ -321,6 +338,7 @@ RETURN p.name, c.name
 ```
 
 **Metrics:**
+
 - `rows_returned`: 156 Person-Company pairs in the Technology industry
 - `columns`: 2 (`p.name`, `c.name`)
 
@@ -331,6 +349,7 @@ PROFILE MATCH (p:NonExistent) RETURN p
 ```
 
 **Output:**
+
 ```
 | metric              | value |
 |---------------------|-------|
@@ -358,6 +377,7 @@ LIMIT 100
 ```
 
 **Analysis Questions:**
+
 - Are indexes being used? (Look for index scan operators)
 - Is filtering applied early? (`Filter` should appear after `NodeScan`)
 - Are expensive operations (like variable-length paths) necessary?
@@ -375,6 +395,7 @@ LIMIT 100
 ```
 
 **Metrics to Check:**
+
 - `rows_returned`: Validate the result set size
 - `execution_time_ms`: Measure actual execution time (future enhancement)
 
@@ -383,6 +404,7 @@ LIMIT 100
 Test different query formulations and compare their performance:
 
 **Approach 1: Filter in WHERE**
+
 ```gql
 PROFILE MATCH (p:Person)
 WHERE p.age > 30
@@ -390,6 +412,7 @@ RETURN p.name
 ```
 
 **Approach 2: Filter with Label Test**
+
 ```gql
 PROFILE MATCH (n)
 WHERE n:Person AND n.age > 30
@@ -502,11 +525,13 @@ pub const ProfileStatement = struct {
 ### Execution Logic
 
 **EXPLAIN Execution** (`execution.zig:863-940`):
+
 - Analyzes the wrapped statement structure
 - Generates a plan description based on query type
 - Returns plan as a result set with a single `plan` column
 
 **PROFILE Execution** (`execution.zig:942-988`):
+
 - Executes the wrapped query using `executeStatementWithContext`
 - Collects metrics (rows returned, column count)
 - Returns statistics as a result set with `metric` and `value` columns
@@ -552,6 +577,7 @@ LIMIT 50
 ```
 
 **Analysis:**
+
 - Check that `Filter` is applied before expensive operations
 - Verify `Sort` and `Limit` operators are present
 - Understand the logical flow: Scan → Filter → Project → Sort → Limit
@@ -573,6 +599,7 @@ RETURN c.name
 ```
 
 **Optimization Strategy:**
+
 - If `rows_returned` is very high, consider adding more WHERE clauses
 - If multiple `ExpandRelationships` operators are expensive, consider indexing relationships
 
@@ -583,6 +610,7 @@ RETURN c.name
 ### When to Use EXPLAIN
 
 ✅ **Use EXPLAIN when:**
+
 - Developing new queries and want to understand the execution strategy
 - Verifying that indexes are being used (when index operators are available)
 - Comparing different query formulations before choosing one
@@ -590,12 +618,14 @@ RETURN c.name
 - Checking query plans for queries that will run frequently
 
 ❌ **Don't use EXPLAIN when:**
+
 - You need actual performance metrics (use PROFILE instead)
 - You need to see actual query results (run the query normally)
 
 ### When to Use PROFILE
 
 ✅ **Use PROFILE when:**
+
 - Measuring actual query performance
 - Validating optimization changes (before/after comparison)
 - Identifying slow queries in development
@@ -603,6 +633,7 @@ RETURN c.name
 - Testing pagination and limit strategies
 
 ❌ **Don't use PROFILE when:**
+
 - You want to avoid executing the query (use EXPLAIN instead)
 - Running queries with side effects (CREATE, DELETE, SET)—results will be committed
 
@@ -646,6 +677,7 @@ MATCH (p:Person) WHERE p.age > 30 RETURN p.name
 ### Planned Improvements
 
 **EXPLAIN Enhancements:**
+
 - **Cost-Based Plans**: Include estimated costs and row counts per operator
 - **Index Usage**: Show which indexes are being used in the plan
 - **Visual Plans**: Tree or graph visualization of query plans
@@ -653,6 +685,7 @@ MATCH (p:Person) WHERE p.age > 30 RETURN p.name
 - **Comparison Mode**: Compare plans for different query formulations side-by-side
 
 **PROFILE Enhancements:**
+
 - **Actual Timing**: Real execution time measurements with high precision
 - **Per-Operator Stats**: Detailed metrics for each operator (rows processed, time spent)
 - **Memory Profiling**: Track memory allocation and usage during execution
@@ -682,6 +715,7 @@ MATCH (p:Person) WHERE p.age > 30 RETURN p.name
 **Problem:** EXPLAIN shows minimal or unexpected output.
 
 **Solutions:**
+
 - Verify the query syntax is correct (EXPLAIN won't show errors, it analyzes the parsed AST)
 - Check that the statement type is supported (some statements may show `ExecuteStatement`)
 - Ensure the query is not too complex (deeply nested queries may show simplified plans)
@@ -691,6 +725,7 @@ MATCH (p:Person) WHERE p.age > 30 RETURN p.name
 **Problem:** PROFILE returns `rows_returned: 0` when you expect results.
 
 **Solutions:**
+
 - Verify the query would actually return results (run it normally without PROFILE)
 - Check WHERE clause conditions are correct
 - Ensure nodes/relationships exist in the database
@@ -701,6 +736,7 @@ MATCH (p:Person) WHERE p.age > 30 RETURN p.name
 **Issue:** The `execution_time_ms` metric currently returns a placeholder value (1).
 
 **Workaround:** Use external timing for now:
+
 ```bash
 time geode query "MATCH (p:Person) RETURN count(p)"
 ```
@@ -752,6 +788,7 @@ EXPLAIN MATCH (p:Person) WHERE p.age > 25 RETURN p.name, p.email
 ```
 
 **Questions:**
+
 1. What operators are used?
 2. Where does the `Filter` operator appear?
 3. What does the `Project` operator select?
@@ -761,11 +798,13 @@ EXPLAIN MATCH (p:Person) WHERE p.age > 25 RETURN p.name, p.email
 **Task:** Compare performance of two query formulations.
 
 **Query 1:**
+
 ```gql
 PROFILE MATCH (p:Person) WHERE p.age > 30 RETURN count(p)
 ```
 
 **Query 2:**
+
 ```gql
 PROFILE MATCH (p:Person) RETURN count(CASE WHEN p.age > 30 THEN 1 ELSE null END)
 ```
@@ -777,6 +816,7 @@ PROFILE MATCH (p:Person) RETURN count(CASE WHEN p.age > 30 THEN 1 ELSE null END)
 **Task:** Optimize a query using EXPLAIN and PROFILE.
 
 **Initial Query:**
+
 ```gql
 MATCH (p:Person)-[:WORKS_FOR]->(c:Company)
 WHERE c.industry = 'Finance'
@@ -785,6 +825,7 @@ ORDER BY p.name
 ```
 
 **Steps:**
+
 1. Use EXPLAIN to see the plan
 2. Identify potential improvements (add index on `c.industry`?)
 3. Use PROFILE to measure initial performance
@@ -812,5 +853,5 @@ ORDER BY p.name
 ---
 
 **Last Updated:** January 24, 2026
-**Geode Version:** v0.1.3+
+**Geode Version:** **GEODE_TAG**+
 **ISO GQL Conformance Profile:** ISO/IEC 39075:2024 compliance (see conformance profile)

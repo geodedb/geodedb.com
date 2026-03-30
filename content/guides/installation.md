@@ -110,8 +110,8 @@ docker compose up -d
 | Tag | Description |
 |-----|-------------|
 | `latest` | Latest stable release |
-| `0.1.3` | Specific version |
-| `0.18` | Latest patch of minor version |
+| `__GEODE_VERSION__` | Specific version |
+| `0.2` | Latest patch of minor version |
 | `edge` | Latest development build |
 | `alpine` | Minimal Alpine-based image |
 
@@ -414,7 +414,7 @@ go get geodedb.com/geode
 
 ```go
 // Add to your go.mod
-require geodedb.com/geode v0.1.3
+require geodedb.com/geode __GEODE_TAG__
 ```
 
 {{< /tab >}}
@@ -477,7 +477,7 @@ pipenv install geode-client
 {{< tab "requirements.txt" >}}
 
 ```text
-geode-client>=0.1.3
+geode-client>=0.3.19
 ```
 
 {{< /tab >}}
@@ -507,7 +507,7 @@ asyncio.run(main())
 
 ```toml
 [dependencies]
-geode-client = "0.18"
+geode-client = "0.1.1-alpha.8"
 tokio = { version = "1", features = ["full"] }
 ```
 
@@ -570,7 +570,7 @@ pnpm add @geodedb/client
 ```json
 {
   "dependencies": {
-    "@geodedb/client": "^0.1.3"
+    "@geodedb/client": "^1.0.0-alpha.15"
   }
 }
 ```
@@ -608,7 +608,7 @@ main();
     .version = "0.1.0",
     .dependencies = .{
         .geode_client = .{
-            .url = "https://gitlab.com/devnw/codepros/geode/geode-client-zig/-/archive/v0.1.3/geode-client-zig-v0.1.3.tar.gz",
+            .url = "https://gitlab.com/devnw/codepros/geode/geode-client-zig/-/archive/v0.1.0/geode-client-zig-v0.1.0.tar.gz",
             .hash = "...", // Get hash from first build attempt
         },
     },
@@ -680,7 +680,7 @@ After installation, verify everything is working correctly.
 geode ping localhost:3141
 
 # Expected output:
-# Connected to Geode v0.1.3
+# Connected to Geode __GEODE_TAG__
 # Latency: 2ms
 ```
 

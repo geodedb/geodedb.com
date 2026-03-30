@@ -377,6 +377,7 @@ geode> MATCH (p:Person {email: 'alice@example.com'}) RETURN p;
 **Symptom**: Cannot connect to database
 
 **Solutions**:
+
 - Verify server is running (`geode serve`)
 - Check host/port configuration
 - Confirm network connectivity
@@ -388,6 +389,7 @@ geode> MATCH (p:Person {email: 'alice@example.com'}) RETURN p;
 **Symptom**: Queries take longer than expected
 
 **Solutions**:
+
 - Use `\explain` to view query plan
 - Check for missing indexes
 - Add LIMIT to unbounded queries
@@ -399,6 +401,7 @@ geode> MATCH (p:Person {email: 'alice@example.com'}) RETURN p;
 **Symptom**: Results not displaying correctly
 
 **Solutions**:
+
 - Adjust terminal width
 - Switch format with `\format json`
 - Use vertical display `\x on`
@@ -410,6 +413,7 @@ geode> MATCH (p:Person {email: 'alice@example.com'}) RETURN p;
 **Symptom**: Command history not working
 
 **Solutions**:
+
 - Check history file permissions
 - Verify `~/.geode_history` exists
 - Clear corrupted history file
@@ -677,7 +681,7 @@ Manage Geode servers from REPL:
 ```
 geode> \connect production-db.example.com:3141
 Connecting to production-db.example.com:3141...
-Connected to Geode v0.1.3 (cluster mode, 5 nodes)
+Connected to Geode __GEODE_TAG__ (cluster mode, 5 nodes)
 
 geode> \cluster status
 Cluster Status:

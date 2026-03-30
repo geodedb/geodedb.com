@@ -48,7 +48,7 @@
             <div class="card border-0 shadow-sm docs-panel">
               <div class="card-body">
                 <div class="docs-intro-content docs-intro-content--guides">
-                  {{ . }}
+                  {{ partial "geode/render-content.html" (dict "content" .) }}
                 </div>
               </div>
             </div>

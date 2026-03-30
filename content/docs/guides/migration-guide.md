@@ -26,10 +26,11 @@ Geode provides multiple migration paths depending on your source system and requ
 
 ### Current Version Status
 
-**Geode v0.1.3** (January 2026) - Production Ready
+**Geode **GEODE_TAG**** (**GEODE_RELEASE_DATE_LONG**) - Current stable release
+
 - 100% GQL compliance (ISO/IEC 39075:2024)
-- 97.4% Test Pass Rate (1644/1688 tests)
-- All 7 development phases complete
+- Current stable line for production deployments
+- Follow the release notes for post-`__GEODE_TAG__` `main` fixes before adopting unreleased builds
 
 ### Pre-Upgrade Checklist
 
@@ -158,6 +159,7 @@ storage:
 ```
 
 **Breaking Changes (v0.1.x → v0.1.x)**:
+
 - Authentication now **enabled by default** (was optional)
 - TLS auto-generation **disabled by default** (use proper certificates)
 - Hardcoded credentials removed (use environment variables)

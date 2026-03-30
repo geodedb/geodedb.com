@@ -24,9 +24,9 @@
     {{ $date_format = . }}
   {{ end }}
 
-  {{ $summary := .Content }}
+  {{ $summary := partial "geode/render-text.html" (dict "content" (.Summary | plainify)) }}
   {{ with .Params.description }}
-    {{ $summary = . }}
+    {{ $summary = partial "geode/render-text.html" (dict "content" .) }}
   {{ end }}
 
 
@@ -51,7 +51,7 @@
 
         {{ if ne $summary "" }}
           <p class="card-text">
-            {{ $summary  | safeHTML | truncate 100 }}
+            {{ $summary | truncate 100 }}
           </p>
         {{ end }}
 

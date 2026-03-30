@@ -226,7 +226,7 @@ For production deployments, use a specific tagged version:
 git tag -l
 
 # Checkout specific version
-git checkout v0.1.3
+git checkout __GEODE_TAG__
 
 # Verify checked-out version
 git describe --tags
@@ -242,6 +242,7 @@ ls -la
 ```
 
 Expected contents include:
+
 - `src/` - Source code
 - `build.zig` - Build configuration
 - `Makefile` - Build automation
@@ -296,6 +297,7 @@ Release build complete: zig-out/bin/geode
 ### Build Performance
 
 Build times vary by hardware:
+
 - Development machine (4-8 cores): 5-10 minutes
 - Server (16+ cores): 2-5 minutes
 
@@ -674,7 +676,7 @@ sudo systemctl stop geode
 # Update source code
 cd ~/projects/geode
 git fetch --tags
-git checkout v0.1.3
+git checkout __GEODE_TAG__
 
 # Rebuild
 cd geode

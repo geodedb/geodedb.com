@@ -48,6 +48,7 @@ Geode uses structured logging where each log entry is a JSON object with consist
 ```
 
 **Benefits**:
+
 - **Machine-Readable**: Easy parsing and analysis with tools like jq, Elasticsearch, or Loki
 - **Queryable**: Search and filter by any field
 - **Consistent**: Predictable structure across all log entries
@@ -88,6 +89,7 @@ include_hostname = true
 ### Environment-Specific Configuration
 
 **Development**:
+
 ```toml
 [logging]
 level = "DEBUG"
@@ -97,6 +99,7 @@ include_caller = true
 ```
 
 **Production**:
+
 ```toml
 [logging]
 level = "INFO"
@@ -144,6 +147,7 @@ Detailed diagnostic information for development and troubleshooting:
 ```
 
 **Use Cases**:
+
 - Understanding query optimization decisions
 - Debugging application logic
 - Analyzing execution paths
@@ -166,6 +170,7 @@ General operational events indicating normal system behavior:
 ```
 
 **Use Cases**:
+
 - Tracking query execution
 - Monitoring transaction commits
 - Connection lifecycle events
@@ -189,6 +194,7 @@ Warning conditions that don't prevent operation but may require attention:
 ```
 
 **Use Cases**:
+
 - Slow query detection
 - Connection pool pressure
 - Memory pressure warnings
@@ -215,6 +221,7 @@ Error conditions requiring immediate attention:
 ```
 
 **Use Cases**:
+
 - Transaction failures
 - Connection errors
 - Storage errors
@@ -313,7 +320,7 @@ Track client connectivity:
   "connection_id": "conn-789",
   "client_address": "192.168.1.100:54321",
   "client_type": "python",
-  "client_version": "0.1.3",
+  "client_version": "0.3.19",
   "tls_version": "TLS1.3"
 }
 
@@ -421,6 +428,7 @@ Track persistence operations:
 ### Using jq for Log Analysis
 
 **Filter by level**:
+
 ```bash
 # Show only errors
 jq 'select(.level == "ERROR")' /var/log/geode/geode.log
@@ -430,6 +438,7 @@ jq 'select(.level == "WARN" or .level == "ERROR")' /var/log/geode/geode.log
 ```
 
 **Filter by time range**:
+
 ```bash
 # Logs from last hour
 jq 'select(.timestamp > "2026-01-24T09:00:00Z")' /var/log/geode/geode.log
@@ -440,6 +449,7 @@ jq 'select(.timestamp >= "2026-01-24T09:00:00Z" and
 ```
 
 **Analyze slow queries**:
+
 ```bash
 # Queries over 1 second
 jq 'select(.logger == "geode.query" and .duration_ms > 1000) |
@@ -451,6 +461,7 @@ jq 'select(.logger == "geode.query") | {query_id, duration_ms, query_text}' \
 ```
 
 **Group errors by type**:
+
 ```bash
 # Count errors by message
 jq -r 'select(.level == "ERROR") | .message' /var/log/geode/geode.log | \
@@ -462,6 +473,7 @@ jq -r 'select(.level == "ERROR" and .error_code) | .error_code' \
 ```
 
 **Track user activity**:
+
 ```bash
 # Queries by user
 jq 'select(.logger == "geode.query") | {user, query_id}' \
@@ -477,6 +489,7 @@ jq 'select(.logger == "geode.security" and .message == "Authentication failed") 
 ### Elasticsearch + Kibana
 
 **Filebeat Configuration**:
+
 ```yaml
 # filebeat.yml
 filebeat.inputs:
@@ -504,6 +517,7 @@ setup.kibana:
 ```
 
 **Kibana Query Examples**:
+
 ```
 # Slow queries
 level: "WARN" AND message: "Slow query" AND duration_ms > 1000
@@ -518,6 +532,7 @@ user: "analyst@example.com" AND logger: "geode.query"
 ### Grafana Loki
 
 **Promtail Configuration**:
+
 ```yaml
 # promtail.yml
 server:
@@ -556,6 +571,7 @@ scrape_configs:
 ```
 
 **LogQL Queries**:
+
 ```logql
 # All error logs
 {job="geode"} | json | level="ERROR"
@@ -573,6 +589,7 @@ sum(rate({job="geode"} | json | level="ERROR" [5m])) by (logger)
 ### Splunk
 
 **Inputs Configuration**:
+
 ```ini
 # inputs.conf
 [monitor:///var/log/geode/*.log]
@@ -582,6 +599,7 @@ sourcetype = geode:json
 ```
 
 **Search Queries**:
+
 ```
 # Slow queries
 index=geode level=WARN message="Slow query" | stats avg(duration_ms) by query_text

@@ -39,67 +39,65 @@ Geode's changelog follows the "Keep a Changelog" format with entries organized b
 - **Security**: Security improvements and vulnerability patches
 - **Performance**: Performance optimizations and improvements
 
-## Current Version: v0.1.3 (Production Ready)
+## Current Version: **GEODE_TAG** (Current Stable Release)
 
-**Status**: Production Ready (January 2026)
-**Released**: January 24, 2026
+**Status**: Current stable release (**GEODE_RELEASE_MONTH_YEAR**)
+**Released**: **GEODE_RELEASE_DATE_LONG**
 
 ### Highlights
 
-- 97.4% Test Coverage (1644/1688 tests passing)
 - 100% GQL compliance (see conformance profile)
-- 1,735 CANARY governance markers tracking 2,190+ requirements
+- `__GEODE_TAG__` release cut validated with 619/619 unit tests
+- Current mainline GAP analysis tracking 3847 passed, 70 failed, 35 skipped
 - Enterprise-ready with full ACID transactions
 - QUIC + TLS 1.3 protocol support
 - Multi-language client libraries (Go, Python, Rust, Zig)
 
-### Added in v0.1.3
+### Added in v0.2.15
 
 **Core Features**:
-- ISO/IEC 39075:2024 100% GQL compliance
-- ACID transaction support with savepoints
-- Row-Level Security (RLS) with policy-based access control
-- Vector similarity search with HNSW indexes
-- Full-text search with multilingual support
-- JSON data type with path expressions and functions
-- Temporal data types (DATE, TIME, TIMESTAMP, DURATION, INTERVAL)
-- Geospatial types and functions (POINT, POLYGON, LINESTRING)
+
+- Common table expressions (CTEs) in the stable release line
+- DOT output fixes for graph visualization workflows
+- DSN graph binding and graph-scoped session behavior
+- Per-graph storage and graph-storage integration across the March release train
+- Current auth CLI flows for login, init, reseal, and verify
 
 **Performance Enhancements**:
-- Query optimizer with cost-based execution plans
-- Multi-property composite indexes
-- Covering indexes for index-only scans
-- Parallel query execution
-- Connection pooling in all client libraries
+
+- QUIC stream multiplexing for better concurrency
+- Poll-loop reductions and accepted-connection wait improvements
+- Storage engine fixes for graph mappings, free-space bitmap rebuilds, and adapter label dictionaries
+- Large-result stability carried forward from the `v0.1.x` line
 
 **Client Libraries**:
-- Go client v1.0.0 with database/sql driver
-- Python async client v1.0.0 with aioquic
-- Rust client v1.0.0 with tokio runtime
-- Zig client v1.0.0 with vendored QUIC
+
+- Go client rolling stable module
+- Python async client v0.3.19
+- Rust client v0.1.1-alpha.8
+- Zig client v0.1.0
 
 **Tooling**:
+
 - Interactive GQL shell with syntax highlighting
 - EXPLAIN and PROFILE query analysis
 - Backup and restore utilities
 - Data import/export tools (JSON, CSV, GraphML)
 - Prometheus metrics integration
 
-### Changed in v0.1.3
+### Changed in v0.2.15
 
-- Protocol upgraded to QUIC-only (removed TCP fallback)
-- Default port changed from 8443 to 3141
-- Wire format standardized to Protobuf wire protocol
-- Memory allocator optimized for graph workloads
-- Storage engine redesigned for better concurrency
+- `v0.2.x` became the active stable line for the docs and release process
+- Release notes now distinguish the tagged stable release from unreleased `main` fixes
+- Auth, storage, and upgrade guidance now reflect the March 2026 release train
+- TDE wiring and post-tag storage fixes are tracked separately as unreleased `main` work
 
-### Fixed in v0.1.3
+### Fixed in v0.2.15
 
-- Query optimizer now correctly handles optional matches
-- Transaction isolation improved for concurrent writes
-- Index maintenance fixed for bulk operations
-- Memory leaks eliminated in long-running queries
-- Connection pool cleanup on client disconnect
+- UUIDv7 generation on 32-bit ARM
+- CTE execution stability issues found during the March release train
+- DOT export correctness for current graph visualization examples
+- Storage edge-slot translation and UUID truncation issues addressed on `main` after the tag
 
 ## Release Cycles and Versioning
 
@@ -147,7 +145,7 @@ v2.0.0: Feature removed
 https://github.com/codeprosorg/geode/blob/main/CHANGELOG.md
 
 # View changes between versions
-git log v0.1.2..v0.1.3 --oneline
+git log v0.2.14..v0.2.15 --oneline
 
 # View release notes
 https://github.com/codeprosorg/geode/releases
@@ -160,7 +158,7 @@ https://github.com/codeprosorg/geode/releases
 geode changelog
 
 # Display changelog for specific version
-geode changelog --version v0.1.3
+geode changelog --version v0.2.15
 
 # Display all changes since version
 geode changelog --since v0.1.0
@@ -172,6 +170,7 @@ geode changelog --category security
 **Web Documentation**:
 
 Visit /docs/reference/changelog/ for interactive changelog with:
+
 - Filterable change categories
 - Version comparison
 - Migration guide links
@@ -184,6 +183,7 @@ Each major and significant minor release includes a migration guide:
 **Upgrade from v0.1.x to v0.1.x**:
 
 1. **Backup Existing Database**:
+
    ```bash
    geode backup create --output pre-upgrade-backup.tar.gz
    ```
@@ -194,6 +194,7 @@ Each major and significant minor release includes a migration guide:
    - Wire format is now Protobuf wire protocol exclusively
 
 3. **Update Client Libraries**:
+
    ```bash
    # Go
    go get -u geodedb.com/geode@v1.0.0
@@ -206,6 +207,7 @@ Each major and significant minor release includes a migration guide:
    ```
 
 4. **Update Configuration**:
+
    ```yaml
    # config.yaml
    server:
@@ -258,20 +260,20 @@ Response Time: 48 hours
 1. Issue reported privately to security team
 2. Vulnerability assessed and patch developed
 3. Security advisory published (CVE assigned if applicable)
-4. Patch released with security tag (e.g., v0.1.3-security)
+4. Patch released with security tag (e.g., v0.2.15-security)
 5. Users notified via security mailing list
 
-**Current Security Status**: No known vulnerabilities (as of v0.1.3)
+**Current Security Status**: No known vulnerabilities in the tagged stable release (as of `__GEODE_TAG__`)
 
 ## Deprecation Notices
 
 **Currently Deprecated** (removal planned for v1.0.0):
 
-None currently. All features in v0.1.3 are stable and supported.
+None currently. The stable `__GEODE_TAG__` feature set is the supported baseline in the docs.
 
 **Previously Deprecated and Removed**:
 
-- v0.1.2: TCP protocol support (removed in v0.1.3)
+- v0.1.2: TCP protocol support (removed before the current `v0.2.x` line)
 - v0.1.1: Legacy JSON line protocol (removed in v0.1.2; Protobuf required)
 - v0.1.0: Legacy authentication API (removed in v0.1.1)
 

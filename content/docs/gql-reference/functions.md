@@ -51,6 +51,7 @@ Aggregate functions compute a single result from multiple input rows.
 Returns the number of rows or non-null values.
 
 **Signatures:**
+
 ```
 COUNT(*) -> INTEGER
 COUNT(expression) -> INTEGER
@@ -58,6 +59,7 @@ COUNT(DISTINCT expression) -> INTEGER
 ```
 
 **Examples:**
+
 ```gql
 -- Count all rows
 MATCH (n:Person)
@@ -79,11 +81,13 @@ RETURN COUNT(DISTINCT n.city) AS unique_cities;
 Returns the sum of numeric values.
 
 **Signature:**
+
 ```
 SUM(numeric_expression) -> FLOAT | INTEGER
 ```
 
 **Examples:**
+
 ```gql
 MATCH (o:Order)
 RETURN SUM(o.total) AS revenue;
@@ -95,6 +99,7 @@ GROUP BY o.category;
 ```
 
 **Notes:**
+
 - Returns NULL if all values are NULL
 - Returns 0 for empty result set
 
@@ -105,11 +110,13 @@ GROUP BY o.category;
 Returns the arithmetic mean.
 
 **Signature:**
+
 ```
 AVG(numeric_expression) -> FLOAT
 ```
 
 **Examples:**
+
 ```gql
 MATCH (p:Person)
 RETURN AVG(p.age) AS average_age;
@@ -126,12 +133,14 @@ RETURN round(AVG(p.price), 2) AS avg_price;
 Returns minimum or maximum value.
 
 **Signatures:**
+
 ```
 MIN(expression) -> same type as input
 MAX(expression) -> same type as input
 ```
 
 **Examples:**
+
 ```gql
 MATCH (p:Person)
 RETURN MIN(p.age) AS youngest,
@@ -153,12 +162,14 @@ RETURN MAX(o.order_date) AS most_recent;
 Aggregates values into a list.
 
 **Signature:**
+
 ```
 COLLECT(expression) -> LIST
 COLLECT(DISTINCT expression) -> LIST
 ```
 
 **Examples:**
+
 ```gql
 -- Collect all values
 MATCH (p:Person)-[:LIVES_IN]->(c:City)
@@ -180,12 +191,14 @@ RETURN COLLECT({name: p.name, age: p.age}) AS people;
 Returns standard deviation.
 
 **Signatures:**
+
 ```
 STDEV(numeric_expression) -> FLOAT   -- Sample standard deviation
 STDEVP(numeric_expression) -> FLOAT  -- Population standard deviation
 ```
 
 **Examples:**
+
 ```gql
 MATCH (s:Score)
 RETURN STDEV(s.value) AS sample_stdev,
@@ -199,12 +212,14 @@ RETURN STDEV(s.value) AS sample_stdev,
 Returns percentile values.
 
 **Signatures:**
+
 ```
 PERCENTILE_CONT(numeric_expression, percentile) -> FLOAT  -- Continuous (interpolated)
 PERCENTILE_DISC(numeric_expression, percentile) -> FLOAT  -- Discrete (actual value)
 ```
 
 **Examples:**
+
 ```gql
 MATCH (p:Person)
 RETURN PERCENTILE_CONT(p.salary, 0.5) AS median_salary,
@@ -220,12 +235,14 @@ RETURN PERCENTILE_CONT(p.salary, 0.5) AS median_salary,
 Converts string case.
 
 **Signatures:**
+
 ```
 lower(string) -> STRING
 upper(string) -> STRING
 ```
 
 **Examples:**
+
 ```gql
 RETURN lower('Hello World') AS lowercase;  -- 'hello world'
 RETURN upper('Hello World') AS uppercase;  -- 'HELLO WORLD'
@@ -243,6 +260,7 @@ RETURN p;
 Removes whitespace.
 
 **Signatures:**
+
 ```
 trim(string) -> STRING
 ltrim(string) -> STRING
@@ -251,6 +269,7 @@ trim(string, characters) -> STRING  -- Remove specific characters
 ```
 
 **Examples:**
+
 ```gql
 RETURN trim('  hello  ') AS trimmed;       -- 'hello'
 RETURN ltrim('  hello  ') AS left_trim;    -- 'hello  '
@@ -265,12 +284,14 @@ RETURN trim('xxhelloxx', 'x') AS custom;   -- 'hello'
 Extracts a portion of a string.
 
 **Signature:**
+
 ```
 substring(string, start) -> STRING
 substring(string, start, length) -> STRING
 ```
 
 **Examples:**
+
 ```gql
 RETURN substring('Hello World', 0, 5) AS sub;   -- 'Hello'
 RETURN substring('Hello World', 6) AS rest;     -- 'World'
@@ -280,6 +301,7 @@ RETURN substring('Hello', -2) AS last_two;      -- 'lo'
 ```
 
 **Notes:**
+
 - Start index is 0-based
 - Negative start counts from end
 
@@ -290,11 +312,13 @@ RETURN substring('Hello', -2) AS last_two;      -- 'lo'
 Replaces occurrences in a string.
 
 **Signature:**
+
 ```
 replace(string, search, replacement) -> STRING
 ```
 
 **Examples:**
+
 ```gql
 RETURN replace('hello world', 'world', 'there') AS replaced;
 -- 'hello there'
@@ -311,11 +335,13 @@ RETURN replace('hello-world', '-', '') AS no_dashes;
 Splits a string into a list.
 
 **Signature:**
+
 ```
 split(string, delimiter) -> LIST<STRING>
 ```
 
 **Examples:**
+
 ```gql
 RETURN split('a,b,c', ',') AS parts;           -- ['a', 'b', 'c']
 RETURN split('hello world', ' ') AS words;     -- ['hello', 'world']
@@ -328,11 +354,13 @@ RETURN split('hello world', ' ') AS words;     -- ['hello', 'world']
 Returns string length.
 
 **Signature:**
+
 ```
 length(string) -> INTEGER
 ```
 
 **Examples:**
+
 ```gql
 RETURN length('hello') AS len;  -- 5
 
@@ -347,11 +375,13 @@ RETURN length('') AS emoji_len;  -- 1 (grapheme count)
 Reverses a string.
 
 **Signature:**
+
 ```
 reverse(string) -> STRING
 ```
 
 **Examples:**
+
 ```gql
 RETURN reverse('hello') AS reversed;  -- 'olleh'
 ```
@@ -363,12 +393,14 @@ RETURN reverse('hello') AS reversed;  -- 'olleh'
 Extracts characters from start or end.
 
 **Signatures:**
+
 ```
 left(string, count) -> STRING
 right(string, count) -> STRING
 ```
 
 **Examples:**
+
 ```gql
 RETURN left('hello', 3) AS first_three;   -- 'hel'
 RETURN right('hello', 3) AS last_three;   -- 'llo'
@@ -381,12 +413,14 @@ RETURN right('hello', 3) AS last_three;   -- 'llo'
 Pads a string to a length.
 
 **Signatures:**
+
 ```
 lpad(string, length, pad_string) -> STRING
 rpad(string, length, pad_string) -> STRING
 ```
 
 **Examples:**
+
 ```gql
 RETURN lpad('42', 5, '0') AS padded;    -- '00042'
 RETURN rpad('hi', 5, '-') AS padded;    -- 'hi---'
@@ -399,11 +433,13 @@ RETURN rpad('hi', 5, '-') AS padded;    -- 'hi---'
 Converts any value to string.
 
 **Signature:**
+
 ```
 toString(value) -> STRING
 ```
 
 **Examples:**
+
 ```gql
 RETURN toString(42) AS str;              -- '42'
 RETURN toString(3.14) AS str;            -- '3.14'
@@ -420,11 +456,13 @@ RETURN toString(date('2026-01-28')) AS str;  -- '2026-01-28'
 Returns absolute value.
 
 **Signature:**
+
 ```
 abs(number) -> same type
 ```
 
 **Examples:**
+
 ```gql
 RETURN abs(-42) AS absolute;     -- 42
 RETURN abs(-3.14) AS absolute;   -- 3.14
@@ -437,12 +475,14 @@ RETURN abs(-3.14) AS absolute;   -- 3.14
 Rounds to integer.
 
 **Signatures:**
+
 ```
 ceil(number) -> INTEGER
 floor(number) -> INTEGER
 ```
 
 **Examples:**
+
 ```gql
 RETURN ceil(3.2) AS ceiling;     -- 4
 RETURN floor(3.8) AS floor_val;  -- 3
@@ -457,12 +497,14 @@ RETURN floor(-3.8) AS neg_floor; -- -4
 Rounds to specified precision.
 
 **Signature:**
+
 ```
 round(number) -> INTEGER
 round(number, precision) -> FLOAT
 ```
 
 **Examples:**
+
 ```gql
 RETURN round(3.5) AS rounded;           -- 4
 RETURN round(3.14159, 2) AS precise;    -- 3.14
@@ -476,11 +518,13 @@ RETURN round(123.456, -1) AS tens;      -- 120
 Returns sign of number.
 
 **Signature:**
+
 ```
 sign(number) -> INTEGER  -- Returns -1, 0, or 1
 ```
 
 **Examples:**
+
 ```gql
 RETURN sign(42) AS positive;    -- 1
 RETURN sign(-42) AS negative;   -- -1
@@ -494,12 +538,14 @@ RETURN sign(0) AS zero;         -- 0
 Square root and cube root.
 
 **Signatures:**
+
 ```
 sqrt(number) -> FLOAT
 cbrt(number) -> FLOAT
 ```
 
 **Examples:**
+
 ```gql
 RETURN sqrt(16) AS square_root;  -- 4.0
 RETURN cbrt(27) AS cube_root;    -- 3.0
@@ -512,6 +558,7 @@ RETURN cbrt(27) AS cube_root;    -- 3.0
 Exponential and logarithmic functions.
 
 **Signatures:**
+
 ```
 power(base, exponent) -> FLOAT
 exp(number) -> FLOAT              -- e^x
@@ -520,6 +567,7 @@ log10(number) -> FLOAT            -- Base-10 logarithm
 ```
 
 **Examples:**
+
 ```gql
 RETURN power(2, 10) AS two_to_ten;  -- 1024.0
 RETURN exp(1) AS e_value;           -- 2.718281828...
@@ -534,6 +582,7 @@ RETURN log10(100) AS log_100;       -- 2.0
 Trigonometric functions.
 
 **Signatures:**
+
 ```
 sin(radians) -> FLOAT
 cos(radians) -> FLOAT
@@ -545,6 +594,7 @@ atan2(y, x) -> FLOAT
 ```
 
 **Examples:**
+
 ```gql
 RETURN sin(0) AS sine_zero;        -- 0.0
 RETURN cos(0) AS cosine_zero;      -- 1.0
@@ -558,11 +608,13 @@ RETURN atan2(1, 1) AS angle;       -- 0.785398... (PI/4)
 Returns random number.
 
 **Signature:**
+
 ```
 rand() -> FLOAT  -- Returns 0.0 <= x < 1.0
 ```
 
 **Examples:**
+
 ```gql
 RETURN rand() AS random_value;
 
@@ -585,12 +637,14 @@ LIMIT 10;
 Returns list length.
 
 **Signature:**
+
 ```
 size(list) -> INTEGER
 length(list) -> INTEGER  -- Alias
 ```
 
 **Examples:**
+
 ```gql
 RETURN size([1, 2, 3, 4, 5]) AS count;  -- 5
 RETURN size([]) AS empty;               -- 0
@@ -603,6 +657,7 @@ RETURN size([]) AS empty;               -- 0
 Extracts list elements.
 
 **Signatures:**
+
 ```
 head(list) -> element type
 last(list) -> element type
@@ -610,6 +665,7 @@ tail(list) -> LIST  -- All except first
 ```
 
 **Examples:**
+
 ```gql
 RETURN head([1, 2, 3]) AS first;   -- 1
 RETURN last([1, 2, 3]) AS final;   -- 3
@@ -623,12 +679,14 @@ RETURN tail([1, 2, 3]) AS rest;    -- [2, 3]
 Creates a list of integers.
 
 **Signature:**
+
 ```
 range(start, end) -> LIST<INTEGER>
 range(start, end, step) -> LIST<INTEGER>
 ```
 
 **Examples:**
+
 ```gql
 RETURN range(1, 5) AS nums;          -- [1, 2, 3, 4, 5]
 RETURN range(0, 10, 2) AS evens;     -- [0, 2, 4, 6, 8, 10]
@@ -642,11 +700,13 @@ RETURN range(10, 1, -1) AS countdown; -- [10, 9, 8, ..., 1]
 Reverses a list.
 
 **Signature:**
+
 ```
 reverse(list) -> LIST
 ```
 
 **Examples:**
+
 ```gql
 RETURN reverse([1, 2, 3]) AS reversed;  -- [3, 2, 1]
 ```
@@ -658,11 +718,13 @@ RETURN reverse([1, 2, 3]) AS reversed;  -- [3, 2, 1]
 Reduces a list to a single value.
 
 **Signature:**
+
 ```
 reduce(accumulator = initial_value, element IN list | expression) -> result
 ```
 
 **Examples:**
+
 ```gql
 -- Sum of list
 RETURN reduce(total = 0, x IN [1, 2, 3, 4] | total + x) AS sum;  -- 10
@@ -685,12 +747,14 @@ RETURN reduce(cost = 0, r IN relationships(p) | cost + r.weight) AS total_cost;
 Filters a list.
 
 **Signature:**
+
 ```
 [element IN list WHERE condition]
 [element IN list WHERE condition | expression]
 ```
 
 **Examples:**
+
 ```gql
 -- Filter to even numbers
 RETURN [x IN [1, 2, 3, 4, 5, 6] WHERE x % 2 = 0] AS evens;  -- [2, 4, 6]
@@ -706,11 +770,13 @@ RETURN [x IN [1, 2, 3, 4] WHERE x > 2 | x * 2] AS doubled;  -- [6, 8]
 Concatenates lists.
 
 **Signature:**
+
 ```
 list1 + list2 -> LIST
 ```
 
 **Examples:**
+
 ```gql
 RETURN [1, 2] + [3, 4] AS combined;  -- [1, 2, 3, 4]
 ```
@@ -722,11 +788,13 @@ RETURN [1, 2] + [3, 4] AS combined;  -- [1, 2, 3, 4]
 Tests list membership.
 
 **Signature:**
+
 ```
 element IN list -> BOOLEAN
 ```
 
 **Examples:**
+
 ```gql
 RETURN 2 IN [1, 2, 3] AS contains;     -- true
 RETURN 5 IN [1, 2, 3] AS contains;     -- false
@@ -745,6 +813,7 @@ RETURN p.name;
 Returns map keys.
 
 **Signature:**
+
 ```
 keys(map) -> LIST<STRING>
 keys(node) -> LIST<STRING>
@@ -752,6 +821,7 @@ keys(relationship) -> LIST<STRING>
 ```
 
 **Examples:**
+
 ```gql
 RETURN keys({name: 'Alice', age: 30}) AS k;  -- ['name', 'age']
 
@@ -766,11 +836,13 @@ RETURN keys(n) AS property_names;
 Returns map values.
 
 **Signature:**
+
 ```
 values(map) -> LIST
 ```
 
 **Examples:**
+
 ```gql
 RETURN values({a: 1, b: 2, c: 3}) AS vals;  -- [1, 2, 3]
 ```
@@ -782,12 +854,14 @@ RETURN values({a: 1, b: 2, c: 3}) AS vals;  -- [1, 2, 3]
 Returns properties as map.
 
 **Signature:**
+
 ```
 properties(node) -> MAP
 properties(relationship) -> MAP
 ```
 
 **Examples:**
+
 ```gql
 MATCH (p:Person {name: 'Alice'})
 RETURN properties(p) AS all_props;
@@ -803,6 +877,7 @@ RETURN properties(p) AS all_props;
 Constructs temporal values.
 
 **Signatures:**
+
 ```
 date() -> DATE                        -- Current date
 date(string) -> DATE                  -- Parse ISO string
@@ -816,6 +891,7 @@ timestamp(string) -> TIMESTAMP
 ```
 
 **Examples:**
+
 ```gql
 RETURN date() AS today;
 RETURN date('2026-01-28') AS specific;
@@ -832,12 +908,14 @@ RETURN timestamp('2026-01-28T14:30:00Z') AS specific_time;
 Constructs duration values.
 
 **Signature:**
+
 ```
 duration(string) -> DURATION           -- ISO 8601 format
 duration({days, hours, ...}) -> DURATION
 ```
 
 **Examples:**
+
 ```gql
 RETURN duration('P7D') AS one_week;
 RETURN duration('PT2H30M') AS two_half_hours;
@@ -849,6 +927,7 @@ RETURN duration({days: 7, hours: 12}) AS custom;
 ### Temporal Arithmetic
 
 **Operations:**
+
 ```gql
 -- Add duration to date
 RETURN date('2026-01-28') + duration('P7D') AS next_week;
@@ -867,6 +946,7 @@ RETURN e;
 ### Temporal Component Extraction
 
 **Functions:**
+
 ```gql
 RETURN date('2026-01-28').year AS year;        -- 2026
 RETURN date('2026-01-28').month AS month;      -- 1
@@ -888,11 +968,13 @@ RETURN timestamp().second AS second;
 Returns relationship type.
 
 **Signature:**
+
 ```
 type(relationship) -> STRING
 ```
 
 **Examples:**
+
 ```gql
 MATCH (a)-[r]->(b)
 RETURN type(r) AS relationship_type;
@@ -905,11 +987,13 @@ RETURN type(r) AS relationship_type;
 Returns node labels.
 
 **Signature:**
+
 ```
 labels(node) -> LIST<STRING>
 ```
 
 **Examples:**
+
 ```gql
 MATCH (n)
 RETURN labels(n) AS node_labels;
@@ -927,12 +1011,14 @@ RETURN n;
 Returns internal ID.
 
 **Signature:**
+
 ```
 id(node) -> INTEGER
 id(relationship) -> INTEGER
 ```
 
 **Examples:**
+
 ```gql
 MATCH (n:Person)
 RETURN id(n) AS internal_id, n.name;
@@ -973,11 +1059,13 @@ toString(true)         -- 'true'
 Returns all nodes in a path.
 
 **Signature:**
+
 ```
 nodes(path) -> LIST<NODE>
 ```
 
 **Examples:**
+
 ```gql
 MATCH p = (a)-[*]->(b)
 RETURN nodes(p) AS path_nodes;
@@ -994,11 +1082,13 @@ RETURN [n IN nodes(p) | n.name] AS names;
 Returns all relationships in a path.
 
 **Signature:**
+
 ```
 relationships(path) -> LIST<RELATIONSHIP>
 ```
 
 **Examples:**
+
 ```gql
 MATCH p = (a)-[*]->(b)
 RETURN relationships(p) AS path_rels;
@@ -1015,11 +1105,13 @@ RETURN [r IN relationships(p) | type(r)] AS types;
 Returns path length (number of relationships).
 
 **Signature:**
+
 ```
 length(path) -> INTEGER
 ```
 
 **Examples:**
+
 ```gql
 MATCH p = shortestPath((a)-[*]-(b))
 RETURN length(p) AS hops;
@@ -1034,11 +1126,13 @@ RETURN length(p) AS hops;
 Calculates distance between two points.
 
 **Signature:**
+
 ```
 geo_distance(point1, point2) -> FLOAT  -- Returns meters
 ```
 
 **Examples:**
+
 ```gql
 RETURN geo_distance(latlon(40.7128, -74.0060), latlon(34.0522, -118.2437)) AS meters;
 
@@ -1055,11 +1149,13 @@ LIMIT 5;
 Tests if point is within bounding box.
 
 **Signature:**
+
 ```
 geo_within_box(point, southwest, northeast) -> BOOLEAN
 ```
 
 **Examples:**
+
 ```gql
 MATCH (s:Store)
 WHERE geo_within_box(s.location, latlon(40.70, -74.05), latlon(40.75, -73.95))
@@ -1073,6 +1169,7 @@ RETURN s.name;
 Tests if point is within polygon.
 
 **Signature:**
+
 ```
 geo_within_polygon(point, polygon) -> BOOLEAN
 ```
@@ -1086,11 +1183,13 @@ geo_within_polygon(point, polygon) -> BOOLEAN
 Euclidean distance between vectors.
 
 **Signature:**
+
 ```
 vector_distance_l2(vector1, vector2) -> FLOAT
 ```
 
 **Examples:**
+
 ```gql
 MATCH (d:Document)
 RETURN d.title, vector_distance_l2(d.embedding, $query_vector) AS distance
@@ -1105,6 +1204,7 @@ LIMIT 10;
 Cosine distance between vectors.
 
 **Signature:**
+
 ```
 vector_distance_cosine(vector1, vector2) -> FLOAT
 ```
@@ -1116,6 +1216,7 @@ vector_distance_cosine(vector1, vector2) -> FLOAT
 Dot product (inner product) of vectors.
 
 **Signature:**
+
 ```
 vector_distance_dot(vector1, vector2) -> FLOAT
 ```
@@ -1127,6 +1228,7 @@ vector_distance_dot(vector1, vector2) -> FLOAT
 Returns vector dimensionality.
 
 **Signature:**
+
 ```
 vector_dimension(vector) -> INTEGER
 ```
@@ -1140,12 +1242,14 @@ vector_dimension(vector) -> INTEGER
 Tests if property or pattern exists.
 
 **Signature:**
+
 ```
 exists(property) -> BOOLEAN
 EXISTS { pattern } -> BOOLEAN
 ```
 
 **Examples:**
+
 ```gql
 -- Property exists
 MATCH (p:Person)
@@ -1165,6 +1269,7 @@ RETURN p.name AS managers;
 List predicates.
 
 **Signatures:**
+
 ```
 all(x IN list WHERE predicate) -> BOOLEAN
 any(x IN list WHERE predicate) -> BOOLEAN
@@ -1173,6 +1278,7 @@ single(x IN list WHERE predicate) -> BOOLEAN
 ```
 
 **Examples:**
+
 ```gql
 -- All elements satisfy
 RETURN all(x IN [2, 4, 6] WHERE x % 2 = 0) AS all_even;  -- true
@@ -1194,11 +1300,13 @@ RETURN single(x IN [1, 2, 3] WHERE x > 2) AS exactly_one;  -- true
 Returns first non-null value.
 
 **Signature:**
+
 ```
 coalesce(value1, value2, ...) -> first non-null
 ```
 
 **Examples:**
+
 ```gql
 RETURN coalesce(null, 'default') AS result;  -- 'default'
 RETURN coalesce(null, null, 42) AS result;   -- 42
@@ -1214,6 +1322,7 @@ RETURN coalesce(p.nickname, p.name) AS display_name;
 Conditional logic.
 
 **Syntax:**
+
 ```gql
 CASE expression
   WHEN value1 THEN result1
@@ -1229,6 +1338,7 @@ END
 ```
 
 **Examples:**
+
 ```gql
 -- Simple CASE
 MATCH (p:Person)
@@ -1261,5 +1371,5 @@ RETURN p.name,
 ---
 
 **Last Updated:** January 28, 2026
-**Geode Version:** v0.1.3+
+**Geode Version:** **GEODE_TAG**+
 **Function Count:** 80+ built-in functions

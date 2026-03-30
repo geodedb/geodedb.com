@@ -375,7 +375,7 @@ Line-delimited format enables streaming: clients process rows as they arrive rat
 
 ```bash
 # Pull official image
-docker pull codepros/geode:v0.1.3
+docker pull codepros/geode:__GEODE_TAG__
 
 # Run with persistent storage
 docker run -d \
@@ -383,7 +383,7 @@ docker run -d \
   -p 3141:3141 \
   -v geode-data:/var/lib/geode \
   -e GEODE_LOG_LEVEL=debug \
-  codepros/geode:v0.1.3
+  codepros/geode:__GEODE_TAG__
 
 # Connect and develop
 docker exec -it geode-dev geode shell
@@ -435,7 +435,7 @@ spec:
     spec:
       containers:
       - name: geode
-        image: codepros/geode:v0.1.3
+        image: codepros/geode:__GEODE_TAG__
         ports:
         - containerPort: 3141
           name: quic

@@ -63,6 +63,7 @@ PROFILE MATCH (p:Person) RETURN p.name;
 ```
 
 **Output:**
+
 ```
 | metric              | value |
 |---------------------|-------|
@@ -79,6 +80,7 @@ RETURN count(p) AS person_count;
 ```
 
 **Output:**
+
 ```
 | metric              | value |
 |---------------------|-------|
@@ -96,6 +98,7 @@ RETURN p.name, c.name;
 ```
 
 **Output:**
+
 ```
 | metric              | value |
 |---------------------|-------|
@@ -117,15 +120,18 @@ RETURN p.name, c.name;
 ### Understanding Metrics
 
 **rows_returned**
+
 - Total rows in the result set
 - For aggregations, typically 1 or few rows
 - High values may indicate missing LIMIT
 
 **columns**
+
 - Number of columns in RETURN clause
 - Corresponds to query structure
 
 **execution_time_ms**
+
 - Wall-clock time for query execution
 - Includes parsing, planning, and execution
 - Compare across query variations
@@ -137,6 +143,7 @@ RETURN p.name, c.name;
 Test different query formulations:
 
 **Query A: Property Filter**
+
 ```gql
 PROFILE MATCH (p:Person)
 WHERE p.status = 'active'
@@ -151,6 +158,7 @@ RETURN count(p);
 ```
 
 **Query B: Pattern Filter**
+
 ```gql
 PROFILE MATCH (p:Person {status: 'active'})
 RETURN count(p);
@@ -168,6 +176,7 @@ RETURN count(p);
 ### Before/After Optimization
 
 **Before Index:**
+
 ```gql
 PROFILE MATCH (p:Person)
 WHERE p.email = 'alice@example.com'
@@ -182,6 +191,7 @@ RETURN p;
 ```
 
 **After Creating Index:**
+
 ```gql
 CREATE INDEX person_email ON Person(email);
 
@@ -379,12 +389,14 @@ DETACH DELETE p;
 ### Safe Profiling
 
 **DO:**
+
 - Profile on test/staging environments first
 - Use LIMIT when profiling SELECT queries
 - Run multiple times for consistent measurements
 - Profile during representative load conditions
 
 **DON'T:**
+
 - Profile destructive queries on production without caution
 - Compare profiles from different data sizes
 - Ignore cold-start effects (first run may be slower)
@@ -464,11 +476,13 @@ PROFILE MATCH (p:NonExistent) RETURN p;
 ```
 
 **Causes:**
+
 - No matching data
 - Incorrect label/property names
 - WHERE clause too restrictive
 
 **Diagnosis:**
+
 ```gql
 -- Check if label exists
 MATCH (n) RETURN DISTINCT labels(n);
@@ -491,11 +505,13 @@ PROFILE MATCH (a)-[*]->(b) RETURN count(*);
 ```
 
 **Causes:**
+
 - Unbounded variable-length path
 - Large result set
 - Missing indexes
 
 **Solution:** Add bounds:
+
 ```gql
 PROFILE MATCH (a)-[*1..5]->(b) RETURN count(*);
 ```
@@ -556,5 +572,5 @@ Planned improvements to PROFILE:
 ---
 
 **Last Updated:** January 28, 2026
-**Geode Version:** v0.1.3+
+**Geode Version:** **GEODE_TAG**+
 **GQL Compliance:** ISO/IEC 39075:2024

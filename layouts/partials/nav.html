@@ -305,7 +305,8 @@
                 {{/* Placeholder for consistent layout when no translations */}}
                 <div class="mobile-util-btn mobile-util-placeholder" aria-hidden="true">
                   <wa-icon name="code" aria-hidden="true"></wa-icon>
-                  <span>v{{ site.Data.version.display }}</span>
+                  {{ $version := partialCached "geode/version-data.html" site "geode-version-data" | transform.Unmarshal }}
+                  <span>{{ $version.tag }}</span>
                 </div>
               {{ end }}
             </div>

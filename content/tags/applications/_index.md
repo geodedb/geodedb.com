@@ -30,6 +30,7 @@ Building applications with Geode enables developers to leverage graph database c
 Structure applications with clear separation of concerns.
 
 **Architecture Layers:**
+
 ```
 Presentation Layer (API, UI)
         ↓
@@ -41,6 +42,7 @@ Geode Graph Database
 ```
 
 **Example (Go):**
+
 ```go
 // Data Access Layer
 type UserRepository struct {
@@ -103,6 +105,7 @@ func (h *UserHandler) GetUserNetwork(w http.ResponseWriter, r *http.Request) {
 Use Geode as a specialized datastore within microservices.
 
 **Service Boundaries:**
+
 ```
 User Service → Geode (User profiles, relationships)
 Product Service → Geode (Product catalog, categories)
@@ -111,6 +114,7 @@ Recommendation Service → Geode (Collaborative filtering)
 ```
 
 **Inter-Service Communication:**
+
 ```python
 # Recommendation Service
 class RecommendationService:
@@ -145,6 +149,7 @@ class RecommendationService:
 Separate read and write models for optimal performance.
 
 **Command (Write) Model:**
+
 ```rust
 use geode_client::{Client, Value};
 use std::collections::HashMap;
@@ -204,6 +209,7 @@ impl WriteModel {
 ```
 
 **Query (Read) Model:**
+
 ```rust
 use geode_client::{Client, Value};
 use std::collections::HashMap;
@@ -262,6 +268,7 @@ impl ReadModel {
 Design REST APIs leveraging graph relationships.
 
 **Resource Endpoints:**
+
 ```
 GET    /users/:id                    # Get user
 POST   /users                        # Create user
@@ -272,6 +279,7 @@ GET    /users/:id/recommendations    # Get recommendations
 ```
 
 **Implementation (Python/FastAPI):**
+
 ```python
 from fastapi import FastAPI, HTTPException
 from geode_client import Client
@@ -353,6 +361,7 @@ async def add_friend(user_id: str, friend_id: str):
 GraphQL naturally maps to graph databases.
 
 **Schema Definition:**
+
 ```graphql
 type User {
   id: ID!
@@ -385,6 +394,7 @@ type Mutation {
 ```
 
 **Resolver Implementation:**
+
 ```python
 from ariadne import QueryType, MutationType, ObjectType
 
@@ -473,6 +483,7 @@ async def resolve_add_friend(_, info, userId, friendId):
 Model graph schema aligned with business domains.
 
 **Aggregate Boundaries:**
+
 ```gql
 -- User Aggregate
 (:User {id, name, email, created_at})
@@ -495,6 +506,7 @@ Model graph schema aligned with business domains.
 Implement schema validation in application layer.
 
 **Example (Rust with serde):**
+
 ```rust
 use geode_client::{Client, Value};
 use serde::{Deserialize, Serialize};
@@ -554,6 +566,7 @@ pub async fn create_user(client: &Client, user: NewUser) -> Result<UserId> {
 Mock Geode client for unit tests.
 
 **Example (Go):**
+
 ```go
 type MockGeodeClient struct {
     QueryFunc func(query string, params ...interface{}) (*sql.Rows, error)
@@ -587,6 +600,7 @@ func TestUserService_GetUserNetwork(t *testing.T) {
 Test against real Geode instance.
 
 **Example (Python with pytest):**
+
 ```python
 import pytest
 from geode_client import Client
@@ -651,6 +665,7 @@ async def test_friend_recommendations(geode_client):
 Implement caching for frequently accessed data.
 
 **Example (Python with Redis):**
+
 ```python
 import redis
 import json
@@ -698,6 +713,7 @@ async def get_user_network(user_id):
 Batch related operations to reduce roundtrips.
 
 **Example:**
+
 ```python
 async def create_users_batch(users):
     async with geode.connection() as conn:
@@ -718,12 +734,13 @@ async def create_users_batch(users):
 ### Docker Deployment
 
 **docker-compose.yml:**
+
 ```yaml
 version: '3.8'
 
 services:
   geode:
-    image: geodedb/geode:0.1.3
+    image: geodedb/geode:__GEODE_VERSION__
     ports:
       - "3141:3141"
     volumes:
@@ -749,6 +766,7 @@ volumes:
 Implement health checks for monitoring.
 
 **Example:**
+
 ```python
 @app.get("/health")
 async def health_check():

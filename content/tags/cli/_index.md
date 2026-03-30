@@ -92,7 +92,7 @@ geode shell --database mydb
 Shell session example:
 
 ```text
-Geode Shell v0.1.3
+Geode Shell __GEODE_TAG__
 Connected to localhost:3141
 Database: graph
 Type \help for help, \quit to exit

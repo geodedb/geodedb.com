@@ -94,7 +94,7 @@ Check that Geode is running:
 geode shell
 
 # Should display:
-# Geode Shell v0.1.3
+# Geode Shell __GEODE_TAG__
 # Connected to localhost:3141
 # Type 'help' for available commands
 ```
@@ -580,6 +580,7 @@ LIMIT 10;
 ```
 
 Output shows:
+
 - Execution steps (scans, lookups, filters, sorts)
 - Rows processed at each step
 - Time spent in each operation
@@ -745,31 +746,34 @@ result, _ = await client.query(
 ### Scaling from Development to Production
 
 **Development** (single instance):
+
 ```bash
 geode serve --data /tmp/geode-dev
 ```
 
 **Staging** (HA setup):
+
 ```yaml
 # docker-compose.yml
 services:
   geode-1:
-    image: codepros/geode:v0.1.3
+    image: codepros/geode:__GEODE_TAG__
     volumes:
       - geode-data-1:/var/lib/geode
 
   geode-2:
-    image: codepros/geode:v0.1.3
+    image: codepros/geode:__GEODE_TAG__
     volumes:
       - geode-data-2:/var/lib/geode
 
   geode-3:
-    image: codepros/geode:v0.1.3
+    image: codepros/geode:__GEODE_TAG__
     volumes:
       - geode-data-3:/var/lib/geode
 ```
 
 **Production** (cloud-native):
+
 - Deploy to Kubernetes with StatefulSets
 - Configure persistent volumes for data
 - Set up automated backups to S3/GCS

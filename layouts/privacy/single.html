@@ -23,7 +23,7 @@
   <div class="{{ $container }} pt-3 pb-4 docs-main">
     <article class="docs-content">
       <div class="article-body">
-        {{ .Content }}
+        {{ partial "geode/render-content.html" (dict "content" .Content) }}
       </div>
     </article>
   </div>

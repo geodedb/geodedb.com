@@ -65,6 +65,7 @@ EXPLAIN MATCH (p:Person) RETURN p.name;
 ```
 
 **Output:**
+
 ```
 | plan              |
 |-------------------|
@@ -76,6 +77,7 @@ EXPLAIN MATCH (p:Person) RETURN p.name;
 ```
 
 **Reading the Plan:**
+
 - `NodeScan`: Scans nodes with the Person label
 - `Project`: Selects the `name` property for output
 
@@ -88,6 +90,7 @@ RETURN p.name, p.age;
 ```
 
 **Output:**
+
 ```
 | plan              |
 |-------------------|
@@ -100,6 +103,7 @@ RETURN p.name, p.age;
 ```
 
 **New Operator:**
+
 - `Filter`: Applies the `WHERE p.age > 30` predicate
 
 ### Relationship Pattern
@@ -110,6 +114,7 @@ RETURN a.name, b.name;
 ```
 
 **Output:**
+
 ```
 | plan                    |
 |-------------------------|
@@ -122,6 +127,7 @@ RETURN a.name, b.name;
 ```
 
 **New Operator:**
+
 - `ExpandRelationships`: Traverses KNOWS relationships
 
 ## Execution Plan Operators
@@ -187,6 +193,7 @@ LIMIT 10;
 ```
 
 **Output:**
+
 ```
 | plan                    |
 |-------------------------|
@@ -210,6 +217,7 @@ RETURN path;
 ```
 
 **Output:**
+
 ```
 | plan                    |
 |-------------------------|
@@ -231,6 +239,7 @@ EXPLAIN CREATE (p:Person {name: 'Bob', age: 30})
 ```
 
 **Output:**
+
 ```
 | plan                    |
 |-------------------------|
@@ -249,6 +258,7 @@ DETACH DELETE p;
 ```
 
 **Output:**
+
 ```
 | plan                    |
 |-------------------------|
@@ -279,16 +289,19 @@ Plans execute from **innermost to outermost**:
 ### Identifying Issues
 
 **Issue: Full Node Scan**
+
 ```
 |   NodeScan              |  <- No label = scans ALL nodes
 ```
 
 **Solution:** Add label to pattern:
+
 ```gql
 MATCH (p:Person)  -- Scans only Person nodes
 ```
 
 **Issue: Late Filtering**
+
 ```
 |   NodeScan              |
 |   ExpandRelationships   |  <- Expands before filter
@@ -296,6 +309,7 @@ MATCH (p:Person)  -- Scans only Person nodes
 ```
 
 **Solution:** Move filter to pattern or earlier WHERE:
+
 ```gql
 MATCH (p:Person {status: 'active'})-[:KNOWS]->(f)
 -- OR use WITH to filter before expanding
@@ -310,6 +324,7 @@ MATCH (p)-[:KNOWS]->(f)
 Compare different query formulations:
 
 **Query A:**
+
 ```gql
 EXPLAIN MATCH (p:Person), (c:Company)
 WHERE p.company_id = c.id
@@ -317,6 +332,7 @@ RETURN p.name, c.name;
 ```
 
 **Query B:**
+
 ```gql
 EXPLAIN MATCH (p:Person)-[:WORKS_FOR]->(c:Company)
 RETURN p.name, c.name;
@@ -348,6 +364,7 @@ Check EXPLAIN output for:
 ### Example Optimization
 
 **Before:**
+
 ```gql
 EXPLAIN MATCH (n)
 WHERE n:Person AND n.email = 'alice@example.com'
@@ -365,6 +382,7 @@ RETURN n;
 ```
 
 **After:**
+
 ```gql
 -- Create index
 CREATE INDEX person_email ON Person(email);
@@ -393,6 +411,7 @@ RETURN n;
 ### Future Enhancements
 
 Planned improvements include:
+
 - Cost-based plan display
 - Row count estimates
 - Index usage details
@@ -404,18 +423,21 @@ Planned improvements include:
 ### When to Use EXPLAIN
 
 **DO use EXPLAIN:**
+
 - Before deploying new queries
 - When queries are slow
 - To verify index usage
 - When comparing query alternatives
 
 **DON'T rely only on EXPLAIN:**
+
 - Use PROFILE for actual performance data
 - Real execution may differ from plan
 
 ### Production Safety
 
 EXPLAIN is safe for production:
+
 - No data access
 - No locks acquired
 - No side effects
@@ -492,5 +514,5 @@ SET p.archived = true;
 ---
 
 **Last Updated:** January 28, 2026
-**Geode Version:** v0.1.3+
+**Geode Version:** **GEODE_TAG**+
 **GQL Compliance:** ISO/IEC 39075:2024

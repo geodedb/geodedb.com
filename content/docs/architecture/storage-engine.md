@@ -45,6 +45,29 @@ The storage engine implements a page-based architecture with memory-mapped I/O f
 └─────────────────────────────────────────────────────────┘
 ```
 
+## March 2026 Storage Update
+
+The current Geode storage story now spans three distinct stages:
+
+1. **Monolithic persistence** in older `v0.1.x` builds (`graph_store.dat`)
+2. **Per-graph storage isolation** introduced later in `v0.1.x`
+3. **graph-storage-backed persistence** in `v0.2.x`
+
+On current `main`, Geode has removed the legacy monolithic path entirely and relies on engine-backed persistence only.
+
+### What Changed
+
+- external graph/node identity now uses persisted UUIDv7 mappings
+- graph names persist alongside graph UUIDs so restarts reopen the correct directories
+- checkpoints are synchronous in the graph-storage path
+- free-space bitmaps rebuild on open to make pre-existing pages visible after restart
+- adapter label dictionaries persist with checkpoints
+- pager-level TDE page encryption is wired into graph-storage on current `main`
+
+### Release-Line Note
+
+The docs site tracks the latest GitLab tag as `__GEODE_TAG__`. If you are validating the newest storage behavior, distinguish between that tagged build and any newer post-tag fixes still moving through `main`.
+
 ## Page Management
 
 ### Page Structure

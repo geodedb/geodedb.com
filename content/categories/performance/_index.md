@@ -100,6 +100,7 @@ Performance characteristics of distributed deployments including sharding, repli
 ### Index-Driven Optimization
 
 **Create Strategic Indexes**:
+
 ```gql
 -- Node property index
 CREATE INDEX person_email ON Person(email)
@@ -119,12 +120,14 @@ CREATE VECTOR INDEX product_embedding ON Product(embedding)
 ```
 
 **Index Selection**: Geode's optimizer chooses indexes based on:
+
 - Selectivity (fraction of data matched)
 - Cardinality estimates (rows expected)
 - Index type (hash, B+tree, HNSW, BM25)
 - Query pattern (equality, range, text, vector)
 
 **Verify Index Usage**:
+
 ```gql
 EXPLAIN
 MATCH (p:Person {email: $email})
@@ -136,6 +139,7 @@ RETURN p
 ### Query Pattern Optimization
 
 **Anchor Patterns**: Start with most selective predicates:
+
 ```gql
 -- Good: Anchor with unique index
 MATCH (p:Person {id: $userId})-[:KNOWS]->(friend)
@@ -148,6 +152,7 @@ RETURN friend
 ```
 
 **Filter Pushdown**: Apply filters early:
+
 ```gql
 -- Good: Filter before traversal
 MATCH (p:Person)
@@ -162,6 +167,7 @@ RETURN friend
 ```
 
 **Limit Results**: Bound open-ended queries:
+
 ```gql
 -- Always use LIMIT for exploratory queries
 MATCH (p:Person)-[:KNOWS*1..5]->(friend)
@@ -170,6 +176,7 @@ LIMIT 100
 ```
 
 **Avoid Cartesian Products**: Connect all patterns:
+
 ```gql
 -- Good: Connected pattern
 MATCH (p:Person)-[:KNOWS]->(f:Person),
@@ -184,6 +191,7 @@ RETURN p, c
 ### Aggregation Optimization
 
 **Pre-aggregate with Materialized Views**:
+
 ```gql
 -- Create materialized view for expensive aggregation
 CREATE MATERIALIZED VIEW company_stats AS
@@ -198,6 +206,7 @@ RETURN c.name, c.employees
 ```
 
 **Optimize GROUP BY**: Let optimizer choose aggregation strategy:
+
 ```gql
 -- Optimizer chooses hash or sort aggregation
 MATCH (p:Person)-[:WORKS_AT]->(c:Company)
@@ -208,6 +217,7 @@ ORDER BY employees DESC
 ### Subquery Optimization
 
 **Use EXISTS for filtering**:
+
 ```gql
 -- Good: EXISTS subquery (short-circuits)
 MATCH (p:Person)
@@ -229,6 +239,7 @@ RETURN p
 ### Configuration Tuning
 
 **Memory Settings**:
+
 ```toml
 [memory]
 buffer_pool_size = "8GB"          # Buffer pool for data pages
@@ -237,6 +248,7 @@ index_cache_size = "4GB"          # Index page cache
 ```
 
 **Query Engine**:
+
 ```toml
 [query]
 max_query_time = "30s"            # Query timeout
@@ -246,6 +258,7 @@ enable_query_cache = true         # Cache query results
 ```
 
 **Storage**:
+
 ```toml
 [storage]
 wal_buffer_size = "64MB"          # WAL buffer
@@ -254,6 +267,7 @@ compression = "lz4"               # Data compression
 ```
 
 **Network**:
+
 ```toml
 [network]
 max_connections = 1000            # Connection pool size
@@ -274,24 +288,28 @@ keepalive_interval = "60s"        # Keepalive interval
 ### Monitoring and Metrics
 
 **Query Metrics**:
+
 - Execution time (p50, p95, p99)
 - Throughput (queries per second)
 - Queue depth (waiting queries)
 - Error rate
 
 **System Metrics**:
+
 - CPU utilization
 - Memory usage and cache hit rates
 - Disk I/O (read/write IOPS, throughput)
 - Network bandwidth
 
 **Database Metrics**:
+
 - Transaction rate
 - Lock contention
 - WAL write rate
 - Checkpoint duration
 
 **Alerting**: Set alerts for:
+
 - Query latency p99 > threshold
 - Cache hit rate < 95%
 - Disk queue depth > threshold
@@ -311,6 +329,7 @@ RETURN f.name, f.email
 ```
 
 **Key information**:
+
 - **Operators**: Scan, Seek, Join, Filter, Aggregate
 - **Index usage**: Which indexes are used
 - **Cardinality estimates**: Expected rows at each stage
@@ -318,6 +337,7 @@ RETURN f.name, f.email
 - **Filter placement**: Where predicates are evaluated
 
 **Reading plans**:
+
 - Top-down execution flow
 - Indentation shows operator nesting
 - Row estimates guide optimization
@@ -335,6 +355,7 @@ RETURN f.name, f.email
 ```
 
 **Metrics provided**:
+
 - Execution time per operator
 - Actual rows processed (vs estimated)
 - Cache hit rates
@@ -342,6 +363,7 @@ RETURN f.name, f.email
 - I/O operations
 
 **Optimization workflow**:
+
 1. PROFILE query to find bottleneck
 2. Check index usage in slow operators
 3. Create or modify indexes
@@ -359,6 +381,7 @@ slow_query_threshold = "1s"
 ```
 
 Analyze logs for patterns:
+
 - Common slow queries
 - Missing indexes
 - Cartesian products
@@ -405,6 +428,7 @@ Analyze logs for patterns:
 **Characteristics**: High concurrency, low latency, point queries
 
 **Optimization**:
+
 - Index all lookup keys
 - Use prepared statements
 - Enable connection pooling
@@ -412,6 +436,7 @@ Analyze logs for patterns:
 - Monitor lock contention
 
 **Example query**:
+
 ```gql
 -- User profile lookup
 MATCH (u:User {id: $userId})
@@ -423,6 +448,7 @@ RETURN u.name, u.email, u.settings
 **Characteristics**: Complex queries, large scans, aggregations
 
 **Optimization**:
+
 - Create materialized views
 - Use columnar storage for analytics
 - Batch large operations
@@ -430,6 +456,7 @@ RETURN u.name, u.email, u.settings
 - Enable query parallelization
 
 **Example query**:
+
 ```gql
 -- Daily active users by region
 MATCH (u:User)-[:LOGGED_IN]->(event:LoginEvent)
@@ -444,6 +471,7 @@ ORDER BY users DESC
 **Characteristics**: Combination of OLTP and OLAP
 
 **Optimization**:
+
 - Separate read replicas for analytics
 - Use materialized views to offload aggregations
 - Prioritize OLTP queries
@@ -455,6 +483,7 @@ ORDER BY users DESC
 ### Vertical Scaling
 
 **Increase resources on single node**:
+
 - More CPU cores (parallel query execution)
 - More RAM (larger caches, less I/O)
 - Faster storage (NVME, more IOPS)
@@ -465,6 +494,7 @@ ORDER BY users DESC
 ### Horizontal Scaling
 
 **Distribute across nodes**:
+
 - **Sharding**: Partition graph by node/edge ownership
 - **Replication**: Read replicas for read scaling
 - **Caching**: Application-level caching layer
@@ -474,6 +504,7 @@ ORDER BY users DESC
 ### Hybrid Scaling
 
 **Combine vertical and horizontal**:
+
 - Shard data across powerful nodes
 - Replicate hot shards
 - Cache at application layer
@@ -520,6 +551,7 @@ ORDER BY users DESC
 **Symptoms**: Consistently high p95/p99 latency
 
 **Causes**:
+
 - Missing indexes (full scans)
 - Lock contention (high concurrency)
 - Large result sets (missing LIMIT)
@@ -527,6 +559,7 @@ ORDER BY users DESC
 - Slow storage (I/O bottleneck)
 
 **Solutions**:
+
 - Create indexes
 - Reduce transaction scope
 - Add LIMIT clauses
@@ -538,6 +571,7 @@ ORDER BY users DESC
 **Symptoms**: Low queries per second despite low latency
 
 **Causes**:
+
 - Insufficient concurrency
 - Connection pool too small
 - CPU bottleneck
@@ -545,6 +579,7 @@ ORDER BY users DESC
 - Network saturation
 
 **Solutions**:
+
 - Increase connection pool
 - Add CPU cores
 - Reduce lock scope
@@ -616,4 +651,4 @@ ORDER BY users DESC
 
 **Scalability**: Distributed deployment with up to 32 shards
 **Last Updated**: January 2026
-**Geode Version**: v0.1.3+
+**Geode Version**: **GEODE_TAG**+

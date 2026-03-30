@@ -31,6 +31,7 @@
 {{- end -}}
 
 {{- $schemaData := dict -}}
+{{- $schemaDescription := partial "geode/render-text.html" (dict "content" ((.Description | default .Summary | default "") | plainify)) | truncate 155 -}}
 
 {{/* Base Organization Schema */}}
 {{- $organization := dict
@@ -86,7 +87,7 @@
   {{- $article := dict
     "@type" (cond (eq .Type "blog") "BlogPosting" "Article")
     "headline" .Title
-    "description" (.Description | default .Summary | plainify | truncate 155)
+    "description" $schemaDescription
     "url" .Permalink
     "author" $author
     "publisher" $organization
@@ -150,7 +151,7 @@
   {{- $collectionPage := dict
     "@type" "CollectionPage"
     "name" .Title
-    "description" (.Description | default .Summary | plainify | truncate 155)
+    "description" $schemaDescription
     "url" .Permalink
     "inLanguage" .Language.Lang
     "isPartOf" $website
@@ -165,7 +166,7 @@
   {{- $webPage := dict
     "@type" "WebPage"
     "name" .Title
-    "description" (.Description | default .Summary | plainify | truncate 155)
+    "description" $schemaDescription
     "url" .Permalink
     "inLanguage" .Language.Lang
     "isPartOf" $website

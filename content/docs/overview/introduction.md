@@ -104,7 +104,7 @@ Execute queries across federated graphs and sharded datasets:
 
 ## Feature Highlights
 
-### If you care about...
+### If you care about
 
 **Vector similarity search** → Geode supports HNSW vector indexing with SIMD-accelerated distance calculations.
 
@@ -150,7 +150,7 @@ Geode may not be the best fit for:
 
 ## Production Readiness
 
-**Current Status**: Production Ready (v0.1.3+)
+**Current Status**: Stable release line (**GEODE_TAG**)
 
 - **Test Coverage**: 97.4% pass rate (1,644/1,688 integration tests)
 - **Unit Tests**: 100% pass rate (393/393 tests)
@@ -158,6 +158,7 @@ Geode may not be the best fit for:
 - **Governance**: 1,735 CANARY markers tracking requirements with evidence
 
 **Architecture**:
+
 - Memory-mapped I/O for efficient storage access
 - SIMD-accelerated vector distance calculations
 - Cost-based query optimization with statistics

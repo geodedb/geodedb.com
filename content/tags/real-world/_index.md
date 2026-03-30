@@ -28,30 +28,32 @@ Geode is designed for production graph applications across industries, from soci
 ### High-Availability Web Applications
 
 **Architecture:**
+
 - Load-balanced Geode cluster (3+ nodes)
 - Read replicas for query distribution
 - Primary node for write operations
 - Automatic failover with health checks
 
 **Implementation:**
+
 ```yaml
 # Docker Compose HA setup
 version: '3.8'
 services:
   geode-primary:
-    image: geodedb/geode:0.1.3
+    image: geodedb/geode:__GEODE_VERSION__
     command: serve --role primary --listen 0.0.0.0:3141
     volumes:
       - geode-primary-data:/data
 
   geode-replica-1:
-    image: geodedb/geode:0.1.3
+    image: geodedb/geode:__GEODE_VERSION__
     command: serve --role replica --primary geode-primary:3141
     volumes:
       - geode-replica-1-data:/data
 
   geode-replica-2:
-    image: geodedb/geode:0.1.3
+    image: geodedb/geode:__GEODE_VERSION__
     command: serve --role replica --primary geode-primary:3141
     volumes:
       - geode-replica-2-data:/data
@@ -65,6 +67,7 @@ services:
 ```
 
 **Performance considerations:**
+
 - Scale read throughput with replicas and shard count
 - Use EXPLAIN/PROFILE to tune hot query paths
 - Track p95/p99 latency and error budgets per service
@@ -75,12 +78,14 @@ services:
 Service-specific Geode instances for domain isolation.
 
 **Benefits:**
+
 - Independent scaling per service
 - Domain-specific schema evolution
 - Reduced blast radius for failures
 - Clear ownership boundaries
 
 **Example (E-Commerce):**
+
 ```
 User Service → Geode Instance (User graphs, preferences)
 Product Service → Geode Instance (Catalog, categories)
@@ -89,6 +94,7 @@ Recommendation Service → Geode Instance (Collaborative filtering)
 ```
 
 **Query Pattern:**
+
 ```gql
 -- User Service: Fetch user profile with preferences
 MATCH (u:User {id: $user_id})-[:PREFERS]->(category:Category)
@@ -106,6 +112,7 @@ LIMIT 10
 ### Data Analytics Pipeline
 
 **Architecture:**
+
 ```
 Operational DB → Change Data Capture → Geode → Analytics
                                           ↓
@@ -114,6 +121,7 @@ Operational DB → Change Data Capture → Geode → Analytics
 ```
 
 **Use Case: Social Network Analytics**
+
 ```gql
 -- Daily active users with engagement metrics
 MATCH (u:User)-[activity:POSTED|LIKED|SHARED]->(content)
@@ -124,6 +132,7 @@ RETURN count(DISTINCT u) as dau,
 ```
 
 **Performance considerations:**
+
 - Use streaming and CDC for near-real-time dashboards
 - Plan for historical analysis with workload-specific indexing
 - Track aggregation latency targets in benchmark suites
@@ -133,12 +142,14 @@ RETURN count(DISTINCT u) as dau,
 ### Social Media Platform Use Case
 
 **Requirements:**
+
 - Friend network management
 - Real-time feed generation
 - Friend suggestions
 - Privacy controls
 
 **Data Model:**
+
 ```gql
 (:User {id, name, joined_date})
   -[:FRIENDS_WITH {since}]-> (:User)
@@ -148,6 +159,7 @@ RETURN count(DISTINCT u) as dau,
 ```
 
 **Critical Query (Newsfeed):**
+
 ```gql
 -- Generate personalized feed
 MATCH (user:User {id: $user_id})-[:FOLLOWS|FRIENDS_WITH]->(source:User)
@@ -161,6 +173,7 @@ RETURN post, source.name, count(likes) as like_count, posted.timestamp
 ```
 
 **Results:**
+
 - Low-latency feed generation with ordering and pagination
 - Recommendation and suggestion queries tuned via indexes
 - Concurrency and throughput targets validated via load tests
@@ -168,12 +181,14 @@ RETURN post, source.name, count(likes) as like_count, posted.timestamp
 ### Financial Fraud Detection (Enterprise)
 
 **Requirements:**
+
 - Real-time transaction monitoring
 - Pattern detection (circular flows, structuring)
 - Risk scoring
 - Compliance reporting
 
 **Implementation:**
+
 ```gql
 -- Detect circular transaction patterns
 MATCH path = (a:Account)-[:TRANSFERRED*3..6]->(a)
@@ -188,6 +203,7 @@ RETURN path, total
 ```
 
 **Impact:**
+
 - Detected 40% more fraud patterns vs. previous system
 - Reduced false positives by 60%
 - Investigation time cut from hours to minutes
@@ -196,12 +212,14 @@ RETURN path, total
 ### E-Commerce Recommendation Engine
 
 **Data:**
+
 - 5M+ products
 - 50M+ users
 - 500M+ purchase relationships
 - 10M+ daily active sessions
 
 **Recommendation Query:**
+
 ```gql
 -- Hybrid collaborative + content filtering
 MATCH (user:User {id: $user_id})-[:PURCHASED|VIEWED]->(item:Product)
@@ -225,6 +243,7 @@ LIMIT 20
 ```
 
 **Performance considerations:**
+
 - Use indexes on high-cardinality fields
 - Tune similarity thresholds and caching
 - Integrate inventory updates via CDC
@@ -234,6 +253,7 @@ LIMIT 20
 ### Indexing Strategy
 
 **Key Indexes:**
+
 ```gql
 -- High-cardinality unique identifiers
 CREATE INDEX user_id ON User(id)
@@ -249,6 +269,7 @@ CREATE INDEX transaction_date ON TRANSFERRED(date)
 ```
 
 **Impact:**
+
 - Query times reduced 10-50x for filtered lookups
 - Index hit rate >95%
 - Memory overhead: ~10% of total graph size
@@ -256,6 +277,7 @@ CREATE INDEX transaction_date ON TRANSFERRED(date)
 ### Query Optimization Patterns
 
 **Before:**
+
 ```gql
 -- Slow: Full graph scan
 MATCH (u:User)-[:PURCHASED]->(p:Product)
@@ -264,6 +286,7 @@ RETURN p
 ```
 
 **After:**
+
 ```gql
 -- Fast: Index-backed lookup first
 MATCH (u:User {email: 'alice@example.com'})
@@ -276,6 +299,7 @@ RETURN p
 ### Connection Pool Tuning
 
 **Configuration for 10K concurrent users:**
+
 ```python
 # Python client
 client = Client(
@@ -287,6 +311,7 @@ client = Client(
 ```
 
 **Metrics to monitor:**
+
 - Pool utilization during peak load
 - Connection acquisition latency and timeouts
 - Connection churn and idle reclaim
@@ -296,6 +321,7 @@ client = Client(
 ### Monitoring and Observability
 
 **Key Metrics:**
+
 ```
 # Query Performance
 geode_query_duration_seconds{quantile="0.95"} < 0.1
@@ -313,6 +339,7 @@ geode_memory_usage_bytes / geode_memory_limit_bytes < 0.8
 ```
 
 **Alerting:**
+
 ```yaml
 # Prometheus AlertManager
 - alert: HighQueryLatency
@@ -331,6 +358,7 @@ geode_memory_usage_bytes / geode_memory_limit_bytes < 0.8
 ### Backup and Disaster Recovery
 
 **Backup Strategy:**
+
 ```bash
 #!/bin/bash
 # Daily automated backups
@@ -357,12 +385,14 @@ aws s3 cp "${BACKUP_FILE}" "s3://backups/geode/${DATE}/"
 ### Capacity Planning
 
 **Growth Projections (example inputs):**
+
 - Node/relationship growth rate by month
 - Peak and average query load targets
 - Memory and storage overhead for indexes and WAL
 - CPU per query from profiling and benchmark suites
 
 **Scaling Triggers:**
+
 - Memory utilization >70% → Add RAM or scale out
 - CPU utilization >60% sustained → Add replicas
 - Query latency p99 above SLO → Optimize or scale
@@ -373,6 +403,7 @@ aws s3 cp "${BACKUP_FILE}" "s3://backups/geode/${DATE}/"
 ### From Relational Database
 
 **Phased Approach:**
+
 1. **Pilot** (Week 1-2): Single use case migration
 2. **Validation** (Week 3-4): Performance testing, query tuning
 3. **Parallel Run** (Week 5-8): Dual-write to both systems
@@ -380,6 +411,7 @@ aws s3 cp "${BACKUP_FILE}" "s3://backups/geode/${DATE}/"
 5. **Decommission** (Week 10+): Remove old system
 
 **ETL Pipeline:**
+
 ```python
 # Example: Migrate user relationships from PostgreSQL
 async def migrate_user_network():
@@ -451,6 +483,7 @@ Deploy HA configurations for production workloads.
 **Future:** Native sharding with distributed queries
 
 **Preparation:**
+
 - Design schema with sharding keys
 - Test failover procedures
 - Monitor growth trends
@@ -459,6 +492,7 @@ Deploy HA configurations for production workloads.
 ### Technology Evolution
 
 **Stay Current:**
+
 - Update to latest Geode releases quarterly
 - Monitor GQL standard evolution
 - Participate in community

@@ -32,59 +32,64 @@ Geode uses semantic versioning (SemVer 2.0.0):
 ```
 MAJOR.MINOR.PATCH[-PRERELEASE][+BUILD]
 
-Current Version: 0.1.3
-Next Minor:      0.1.4
+Current Version: __GEODE_VERSION__
+Next Minor:      0.3.0
 Next Major:      1.0.0
 ```
 
 **Version Components Explained**:
 
 **MAJOR Version** (0.x.x → 1.x.x):
+
 - Breaking API changes
 - Protocol incompatibilities
 - Database format changes requiring migration
 - Removal of deprecated features
-- Example: 0.1.3 → 1.0.0
+- Example: 0.2.15 → 1.0.0
 
-**MINOR Version** (0.18.x → 0.19.x):
+**MINOR Version** (0.2.x → 0.3.x):
+
 - New backward-compatible features
 - New GQL functions or operators
 - Performance improvements
 - Enhanced client capabilities
-- Example: 0.1.3 → 0.1.4
+- Example: 0.2.15 → 0.3.0
 
-**PATCH Version** (0.1.3 → 0.1.3):
+**PATCH Version** (0.2.14 → 0.2.15):
+
 - Bug fixes
 - Security patches
 - Documentation corrections
 - Minor optimizations
-- Example: 0.1.3 → 0.1.3
+- Example: 0.2.14 → 0.2.15
 
-## Current Version: 0.1.3
+## Current Version: **GEODE_VERSION**
 
 **Server Version**:
+
 ```bash
 $ geode version
-Geode v0.1.3
-Build: 20240124-1a2b3c4
+Geode __GEODE_TAG__
+Build: 20260329-<release-sha>
 Zig: 0.1.0
 Protocol: QUIC v1
 GQL: ISO/IEC 39075:2024
 ```
 
 **Client Library Versions**:
+
 ```bash
 # Go
-geodedb.com/geode v1.0.0
+geodedb.com/geode __GEODE_TAG__
 
 # Python
-geode-client==1.0.0
+geode-client==0.3.19
 
 # Rust
-geode-client = "1.0.0"
+geode-client = "0.1.1-alpha.8"
 
 # Zig
-geode-client v1.0.0
+geode-client v0.1.0
 ```
 
 ## Version Compatibility Matrix
@@ -93,13 +98,13 @@ geode-client v1.0.0
 
 | Server Version | Go Client | Python Client | Rust Client | Zig Client | Protocol |
 |----------------|-----------|---------------|-------------|------------|----------|
-| 0.18.x         | 1.0.x     | 1.0.x         | 1.0.x       | 1.0.x      | QUIC v1  |
-| 0.17.x         | 0.9.x     | 0.9.x         | 0.9.x       | 0.9.x      | QUIC/TCP |
-| 0.16.x         | 0.8.x     | 0.8.x         | 0.8.x       | 0.8.x      | TCP      |
+| 0.2.x          | rolling   | 0.3.19+       | 0.1.1-alpha.8+ | 0.1.0+  | QUIC v1 |
+| 0.1.28-0.1.39  | rolling   | 0.3.19+       | 0.1.1-alpha.8+ | 0.1.0+  | QUIC v1 |
+| 0.1.3-0.1.27   | validate in staging | 0.3.x | 0.1.x | 0.1.x | QUIC v1 |
 
 **Compatibility Rules**:
 
-- **Exact Minor Match**: Client minor version should match server minor version (0.18.x ↔ 1.0.x)
+- **Prefer Current Stable Line**: Match the current stable server line with the latest published client for that language
 - **Patch Flexibility**: Any patch version within the same minor version is compatible
 - **Major Boundaries**: Crossing major versions requires explicit migration
 - **Forward Compatibility**: Clients may connect to newer server patch versions
@@ -107,13 +112,13 @@ geode-client v1.0.0
 
 ### Protocol Version Compatibility
 
-| Version | Protocol   | Wire Format | TLS     | Port | Status |
-|---------|------------|-------------|---------|------|--------|
-| 0.18.x  | QUIC v1    | JSON Line   | TLS 1.3 | 3141 | Current|
-| 0.17.x  | QUIC/TCP   | JSON/Binary | TLS 1.2+| 8443 | EOL    |
-| 0.16.x  | TCP        | Binary      | TLS 1.2 | 8443 | EOL    |
+| Version | Protocol | Transport Notes | TLS     | Port | Status |
+|---------|----------|-----------------|---------|------|--------|
+| 0.2.x   | QUIC v1  | Multiplexed streams | TLS 1.3 | 3141 | Current |
+| 0.1.28-0.1.39 | QUIC v1 | March 2026 storage transition line | TLS 1.3 | 3141 | Upgrade planned |
+| 0.1.3-0.1.27 | QUIC v1 | Early production-ready line | TLS 1.3 | 3141 | Legacy |
 
-**Migration Path**: TCP (v0.16) → QUIC/TCP (v0.17) → QUIC-only (v0.18)
+**Migration Path**: Early `v0.1.x` stable line → March 2026 storage transition line → current `v0.2.x` stable line
 
 ## Checking Versions
 
@@ -153,7 +158,7 @@ zig build --version
 SHOW VERSION;
 
 -- Returns:
--- version: "0.1.3"
+-- version: "__GEODE_VERSION__"
 -- build: "20240124-1a2b3c4"
 -- protocol: "QUIC v1"
 -- gql_version: "ISO/IEC 39075:2024"
@@ -170,30 +175,30 @@ module myapp
 go 1.24
 
 require (
-    geodedb.com/geode v1.0.0  // Exact version
+    geodedb.com/geode __GEODE_TAG__  // Exact version
 )
 
 # Python - requirements.txt
-geode-client==1.0.0  # Exact version
-geode-client>=1.0.0,<2.0.0  # Version range
+geode-client==0.3.19  # Exact version
+geode-client>=0.3.19,<0.4.0  # Version range
 
 # Rust - Cargo.toml
 [dependencies]
-geode-client = "=1.0.0"  # Exact version
+geode-client = "=0.1.1-alpha.8"  # Exact version
 # OR
-geode-client = "~1.0"    # Same minor version
+geode-client = "~0.1"    # Same minor version
 # OR
-geode-client = "^1.0"    # Compatible versions
+geode-client = "^0.1"    # Compatible versions
 ```
 
 **Container Version Pinning**:
 
 ```dockerfile
 # Exact version
-FROM geodedb/geode:0.1.3
+FROM geodedb/geode:__GEODE_VERSION__
 
 # Minor version (latest patch)
-FROM geodedb/geode:0.18
+FROM geodedb/geode:0.2
 
 # Major version (latest minor)
 FROM geodedb/geode:0
@@ -220,8 +225,8 @@ For clustered deployments:
 
 ```bash
 # 1. Upgrade standby nodes first
-ssh replica-1 "sudo apt-get install geode=0.1.3"
-ssh replica-2 "sudo apt-get install geode=0.1.3"
+ssh replica-1 "sudo apt-get install geode=__GEODE_VERSION__"
+ssh replica-2 "sudo apt-get install geode=__GEODE_VERSION__"
 
 # 2. Wait for replication sync
 geode cluster status
@@ -230,7 +235,7 @@ geode cluster status
 geode cluster promote replica-1
 
 # 4. Upgrade old primary
-ssh primary "sudo apt-get install geode=0.1.3"
+ssh primary "sudo apt-get install geode=__GEODE_VERSION__"
 
 # 5. Rebalance cluster
 geode cluster rebalance
@@ -249,7 +254,7 @@ geode replicate --from blue:3141 --to green:3141
 ./run-integration-tests.sh --host green:3141
 
 # 4. Switch traffic to green
-kubectl patch service geode -p '{"spec":{"selector":{"version":"0.1.3"}}}'
+kubectl patch service geode -p '{"spec":{"selector":{"version":"__GEODE_VERSION__"}}}'
 
 # 5. Decommission blue environment after validation
 docker-compose -f docker-compose.blue.yml down
@@ -262,7 +267,7 @@ docker-compose -f docker-compose.blue.yml down
 kubectl apply -f canary-10percent.yaml
 
 # 2. Monitor metrics and errors
-kubectl logs -l version=0.1.3 --tail=100
+kubectl logs -l version=__GEODE_VERSION__ --tail=100
 
 # 3. Gradually increase traffic: 25% → 50% → 100%
 kubectl apply -f canary-25percent.yaml
@@ -277,28 +282,28 @@ kubectl apply -f canary-100percent.yaml
 ```bash
 # Different versions on different ports
 /opt/geode-0.1.2/bin/geode serve --listen :8443
-/opt/geode-0.1.3/bin/geode serve --listen :3141
+/opt/geode-__GEODE_VERSION__/bin/geode serve --listen :3141
 
 # Docker containers
 docker run -p 8443:8443 geodedb/geode:0.1.2
-docker run -p 3141:3141 geodedb/geode:0.1.3
+docker run -p 3141:3141 geodedb/geode:__GEODE_VERSION__
 ```
 
 **Client Version Selection**:
 
 ```go
 // Go - include client version in HELLO
-db, err := sql.Open("geode", "localhost:3141?hello_ver=0.1.3")
+db, err := sql.Open("geode", "localhost:3141?hello_ver=__GEODE_VERSION__")
 
 // Python - include client version in HELLO
 client = Client(
     host="localhost",
     port=3141,
-    hello_ver="0.1.3"
+    hello_ver="__GEODE_VERSION__"
 )
 
 // Rust - include client version in HELLO
-let client = Client::new("localhost", 3141).hello_ver("0.1.3");
+let client = Client::new("localhost", 3141).hello_ver("__GEODE_VERSION__");
 let mut conn = client.connect().await?;
 ```
 
@@ -359,18 +364,18 @@ cargo tree -p geode-client
 
 ```bash
 # Go - go.sum
-geodedb.com/geode v1.0.0 h1:abc123...
-geodedb.com/geode v1.0.0/go.mod h1:def456...
+geodedb.com/geode __GEODE_TAG__ h1:abc123...
+geodedb.com/geode __GEODE_TAG__/go.mod h1:def456...
 
 # Python - poetry.lock or Pipfile.lock
 [[package]]
 name = "geode-client"
-version = "1.0.0"
+version = "0.3.19"
 
 # Rust - Cargo.lock
 [[package]]
 name = "geode-client"
-version = "1.0.0"
+version = "0.1.1-alpha.8"
 ```
 
 ## Version Constraints in CI/CD
@@ -386,7 +391,7 @@ jobs:
     runs-on: ubuntu-latest
     services:
       geode:
-        image: geodedb/geode:0.1.3  # Pin exact version
+        image: geodedb/geode:__GEODE_VERSION__  # Pin exact version
         ports:
           - 3141:3141
 
@@ -394,7 +399,7 @@ jobs:
       - uses: actions/checkout@v3
 
       - name: Install Client
-        run: pip install geode-client==1.0.0  # Pin exact version
+        run: pip install geode-client==0.3.19  # Pin exact version
 
       - name: Run Tests
         run: pytest tests/
@@ -406,10 +411,10 @@ jobs:
 test:
   image: python:3.11
   services:
-    - name: geodedb/geode:0.1.3
+    - name: geodedb/geode:__GEODE_VERSION__
       alias: geode
   before_script:
-    - pip install geode-client==1.0.0
+    - pip install geode-client==0.3.19
   script:
     - pytest tests/
 ```
@@ -420,13 +425,13 @@ When crossing major version boundaries:
 
 ```bash
 # 1. Review breaking changes
-geode changelog --breaking --since v0.1.3
+geode changelog --breaking --since __GEODE_TAG__
 
 # 2. Run migration checker
-geode migrate check --from 0.1.3 --to 1.0.0
+geode migrate check --from __GEODE_VERSION__ --to 1.0.0
 
 # 3. Generate migration plan
-geode migrate plan --from 0.1.3 --to 1.0.0 --output plan.yaml
+geode migrate plan --from __GEODE_VERSION__ --to 1.0.0 --output plan.yaml
 
 # 4. Execute migration
 geode migrate execute --plan plan.yaml
@@ -450,8 +455,8 @@ geode migrate validate
 **Version Mismatch Errors**:
 
 ```
-Error: Client version 0.9.0 incompatible with server 0.1.3
-Solution: Upgrade client to 1.0.x series
+Error: Client version 0.2.0 incompatible with server __GEODE_VERSION__
+Solution: Upgrade client to the current published line for your language
 ```
 
 **Protocol Incompatibility**:
@@ -464,8 +469,8 @@ Solution: Upgrade to client library version 1.0.0+
 **Feature Not Available**:
 
 ```
-Error: VECTOR search not supported in server version 0.1.2
-Solution: Upgrade server to 0.1.3+
+Error: CTE support not available in server version 0.2.13
+Solution: Upgrade server to __GEODE_VERSION__+
 ```
 
 ## Related Topics

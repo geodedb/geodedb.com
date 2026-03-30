@@ -84,6 +84,8 @@
   {{- else if not .Date.IsZero -}}
     {{- $updatedDate = .Date -}}
   {{- end -}}
+  {{- $summaryHTML := partial "geode/render-content.html" (dict "content" .Summary) -}}
+  {{- $contentHTML := partial "geode/render-content.html" (dict "content" .Content) -}}
   <entry>
     <id>{{ .Permalink }}</id>
     <title{{ if ne $.Site.LanguageCode "en" }} xml:lang="{{ $.Site.LanguageCode }}"{{ end }}>{{ .Title }}</title>
@@ -105,10 +107,10 @@
     <category term="{{ . }}" scheme="{{ $.Site.BaseURL }}tags/" />
     {{- end -}}
     {{- /* Content summary */ -}}
-    <summary{{ if ne $.Site.LanguageCode "en" }} xml:lang="{{ $.Site.LanguageCode }}"{{ end }} type="html">{{ .Summary | html }}</summary>
+    <summary{{ if ne $.Site.LanguageCode "en" }} xml:lang="{{ $.Site.LanguageCode }}"{{ end }} type="html">{{ $summaryHTML | html }}</summary>
     {{- /* Full content for Atom readers that support it */ -}}
     {{- if .Site.Params.atom.fullContent -}}
-    <content{{ if ne $.Site.LanguageCode "en" }} xml:lang="{{ $.Site.LanguageCode }}"{{ end }} type="html"><![CDATA[{{ .Content }}]]></content>
+    <content{{ if ne $.Site.LanguageCode "en" }} xml:lang="{{ $.Site.LanguageCode }}"{{ end }} type="html"><![CDATA[{{ $contentHTML }}]]></content>
     {{- end -}}
     {{- /* Add enclosure for media files */ -}}
     {{- with .Params.podcast -}}

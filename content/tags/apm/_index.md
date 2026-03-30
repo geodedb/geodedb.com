@@ -79,6 +79,7 @@ APM shows that 83% of request time is spent in database queries, specifically re
 Capture distributed traces showing complete request flows:
 
 **Transaction Overview**:
+
 - **Transaction Name**: `POST /api/recommendations`
 - **Total Duration**: 850ms
 - **Status**: Success (200 OK)
@@ -86,6 +87,7 @@ Capture distributed traces showing complete request flows:
 - **Timestamp**: 2026-01-24 10:15:30 UTC
 
 **Trace Breakdown**:
+
 ```
 Transaction: POST /api/recommendations (850ms)
 ├─ HTTP Handler (420ms)
@@ -108,6 +110,7 @@ Transaction: POST /api/recommendations (850ms)
 Capture and analyze application errors:
 
 **Error Details**:
+
 - **Error Type**: `DatabaseQueryError`
 - **Message**: "Query timeout after 30 seconds"
 - **Stack Trace**: Full Python/Go/Rust stack trace
@@ -121,6 +124,7 @@ Capture and analyze application errors:
 Track application-level performance metrics:
 
 **Key Metrics**:
+
 - **Throughput**: Requests per minute
 - **Latency**: p50, p95, p99 response times
 - **Error Rate**: Errors per minute
@@ -133,6 +137,7 @@ Track application-level performance metrics:
 Connect performance to business metrics:
 
 **User Journey Analysis**:
+
 - **Conversion Rate**: 12.3% (impacted by slow recommendations)
 - **Cart Abandonment**: 8.5% (correlated with timeout errors)
 - **Revenue Per Request**: $15.42 average
@@ -148,7 +153,7 @@ Connect performance to business metrics:
 # Python application with Datadog APM
 # requirements.txt
 ddtrace>=1.0.0
-geode-client>=0.1.3
+geode-client>=0.3.19
 
 # Install
 pip install ddtrace geode-client
@@ -211,7 +216,7 @@ async def generate_recommendations(user_id):
 # Python application with New Relic
 # requirements.txt
 newrelic>=8.0.0
-geode-client>=0.1.3
+geode-client>=0.3.19
 
 # Install
 pip install newrelic geode-client
@@ -271,7 +276,7 @@ newrelic.agent.record_custom_event('RecommendationGenerated', {
 # Python application with Elastic APM
 # requirements.txt
 elastic-apm[flask]>=6.0.0
-geode-client>=0.1.3
+geode-client>=0.3.19
 
 # Install
 pip install elastic-apm geode-client
@@ -381,6 +386,7 @@ result, _ = await client.query(
 ```
 
 Tags appear in APM traces:
+
 ```
 Span: Geode Query
   - db.system: geode
@@ -411,16 +417,19 @@ include_execution_plan = true
 Geode reports database metrics to APM platforms:
 
 **Connection Pool**:
+
 - Active connections
 - Pool utilization %
 - Connection wait time
 
 **Query Performance**:
+
 - Queries per second
 - Average query duration
 - Slow query rate
 
 **Transaction Performance**:
+
 - Transactions per second
 - Transaction duration
 - Conflict rate
@@ -498,6 +507,7 @@ Use APM transaction traces to find optimization opportunities:
 4. **Check external service calls** for timeout or latency issues
 
 **Example Analysis**:
+
 ```
 Transaction: GET /user/recommendations
 Total: 1250ms
@@ -528,6 +538,7 @@ elasticapm.set_custom_context({
 ```
 
 APM dashboards show:
+
 - v1.0.0 average latency: 850ms
 - v2.0.0 average latency: 320ms (62% improvement)
 
@@ -536,12 +547,14 @@ APM dashboards show:
 Use APM data for capacity planning:
 
 **Metrics to Track**:
+
 - Peak requests per minute
 - Database query rate at peak
 - Resource utilization during peak
 - Growth trends over time
 
 **Forecast Scaling Needs**:
+
 ```
 Current: 1000 req/min peak
 Growth: +20% per quarter

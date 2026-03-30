@@ -35,6 +35,12 @@ params:
 
 Enterprise-grade security features for protecting your data at rest, in transit, and in use. Geode provides comprehensive security capabilities including encryption, authentication, authorization, and compliance features.
 
+> **Current implementation status (2026-03-30)**
+>
+> - Implemented today: TDE, FLE, RBAC/ABAC/RLS, audit logging, username/password auth, sessions, API keys, MFA, and mTLS
+> - Planned, not implemented: LDAP/Active Directory and OAuth2/OIDC
+> - Current open auth/tooling gap: local CLI auth commands do not yet delegate to a running server
+
 ## Overview
 
 Security is built into every layer of Geode's architecture. From mandatory TLS 1.3 for all network connections to Transparent Data Encryption (TDE) for data at rest, Row-Level Security (RLS) for fine-grained access control, and comprehensive audit logging for compliance, Geode provides the security features enterprises require.
@@ -48,7 +54,7 @@ This section covers all security capabilities including encryption strategies, a
 Geode implements multiple layers of security:
 
 1. **Network Security**: TLS 1.3 mandatory, no plaintext connections
-2. **Authentication**: Multiple authentication methods with MFA support
+2. **Authentication**: Username/password, sessions, API keys, MFA, and mTLS
 3. **Authorization**: RBAC, ABAC, and RLS for access control
 4. **Encryption at Rest**: TDE with AES-256-GCM
 5. **Field-Level Encryption**: Searchable encryption for sensitive data
@@ -85,6 +91,7 @@ security:
 ```
 
 **Features**:
+
 - **Algorithm**: AES-256-GCM (authenticated encryption)
 - **Scope**: All pages, indexes, and WAL segments
 - **Key Rotation**: Supported with background re-encryption
@@ -110,6 +117,7 @@ RETURN p.name;
 ```
 
 **Features**:
+
 - **Searchable Encryption**: Query encrypted fields
 - **Deterministic Encryption**: Same plaintext → same ciphertext (enables equality)
 - **Order-Preserving Encryption**: Range queries on encrypted data
@@ -129,6 +137,7 @@ geode serve \
 ```
 
 **Features**:
+
 - **TLS 1.3 Only**: No fallback to older versions
 - **Strong Cipher Suites**: AES-256-GCM, ChaCha20-Poly1305
 - **Perfect Forward Secrecy**: ECDHE key exchange
@@ -139,12 +148,14 @@ geode serve \
 ### Authentication Methods
 
 **Username/Password**:
+
 ```bash
 # Connect with credentials
-geode shell --username admin --password secret
+geode shell --username geode --password secret
 ```
 
 **Multi-Factor Authentication (MFA)**:
+
 ```yaml
 security:
   mfa:
@@ -156,24 +167,19 @@ security:
 ```
 
 **API Keys**:
+
 ```bash
 # Generate API key
-geode admin create-api-key --user alice --name "prod-app"
+geode apikey create --user alice --name prod-app --scope query:execute
 
 # Use API key
 export GEODE_API_KEY="gsk_..."
 geode shell
 ```
 
-**LDAP/Active Directory**:
-```yaml
-security:
-  ldap:
-    enabled: true
-    url: "ldap://ldap.example.com"
-    bind_dn: "cn=admin,dc=example,dc=com"
-    user_search_base: "ou=users,dc=example,dc=com"
-```
+**LDAP/Active Directory / OAuth2/OIDC**:
+
+These remain roadmap items, not currently implemented server features. See [Authentication](/docs/security/authentication/) for the current-state matrix and gap references.
 
 **See**: [Security Overview](/docs/security/overview/#authentication)
 
@@ -192,6 +198,7 @@ security:
 ```
 
 **Supported Algorithms**:
+
 - **Argon2id** (recommended): Resistant to GPU/ASIC attacks
 - **bcrypt**: Industry standard, slower but secure
 - **PBKDF2**: NIST approved, configurable iterations
@@ -243,6 +250,7 @@ ENABLE POLICY customer_isolation;
 ```
 
 **Features**:
+
 - **Transparent**: Policies applied automatically to queries
 - **Performance**: Optimized policy evaluation
 - **Composable**: Multiple policies combine with AND logic
@@ -268,6 +276,7 @@ security:
 ```
 
 **Features**:
+
 - **Centralized Keys**: All encryption keys in Vault
 - **Key Rotation**: Automated key rotation
 - **Audit**: All key access logged
@@ -305,6 +314,7 @@ security:
 ```
 
 **Features**:
+
 - **Session Tokens**: Cryptographically secure tokens
 - **Timeout**: Idle and absolute timeout
 - **Revocation**: Immediate session termination
@@ -332,6 +342,7 @@ security:
 ```
 
 **Audit Events**:
+
 - **Authentication**: Login, logout, MFA challenges
 - **Authorization**: Permission checks, policy evaluations
 - **Data Access**: All query executions with user context
@@ -343,24 +354,28 @@ security:
 ### Compliance Features
 
 **GDPR Compliance**:
+
 - Data access logging
 - Right to erasure (DELETE operations)
 - Data portability (export features)
 - Consent tracking
 
 **SOX Compliance**:
+
 - Access controls for financial data
 - Audit trail of all data modifications
 - Separation of duties with RBAC
 - Change management tracking
 
 **HIPAA Compliance**:
+
 - Encryption at rest and in transit
 - Access controls for PHI
 - Audit logging of all PHI access
 - Breach notification support
 
 **PCI-DSS Compliance**:
+
 - Strong access controls
 - Encryption of cardholder data
 - Audit trails
@@ -405,21 +420,25 @@ security:
 ### Threats Addressed
 
 **Network Attacks**:
+
 - ✅ Man-in-the-middle: TLS 1.3
 - ✅ Eavesdropping: Encryption in transit
 - ✅ Replay attacks: Nonce-based authentication
 
 **Data Attacks**:
+
 - ✅ Data theft: TDE, FLE
 - ✅ Unauthorized access: RBAC, RLS
 - ✅ SQL injection: Parameterized queries
 
 **Authentication Attacks**:
+
 - ✅ Brute force: Rate limiting, account lockout
 - ✅ Credential stuffing: MFA, password policies
 - ✅ Session hijacking: Secure session tokens
 
 **Insider Threats**:
+
 - ✅ Privilege abuse: Audit logging, RLS
 - ✅ Data exfiltration: Access controls, monitoring
 - ✅ Unauthorized changes: Audit trail, RBAC
@@ -427,18 +446,21 @@ security:
 ### Security Controls
 
 **Preventive Controls**:
+
 - TLS 1.3 for all connections
 - Strong authentication with MFA
 - RBAC and RLS for authorization
 - Encryption at rest (TDE, FLE)
 
 **Detective Controls**:
+
 - Comprehensive audit logging
 - Anomaly detection
 - Failed authentication monitoring
 - Access pattern analysis
 
 **Corrective Controls**:
+
 - Session revocation
 - Account lockout
 - Policy enforcement
@@ -462,7 +484,7 @@ security:
 
 Found a security vulnerability?
 
-- **Email**: security@codepros.org
+- **Email**: <security@codepros.org>
 - **PGP Key**: Available on website
 - **Response Time**: Within 48 hours
 - **Disclosure**: Coordinated disclosure process

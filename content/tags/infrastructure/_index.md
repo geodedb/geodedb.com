@@ -118,7 +118,7 @@ resource "aws_instance" "geode" {
   ami           = data.aws_ami.ubuntu.id
   instance_type = var.instance_type
   subnet_id     = aws_subnet.private[count.index].id
-  
+
   vpc_security_group_ids = [aws_security_group.geode.id]
 
   root_block_device {
@@ -239,7 +239,7 @@ Parameters:
     Type: String
     Default: r6g.2xlarge
     Description: EC2 instance type
-  
+
   InstanceCount:
     Type: Number
     Default: 3
@@ -313,11 +313,11 @@ Outputs:
 - name: Deploy Geode
   hosts: geode_servers
   become: yes
-  
+
   vars:
-    geode_version: "v0.1.3"
+    geode_version: "__GEODE_TAG__"
     geode_data_dir: "/var/lib/geode"
-  
+
   tasks:
     - name: Install dependencies
       apt:

@@ -490,6 +490,6 @@ RETURN n.`LIMIT`;
 ---
 
 **Last Updated:** January 28, 2026
-**Geode Version:** v0.1.3+
+**Geode Version:** **GEODE_TAG**+
 **ISO Standard:** ISO/IEC 39075:2024
 **Conformance Profile:** ISO/IEC 39075:2024 compliance (see conformance profile)

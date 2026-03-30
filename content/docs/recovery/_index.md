@@ -46,6 +46,7 @@ Geode provides multiple recovery mechanisms to handle various failure scenarios:
 | **Disaster Recovery** | Site failure, data corruption | Minutes-Hours | Last backup |
 
 **Key Terms**:
+
 - **RTO** (Recovery Time Objective): Maximum acceptable downtime
 - **RPO** (Recovery Point Objective): Maximum acceptable data loss
 
@@ -530,18 +531,21 @@ Server Down?
 ### Emergency Recovery Checklist
 
 **Immediate Actions**:
+
 - [ ] Assess the situation (type of failure)
 - [ ] Check server logs: `geode logs --tail 500`
 - [ ] Preserve evidence: `cp -r /var/lib/geode/data /var/lib/geode/data.incident-$(date +%s)`
 - [ ] Notify stakeholders
 
 **Recovery Actions**:
+
 - [ ] Determine recovery strategy (auto, PITR, full restore)
 - [ ] Execute recovery procedure
 - [ ] Run verification checks
 - [ ] Monitor server stability
 
 **Post-Recovery**:
+
 - [ ] Document incident timeline
 - [ ] Identify root cause
 - [ ] Update runbooks if needed
@@ -609,6 +613,7 @@ Geode provides robust recovery mechanisms:
 - **Disaster recovery** procedures handle site-wide failures
 
 **Key Takeaways**:
+
 - Enable WAL archiving for PITR capability
 - Test recovery procedures regularly (monthly)
 - Document and practice recovery runbooks
@@ -617,5 +622,5 @@ Geode provides robust recovery mechanisms:
 ---
 
 **Last Updated:** January 28, 2026
-**Geode Version:** v0.1.3+
+**Geode Version:** **GEODE_TAG**+
 **Status:** Production Ready

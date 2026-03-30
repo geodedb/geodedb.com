@@ -31,6 +31,7 @@ This category documents the full development experience, from writing your first
 ### Development Tools
 
 **Interactive Shell (REPL)**
+
 - Interactive query development with immediate feedback
 - Syntax highlighting and auto-completion
 - Multi-line editing for complex queries
@@ -41,6 +42,7 @@ This category documents the full development experience, from writing your first
 - Result formatting and export
 
 **CLI Tools**
+
 - Database server management (`geode serve`)
 - Interactive shell access (`geode shell`)
 - Schema management and migrations
@@ -51,6 +53,7 @@ This category documents the full development experience, from writing your first
 - Testing and validation tools
 
 **Language Server Protocol (LSP)**
+
 - IDE integration for VS Code, Vim, Emacs, and others
 - Real-time syntax validation and error checking
 - Context-aware auto-completion
@@ -63,12 +66,14 @@ This category documents the full development experience, from writing your first
 ### Client Libraries
 
 **Official SDKs**
+
 - **Go Client**: `database/sql` driver with connection pooling
 - **Python Client**: Async client with aioquic and connection pooling
 - **Rust Client**: Tokio-based high-performance client
 - **Zig Client**: Native Zig implementation with vendored QUIC
 
 **Common Features**
+
 - QUIC + TLS 1.3 transport protocol
 - Connection pooling and management
 - Prepared statement support
@@ -81,6 +86,7 @@ This category documents the full development experience, from writing your first
 ### API and Protocol
 
 **GQL Query API**
+
 - ISO/IEC 39075:2024 compliant query language
 - Pattern matching with ASCII-art syntax
 - CRUD operations (INSERT, UPDATE, DELETE)
@@ -90,6 +96,7 @@ This category documents the full development experience, from writing your first
 - Prepared statements and parameter binding
 
 **Wire Protocol**
+
 - Protobuf wire protocol over QUIC (default) or gRPC
 - Multiplexed streams for concurrent queries
 - Request types: `HelloRequest`, `ExecuteRequest`, `PullRequest`, `BeginRequest`, `CommitRequest`
@@ -101,6 +108,7 @@ This category documents the full development experience, from writing your first
 ### Development Workflows
 
 **Local Development**
+
 - Quick start with Docker or binary installation
 - REPL-driven query development
 - Schema design and iteration
@@ -109,6 +117,7 @@ This category documents the full development experience, from writing your first
 - Integration testing with testcontainers
 
 **CI/CD Integration**
+
 - Automated testing in CI pipelines
 - Schema migration automation
 - Performance regression testing
@@ -117,6 +126,7 @@ This category documents the full development experience, from writing your first
 - Monitoring and observability integration
 
 **Debugging and Profiling**
+
 - EXPLAIN for query execution plans
 - PROFILE for performance analysis
 - Query tracing and logging
@@ -152,6 +162,7 @@ geode> \save queries/social_network.gql
 ### Building Applications with Client Libraries
 
 **Python Example**
+
 ```python
 import geode_client
 import asyncio
@@ -195,6 +206,7 @@ for rec in recommendations:
 ```
 
 **Go Example**
+
 ```go
 package main
 
@@ -263,6 +275,7 @@ func main() {
 ### IDE Integration with LSP
 
 **VS Code Configuration**
+
 ```json
 {
   "gql.server.host": "localhost",
@@ -279,6 +292,7 @@ func main() {
 ```
 
 **Query Development with LSP**
+
 ```gql
 -- Full IDE support: auto-completion, error checking, go-to-definition
 MATCH (p:Person)-[:WORKS_AT]->(c:Company)
@@ -294,6 +308,7 @@ LIMIT $limit
 ### Automated Testing
 
 **Python Testing Example**
+
 ```python
 import pytest
 import geode_client
@@ -860,7 +875,7 @@ version: '3.8'
 
 services:
   geode:
-    image: codepros/geode:v0.1.3
+    image: codepros/geode:__GEODE_TAG__
     ports:
       - "3141:3141"
     volumes:

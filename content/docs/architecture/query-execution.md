@@ -75,6 +75,7 @@ The lexer (`src/gql/lexer.zig`) tokenizes the input GQL query into a stream of t
 **Implementation Location**: `src/gql/lexer.zig`
 
 **Key Responsibilities**:
+
 - Tokenize input string
 - Recognize GQL keywords (105+ reserved keywords)
 - Handle literals (strings, numbers, booleans, null)
@@ -86,6 +87,7 @@ The lexer (`src/gql/lexer.zig`) tokenizes the input GQL query into a stream of t
 Input: "MATCH (p:Person {age: 30}) RETURN p.name"
 
 Tokens:
+
 1. MATCH (keyword)
 2. ( (left_paren)
 3. p (identifier)
@@ -104,6 +106,7 @@ Tokens:
 \`\`\`
 
 **Performance**:
+
 - **Throughput**: ~1M tokens/second
 - **Memory**: O(n) where n is query length
 - **Complexity**: O(n) linear scan
@@ -115,6 +118,7 @@ The parser (`src/gql/parser.zig`) builds an Abstract Syntax Tree (AST) from the 
 **Implementation Location**: `src/gql/parser.zig`
 
 **Key Responsibilities**:
+
 - Construct AST from tokens
 - Validate GQL syntax
 - Handle operator precedence
@@ -201,6 +205,7 @@ fn parseExpression(self: *Parser, min_precedence: u8) ParserError!Expression {
 \`\`\`
 
 **Operator Precedence** (highest to lowest):
+
 1. Member access (`.`), function calls
 2. Unary operators (`NOT`, `-`)
 3. Multiplicative (`*`, `/`, `%`)
@@ -237,6 +242,7 @@ fn reportError(self: *Parser, err: ParserError) void {
 **ISO/IEC 39075:2024 Conformance Profile**: ISO/IEC 39075:2024 compliance (see conformance profile)
 
 **Supported Features**:
+
 - All GQL keywords (105+)
 - Graph pattern matching (nodes, relationships, paths)
 - Variable-length path patterns (`-[*1..5]->`)
@@ -257,6 +263,7 @@ The query planner (`src/planner/`) transforms the AST into a logical query plan.
 **Implementation Location**: `src/planner/`
 
 **Key Files**:
+
 - `src/planner/optimizer.zig` - Query optimization
 - `src/planner/cbo.zig` - Cost-based optimization
 - `src/planner/cost_model.zig` - Cost estimation
@@ -360,6 +367,7 @@ fn checkBinaryOperation(bin: BinaryExpression, context: *SemanticContext) TypeEr
 \`\`\`
 
 **Validation Checks**:
+
 - Variable binding validation
 - Property existence checking
 - Function signature validation
@@ -458,8 +466,8 @@ fn estimateFullScanCost() f64 {
 
 fn estimateIndexSeekCost(index: Index, selectivity: f64) f64 {
     const tree_height = @log2(@intToFloat(f64, index.entry_count));
-    const leaf_pages = @intToFloat(f64, index.entry_count) * selectivity / entries_per_page;
-    return tree_height * io_cost_per_page + leaf_pages * io_cost_per_page;
+    const leaf_pages = @intToFloat(f64, index.entry_count) *selectivity / entries_per_page;
+    return tree_height* io_cost_per_page + leaf_pages * io_cost_per_page;
 }
 \`\`\`
 
@@ -477,12 +485,12 @@ fn estimateCPUCost(operator: Operator) f64 {
 fn estimateFilterCost(filter: FilterOperator) f64 {
     const rows = estimateRowCount(filter.input);
     const complexity = estimatePredicateComplexity(filter.predicate);
-    return rows * complexity * cpu_cost_per_predicate;
+    return rows *complexity* cpu_cost_per_predicate;
 }
 
 fn estimateSortCost(sort: SortOperator) f64 {
     const rows = estimateRowCount(sort.input);
-    return rows * @log2(@intToFloat(f64, rows)) * cpu_cost_per_comparison;
+    return rows *@log2(@intToFloat(f64, rows))* cpu_cost_per_comparison;
 }
 \`\`\`
 
@@ -503,6 +511,7 @@ fn estimateMemoryCost(operator: Operator) f64 {
 **Implementation Location**: `src/server/index_optimizer.zig`
 
 **Collected Statistics**:
+
 - Node label cardinalities
 - Relationship type counts
 - Property value distributions
@@ -527,6 +536,7 @@ statistics:
 **Implementation Location**: `src/execution/`
 
 **Key Files**:
+
 - `src/execution.zig` - Main execution logic
 - `src/execution/path_and_call_operations.zig` - Path operations
 - `src/execution/match_operations.zig` - MATCH execution
@@ -969,6 +979,7 @@ LIMIT 10
 
 **Output**:
 \`\`\`
+
 | plan                          |
 |-------------------------------|
 | EXPLAIN                       |
@@ -993,6 +1004,7 @@ LIMIT 10
 
 **Output**:
 \`\`\`
+
 | metric              | value |
 |---------------------|-------|
 | rows_returned       | 10    |
@@ -1007,7 +1019,9 @@ LIMIT 10
 Enable query logging for debugging:
 
 \`\`\`yaml
+
 # geode.yaml
+
 logging:
   query_log: true
   slow_query_threshold_ms: 100
@@ -1033,7 +1047,7 @@ logging:
 CREATE INDEX ON :Person(email)
 
 -- Query uses index automatically
-MATCH (p:Person {email: 'alice@example.com'}) RETURN p
+MATCH (p:Person {email: '<alice@example.com>'}) RETURN p
 \`\`\`
 
 2. **Filter Early**:
@@ -1097,6 +1111,7 @@ GROUP BY p.department
 5. **Performance Testing** - Benchmark with realistic workloads
 
 **Related Documentation**:
+
 - [Query Optimization](/docs/query/performance-tuning)
 - [Index Optimization](/docs/tutorials/index-optimization)
 - [Distributed Architecture](/docs/architecture/distributed-architecture)
@@ -1105,5 +1120,5 @@ GROUP BY p.department
 ---
 
 *Last Updated: January 2026*
-*Implementation: Geode v0.1.3+*
+*Implementation: Geode **GEODE_TAG**+*
 *Status: Production-ready - 100% GQL compliance*

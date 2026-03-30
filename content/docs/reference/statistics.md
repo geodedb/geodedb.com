@@ -561,18 +561,21 @@ groups:
 ### Key Panels
 
 **Query Performance:**
+
 - Queries per second (rate)
 - Query latency percentiles (p50, p95, p99)
 - Slow query count
 - Error rate
 
 **Storage:**
+
 - Database size growth
 - Index size breakdown
 - WAL size
 - Fragmentation ratio
 
 **Resources:**
+
 - Buffer pool hit rate
 - Memory usage
 - I/O throughput
@@ -646,5 +649,5 @@ groups:
 ---
 
 **Last Updated:** January 28, 2026
-**Geode Version:** v0.1.3+
+**Geode Version:** **GEODE_TAG**+
 **Metrics Count:** 50+ observable metrics

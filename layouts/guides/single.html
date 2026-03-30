@@ -89,7 +89,7 @@
       >
         {{/* Main content */}}
         <div class="article-body" itemprop="articleBody">
-          {{ .Content }}
+          {{ partial "geode/render-content.html" (dict "content" .Content) }}
         </div>
 
         {{/* References section (if any) */}}

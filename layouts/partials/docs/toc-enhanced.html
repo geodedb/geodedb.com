@@ -8,7 +8,7 @@
 */}}
 
 {{- $enable := and (default true .Params.toc) (default true .Site.Params.toc) -}}
-{{- $toc := .TableOfContents -}}
+{{- $toc := partial "geode/render-content.html" (dict "content" .TableOfContents) -}}
 {{- $valid := and $toc (and (ne $toc "<nav id=\"TableOfContents\"></nav>") (gt .WordCount (default 300 .Site.Params.tocWordCount))) -}}
 
 {{- if and $enable $valid -}}

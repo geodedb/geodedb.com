@@ -27,18 +27,21 @@ Geode provides a comprehensive, security-first audit logging and tracing subsyst
 ### Key Features
 
 **Security-First Design**:
+
 - Default-deny filtration with built-in sensitive data redaction
 - Tamper-evident logging with hash chains and Ed25519 signatures
 - Fail-closed security: drops events if redaction cannot guarantee safety
 - No SQL exposure: database adapter never logs query text or parameters
 
 **Enterprise Integration**:
+
 - RFC 5424 Syslog with UDP/TCP transport
 - CEF:0 (Common Event Format) payloads for SIEM compatibility
 - Structured JSON-Lines format with deterministic field ordering
 - File rotation with configurable retention and backup policies
 
 **Operational Excellence**:
+
 - Non-blocking operations with bounded queues
 - W3C distributed tracing support (trace_id and span_id propagation)
 - Automatic field detection and PII/PCI redaction
@@ -76,6 +79,7 @@ AuditLogger
 ### Tamper-Evident Design
 
 Geode's audit stream is a canonical JSON Lines (JSONL) append-only log where each record carries:
+
 - **seq_no**: Monotonically increasing sequence number
 - **event_hash**: SHA-256 hash of current event (excluding prev_hash)
 - **prev_hash**: Hash of previous event's event_hash
@@ -86,6 +90,7 @@ This creates a cryptographic chain: modifying any past event breaks the chain an
 ### Record Structure
 
 **Canonical Key Order**:
+
 ```json
 [
   "stream", "seq_no", "timestamp", "event_type",
@@ -95,6 +100,7 @@ This creates a cryptographic chain: modifying any past event breaks the chain an
 ```
 
 **Example Event**:
+
 ```json
 {
   "stream": "geode-audit",
@@ -114,6 +120,7 @@ This creates a cryptographic chain: modifying any past event breaks the chain an
 ```
 
 **Digest Record** (every 100 events):
+
 ```json
 {
   "stream": "geode-audit",
@@ -132,6 +139,7 @@ This creates a cryptographic chain: modifying any past event breaks the chain an
 **Alternative**: BLAKE3 (faster, modern cryptographic standard)
 
 **Chain Logic**:
+
 1. First event: `prev_hash = 0x00000000...` (32 zero bytes)
 2. Subsequent events: `prev_hash = hash(previous_event.event_hash)`
 3. Digest events: Compute Merkle root over last N event_hashes
@@ -140,6 +148,7 @@ This creates a cryptographic chain: modifying any past event breaks the chain an
 ### Signing Configuration
 
 **Production Requirements**:
+
 ```bash
 # Generate Ed25519 key pair
 openssl genpkey -algorithm ED25519 -out audit_private.pem
@@ -154,10 +163,12 @@ export GEODE_AUDIT_SEC
 ```
 
 **Startup Validation**:
+
 - If keys missing in non-test builds: Exit with `CONFIG_ERROR SIGNING_KEYS_MISSING` (exit code 78)
 - Test builds: Derive deterministic key from fixed seed (for reproducible tests)
 
 **Key Rotation**:
+
 ```json
 {
   "event_type": "system.key_rotation",
@@ -187,7 +198,7 @@ export GEODE_AUDIT_SEC
     "cef": {
       "vendor": "DEVNW",
       "product": "GEODE",
-      "version": "0.1.3"
+      "version": "__GEODE_VERSION__"
     }
   },
   "sinks": {
@@ -233,22 +244,26 @@ export GEODE_AUDIT_SEC
 ### Configuration Options
 
 **Service Identity**:
+
 - `name`: Service name for audit trail correlation
 - `host`: Hostname for distributed deployment identification
 - `pid`: Process ID (auto-populated at runtime)
 
 **File Sink**:
+
 - `path`: Audit log file path (created with 0600 permissions)
 - `max_bytes`: Rotation threshold (default: 100 MB)
 - `backup_count`: Number of rotated files to keep (default: 10)
 
 **Syslog Sink**:
+
 - `protocol`: "udp" or "tcp"
 - `host`: Syslog server hostname
 - `port`: Syslog server port (514 for UDP, 6514 for TLS)
 - `facility`: RFC 5424 facility (default: "local4")
 
 **Filters**:
+
 - `default_deny`: If true, only `allow_fields` are logged
 - `allow_fields`: Explicit allowlist of field names
 - `deny_key_patterns`: Regex patterns for sensitive keys
@@ -256,10 +271,12 @@ export GEODE_AUDIT_SEC
 - `pci_mode`: Enable PCI-DSS compliant credit card redaction
 
 **Hash Chain**:
+
 - `algorithm`: "sha256" or "blake3"
 - `digest_interval`: Events between Merkle digest records
 
 **Signing**:
+
 - `enabled`: Generate Ed25519 signatures (default: true)
 - `algorithm`: "ed25519" (currently only supported algorithm)
 
@@ -268,6 +285,7 @@ export GEODE_AUDIT_SEC
 ### Authentication Events
 
 **Successful Login**:
+
 ```json
 {
   "event_type": "auth.login",
@@ -283,6 +301,7 @@ export GEODE_AUDIT_SEC
 ```
 
 **Failed Login**:
+
 ```json
 {
   "event_type": "auth.login",
@@ -297,6 +316,7 @@ export GEODE_AUDIT_SEC
 ```
 
 **Logout**:
+
 ```json
 {
   "event_type": "auth.logout",
@@ -313,6 +333,7 @@ export GEODE_AUDIT_SEC
 ### Database Operations
 
 **Query Execution**:
+
 ```json
 {
   "event_type": "db.query",
@@ -330,6 +351,7 @@ export GEODE_AUDIT_SEC
 ```
 
 **Schema Modification**:
+
 ```json
 {
   "event_type": "db.schema_change",
@@ -345,6 +367,7 @@ export GEODE_AUDIT_SEC
 ```
 
 **Access Denied**:
+
 ```json
 {
   "event_type": "db.access_denied",
@@ -363,6 +386,7 @@ export GEODE_AUDIT_SEC
 ### System Events
 
 **Server Startup**:
+
 ```json
 {
   "event_type": "system.startup",
@@ -370,13 +394,14 @@ export GEODE_AUDIT_SEC
   "action": "initialize",
   "result": "success",
   "details": {
-    "version": "0.1.3",
+    "version": "__GEODE_VERSION__",
     "config_file": "/etc/geode/config.yaml"
   }
 }
 ```
 
 **File Rotation**:
+
 ```json
 {
   "event_type": "system.rotation",
@@ -425,6 +450,7 @@ Geode employs five layers of protection against sensitive data leakage:
 ### Redaction Examples
 
 **Original Event**:
+
 ```json
 {
   "user": "alice@example.com",
@@ -435,6 +461,7 @@ Geode employs five layers of protection against sensitive data leakage:
 ```
 
 **Redacted Event**:
+
 ```json
 {
   "user": "alice@example.com",
@@ -445,6 +472,7 @@ Geode employs five layers of protection against sensitive data leakage:
 ```
 
 **PII Mode: Mask**:
+
 ```json
 {
   "email": "a***@e*****.com",
@@ -453,6 +481,7 @@ Geode employs five layers of protection against sensitive data leakage:
 ```
 
 **PII Mode: Redact**:
+
 ```json
 {
   "email": "***REDACTED***",
@@ -465,6 +494,7 @@ Geode employs five layers of protection against sensitive data leakage:
 ### Rotation Strategy
 
 **Size-Based Rotation**:
+
 ```plaintext
 /var/log/geode/audit.jsonl       (current, <100 MB)
 /var/log/geode/audit.jsonl.1     (100 MB, yesterday)
@@ -474,6 +504,7 @@ Geode employs five layers of protection against sensitive data leakage:
 ```
 
 **Rotation Process**:
+
 1. Current file reaches `max_bytes` threshold
 2. Close current file
 3. Rename: `audit.jsonl` → `audit.jsonl.1`
@@ -484,6 +515,7 @@ Geode employs five layers of protection against sensitive data leakage:
 8. Emit `system.rotation` event
 
 **Chain Continuity**:
+
 - First record in new file uses `prev_hash` from tail of previous file
 - Maintains tamper-evident chain across file boundaries
 - Verification tool must process files in chronological order
@@ -491,6 +523,7 @@ Geode employs five layers of protection against sensitive data leakage:
 ### Permissions & Security
 
 **File Permissions**:
+
 ```bash
 # Audit log files
 -rw------- 1 geode geode 104857600 Jan 24 10:30 audit.jsonl
@@ -500,11 +533,13 @@ drwx------ 2 geode geode 4096 Jan 24 10:30 /var/log/geode/
 ```
 
 **SELinux Context** (if enabled):
+
 ```bash
 chcon -t geode_log_t /var/log/geode/audit.jsonl
 ```
 
 **AppArmor Profile**:
+
 ```plaintext
 /var/log/geode/audit.jsonl rw,
 /var/log/geode/audit.jsonl.* r,
@@ -535,11 +570,13 @@ done
 **Verification Outputs**:
 
 ✅ **Valid Chain**:
+
 ```
 OK chain records=1000 digests=10 algo=sha256
 ```
 
 ❌ **Tampered Chain**:
+
 ```
 TAMPER chain at_seq=523 reason=PREV_HASH_MISMATCH
   expected=a3c7f1d2e5b4a8c9f0d1e2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3
@@ -547,6 +584,7 @@ TAMPER chain at_seq=523 reason=PREV_HASH_MISMATCH
 ```
 
 ❌ **Invalid Signature**:
+
 ```
 TAMPER digest at_seq=600 reason=DIGEST_MISMATCH
   expected=d8e9f0a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9
@@ -554,6 +592,7 @@ TAMPER digest at_seq=600 reason=DIGEST_MISMATCH
 ```
 
 ⚠️ **Schema Error**:
+
 ```
 SCHEMA_ERROR at_seq=789 field=timestamp detail="missing required field"
 WARN ignored trailing partial record
@@ -562,22 +601,26 @@ WARN ignored trailing partial record
 ### Forensic Analysis
 
 **Extract events by actor**:
+
 ```bash
 jq 'select(.actor == "alice@example.com")' /var/log/geode/audit.jsonl
 ```
 
 **Count events by type**:
+
 ```bash
 jq -r '.event_type' /var/log/geode/audit.jsonl | sort | uniq -c | sort -rn
 ```
 
 **Find failed authentications**:
+
 ```bash
 jq 'select(.event_type == "auth.login" and .result == "failure")' \
   /var/log/geode/audit.jsonl
 ```
 
 **Verify chain segment**:
+
 ```bash
 # Extract seq 100-200 and verify hash chain
 jq 'select(.seq_no >= 100 and .seq_no <= 200)' audit.jsonl > segment.jsonl
@@ -589,14 +632,16 @@ geode audit verify --file segment.jsonl --algo sha256
 ### Syslog Integration (RFC 5424)
 
 **CEF Format** (Common Event Format):
+
 ```
 <134>1 2026-01-24T10:30:15.123Z prod-db-01 geode 1234 auth.login -
-CEF:0|DEVNW|GEODE|0.1.3|auth.login|User Login|5|
+CEF:0|DEVNW|GEODE|__GEODE_VERSION__|auth.login|User Login|5|
 act=authenticate duser=alice@example.com outcome=success
 rt=Jan 24 2026 10:30:15 src=192.168.1.100
 ```
 
 **Field Mapping**:
+
 - `<134>`: Priority (local4.info)
 - `1`: RFC 5424 version
 - `prod-db-01`: Hostname
@@ -606,6 +651,7 @@ rt=Jan 24 2026 10:30:15 src=192.168.1.100
 - CEF fields: actor, action, outcome, timestamp, source IP
 
 **Testing Syslog**:
+
 ```bash
 # Test UDP syslog
 nc -u -l 514
@@ -619,6 +665,7 @@ echo "RETURN 1" | geode query --user alice --password test -
 ### SIEM Integration
 
 **Splunk**:
+
 ```splunk
 sourcetype = geode:audit
 | stats count by event_type, result
@@ -626,6 +673,7 @@ sourcetype = geode:audit
 ```
 
 **Elasticsearch**:
+
 ```json
 GET /geode-audit-*/_search
 {
@@ -641,6 +689,7 @@ GET /geode-audit-*/_search
 ```
 
 **Grafana Loki**:
+
 ```logql
 {job="geode-audit"} |= "auth.login" |= "failure" | json
 ```
@@ -650,6 +699,7 @@ GET /geode-audit-*/_search
 ### SOX (Sarbanes-Oxley)
 
 **Requirements**:
+
 - ✅ Tamper-evident audit trail (hash chain + signatures)
 - ✅ Immutable log storage (append-only, 0600 permissions)
 - ✅ Access tracking (all database operations logged)
@@ -657,6 +707,7 @@ GET /geode-audit-*/_search
 - ✅ Periodic review (verification tools provided)
 
 **Configuration**:
+
 ```json
 {
   "sinks": {
@@ -671,6 +722,7 @@ GET /geode-audit-*/_search
 ### PCI-DSS (Payment Card Industry)
 
 **Requirements**:
+
 - ✅ Log all access to cardholder data (db.query events)
 - ✅ Secure log storage (encryption at rest with TDE)
 - ✅ Daily log review (automated verification)
@@ -678,6 +730,7 @@ GET /geode-audit-*/_search
 - ✅ Credit card redaction (Luhn algorithm detection)
 
 **Configuration**:
+
 ```json
 {
   "filters": {
@@ -690,6 +743,7 @@ GET /geode-audit-*/_search
 ### HIPAA (Health Insurance Portability)
 
 **Requirements**:
+
 - ✅ Audit controls (comprehensive event logging)
 - ✅ Access tracking (actor, resource, action)
 - ✅ Integrity controls (hash chain, signatures)
@@ -697,6 +751,7 @@ GET /geode-audit-*/_search
 - ✅ 6-year retention (adjust backup_count accordingly)
 
 **Configuration**:
+
 ```json
 {
   "filters": {
@@ -714,6 +769,7 @@ GET /geode-audit-*/_search
 ### GDPR (General Data Protection Regulation)
 
 **Requirements**:
+
 - ✅ Data minimization (default-deny filtering)
 - ✅ Right to erasure (redaction tools)
 - ✅ Breach notification (alerting on access_denied)
@@ -721,6 +777,7 @@ GET /geode-audit-*/_search
 - ✅ Audit trail (all processing logged)
 
 **Configuration**:
+
 ```json
 {
   "filters": {
@@ -736,17 +793,20 @@ GET /geode-audit-*/_search
 ### Benchmarks
 
 **Append Latency**:
+
 - **Non-blocking**: <500μs (queue insertion)
 - **With fsync**: <5ms (durable write)
 - **Hash computation**: <100μs (SHA-256)
 - **Signature generation**: <1ms (Ed25519, every 100 events)
 
 **Throughput**:
+
 - **Single-threaded**: 10,000 events/sec
 - **Multi-threaded**: 50,000 events/sec
 - **With syslog**: 8,000 events/sec (network overhead)
 
 **Memory Usage**:
+
 - **Base**: 10 MB (buffer queues)
 - **Per event**: 1 KB (average)
 - **Max RSS**: 512 MB (limits enforced)
@@ -754,6 +814,7 @@ GET /geode-audit-*/_search
 ### Optimization
 
 **Tuning for High Volumes**:
+
 ```json
 {
   "buffer_size": 10000,
@@ -767,6 +828,7 @@ GET /geode-audit-*/_search
 ```
 
 **Async Syslog** (non-blocking network I/O):
+
 ```json
 {
   "sinks": {
@@ -786,6 +848,7 @@ GET /geode-audit-*/_search
 **Issue**: Audit log not created
 
 **Solution**:
+
 ```bash
 # Check directory permissions
 ls -ld /var/log/geode/
@@ -805,6 +868,7 @@ cat config/logging.json | jq '.sinks.file'
 **Issue**: Verification fails with SCHEMA_ERROR
 
 **Solution**:
+
 ```bash
 # Check for truncated JSON lines
 tail -n 1 audit.jsonl
@@ -822,6 +886,7 @@ geode audit verify --file audit.jsonl
 **Issue**: Syslog messages not reaching server
 
 **Solution**:
+
 ```bash
 # Test network connectivity
 nc -zv syslog.example.com 514
@@ -841,6 +906,7 @@ tcpdump -i any port 514 -A
 **Issue**: High memory usage
 
 **Solution**:
+
 ```bash
 # Monitor memory
 top -p $(pgrep geode)
@@ -875,6 +941,7 @@ Production deployment recommendations:
 ### Security Hardening
 
 **Restrict Access**:
+
 ```bash
 # Only geode user can read audit logs
 chmod 600 /var/log/geode/audit.jsonl*
@@ -888,6 +955,7 @@ restorecon -Rv /var/log/geode
 ```
 
 **Network Security**:
+
 ```bash
 # Use TLS for syslog (port 6514)
 {
@@ -905,6 +973,7 @@ restorecon -Rv /var/log/geode
 ```
 
 **Monitoring**:
+
 ```bash
 # Alert on verification failures
 0 2 * * * /usr/local/bin/verify_audit_logs.sh || mail -s "Audit verification failed" admin@example.com
@@ -992,16 +1061,16 @@ try logger.audit(&db_event);
 ### Standards
 
 - **RFC 5424**: The Syslog Protocol
-  - https://datatracker.ietf.org/doc/html/rfc5424
+  - <https://datatracker.ietf.org/doc/html/rfc5424>
 
 - **Common Event Format (CEF)**
   - ArcSight CEF specification for SIEM integration
 
 - **W3C Trace Context**
-  - https://www.w3.org/TR/trace-context/
+  - <https://www.w3.org/TR/trace-context/>
 
 - **Ed25519 Digital Signatures**
-  - https://ed25519.cr.yp.to/
+  - <https://ed25519.cr.yp.to/>
 
 ### Compliance Resources
 
@@ -1020,16 +1089,19 @@ try logger.audit(&db_event);
 ## Next Steps
 
 **For Operators**:
+
 - [Monitoring & Observability](/docs/ops/observability/) - Complete monitoring setup
 - [Telemetry Advanced](/docs/ops/telemetry-advanced/) - Custom metrics and dashboards
 - [Docker Deployment](/docs/ops/docker-deployment/) - Container audit log integration
 
 **For Security Teams**:
+
 - [Security Overview](/docs/security/overview/) - Complete security architecture
 - [Field-Level Encryption](/docs/security/field-level-encryption/) - Additional data protection
 - [Session Management](/docs/security/session-management/) - Session audit integration
 
 **For Developers**:
+
 - [Client Libraries](/docs/client-libraries/go-client/) - Client-side audit event generation
 - [Testing Strategies](/docs/guides/testing-strategies/) - Audit log testing approaches
 

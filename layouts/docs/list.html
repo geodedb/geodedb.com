@@ -90,7 +90,7 @@
         <article class="docs-section-intro mb-5">
           <div class="card border-0 shadow-sm docs-panel">
             <div class="card-body">
-              {{ . }}
+              {{ partial "geode/render-content.html" (dict "content" .) }}
             </div>
           </div>
         </article>

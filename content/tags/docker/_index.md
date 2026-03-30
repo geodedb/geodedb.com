@@ -30,12 +30,13 @@ Geode provides official images on [Docker Hub](https://hub.docker.com/r/geodedb/
 docker pull geodedb/geode:latest
 
 # Pull specific version
-docker pull geodedb/geode:v0.1.3
+docker pull geodedb/geode:__GEODE_VERSION__
 ```
 
 **Image Variants**:
+
 - `geode:latest` - Latest stable release
-- `geode:v0.1.3` - Specific version tag
+- `geode:__GEODE_TAG__` - Specific version tag
 - `geode:alpine` - Alpine Linux based (smaller size)
 - `geode:distroless` - Minimal distroless image (maximum security)
 
@@ -236,6 +237,7 @@ endpoint = "/metrics"
 ```
 
 Mount the configuration:
+
 ```yaml
 volumes:
   - ./geode.toml:/etc/geode/geode.toml:ro
@@ -279,6 +281,7 @@ services:
 ## Networking and Service Discovery
 
 **Bridge Network** (default):
+
 ```yaml
 networks:
   geode-network:
@@ -289,6 +292,7 @@ networks:
 ```
 
 **Host Network** (better performance, less isolation):
+
 ```yaml
 services:
   geode:
@@ -296,6 +300,7 @@ services:
 ```
 
 **Custom DNS**:
+
 ```yaml
 services:
   geode:
@@ -307,6 +312,7 @@ services:
 ```
 
 **Service Discovery**:
+
 ```yaml
 services:
   app:
@@ -531,6 +537,7 @@ jobs:
 ## Troubleshooting Docker Deployments
 
 **Container Won't Start**:
+
 ```bash
 # Check logs
 docker logs geode
@@ -543,6 +550,7 @@ docker stats geode
 ```
 
 **Permission Issues**:
+
 ```bash
 # Fix volume permissions
 docker run --rm \
@@ -551,6 +559,7 @@ docker run --rm \
 ```
 
 **Network Connectivity**:
+
 ```bash
 # Test network connectivity
 docker exec geode ping -c 3 geode-node-2
@@ -560,6 +569,7 @@ docker port geode
 ```
 
 **Performance Issues**:
+
 ```bash
 # Monitor resource usage
 docker stats --no-stream

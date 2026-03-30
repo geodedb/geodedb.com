@@ -61,7 +61,7 @@ Start the Geode interactive shell:
 geode shell
 
 # Output:
-# Geode Shell v0.1.3
+# Geode Shell __GEODE_TAG__
 # Connected to localhost:3141
 # Type \help for commands
 # geode>
@@ -85,6 +85,7 @@ CREATE (:Person {name: 'Eve', age: 27, city: 'Portland'});
 ```
 
 **What happened?**
+
 - `CREATE GRAPH` creates a new graph database
 - `USE` switches to that graph
 - `CREATE` with `(:Person {...})` creates nodes with the `Person` label and properties
@@ -112,6 +113,7 @@ CREATE (d)-[:KNOWS {since: 2022}]->(e);
 ```
 
 **Graph Structure Created:**
+
 ```
 Alice --KNOWS--> Bob --KNOWS--> Carol --KNOWS--> David --KNOWS--> Eve
   |                              ^
@@ -128,6 +130,7 @@ RETURN p.name, p.age, p.city;
 ```
 
 **Expected Output:**
+
 ```
 | p.name  | p.age | p.city    |
 |---------|-------|-----------|
@@ -139,6 +142,7 @@ RETURN p.name, p.age, p.city;
 ```
 
 **Explanation:**
+
 - `MATCH (p:Person)` finds all nodes with the `Person` label
 - `p` is a variable that refers to each matched node
 - `RETURN p.name, p.age, p.city` selects which properties to display
@@ -154,6 +158,7 @@ RETURN p.name, p.age;
 ```
 
 **Output:**
+
 ```
 | p.name | p.age |
 |--------|-------|
@@ -172,6 +177,7 @@ RETURN p.name, p.age, p.city;
 ```
 
 **Output:**
+
 ```
 | p.name | p.age | p.city  |
 |--------|-------|---------|
@@ -189,6 +195,7 @@ ORDER BY p.age DESC;
 ```
 
 **Output:**
+
 ```
 | p.name | p.age |
 |--------|-------|
@@ -211,6 +218,7 @@ LIMIT 3;
 ```
 
 **Output:**
+
 ```
 | p.name | p.age |
 |--------|-------|
@@ -231,6 +239,7 @@ RETURN friend.name;
 ```
 
 **Output:**
+
 ```
 | friend.name |
 |-------------|
@@ -239,6 +248,7 @@ RETURN friend.name;
 ```
 
 **Explanation:**
+
 - `(alice:Person {name: 'Alice'})` matches the specific Alice node
 - `-[:KNOWS]->` matches outgoing KNOWS relationships
 - `(friend:Person)` captures the connected Person nodes
@@ -253,6 +263,7 @@ RETURN connected.name;
 ```
 
 **Output:**
+
 ```
 | connected.name |
 |----------------|
@@ -272,6 +283,7 @@ RETURN a.name, b.name, k.since;
 ```
 
 **Output:**
+
 ```
 | a.name | b.name | k.since |
 |--------|--------|---------|
@@ -293,6 +305,7 @@ RETURN DISTINCT fof.name;
 ```
 
 **Output:**
+
 ```
 | fof.name |
 |----------|
@@ -301,6 +314,7 @@ RETURN DISTINCT fof.name;
 ```
 
 **Explanation:**
+
 - `-[:KNOWS*2]->` means exactly 2 hops
 - `WHERE fof <> alice` excludes Alice herself
 - `DISTINCT` removes duplicates
@@ -315,6 +329,7 @@ RETURN DISTINCT reachable.name;
 ```
 
 **Output:**
+
 ```
 | reachable.name |
 |----------------|
@@ -338,6 +353,7 @@ RETURN count(p) AS total_people;
 ```
 
 **Output:**
+
 ```
 | total_people |
 |--------------|
@@ -355,6 +371,7 @@ ORDER BY population DESC;
 ```
 
 **Output:**
+
 ```
 | p.city    | population |
 |-----------|------------|
@@ -377,6 +394,7 @@ RETURN p.city,
 ```
 
 **Output:**
+
 ```
 | p.city    | count | avg_age | youngest | oldest |
 |-----------|-------|---------|----------|--------|
@@ -396,6 +414,7 @@ ORDER BY friends DESC;
 ```
 
 **Output:**
+
 ```
 | p.name | friends |
 |--------|---------|
@@ -415,6 +434,7 @@ RETURN p.name, collect(friend.name) AS friend_list;
 ```
 
 **Output:**
+
 ```
 | p.name | friend_list      |
 |--------|------------------|
@@ -560,6 +580,7 @@ WHERE p.city = 'Portland'
 RETURN p.name, p.age
 ORDER BY p.age ASC;
 ```
+
 </details>
 
 ### Exercise 2: Relationship Query
@@ -574,6 +595,7 @@ MATCH (a:Person)-[:KNOWS]->(b:Person)
 WHERE a.city = b.city
 RETURN a.name, b.name, a.city;
 ```
+
 </details>
 
 ### Exercise 3: Aggregation
@@ -588,6 +610,7 @@ MATCH (p:Person)-[:KNOWS]->()
 WITH DISTINCT p
 RETURN avg(p.age) AS avg_age;
 ```
+
 </details>
 
 ### Exercise 4: Path Query
@@ -601,6 +624,7 @@ RETURN avg(p.age) AS avg_age;
 MATCH path = (alice:Person {name: 'Alice'})-[:KNOWS*3]->(end)
 RETURN [n IN nodes(path) | n.name] AS path;
 ```
+
 </details>
 
 ### Exercise 5: Complex Query
@@ -617,6 +641,7 @@ ORDER BY connections DESC
 WITH p.city AS city, collect({name: p.name, connections: connections})[0] AS top
 RETURN city, top.name AS most_connected, top.connections;
 ```
+
 </details>
 
 ## Common Mistakes
@@ -715,5 +740,5 @@ DETACH DELETE n
 ---
 
 **Last Updated:** January 28, 2026
-**Geode Version:** v0.1.3+
+**Geode Version:** **GEODE_TAG**+
 **GQL Compliance:** ISO/IEC 39075:2024

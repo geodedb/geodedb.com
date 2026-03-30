@@ -98,6 +98,7 @@ Command-line interface architecture including REPL implementation, shell integra
 ### Lexical Analysis and Parsing
 
 **Lexer**: Tokenizes GQL source into tokens:
+
 - Keywords (MATCH, WHERE, RETURN)
 - Identifiers (variable names, labels)
 - Literals (strings, numbers, booleans)
@@ -105,12 +106,14 @@ Command-line interface architecture including REPL implementation, shell integra
 - Punctuation (parentheses, braces, commas)
 
 **Parser**: Builds Abstract Syntax Tree (AST) from tokens:
+
 - Recursive descent parsing
 - Operator precedence handling
 - Error recovery and reporting
 - Location tracking for error messages
 
 **AST**: Structured representation of query:
+
 - Query clauses (MATCH, WHERE, RETURN)
 - Patterns (nodes, relationships, paths)
 - Expressions (comparisons, arithmetic, function calls)
@@ -119,6 +122,7 @@ Command-line interface architecture including REPL implementation, shell integra
 ### Query Optimization
 
 **Logical Optimization**: Transforms AST into optimized logical plan:
+
 - Pattern simplification and normalization
 - Predicate pushdown (filter early)
 - Constant folding and expression simplification
@@ -126,6 +130,7 @@ Command-line interface architecture including REPL implementation, shell integra
 - Common subexpression elimination
 
 **Cost-Based Optimization**: Chooses execution strategy based on cost estimates:
+
 - Cardinality estimation using statistics
 - Index selection based on selectivity
 - Join order optimization
@@ -133,6 +138,7 @@ Command-line interface architecture including REPL implementation, shell integra
 - Parallel execution planning
 
 **Physical Planning**: Generates executable operator tree:
+
 - Operator selection (Scan, Seek, Join, Filter, Aggregate)
 - Memory allocation and buffer sizing
 - Parallelization and work distribution
@@ -141,12 +147,14 @@ Command-line interface architecture including REPL implementation, shell integra
 ### Query Execution
 
 **Operator Pipeline**: Query execution as operator pipeline:
+
 - Pull-based execution (demand-driven)
 - Volcano-style iterator model
 - Pipelined execution (no materialization)
 - Memory-bounded execution
 
 **Key Operators**:
+
 - **Scan**: Iterate all nodes/relationships
 - **Seek**: Index-based lookup
 - **Filter**: Apply predicates
@@ -156,6 +164,7 @@ Command-line interface architecture including REPL implementation, shell integra
 - **Limit**: Bound result size
 
 **Parallelization**:
+
 - Intra-query parallelism (multiple threads per query)
 - Inter-query parallelism (multiple concurrent queries)
 - Parallel scan and aggregate operators
@@ -166,24 +175,28 @@ Command-line interface architecture including REPL implementation, shell integra
 ### Data Structures
 
 **B+Tree Storage**: Primary storage structure for nodes and relationships:
+
 - Self-balancing tree ensures O(log n) access
 - Sequential leaf nodes for range scans
 - High fan-out reduces tree depth
 - Copy-on-write for MVCC
 
 **Write-Ahead Log (WAL)**: Ensures durability:
+
 - Append-only sequential writes
 - All mutations logged before applying
 - Crash recovery replays WAL
 - Periodic checkpointing reduces replay time
 
 **Memory-Mapped Files**: Efficient data access:
+
 - OS manages page cache
 - Zero-copy reads from cache
 - Write-back buffering
 - Large address space utilization
 
 **Index Structures**:
+
 - **B+tree indexes**: Property and relationship type indexes
 - **HNSW indexes**: Vector similarity search
 - **BM25 indexes**: Full-text search
@@ -192,6 +205,7 @@ Command-line interface architecture including REPL implementation, shell integra
 ### MVCC and Transaction Management
 
 **Multi-Version Concurrency Control (MVCC)**:
+
 - Each transaction sees consistent snapshot
 - Writes create new versions, don't modify in-place
 - Readers never block writers
@@ -199,12 +213,14 @@ Command-line interface architecture including REPL implementation, shell integra
 - Garbage collection reclaims old versions
 
 **Serializable Snapshot Isolation (SSI)**:
+
 - Strongest isolation level
 - Prevents all anomalies (dirty read, non-repeatable read, phantom read, write skew)
 - Implemented via predicate locking and conflict detection
 - Minimal performance overhead compared to snapshot isolation
 
 **Transaction Lifecycle**:
+
 1. **BEGIN**: Allocate transaction ID, create snapshot
 2. **Execute**: Read from snapshot, buffer writes
 3. **Validation**: Check for conflicts using SSI
@@ -212,6 +228,7 @@ Command-line interface architecture including REPL implementation, shell integra
 5. **ROLLBACK**: Discard buffered writes, release locks
 
 **Lock Management**:
+
 - Intent locks for coarse-grained locking
 - Predicate locks for range queries
 - Deadlock detection and resolution
@@ -220,24 +237,28 @@ Command-line interface architecture including REPL implementation, shell integra
 ### Write-Ahead Logging (WAL)
 
 **WAL Design**:
+
 - Sequential append-only log
 - All mutations logged before application
 - Log entries contain before/after images
 - Logical logging (operations) not physical (pages)
 
 **Crash Recovery**:
+
 1. Read WAL from last checkpoint
 2. Redo committed transactions
 3. Undo uncommitted transactions
 4. Restore database to consistent state
 
 **Checkpointing**:
+
 - Periodic flush of dirty pages to disk
 - Creates recovery point in WAL
 - Truncates WAL to reclaim space
 - Configurable interval (time or WAL size)
 
 **Log Shipping**: WAL enables replication:
+
 - Stream WAL to replicas
 - Replicas replay log for replication
 - Asynchronous replication for read replicas
@@ -248,6 +269,7 @@ Command-line interface architecture including REPL implementation, shell integra
 ### QUIC Protocol
 
 **Why QUIC Over TCP**:
+
 - **Multiplexing**: Multiple streams without head-of-line blocking
 - **Encryption**: TLS 1.3 built-in, mandatory encryption
 - **Fast connection**: 0-RTT and 1-RTT connection establishment
@@ -255,6 +277,7 @@ Command-line interface architecture including REPL implementation, shell integra
 - **Congestion control**: Modern algorithms (BBR, Cubic)
 
 **Connection Lifecycle**:
+
 1. **Handshake**: TLS 1.3 handshake, negotiate parameters
 2. **Streams**: Multiplex requests on single connection
 3. **Flow control**: Per-stream and connection-level
@@ -262,6 +285,7 @@ Command-line interface architecture including REPL implementation, shell integra
 5. **Closure**: Graceful shutdown or idle timeout
 
 **Stream Management**:
+
 - Bidirectional streams for request/response
 - Unidirectional streams for server push
 - Stream prioritization for multiplexing
@@ -272,6 +296,7 @@ Command-line interface architecture including REPL implementation, shell integra
 **Message Format**: Protobuf wire protocol over QUIC (default) or gRPC.
 
 **Client Messages**:
+
 - `HelloRequest`: initial handshake + authentication
 - `ExecuteRequest`: execute GQL query with parameters
 - `PullRequest`: fetch next batch of results
@@ -279,6 +304,7 @@ Command-line interface architecture including REPL implementation, shell integra
 - `PingRequest`: connection keepalive
 
 **Server Responses** (via `ExecutionResponse`):
+
 - `SchemaDefinition`: query schema (column names, types)
 - `DataPage`: result rows (batched)
 - `Error`: error response with ISO status code
@@ -286,6 +312,7 @@ Command-line interface architecture including REPL implementation, shell integra
 - `ProfilePayload`: performance metrics
 
 **Error Handling**:
+
 - ISO GQL status codes for errors
 - Detailed error messages with location
 - Warnings for non-fatal issues
@@ -296,17 +323,20 @@ Command-line interface architecture including REPL implementation, shell integra
 ### B+Tree Indexes
 
 **Node Property Indexes**:
+
 - Index on node properties (ID, email, etc.)
 - Support equality and range queries
 - Composite indexes for multi-column predicates
 - Covering indexes include RETURN columns
 
 **Relationship Type Indexes**:
+
 - Index relationships by type
 - Fast lookup of all relationships of given type
 - Support for relationship property indexes
 
 **Implementation**:
+
 - Copy-on-write for MVCC
 - Bulk loading for efficient creation
 - Incremental maintenance on updates
@@ -315,23 +345,27 @@ Command-line interface architecture including REPL implementation, shell integra
 ### HNSW Vector Indexes
 
 **Hierarchical Navigable Small World (HNSW)**:
+
 - Approximate nearest neighbor search
 - Sublinear search time O(log n)
 - High recall (>95%) with low latency
 - Configurable accuracy/performance trade-off
 
 **Index Structure**:
+
 - Multi-layer graph structure
 - Higher layers for coarse navigation
 - Lower layers for fine-grained search
 - Configurable layer count and connectivity
 
 **Distance Metrics**:
+
 - **Cosine similarity**: For normalized embeddings
 - **Euclidean distance**: For Euclidean space
 - **Inner product**: For unnormalized vectors
 
 **Use Cases**:
+
 - Semantic search (text embeddings)
 - Recommendation systems (item embeddings)
 - Image similarity (vision embeddings)
@@ -340,24 +374,28 @@ Command-line interface architecture including REPL implementation, shell integra
 ### BM25 Full-Text Indexes
 
 **BM25 Algorithm**:
+
 - State-of-the-art text ranking
 - Term frequency with saturation
 - Inverse document frequency weighting
 - Document length normalization
 
 **Index Structure**:
+
 - Inverted index (term → documents)
 - Positional information for phrase queries
 - Document length statistics
 - Per-term statistics for IDF
 
 **Text Processing**:
+
 - Tokenization (word boundaries)
 - Lowercasing and normalization
 - Stopword removal (optional)
 - Stemming (optional, configurable)
 
 **Query Features**:
+
 - Boolean queries (AND, OR, NOT)
 - Phrase queries ("exact phrase")
 - Wildcard queries (prefix matching)
@@ -368,17 +406,20 @@ Command-line interface architecture including REPL implementation, shell integra
 ### Concurrency Control
 
 **MVCC Benefits**:
+
 - Readers never block writers
 - Writers never block readers
 - High read concurrency
 - Predictable performance
 
 **Isolation Levels**:
+
 - **Serializable (SSI)**: Default, prevents all anomalies
 - **Snapshot Isolation**: Faster but permits write skew
 - **Read Committed**: Weakest, minimal overhead
 
 **Conflict Detection**:
+
 - Read-write conflicts (SSI)
 - Write-write conflicts (all levels)
 - Predicate conflicts (phantom protection)
@@ -387,18 +428,21 @@ Command-line interface architecture including REPL implementation, shell integra
 ### Parallelization Strategies
 
 **Intra-Query Parallelism**:
+
 - Parallel scans (partition data across threads)
 - Parallel joins (partition build side)
 - Parallel aggregations (local then global)
 - Work-stealing for load balancing
 
 **Inter-Query Parallelism**:
+
 - Multiple concurrent queries
 - Connection pooling
 - Thread pool for query execution
 - CPU affinity for cache locality
 
 **I/O Parallelism**:
+
 - Asynchronous I/O (io_uring on Linux)
 - Parallel WAL writes
 - Parallel checkpoint writes
@@ -409,17 +453,20 @@ Command-line interface architecture including REPL implementation, shell integra
 ### Sharding Strategies
 
 **Hash Sharding**: Distribute nodes by hash of ID:
+
 - Uniform distribution
 - Simple implementation
 - No hotspots for random access
 - Cross-shard queries for traversals
 
 **Range Sharding**: Distribute nodes by ID range:
+
 - Locality for sequential IDs
 - Range queries on single shard
 - Hotspots for sequential allocation
 
 **Graph Sharding**: Co-locate connected components:
+
 - Minimize cross-shard traversals
 - Complex partitioning
 - Rebalancing overhead
@@ -428,17 +475,20 @@ Command-line interface architecture including REPL implementation, shell integra
 ### Replication
 
 **Read Replicas**:
+
 - WAL shipping to replicas
 - Eventually consistent reads
 - Scale read throughput
 - Failover for high availability
 
 **Synchronous Replication**:
+
 - Strong consistency
 - Higher latency (wait for replica ACK)
 - Data durability across nodes
 
 **Asynchronous Replication**:
+
 - Lower latency (don't wait for replica)
 - Eventual consistency
 - Risk of data loss on primary failure
@@ -446,12 +496,14 @@ Command-line interface architecture including REPL implementation, shell integra
 ### Distributed Query Execution
 
 **Cross-Shard Queries**:
+
 - Query coordinator on client node
 - Ship subqueries to relevant shards
 - Gather and merge results
 - Distributed joins and aggregations
 
 **Two-Phase Commit (2PC)**:
+
 - Distributed transaction protocol
 - Prepare phase: All participants vote
 - Commit phase: Coordinator commits or aborts
@@ -462,6 +514,7 @@ Command-line interface architecture including REPL implementation, shell integra
 ### Codebase Organization
 
 **Zig Modules**:
+
 ```
 geode/src/
 ├── cli/              # Command-line interface
@@ -486,12 +539,14 @@ geode/src/
 ### CANARY Governance
 
 **Evidence-Based Development**:
+
 - CANARY markers track requirements
 - Each feature has corresponding test
 - Traceability from requirement to implementation
 - 1,735 CANARY markers track 2,190+ requirements
 
 **Example CANARY Marker**:
+
 ```zig
 // CANARY: REQ=REQ-XXX; FEATURE="PatternMatching"; ASPECT=BasicMatch; STATUS=TESTED; TEST=TestBasicNodePatternMatch; OWNER=engine; UPDATED=2026-01-24
 // Requirement: Support basic node pattern matching
@@ -501,6 +556,7 @@ geode/src/
 ### Testing Strategy
 
 **Test Pyramid**:
+
 - **Unit tests**: 1,000+ tests for individual functions
 - **Integration tests**: 500+ tests for component interactions
 - **System tests**: GQL conformance profile tests (ISO/IEC 39075:2024)
@@ -574,12 +630,14 @@ geode/src/
 Understanding Geode's architecture enables effective contributions:
 
 **Code Contributions**:
+
 - Follow architectural patterns
 - Maintain separation of concerns
 - Add CANARY markers for features
 - Write tests for all changes
 
 **Architecture Discussions**:
+
 - Propose improvements on GitHub
 - Discuss trade-offs and alternatives
 - Share performance analysis
@@ -606,4 +664,4 @@ Understanding Geode's architecture enables effective contributions:
 **Test Coverage**: 97.4%
 **ISO Conformance Profile**: ISO/IEC 39075:2024 compliance
 **Last Updated**: January 2026
-**Geode Version**: v0.1.3+
+**Geode Version**: **GEODE_TAG**+

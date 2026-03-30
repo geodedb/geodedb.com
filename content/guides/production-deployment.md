@@ -45,11 +45,13 @@ This guide covers everything you need to deploy Geode in production: hardware re
 **SSD is Required**: Geode relies on fast random I/O for graph traversals. HDDs are not recommended.
 
 **Storage Sizing Formula**:
+
 ```
 Required Storage = (Nodes * 256 bytes) + (Relationships * 128 bytes) + (Properties * avg_size) + 20% overhead
 ```
 
 **Example Calculation**:
+
 ```
 10 million nodes: 10M * 256 = 2.56 GB
 50 million relationships: 50M * 128 = 6.4 GB
@@ -62,6 +64,7 @@ Total: ~18 GB + 20% = ~22 GB
 **Rule of Thumb**: Allocate 1 GB RAM per 10 million graph elements (nodes + relationships).
 
 **Memory Distribution**:
+
 - 60%: Page cache for data files
 - 25%: Query execution buffers
 - 10%: Connection handling
@@ -551,7 +554,7 @@ version: '3.8'
 
 services:
   geode:
-    image: geodedb/geode:0.1.3
+    image: geodedb/geode:__GEODE_VERSION__
     container_name: geode-prod
     restart: unless-stopped
     user: "1000:1000"
@@ -613,7 +616,7 @@ version: '3.8'
 
 services:
   geode:
-    image: geodedb/geode:0.1.3
+    image: geodedb/geode:__GEODE_VERSION__
 
     deploy:
       replicas: 3
@@ -819,7 +822,7 @@ spec:
 
       containers:
         - name: geode
-          image: geodedb/geode:0.1.3
+          image: geodedb/geode:__GEODE_VERSION__
           imagePullPolicy: IfNotPresent
 
           command:
@@ -1126,7 +1129,7 @@ logging:
   fields:
     service: "geode"
     environment: "production"
-    version: "0.1.3"
+    version: "__GEODE_VERSION__"
 ```
 
 ### Log Output
@@ -1265,6 +1268,7 @@ sudo systemctl status geode
 ## Pre-Production Checklist
 
 ### Security
+
 - [ ] TLS enabled with valid certificates
 - [ ] Authentication configured
 - [ ] RBAC policies defined
@@ -1273,6 +1277,7 @@ sudo systemctl status geode
 - [ ] Secrets stored securely (Vault, K8s secrets)
 
 ### Performance
+
 - [ ] Hardware meets requirements
 - [ ] OS tuning applied
 - [ ] Storage is SSD/NVMe
@@ -1280,6 +1285,7 @@ sudo systemctl status geode
 - [ ] Connection limits set
 
 ### Reliability
+
 - [ ] Health checks configured
 - [ ] Backup strategy implemented
 - [ ] Disaster recovery plan documented
@@ -1287,6 +1293,7 @@ sudo systemctl status geode
 - [ ] Log aggregation configured
 
 ### Operations
+
 - [ ] Runbooks documented
 - [ ] On-call rotation established
 - [ ] Escalation paths defined

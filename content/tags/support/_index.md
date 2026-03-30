@@ -46,24 +46,28 @@ Comprehensive documentation covers all aspects of Geode usage.
 The primary documentation website at **geodedb.com** provides structured reference material:
 
 **Getting Started Guides** introduce Geode fundamentals:
+
 - Installation and setup procedures
 - First query tutorials
 - Basic GQL syntax
 - Client library quick starts
 
 **Architecture Documentation** explains internal design:
+
 - Server architecture overview
 - Storage engine design
 - Query execution model
 - QUIC network protocol
 
 **API Reference** documents all interfaces:
+
 - GQL language specification
 - Client library APIs (Go, Python, Rust, Zig)
 - Server configuration options
 - Wire protocol specification
 
 **Operations Guides** cover production deployment:
+
 - Installation procedures
 - Configuration management
 - Backup and recovery
@@ -71,6 +75,7 @@ The primary documentation website at **geodedb.com** provides structured referen
 - Monitoring and alerting
 
 **Development Resources** aid contributors:
+
 - Development environment setup
 - Build system documentation
 - Testing methodology
@@ -106,6 +111,7 @@ The `geode/docs/` directory contains 40+ technical documents covering specific f
 Each client library includes comprehensive documentation:
 
 **Go Client:**
+
 ```bash
 cd geode-client-go
 cat README.md
@@ -115,6 +121,7 @@ go doc -all geodedb.com/geode
 ```
 
 **Python Client:**
+
 ```bash
 cd geode-client-python
 cat README.md
@@ -124,6 +131,7 @@ pdoc geode_client
 ```
 
 **Rust Client:**
+
 ```bash
 cd geode-client-rust
 cat README.md
@@ -133,6 +141,7 @@ cargo doc --open
 ```
 
 **Zig Client:**
+
 ```bash
 cd geode-client-zig
 cat README.md
@@ -156,6 +165,7 @@ Community channels provide peer-to-peer assistance and collaboration.
 Community forums enable threaded discussions about Geode usage, best practices, and troubleshooting:
 
 **Topics Include:**
+
 - Installation and configuration questions
 - Query optimization discussions
 - Architecture and design patterns
@@ -164,6 +174,7 @@ Community forums enable threaded discussions about Geode usage, best practices, 
 - Feature requests and suggestions
 
 **Forum Etiquette:**
+
 - Search existing threads before posting new questions
 - Provide complete context and error messages
 - Share solutions when you find them
@@ -174,11 +185,13 @@ Community forums enable threaded discussions about Geode usage, best practices, 
 Real-time chat provides quick informal support:
 
 **IRC/Matrix/Discord** (channels depend on project configuration):
+
 - #geode - General discussion and support
 - #geode-dev - Development and contribution discussion
 - #geode-ops - Operations and deployment topics
 
 **Chat Best Practices:**
+
 - Ask questions clearly and provide context
 - Don't ask to ask - just ask your question
 - Be patient waiting for responses
@@ -190,16 +203,19 @@ Real-time chat provides quick informal support:
 Email-based discussion for asynchronous communication:
 
 **geode-users@** - User support and discussion
+
 - Usage questions
 - Configuration assistance
 - Best practices sharing
 
 **geode-dev@** - Development discussion
+
 - Implementation discussions
 - Contribution coordination
 - Technical design proposals
 
 **geode-announce@** - Release announcements
+
 - New version releases
 - Security advisories
 - Major feature announcements
@@ -213,6 +229,7 @@ Public issue tracker manages bug reports and feature requests.
 Effective bug reports expedite resolution:
 
 **Required Information:**
+
 ```markdown
 ### Bug Description
 Clear description of the problem
@@ -229,7 +246,7 @@ Query should return all nodes
 Server returns error: "..."
 
 ### Environment
-- Geode Version: 0.1.3
+- Geode Version: __GEODE_VERSION__
 - OS: Ubuntu 22.04
 - Zig Version: 0.1.0
 - Client Library: Python 3.9
@@ -241,6 +258,7 @@ Server returns error: "..."
 ```
 
 **Before Reporting:**
+
 1. Search existing issues for duplicates
 2. Verify bug on latest version
 3. Create minimal reproduction case
@@ -251,6 +269,7 @@ Server returns error: "..."
 Propose new features or enhancements:
 
 **Feature Request Template:**
+
 ```markdown
 ### Feature Description
 Clear description of proposed feature
@@ -346,18 +365,21 @@ A: Use BEGIN TRANSACTION, COMMIT, and ROLLBACK commands.
 Systematic troubleshooting guides address common issues:
 
 **Connection Problems:**
+
 - Server not starting
 - Firewall blocking connections
 - TLS certificate errors
 - Connection pool exhaustion
 
 **Performance Issues:**
+
 - Slow query performance
 - High memory usage
 - High CPU usage
 - Disk I/O bottlenecks
 
 **Data Issues:**
+
 - Missing data
 - Duplicate entries
 - Transaction failures
@@ -370,6 +392,7 @@ See the comprehensive Troubleshooting Guide for detailed procedures.
 Example code demonstrates common patterns:
 
 **Basic Connection (Go):**
+
 ```go
 import "geodedb.com/geode"
 
@@ -381,6 +404,7 @@ defer client.Close()
 ```
 
 **Query Execution (Python):**
+
 ```python
 from geode_client import Client
 
@@ -393,6 +417,7 @@ async with client.connection() as conn:
 ```
 
 **Transaction (Rust):**
+
 ```rust
 let mut conn = client.connect().await?;
 conn.begin().await?;
@@ -416,12 +441,14 @@ Commercial support options for enterprise deployments.
 ### Support Plans
 
 **Community Support** (Free):
+
 - Documentation access
 - Community forums and chat
 - Public issue tracker
 - Best effort response times
 
 **Standard Support** (Commercial):
+
 - Email support
 - 2 business day response time
 - Production deployment assistance
@@ -429,6 +456,7 @@ Commercial support options for enterprise deployments.
 - Security advisories
 
 **Premium Support** (Commercial):
+
 - 24/7 support availability
 - 4 hour critical issue response
 - Phone and video support
@@ -437,6 +465,7 @@ Commercial support options for enterprise deployments.
 - Custom development consultation
 
 **Enterprise Support** (Commercial):
+
 - All Premium features
 - 1 hour critical issue response
 - Named support team
@@ -469,13 +498,14 @@ Support does not cover:
 
 ### Contacting Professional Support
 
-**Email:** support@geodedb.com
+**Email:** <support@geodedb.com>
 
 **Phone:** +1-XXX-XXX-XXXX (Premium/Enterprise plans)
 
-**Support Portal:** https://support.geodedb.com
+**Support Portal:** <https://support.geodedb.com>
 
 **Information to Provide:**
+
 - Support plan and customer ID
 - Issue severity and impact
 - Geode version and configuration

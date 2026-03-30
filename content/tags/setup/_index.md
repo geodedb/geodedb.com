@@ -242,7 +242,7 @@ cd geode
 The server starts and listens on localhost port 3141. Output indicates successful startup:
 
 ```
-[INFO] Geode Graph Database v0.1.3
+[INFO] Geode Graph Database __GEODE_TAG__
 [INFO] Listening on 127.0.0.1:3141
 [INFO] Data directory: ./data
 [INFO] Ready for connections

@@ -28,6 +28,7 @@ Deployment documentation for Geode covers production setup, containerization, or
 Traditional deployment on dedicated hardware or VMs:
 
 **Advantages**:
+
 - Maximum performance control
 - Predictable resource allocation
 - No containerization overhead
@@ -112,7 +113,7 @@ Containerized deployment with Docker:
 **Pull official image**:
 
 ```bash
-docker pull codepros/geode:v0.1.3
+docker pull codepros/geode:__GEODE_TAG__
 ```
 
 **Run container**:
@@ -125,7 +126,7 @@ docker run -d \
   -v /var/lib/geode:/var/lib/geode \
   -v /etc/geode:/etc/geode:ro \
   --restart unless-stopped \
-  codepros/geode:v0.1.3
+  codepros/geode:__GEODE_TAG__
 ```
 
 **Docker Compose** (`docker-compose.yml`):
@@ -135,7 +136,7 @@ version: '3.8'
 
 services:
   geode:
-    image: codepros/geode:v0.1.3
+    image: codepros/geode:__GEODE_TAG__
     container_name: geode
     ports:
       - "3141:3141"
@@ -222,7 +223,7 @@ spec:
     spec:
       containers:
       - name: geode
-        image: codepros/geode:v0.1.3
+        image: codepros/geode:__GEODE_TAG__
         ports:
         - containerPort: 3141
           name: client
@@ -392,12 +393,14 @@ parameters:
 ### Hardware Requirements
 
 **Minimum production specs**:
+
 - CPU: 4 cores
 - RAM: 16GB
 - Storage: 100GB SSD
 - Network: 1Gbps
 
 **Recommended production specs**:
+
 - CPU: 16+ cores
 - RAM: 64GB+
 - Storage: 1TB+ NVMe SSD

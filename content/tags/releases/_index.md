@@ -33,7 +33,7 @@ Geode uses semantic versioning (SemVer) for all releases:
 MAJOR.MINOR.PATCH[-PRERELEASE][+BUILD]
 
 Examples:
-0.1.3          - Stable release
+0.2.15         - Stable release
 1.0.0           - Major version
 1.2.3-beta.1    - Pre-release
 1.2.3+20240124  - Build metadata
@@ -65,73 +65,75 @@ Examples:
 - Minor performance tweaks
 - No new features
 
-## Current Release: v0.1.3
+## Current Release: **GEODE_TAG**
 
-**Release Date**: January 24, 2026
-**Status**: Production Ready
+**Release Date**: **GEODE_RELEASE_DATE_LONG**
+**Status**: Current stable release
 **Support Level**: Full Support
 
 ### Key Features
 
 **Enterprise Readiness**:
 
-- 97.4% Test Coverage (1644/1688 tests passing)
 - 100% GQL compliance (see conformance profile)
-- Production-validated with 1,735 CANARY governance markers
+- `__GEODE_TAG__` release cut validated with 619/619 unit tests
+- Current mainline GAP analysis tracking 3847 passed, 70 failed, 35 skipped
 - Full ACID transaction support
-- Row-Level Security (RLS)
+- Row-Level Security (RLS), API keys, MFA, and mTLS support
 
 **Architecture**:
 
+- DSN graph binding with graph-scoped sessions
+- Per-graph storage and graph-storage integration
 - Memory-mapped I/O with page-level caching
-- Connection pooling
 - Cost-based query optimization
+- CTE execution and DOT output support
 
 **Protocol**:
 
 - QUIC + TLS 1.3 (mandatory)
-- Protobuf wire protocol
+- QUIC stream multiplexing in the `v0.2.x` line
 - Default port: 3141
 - Bidirectional streaming support
 
 **Client Libraries**:
 
-- Go client v1.0.0 (database/sql driver)
-- Python client v1.0.0 (async/await)
-- Rust client v1.0.0 (tokio-based)
-- Zig client v1.0.0 (vendored QUIC)
+- Go client rolling stable module
+- Python client v0.3.19
+- Rust client v0.1.1-alpha.8
+- Zig client v0.1.0
 
-### Upgrade from v0.1.x
+### Upgrade into v0.2.x
 
 **Breaking Changes**:
 
-1. TCP protocol removed (QUIC only)
-2. Default port changed from 8443 to 3141
-3. Legacy JSON line protocol removed (Protobuf wire protocol only)
+1. Storage layout changed significantly across the March 2026 `v0.1.x` to `v0.2.x` transition.
+2. DSN graph binding now controls the default graph in more surfaces.
+3. Auth tooling and graph-storage behavior should be revalidated in staging before rollout.
 
 **Migration Steps**:
 
 ```bash
 # 1. Backup existing database
-geode backup create --output pre-v0.18-backup.tar.gz
+geode backup create --output pre-__GEODE_TAG__-backup.tar.gz
 
 # 2. Stop v0.1.x server
 geode shutdown
 
-# 3. Install v0.1.3
+# 3. Install __GEODE_TAG__
 curl -sSL https://install.geodedb.com | sh
 
 # 4. Update configuration
 # Change port from 8443 to 3141
 # Remove TCP protocol settings
 
-# 5. Start v0.1.3 server
+# 5. Start __GEODE_TAG__ server
 geode serve --config /etc/geode/config.yaml
 
 # 6. Update client libraries
-go get -u geodedb.com/geode@v1.0.0
-pip install --upgrade geode-client==1.0.0
-cargo update geode-client
+go get -u geodedb.com/geode@__GEODE_TAG__
+pip install --upgrade geode-client==0.3.19
+cargo update -p geode-client --precise 0.1.1-alpha.8
 ```
 
 ## Release Channels
@@ -143,28 +145,28 @@ Geode provides multiple release channels for different use cases:
 - Fully tested and validated
 - Long-term support
 - Security updates guaranteed
-- Example: v0.1.3
+- Example: **GEODE_TAG**
 
 **Beta** (Early Access):
 
 - Feature-complete but undergoing final testing
 - Preview upcoming features
 - Not recommended for production
-- Example: v0.1.4-beta.1
+- Example: v0.2.16-rc.1
 
 **Alpha** (Experimental):
 
 - Early development builds
 - APIs may change
 - For testing only
-- Example: v0.1.4-alpha.3
+- Example: v0.2.16-alpha.1
 
 **Nightly** (Development):
 
 - Daily builds from main branch
 - Bleeding edge features
 - Unstable, for development only
-- Example: v0.1.4-nightly+20240124
+- Example: vX.Y.Z-dev+YYYYMMDD
 
 ## Release Schedule
 
@@ -225,7 +227,7 @@ brew install geodedb/geode/geode
 ```bash
 git clone https://github.com/codeprosorg/geode
 cd geode
-git checkout v0.1.3
+git checkout __GEODE_TAG__
 make build
 ./zig-out/bin/geode serve --listen 0.0.0.0:3141
 ```
@@ -235,13 +237,13 @@ make build
 ```bash
 # Latest stable release
 docker pull geodedb/geode:latest
-docker pull geodedb/geode:0.18
+docker pull geodedb/geode:0.2
 
 # Specific version
-docker pull geodedb/geode:0.1.3
+docker pull geodedb/geode:__GEODE_VERSION__
 
 # Run container
-docker run -p 3141:3141 geodedb/geode:0.1.3
+docker run -p 3141:3141 geodedb/geode:__GEODE_VERSION__
 ```
 
 Additional package managers are not currently published; use release artifacts, Docker, or build from source.
@@ -252,7 +254,7 @@ Before any release, Geode undergoes comprehensive testing:
 
 **Test Suite**:
 
-1. Unit tests (1,688 tests, 97.4% passing)
+1. Unit tests (`__GEODE_TAG__` release cut: 619/619 passing)
 2. Integration tests (cross-client validation)
 3. GQL compliance tests (see conformance profile)
 4. Performance benchmarks
@@ -273,9 +275,9 @@ Before any release, Geode undergoes comprehensive testing:
 
 **Current Versions**:
 
-- v0.1.x: Full support (new features, bug fixes, security)
-- v0.1.x: Maintenance mode (bug fixes, security only)
-- v0.1.x: End of life (no updates)
+- v0.2.x: Full support (current stable feature line)
+- v0.1.28-v0.1.39: Upgrade-planned support for existing March 2026 deployments
+- v0.1.3-v0.1.27: Legacy line; upgrade with backup and restore validation
 
 **Support Levels**:
 
@@ -303,15 +305,16 @@ Before any release, Geode undergoes comprehensive testing:
 Each release includes detailed release notes:
 
 ```markdown
-# Geode v0.1.3
+# Geode v0.2.15
 
-**Release Date**: January 24, 2026
-**Status**: Production Ready
+**Release Date**: March 29, 2026
+**Status**: Current stable release
 
 ## Highlights
 - 100% GQL compliance
-- QUIC protocol upgrade
-- Row-Level Security
+- QUIC stream multiplexing and poll-loop improvements
+- CTE execution and DOT output support
+- Current auth and graph-storage fixes in the stable line
 
 ## Added
 - Feature 1: Description
@@ -398,14 +401,14 @@ Each release includes detailed release notes:
 If upgrade fails, execute rollback:
 
 ```bash
-# 1. Stop failed v0.1.3 server
+# 1. Stop failed __GEODE_TAG__ server
 geode shutdown
 
-# 2. Restore v0.1.x binary
-sudo dpkg -i geode-0.1.2.deb
+# 2. Restore previous stable binary
+sudo dpkg -i geode-0.2.14.deb
 
 # 3. Restore database from backup
-geode restore --input pre-v0.18-backup.tar.gz
+geode restore --input pre-__GEODE_TAG__-backup.tar.gz
 
 # 4. Restore configuration
 cp /etc/geode/config.yaml.backup /etc/geode/config.yaml

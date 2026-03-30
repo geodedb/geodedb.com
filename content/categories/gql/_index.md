@@ -342,7 +342,8 @@ ORDER BY size DESC
 
 Geode's GQL implementation is production-ready with all ISO features:
 
-**v0.1.3+ (Current)**:
+****GEODE_TAG**+ (Current stable line)**:
+
 - ✅ ISO/IEC 39075:2024 compliance
 - ✅ MATCH and OPTIONAL MATCH with bounded expansions
 - ✅ Aggregations and set operations
@@ -458,4 +459,4 @@ Found a GQL bug? Have a feature request? Contributions welcome:
 **Standard**: ISO/IEC 39075:2024
 **Conformance Profile**: ISO/IEC 39075:2024 compliance (see conformance profile)
 **Last Updated**: January 2026
-**Geode Version**: v0.1.3+
+**Geode Version**: **GEODE_TAG**+

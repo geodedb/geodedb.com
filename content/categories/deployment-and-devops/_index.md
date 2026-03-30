@@ -56,7 +56,7 @@ CMD ["serve", "--config", "/etc/geode/config.yaml"]
 
 ```bash
 # Build image
-docker build -t geode:0.1.3 .
+docker build -t geode:__GEODE_VERSION__ .
 
 # Run container
 docker run -d \
@@ -64,7 +64,7 @@ docker run -d \
   -p 3141:3141 \
   -v geode-data:/var/lib/geode \
   -v $(pwd)/config.yaml:/etc/geode/config.yaml:ro \
-  geode:0.1.3
+  geode:__GEODE_VERSION__
 ```
 
 ### Kubernetes Deployment
@@ -91,7 +91,7 @@ spec:
     spec:
       containers:
       - name: geode
-        image: geode:0.1.3
+        image: geode:__GEODE_VERSION__
         ports:
         - containerPort: 3141
           name: quic
@@ -324,7 +324,7 @@ resource "aws_security_group" "geode" {
   hosts: geode_cluster
   become: yes
   vars:
-    geode_version: "0.1.3"
+    geode_version: "__GEODE_VERSION__"
     geode_data_dir: "/var/lib/geode"
 
   tasks:

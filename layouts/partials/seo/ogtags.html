@@ -55,6 +55,7 @@
     {{ end }}
   {{ end }}
 {{ end }}
+{{ $pageDescription = partial "geode/render-text.html" (dict "content" ($pageDescription | plainify)) }}
 
 {{ $siteTitle := .Site.Title }}
 {{ $siteName := .Site.Params.sitename | default .Site.Title }}

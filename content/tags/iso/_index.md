@@ -277,6 +277,7 @@ ISO compliance enables fair benchmarks:
 **Symptom**: Query fails with syntax error
 
 **Solutions**:
+
 - Consult ISO/IEC 39075:2024 specification
 - Verify query against GQL grammar
 - Use GQL-compliant syntax validator
@@ -287,6 +288,7 @@ ISO compliance enables fair benchmarks:
 **Symptom**: Query produces unexpected results
 
 **Solutions**:
+
 - Review ISO-specified semantics for operation
 - Check NULL handling with three-valued logic
 - Verify type coercion rules
@@ -297,6 +299,7 @@ ISO compliance enables fair benchmarks:
 **Symptom**: Queries fail after migration
 
 **Solutions**:
+
 - Identify vendor-specific syntax
 - Rewrite using ISO-standard constructs
 - Test against target database conformance level
@@ -632,7 +635,7 @@ class ComplianceDocGenerator:
 
 ## Executive Summary
 
-Geode Graph Database v0.1.3 publishes the ISO/IEC 39075:2024 compliance
+Geode Graph Database __GEODE_TAG__ publishes the ISO/IEC 39075:2024 compliance
 (Graph Query Language) international standard.
 
 ## Test Results Summary

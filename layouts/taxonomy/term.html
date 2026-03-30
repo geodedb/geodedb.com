@@ -17,7 +17,7 @@
 {{ $taxonomyPath := printf "%s/%s/" .Data.Plural (.Title | urlize) }}
 {{ range .Site.Pages }}
   {{ if and .File (eq .File.Dir $taxonomyPath) }}
-    {{ $taxonomyContent = .Content }}
+    {{ $taxonomyContent = partial "geode/render-content.html" (dict "content" .Content) }}
     {{ $taxonomyPage = . }}
     {{ $hasDetailContent = true }}
     {{ break }}
@@ -37,6 +37,7 @@
 {{ else if .Summary }}
   {{ $description = .Summary }}
 {{ end }}
+{{ $description = partial "geode/render-text.html" (dict "content" ($description | plainify)) }}
 
 <div class="docs-shell">
   {{/* Clean header matching docs style */}}
@@ -204,10 +205,10 @@
                       <div class="flex-grow-1">
                         <h3 class="h6 mb-1 fw-semibold">{{ .Title }}</h3>
                         {{ with .Description }}
-                          <p class="mb-1 text-muted small">{{ . | truncate 120 }}</p>
+                          <p class="mb-1 text-muted small">{{ partial "geode/render-text.html" (dict "content" .) | truncate 120 }}</p>
                         {{ else }}
                           {{ with .Summary }}
-                            <p class="mb-1 text-muted small">{{ . | plainify | truncate 120 }}</p>
+                            <p class="mb-1 text-muted small">{{ partial "geode/render-text.html" (dict "content" (. | plainify)) | truncate 120 }}</p>
                           {{ end }}
                         {{ end }}
                         <div class="d-flex gap-3 text-muted small">

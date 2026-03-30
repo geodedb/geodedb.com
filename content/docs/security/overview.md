@@ -30,11 +30,17 @@ keywords:
 
 Comprehensive security features for enterprise deployments: authentication, authorization, encryption, and audit logging.
 
+> **Implementation note (2026-03-30)**
+>
+> - Implemented today: username/password, sessions, API keys, MFA, mTLS, TDE, FLE, audit logging, and RLS
+> - Planned, not implemented: LDAP/Active Directory and OAuth2/OIDC
+> - Current open auth gap: CLI auth management commands still operate on the local auth store rather than delegating to a running server
+
 ## Security Model Overview
 
 Geode provides defense-in-depth security:
 
-- **Authentication (AuthN)**: Verify user identity with Argon2id password hashing
+- **Authentication (AuthN)**: Verify user identity with username/password, session tokens, API keys, MFA, and mTLS
 - **Authorization (AuthZ)**: RBAC/ABAC with Enhanced Row-Level Security (RLS) policies
 - **Encryption**:
   - **TDE**: Transparent Data Encryption for data-at-rest
@@ -48,40 +54,43 @@ From `USER_AUTH.md`:
 
 ### Default User Creation
 
-**On first startup**, Geode creates a default admin user if environment variables are set:
+**On first startup**, Geode creates the bootstrap admin user if environment variables are set:
 
 ```bash
 # Set admin credentials
-export GEODE_ADMIN_USERNAME="admin"
+export GEODE_ADMIN_USERNAME="geode"
 export GEODE_DEFAULT_PASSWORD="change-me-immediately"
 
 # Start server (creates admin user on first run)
 ./geode serve
 ```
 
-**Security note**: Change the default password immediately after first login.
+If `GEODE_ADMIN_USERNAME` is not set, the default bootstrap username is `geode`.
 
-### User Management
+**Security note**: Change the bootstrap password immediately after first login.
 
-```gql
--- Create user
-CREATE USER alice WITH PASSWORD 'secure-password-123';
+### Current Auth Management Surface
 
--- Create user with roles
-CREATE USER bob WITH PASSWORD 'password' ROLES ['analyst', 'reader'];
+```bash
+# Online login/session workflows
+geode auth login -U geode --save-session
+geode auth logout
+geode auth token
 
--- Change password
-ALTER USER alice SET PASSWORD 'new-password-456';
-
--- Drop user
-DROP USER bob;
+# Offline/on-host auth integrity workflows
+geode auth init --data-dir /var/lib/geode
+geode auth reseal --data-dir /var/lib/geode
+geode auth verify --data-dir /var/lib/geode
 ```
+
+`geode user`, `role`, `policy`, `grant`, `revoke`, and `apikey` currently operate on the **local auth store** rather than a live server connection. Treat them as offline/on-host admin tools until the `GAP-0270` delegation fix lands.
 
 ### Password Policy
 
 From `USER_AUTH.md`:
 
 **Configurable policies**:
+
 - Minimum length (default: 12 characters)
 - Complexity requirements (uppercase, lowercase, digits, special chars)
 - Password expiration (default: 90 days)
@@ -112,11 +121,13 @@ From `ARGON2ID_IMPLEMENTATION.md`:
 - **Configurable cost**: Adjust for security/performance trade-off
 
 **Parameters**:
+
 - **Time cost** (t): Number of iterations (default: 3)
 - **Memory cost** (m): Memory in KiB (default: 65536 = 64MB)
 - **Parallelism** (p): Threads (default: 4)
 
 **Example hash**:
+
 ```
 $argon2id$v=19$m=65536,t=3,p=4$salt$hash
 ```
@@ -143,6 +154,7 @@ REVOKE WRITE ON GRAPH SocialNetwork.Person FROM analyst;
 ```
 
 **Permission levels**:
+
 - `READ` - Query data
 - `WRITE` - Insert/update/delete
 - `ADMIN` - Manage users, roles, schema
@@ -165,6 +177,7 @@ From `ADVANCED_SECURITY_FEATURES_OCTOBER_2025.md`:
 **RLS policies control row-level access** based on user context.
 
 **Policy types**:
+
 - `SELECT` - Control which rows are visible
 - `INSERT` - Control which rows can be inserted
 - `UPDATE` - Control which rows can be updated
@@ -197,6 +210,7 @@ USING (
 ```
 
 **Policy evaluation**:
+
 - Evaluated **before** query execution
 - Policies are **combined with AND** (all must pass)
 - Policies are **transparent** to application (no query rewriting needed)
@@ -212,6 +226,7 @@ From `DESIGN_TDE_KMS.md` and `KMS_PROVIDER_SYSTEM.md`:
 **TDE encrypts data-at-rest** transparently.
 
 **Architecture**:
+
 - **Encryption**: AES-256-GCM
 - **Key hierarchy**: Master key → Database keys → Page keys
 - **Scope**: Disk storage, WAL (Write-Ahead Log)
@@ -263,6 +278,12 @@ security:
 
 **Key rotation**: Online key rotation supported (re-encrypts pages with new key).
 
+**Current storage scope**:
+
+- per-graph store files and checkpointed storage pages
+- write-ahead log / recovery path
+- encrypted-at-rest operation through the graph-storage pager on current `main`
+
 **Performance**: Optimized with memory-mapped I/O and hardware AES acceleration where available.
 
 ### Field-Level Encryption (FLE)
@@ -272,11 +293,13 @@ From `FIELD_LEVEL_ENCRYPTION.md`:
 **FLE encrypts individual properties** while leaving others in plaintext.
 
 **Use cases**:
+
 - Encrypt PII (SSN, credit cards) while leaving non-sensitive data searchable
 - Comply with data residency regulations
 - Minimize exposure in case of SQL injection or data breach
 
 **Architecture**:
+
 - **Encryption**: AES-256-GCM per field
 - **Blind indexes**: Enable equality search on encrypted data
 - **Key derivation**: Per-column keys derived from master key
@@ -308,7 +331,10 @@ RETURN u.name, u.email;  -- Decrypted transparently
 
 **Blind Index**: Hash-based index allowing equality search without decryption.
 
+**Known issue**: `GAP-0271` tracks a remaining role-parser bug on `main` where semicolon-delimited role input must be rejected to prevent FLE plaintext access bypass. See the dedicated FLE guide for the current limitation note.
+
 **Key rotation**:
+
 - **Online rotation**: Re-encrypt fields with new key without downtime
 - **Rotation strategy**: Rotate per-column keys periodically (e.g., quarterly)
 
@@ -321,12 +347,14 @@ From `AUDIT_LOGGING.md`:
 **Tamper-evident audit logs** for compliance and forensics.
 
 **Architecture**:
+
 - **Format**: JSONL (one JSON object per line)
 - **Integrity**: Hash-chained logs with cryptographic signatures
 - **Redaction**: Query text NOT logged (only metadata)
 - **Tracing**: Correlation IDs for distributed tracing
 
 **What's logged**:
+
 - Authentication events (login, logout, failed attempts)
 - Authorization decisions (policy evaluations)
 - Schema changes (CREATE/ALTER/DROP)
@@ -334,6 +362,7 @@ From `AUDIT_LOGGING.md`:
 - Query metadata (timestamp, user, graph, execution time)
 
 **What's NOT logged**:
+
 - Query text (to avoid logging sensitive data)
 - Query parameters
 - Result sets
@@ -493,6 +522,7 @@ From `SECURITY_PROGRESS.md`:
 **Evidence-based development**: All security features tracked with CANARY markers and test evidence.
 
 **Current status**:
+
 - ✅ Authentication: Argon2id hashing, password policies
 - ✅ RLS: Enhanced policies (SELECT/INSERT/UPDATE/DELETE)
 - ✅ TDE: AES-256-GCM with KMS integration

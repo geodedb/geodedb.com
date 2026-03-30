@@ -49,7 +49,7 @@
             <div class="card border-0 shadow-sm docs-panel">
               <div class="card-body">
                 <div class="docs-intro-content docs-intro-content--bullets">
-                  {{ . }}
+                  {{ partial "geode/render-content.html" (dict "content" .) }}
                 </div>
               </div>
             </div>
@@ -61,7 +61,7 @@
         {{ $sections := slice }}
         {{ $regularPages := slice }}
         {{ $hasIntro := gt (len (plainify .Content)) 0 }}
-        
+
         {{ range $allPages }}
           {{ if eq .Kind "section" }}
             {{ $sections = $sections | append . }}

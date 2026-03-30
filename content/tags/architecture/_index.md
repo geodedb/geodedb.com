@@ -224,6 +224,7 @@ WHERE component = 'query_engine'
 ```
 
 Metrics include:
+
 - Query latency percentiles (p50, p95, p99)
 - Throughput (queries/second)
 - Resource utilization (CPU, memory, disk)
@@ -450,7 +451,7 @@ class EventDrivenService:
         self.geode = open_database(geode_url)
         self.producer = KafkaProducer(bootstrap_servers=kafka_brokers)
         self.consumer = KafkaConsumer('geode-events', bootstrap_servers=kafka_brokers)
-    
+
     async def process_events(self):
         """Process events from Kafka and update Geode"""
         async with self.geode.connection() as conn:
@@ -472,7 +473,7 @@ class EventDrivenService:
                         MATCH (a:User {id: $user1}), (b:User {id: $user2})
                         CREATE (a)-[:FRIENDS_WITH {since: datetime()}]->(b)
                     """, event['data'])
-    
+
     async def publish_graph_changes(self):
         """Publish Geode changes to Kafka"""
         last_seen = "1970-01-01T00:00:00Z"
@@ -536,7 +537,7 @@ async def create_user(user: UserCreate, client=Depends(get_geode_client)):
         })
         RETURN u.id as user_id
     """, {"name": user.name, "email": user.email})
-    
+
     return {"user_id": result.rows[0]['user_id']}
 
 @app.get("/users/{user_id}/friends")
@@ -546,7 +547,7 @@ async def get_friends(user_id: str, client=Depends(get_geode_client)):
         MATCH (u:User {id: $id})-[:FRIENDS_WITH]-(friend:User)
         RETURN friend.id, friend.name, friend.email
     """, {"id": user_id})
-    
+
     return {"friends": [dict(r) for r in result]}
 
 @app.post("/friendships")
@@ -559,7 +560,7 @@ async def create_friendship(
         MATCH (a:User {id: $user1}), (b:User {id: $user2})
         CREATE (a)-[:FRIENDS_WITH {since: datetime()}]->(b)
     """, {"user1": friendship.user1_id, "user2": friendship.user2_id})
-    
+
     return {"status": "created"}
 ```
 
@@ -577,7 +578,7 @@ class GeodeCacheLayer:
     def __init__(self, geode_client, redis_client):
         self.geode = geode_client
         self.redis = redis_client
-    
+
     def cached_query(self, ttl=300):
         """Decorator for query result caching"""
         def decorator(func):
@@ -585,22 +586,22 @@ class GeodeCacheLayer:
             async def wrapper(*args, **kwargs):
                 # Generate cache key
                 cache_key = f"{func.__name__}:{hash((args, tuple(kwargs.items())))}"
-                
+
                 # Check cache
                 cached = self.redis.get(cache_key)
                 if cached:
                     return json.loads(cached)
-                
+
                 # Execute query
                 result = await func(*args, **kwargs)
-                
+
                 # Store in cache
                 self.redis.setex(cache_key, ttl, json.dumps(result))
-                
+
                 return result
             return wrapper
         return decorator
-    
+
     @cached_query(ttl=60)
     async def get_user_friends_count(self, user_id):
         """Get friend count with caching"""
@@ -619,7 +620,7 @@ Memory-efficient large result handling:
 async def stream_large_dataset(client, batch_size=1000):
     """Stream large result sets without loading into memory"""
     offset = 0
-    
+
     while True:
         batch, _ = await client.query("""
             MATCH (n:Node)
@@ -628,14 +629,14 @@ async def stream_large_dataset(client, batch_size=1000):
             SKIP $offset
             LIMIT $limit
         """, {"offset": offset, "limit": batch_size})
-        
+
         if not batch:
             break
-        
+
         # Process batch
         for row in batch:
             yield row
-        
+
         offset += batch_size
 
 # Usage
@@ -654,12 +655,12 @@ class ShardedClient:
             Client(config['url'])
             for config in shard_configs
         ]
-    
+
     def get_shard(self, key):
         """Determine shard for key using consistent hashing"""
         shard_index = hash(key) % len(self.shards)
         return self.shards[shard_index]
-    
+
     async def get_user(self, user_id):
         """Get user from appropriate shard"""
         shard = self.get_shard(user_id)
@@ -668,7 +669,7 @@ class ShardedClient:
             RETURN u
         """, {"id": user_id})
         return result.rows[0]['u'] if result else None
-    
+
     async def create_user(self, user_id, name, email):
         """Create user in appropriate shard"""
         shard = self.get_shard(user_id)
@@ -706,7 +707,7 @@ spec:
     spec:
       containers:
       - name: geode
-        image: geodedb/geode:0.1.3
+        image: geodedb/geode:__GEODE_VERSION__
         ports:
         - containerPort: 3141
           name: client
@@ -768,21 +769,21 @@ geode_client = None
 
 def lambda_handler(event, context):
     global geode_client
-    
+
     # Initialize connection (reused across warm starts)
     if geode_client is None:
         geode_client = Client(
             os.environ['GEODE_URL'],
             connection_pool_size=1
         )
-    
+
     # Extract query from event
     query = event['query']
     params = event.get('params', {})
-    
+
     # Execute query
     result = geode_client.execute(query, params)
-    
+
     return {
         'statusCode': 200,
         'body': json.dumps({
@@ -808,7 +809,7 @@ class SecureClient:
             client_cert=cert_file,
             client_key=key_file,
         )
-    
+
     async def execute_with_rls(self, query, params, user_context):
         """Execute query with row-level security"""
         async with self.client.connection() as conn:
@@ -846,14 +847,14 @@ class AuditedClient:
     def __init__(self, client, audit_logger):
         self.client = client
         self.audit = audit_logger
-    
+
     async def execute(self, query, params=None, user_id=None):
         """Execute query with audit logging"""
         start_time = time.time()
-        
+
         try:
             result, _ = await self.client.query(query, params)
-            
+
             # Log successful execution
             await self.audit.log({
                 'timestamp': datetime.now().isoformat(),
@@ -864,9 +865,9 @@ class AuditedClient:
                 'duration_ms': (time.time() - start_time) * 1000,
                 'rows_returned': len(result.rows)
             })
-            
+
             return result
-            
+
         except Exception as e:
             # Log failed execution
             await self.audit.log({

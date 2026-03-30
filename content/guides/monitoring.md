@@ -194,6 +194,7 @@ metrics:
 ```
 
 Access metrics:
+
 ```bash
 curl http://localhost:9090/metrics
 ```
@@ -1217,7 +1218,7 @@ logging:
   fields:
     service: geode
     environment: production
-    version: "0.1.3"
+    version: "__GEODE_VERSION__"
 
   output:
     - type: file

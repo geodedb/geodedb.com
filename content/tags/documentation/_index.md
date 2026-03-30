@@ -61,6 +61,7 @@ Geode documentation is organized hierarchically for efficient navigation.
 The primary documentation website at **geodedb.com** provides structured access to all documentation:
 
 **Getting Started Section:**
+
 - Introduction to Geode and graph databases
 - Quick-start tutorial (15 minutes)
 - Installation guide
@@ -68,6 +69,7 @@ The primary documentation website at **geodedb.com** provides structured access 
 - Basic GQL syntax introduction
 
 **User Guides:**
+
 - GQL query language comprehensive guide
 - Data modeling patterns
 - Transaction management
@@ -75,6 +77,7 @@ The primary documentation website at **geodedb.com** provides structured access 
 - Security and access control
 
 **Reference Documentation:**
+
 - GQL language specification
 - Configuration reference
 - Command-line interface reference
@@ -82,6 +85,7 @@ The primary documentation website at **geodedb.com** provides structured access 
 - Error codes and messages
 
 **Operations Documentation:**
+
 - Installation procedures (platform-specific)
 - Deployment architectures
 - Backup and recovery
@@ -90,6 +94,7 @@ The primary documentation website at **geodedb.com** provides structured access 
 - Troubleshooting guide
 
 **Development Documentation:**
+
 - Client library guides (Go, Python, Rust, Zig)
 - API reference for each client
 - Contributing guidelines
@@ -103,6 +108,7 @@ The Geode repository contains extensive technical documentation:
 **Main Server Documentation (`geode/CLAUDE.md`):**
 
 This comprehensive document covers:
+
 - Complete server architecture overview
 - Build commands and procedures
 - Testing infrastructure (97.4% test coverage)
@@ -152,6 +158,7 @@ geode-client-zig/README.md
 Language-specific API documentation follows platform conventions:
 
 **Go API Documentation:**
+
 ```bash
 # View API docs locally
 cd geode-client-go
@@ -163,6 +170,7 @@ godoc -http=:6060
 ```
 
 **Python API Documentation:**
+
 ```bash
 # Generate API docs with pdoc
 cd geode-client-python
@@ -174,6 +182,7 @@ sphinx-build -b html docs/source docs/build
 ```
 
 **Rust API Documentation:**
+
 ```bash
 # Generate and view Rust docs
 cd geode-client-rust
@@ -233,6 +242,7 @@ DELETE n;
 Technical architecture documentation explains Geode's internal design:
 
 **Server Architecture:**
+
 - Request handling pipeline
 - Query parser and optimizer
 - Execution engine
@@ -241,6 +251,7 @@ Technical architecture documentation explains Geode's internal design:
 - QUIC network protocol implementation
 
 **Storage Engine:**
+
 - Graph storage format
 - Index structures
 - Memory management
@@ -248,6 +259,7 @@ Technical architecture documentation explains Geode's internal design:
 - Concurrency control
 
 **Query Execution:**
+
 - Query planning
 - Optimization strategies
 - Execution model
@@ -259,6 +271,7 @@ Technical architecture documentation explains Geode's internal design:
 Each client library has comprehensive documentation covering:
 
 **Connection Management:**
+
 ```go
 // Go example
 config := &geode.Config{
@@ -270,6 +283,7 @@ client, err := geode.NewClientWithConfig(config)
 ```
 
 **Query Execution:**
+
 ```python
 # Python example
 client = Client(host="localhost", port=3141)
@@ -281,6 +295,7 @@ async with client.connection() as conn:
 ```
 
 **Transaction Management:**
+
 ```rust
 // Rust example
 let mut conn = client.connect().await?;
@@ -290,6 +305,7 @@ conn.commit().await?;
 ```
 
 **Error Handling:**
+
 ```zig
 // Zig example - execute query and handle errors
 try client.sendRunGql(1, query, null);
@@ -305,12 +321,14 @@ defer allocator.free(schema);
 Operational documentation covers production deployment and management:
 
 **Installation Guides** provide platform-specific instructions:
+
 - Linux (Ubuntu, RHEL, Arch)
 - macOS (Intel and Apple Silicon)
 - Windows (via WSL2)
 - Container deployments (Docker, Kubernetes)
 
 **Configuration Guides** document all settings:
+
 - Listen address and port
 - TLS certificate configuration
 - Connection limits
@@ -319,6 +337,7 @@ Operational documentation covers production deployment and management:
 - Data directory location
 
 **Backup Procedures:**
+
 ```bash
 # Backup script example
 #!/bin/bash
@@ -327,6 +346,7 @@ rsync -av /var/lib/geode/data/ $BACKUP_DIR/
 ```
 
 **Monitoring Guides:**
+
 - Metrics to track
 - Monitoring tools integration (Prometheus, Grafana)
 - Log aggregation (ELK stack)
@@ -341,6 +361,7 @@ Effective organization makes documentation discoverable and usable.
 Documentation organized by user tasks:
 
 **I want to...**
+
 - Install Geode → Installation Guide
 - Write my first query → Quick-Start Tutorial
 - Optimize a slow query → Performance Tuning Guide
@@ -352,12 +373,14 @@ Documentation organized by user tasks:
 Documentation organized by user role:
 
 **For Developers:**
+
 - Client library guides
 - GQL syntax reference
 - Query optimization
 - Transaction patterns
 
 **For Operators:**
+
 - Installation procedures
 - Configuration management
 - Monitoring and alerting
@@ -365,12 +388,14 @@ Documentation organized by user role:
 - Performance tuning
 
 **For Architects:**
+
 - Architecture overview
 - Scalability considerations
 - Security model
 - Deployment patterns
 
 **For Contributors:**
+
 - Development setup
 - Build system
 - Testing framework
@@ -381,18 +406,21 @@ Documentation organized by user role:
 Documentation organized by feature:
 
 **Graph Querying:**
+
 - Pattern matching
 - Path finding
 - Aggregations
 - Subqueries
 
 **Data Management:**
+
 - Node creation
 - Relationship creation
 - Property updates
 - Data deletion
 
 **Transactions:**
+
 - Transaction lifecycle
 - Isolation levels
 - Savepoints
@@ -407,6 +435,7 @@ High-quality documentation follows established standards.
 All documentation includes working code examples:
 
 **Complete Examples** - Examples include all necessary context:
+
 ```python
 from geode_client import Client
 import asyncio
@@ -435,6 +464,7 @@ if __name__ == "__main__":
 **Tested Examples** - All examples are tested against actual Geode instances to ensure correctness.
 
 **Annotated Examples** - Complex examples include inline comments explaining key points:
+
 ```gql
 -- Find friends of friends, excluding direct friends
 MATCH (person:Person {name: 'Alice'})-[:KNOWS]->(friend)
@@ -470,11 +500,11 @@ See also:
 Documentation clearly indicates version applicability:
 
 ```markdown
-> **Note**: This feature requires Geode v0.1.3 or later.
+> **Note**: This feature requires Geode v0.2.15 or later.
 ```
 
 ```markdown
-> **Changed in v0.1.3**: The default connection pool size increased from 10 to 50.
+> **Changed in v0.2.15**: The default connection pool size increased from 10 to 50.
 ```
 
 ## Documentation Maintenance
@@ -514,6 +544,7 @@ Documentation is available in multiple formats.
 ### Web Documentation
 
 Primary format is web-based for easy access and navigation:
+
 - Searchable content
 - Responsive design for mobile access
 - Syntax highlighting for code examples
@@ -522,6 +553,7 @@ Primary format is web-based for easy access and navigation:
 ### PDF Documentation
 
 Downloadable PDF versions for offline reference:
+
 - Complete documentation as single PDF
 - Topic-specific PDFs (e.g., "GQL Reference")
 - Printable format for desk reference
@@ -529,6 +561,7 @@ Downloadable PDF versions for offline reference:
 ### Man Pages
 
 Unix-style man pages for command-line tools:
+
 ```bash
 man geode
 man geode-serve
@@ -538,6 +571,7 @@ man geode-shell
 ### Inline Help
 
 Help text built into tools:
+
 ```bash
 geode --help
 geode serve --help
@@ -551,6 +585,7 @@ Effective search helps users find information quickly.
 ### Full-Text Search
 
 Website documentation includes full-text search:
+
 - Search across all documentation
 - Filter by document type
 - Relevance ranking
@@ -559,6 +594,7 @@ Website documentation includes full-text search:
 ### API Search
 
 API documentation includes specialized search:
+
 - Search by function/method name
 - Search by parameter type
 - Search by return type
@@ -589,18 +625,21 @@ Ongoing documentation improvements:
 Help improve Geode documentation:
 
 **Report Issues:**
+
 - Missing documentation
 - Incorrect information
 - Unclear explanations
 - Broken links
 
 **Submit Improvements:**
+
 - Fix typos and grammar
 - Clarify confusing sections
 - Add missing examples
 - Create new tutorials
 
 **Translate Documentation:**
+
 - Translate to additional languages
 - Maintain translation quality
 - Keep translations synchronized

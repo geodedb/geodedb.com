@@ -420,7 +420,7 @@ Manage Geode configuration with Ansible:
   become: yes
 
   vars:
-    geode_version: "0.1.3"
+    geode_version: "__GEODE_VERSION__"
     geode_data_dir: "/var/lib/geode/data"
     geode_user: "geode"
 
@@ -476,7 +476,7 @@ version: '3.8'
 
 services:
   geode-primary:
-    image: geode:0.1.3
+    image: geode:__GEODE_VERSION__
     container_name: geode-primary
     ports:
       - "3141:3141/udp"
@@ -497,7 +497,7 @@ services:
       retries: 3
 
   geode-replica:
-    image: geode:0.1.3
+    image: geode:__GEODE_VERSION__
     container_name: geode-replica
     ports:
       - "3142:3141/udp"

@@ -119,7 +119,7 @@ apt-get upgrade -y
 apt-get install -y git make jq
 
 # Build Geode from source
-GEODE_VERSION="v0.1.3"
+GEODE_VERSION="__GEODE_TAG__"
 git clone https://github.com/codeprosorg/geode
 cd geode
 git checkout ${GEODE_VERSION}
@@ -363,7 +363,7 @@ spec:
         role: geode
       containers:
       - name: geode
-        image: public.ecr.aws/geodedb/geode:v0.1.3
+        image: public.ecr.aws/geodedb/geode:__GEODE_VERSION__
         ports:
         - containerPort: 3141
           name: client
@@ -411,7 +411,7 @@ Run Geode on AWS Fargate or EC2-backed ECS:
   "containerDefinitions": [
     {
       "name": "geode",
-      "image": "public.ecr.aws/geodedb/geode:v0.1.3",
+      "image": "public.ecr.aws/geodedb/geode:__GEODE_VERSION__",
       "portMappings": [
         {
           "containerPort": 3141,
@@ -613,8 +613,8 @@ aws secretsmanager create-secret \
   --secret-string '{
     "username":"admin",
     "password":"secure-password-here",
-    "tls_cert":"-----BEGIN CERTIFICATE-----\n...",
-    "tls_key":"-----BEGIN PRIVATE KEY-----\n..."
+    "tls_cert":"<paste-pem-certificate-here>",
+    "tls_key":"<paste-pem-private-key-here>"
   }'
 
 # Retrieve in application

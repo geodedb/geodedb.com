@@ -31,15 +31,25 @@ Geode ships a unified `geode` binary. Compatibility symlinks (`geoded`, `geodec`
 | Command | Purpose | Usage |
 |---------|---------|-------|
 | `geode serve` | Server daemon | `geode serve --listen 0.0.0.0:3141` |
-| `geode query` | Client CLI | `geode query "MATCH (n) RETURN n" --server 127.0.0.1:3141` |
-| `geode shell` / `gql` | Interactive REPL | `geode shell` |
+| `geode query` | One-shot query execution | `geode query --dsn quic://localhost:3141/social "RETURN 1 AS x"` |
+| `geode shell` / `gql` | Interactive REPL | `geode shell --server 127.0.0.1:3141` |
+| `geode auth` | Login, session, and offline auth integrity workflows | `geode auth login -U geode --save-session` |
+| `geode user` / `role` / `policy` | Local auth-store admin commands | `geode user create alice alice@example.com --password 'secret'` |
+| `geode grant` / `revoke` | Permission changes | `geode grant read:users --to alice` |
+| `geode apikey` | API key management | `geode apikey create --user alice --name prod-app --scope query:execute` |
+| `geode backup` / `restore` / `migrate` | Data operations | `geode backup --output /backups/geode.tar.gz` |
+| `geode lsp` / `mcp` | Tooling integrations | `geode mcp` |
+
+> **Current limitation (main, 2026-03-30)**
+>
+> `geode user`, `role`, `policy`, `grant`, `revoke`, `apikey`, and CLI MFA flows still operate on the **local auth store** instead of delegating to a running server. Use them for on-host/offline administration until `GAP-0270` is closed.
 
 ## Server Commands (`geode serve`)
 
 ### Start Server
 
 ```bash
-# Default (localhost:3141)
+# Default (0.0.0.0:3141)
 geode serve
 
 # Custom listen address
@@ -61,12 +71,13 @@ geode serve --data-dir /var/lib/geode
 
 | Flag | Description | Default |
 |------|-------------|---------|
-| `--listen <addr>` | Listen address (host:port) | `127.0.0.1:3141` |
-| `--config <file>` | Configuration file path | - |
-| `--data-dir <dir>` | Data directory | `./geode-data` |
-| `--cert <file>` | TLS certificate path | Auto-generated |
-| `--key <file>` | TLS key path | Auto-generated |
-| `--version` | Show version | - |
+| `--data-dir <path>` | Data directory | `./data` |
+| `--listen <addr:port>` | Listen address | `0.0.0.0:3141` |
+| `--cert <path>` | TLS certificate path | auto-generated if missing |
+| `--key <path>` | TLS private key path | auto-generated if missing |
+| `--log-level <level>` | `debug\|info\|warn\|error` | `info` |
+| `--idle-timeout <ms>` | QUIC idle timeout | `300000` |
+| `--persist-interval <ms>` | Background persistence interval | `100` |
 | `--help` | Show help | - |
 
 ## Client Commands (`geode query`)
@@ -80,27 +91,51 @@ geode query "RETURN 1 AS x" --server 127.0.0.1:3141
 # Query from file
 geode query -f query.gql --server 127.0.0.1:3141
 
+# Query from stdin
+echo "RETURN 1 AS x" | geode query -
+
 # With output format
 geode query --format json "MATCH (n) RETURN n LIMIT 10" --server 127.0.0.1:3141
-geode query --format txt "MATCH (n) RETURN n LIMIT 10" --server 127.0.0.1:3141
+geode query --format table "MATCH (n) RETURN n LIMIT 10" --server 127.0.0.1:3141
+geode query --format csv "MATCH (n) RETURN n LIMIT 10" --server 127.0.0.1:3141
+geode query --format dot "MATCH (a)-[r]->(b) RETURN a, r, b" | dot -Tpng -o graph.png
 
 # Show execution time
-geode query --timing "MATCH (p:Person) RETURN p.name" --server 127.0.0.1:3141
+geode query --timeout 5 --retry 3 "MATCH (p:Person) RETURN p.name" --server 127.0.0.1:3141
 
-# Connect to remote server
-geode query "MATCH (n) RETURN n" --server geode.example.com:3141
+# Connect with a DSN and bind to a graph
+geode query --dsn quic://geode:secret@geode.example.com:3141/social "MATCH (n) RETURN count(n)"
 ```
 
 ### Client Flags
 
 | Flag | Description | Default |
 |------|-------------|---------|
+| `--dsn <dsn>` | Connection DSN | - |
 | `-f, --file <path>` | Read query from file | - |
-| `--format <fmt>` | Output format (txt\|json) | `txt` |
-| `--timing` | Show execution time | `false` |
-| `--timeout <seconds>` | Query timeout in seconds (increased from 10s to accommodate QUIC handshake latency in Docker/CI environments) | `30` |
+| `-g, --graph <name>` | Graph name (prepends `USE GRAPH`) | - |
+| `--format <fmt>` | Output format (`json\|table\|csv\|dot`) | `json` |
+| `--page-size <n>` | Results page size | `1000` |
+| `--timeout <seconds>` | Connection timeout in seconds | `30` |
+| `--retry <count>` | Retry attempts on failure | `0` |
 | `--server <addr:port>` | Server address | `127.0.0.1:3141` |
+| `--grpc` | Use gRPC instead of QUIC | `false` |
+| `--insecure-tls-skip-verify` | Skip TLS verification | `false` |
+| `--ca-cert <path>` | CA certificate for server verification | - |
+| `--client-cert <path>` | Client certificate for mTLS | - |
+| `--client-key <path>` | Client private key for mTLS | - |
+| `-U, --user <username>` | Authenticate as user | - |
+| `-P, --password [pass]` | Password (prompts if omitted) | - |
+| `--no-saved-session` | Do not auto-load saved credentials | `false` |
 | `--help` | Show help | - |
+
+### DSN Notes
+
+- `quic://` is still the default and recommended transport
+- `grpc://` uses port `50051` by default
+- DSNs can now bind a session to a graph at connect time: `quic://host:3141/graph`
+- Graph-bound sessions reject `USE GRAPH` for the lifetime of that connection
+- DSN credentials override `-U` / `-P`
 
 ## Interactive Shell (`geode shell`)
 
@@ -112,6 +147,9 @@ geode shell
 
 # Or alternative entrypoint
 gql
+
+# Start shell with DSN graph binding
+geode shell --dsn quic://geode:secret@localhost:3141/social
 ```
 
 ### Meta Commands
@@ -133,13 +171,10 @@ From `REPL_USAGE.md`:
 
 ```gql
 -- Connect
-\connect quic://localhost:3141
+\connect quic://localhost:3141/social
 
 -- Set format
 \format json
-
--- Enable timing
-\timing on
 
 -- Run query
 MATCH (p:Person) RETURN p.name;
@@ -155,6 +190,33 @@ CREATE (:Person {name: "Alice", age: 30});
 -- Exit
 \quit
 ```
+
+## Authentication Commands (`geode auth`)
+
+```bash
+# Login and save a reusable session
+geode auth login -U geode --save-session
+
+# View or clear saved credentials
+geode auth token
+geode auth logout
+
+# Offline auth-store integrity operations
+geode auth init --data-dir /var/lib/geode
+geode auth reseal --data-dir /var/lib/geode
+geode auth verify --data-dir /var/lib/geode
+```
+
+### `geode auth` Command Set
+
+| Command | Purpose |
+|---------|---------|
+| `login` | Authenticate and optionally save session credentials |
+| `logout` | Clear saved credentials |
+| `token` | Print saved credentials JSON |
+| `init` | Bootstrap admin user into the local auth graph (offline) |
+| `reseal` | Recompute HMAC chain for the local auth graph (offline) |
+| `verify` | Check HMAC chain integrity for the local auth graph (offline) |
 
 ## Admin and Ops Commands
 

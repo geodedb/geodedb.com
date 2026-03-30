@@ -285,6 +285,7 @@ Each message is a JSON object followed by newline:
 ### Message Types
 
 **Client Messages**:
+
 - `HELLO` - Connection handshake
 - `RUN_GQL` - Execute GQL query
 - `PULL` - Fetch results (streaming)
@@ -294,6 +295,7 @@ Each message is a JSON object followed by newline:
 - `PING` - Keep-alive
 
 **Server Messages**:
+
 - `SCHEMA` - Query result schema
 - `BINDINGS` - Result rows
 - `SUCCESS` - Operation completed
@@ -739,7 +741,7 @@ for row in &page.rows {
 {
   "type": "HELLO",
   "version": "1.0",
-  "client": "geode-python/0.1.3",
+  "client": "geode-python/0.3.19",
   "auth": {
     "method": "basic",
     "username": "admin",
@@ -756,7 +758,7 @@ for row in &page.rows {
 {
   "type": "WELCOME",
   "version": "1.0",
-  "server": "geode/0.1.3",
+  "server": "geode/__GEODE_VERSION__",
   "session_id": "550e8400-e29b-41d4-a716-446655440000",
   "capabilities": {
     "max_query_size": 1048576,

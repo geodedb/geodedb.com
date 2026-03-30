@@ -49,8 +49,9 @@ geode shell --user alice --password secretpass
 ```
 
 **Welcome Screen**:
+
 ```
-Geode Interactive Shell v0.1.3
+Geode Interactive Shell __GEODE_TAG__
 Connected to: localhost:3141
 Type \help or \? for help, \quit to exit
 
@@ -71,6 +72,7 @@ geode> RETURN 1 AS number
 ```
 
 **Features**:
+
 - Automatic formatting (table layout)
 - Execution time display
 - Row count summary
@@ -82,6 +84,7 @@ geode> RETURN 1 AS number
 ### Essential Commands
 
 **Help**:
+
 ```
 geode> \help
 geode> \h
@@ -89,17 +92,20 @@ geode> \?
 ```
 
 **Quit**:
+
 ```
 geode> \quit
 geode> \q
 ```
 
 **Clear Screen**:
+
 ```
 geode> \clear
 ```
 
 **Echo Text**:
+
 ```
 geode> \echo Hello, Geode!
 Hello, Geode!
@@ -108,18 +114,21 @@ Hello, Geode!
 ### Connection Management
 
 **Connect to Server**:
+
 ```
 geode> \connect db.example.com:3141
 Connected to: db.example.com:3141
 ```
 
 **Disconnect**:
+
 ```
 geode> \disconnect
 Disconnected from server
 ```
 
 **Connection Status**:
+
 ```
 geode> \status
 Connected: Yes
@@ -131,24 +140,28 @@ Database: main
 ### Transaction Commands
 
 **Begin Transaction**:
+
 ```
 geode> \begin
 Transaction started
 ```
 
 **Commit**:
+
 ```
 geode> \commit
 Transaction committed
 ```
 
 **Rollback**:
+
 ```
 geode> \rollback
 Transaction rolled back
 ```
 
 **Transaction Example**:
+
 ```gql
 geode> \begin
 geode> CREATE (n:Person {name: 'Alice'})
@@ -160,6 +173,7 @@ geode> \commit
 ### Output Formatting
 
 **Table Format** (default):
+
 ```
 geode> \format table
 geode> MATCH (n:Person) RETURN n.name
@@ -172,6 +186,7 @@ geode> MATCH (n:Person) RETURN n.name
 ```
 
 **CSV Format**:
+
 ```
 geode> \format csv
 geode> MATCH (n:Person) RETURN n.name, n.age
@@ -181,6 +196,7 @@ Bob,28
 ```
 
 **JSON Format**:
+
 ```
 geode> \format json
 geode> MATCH (n:Person) RETURN n.name, n.age
@@ -190,6 +206,7 @@ geode> MATCH (n:Person) RETURN n.name, n.age
 ### History Commands
 
 **View History**:
+
 ```
 geode> \history
   1  RETURN 1
@@ -201,6 +218,7 @@ geode> \history 5
 ```
 
 **Clear History**:
+
 ```
 geode> \history -c
 History cleared
@@ -209,6 +227,7 @@ History cleared
 ### Timing
 
 **Enable Query Timing**:
+
 ```
 geode> \timing on
 Timing enabled
@@ -224,6 +243,7 @@ geode> MATCH (n) RETURN count(n)
 ```
 
 **Disable Timing**:
+
 ```
 geode> \timing off
 Timing disabled
@@ -232,6 +252,7 @@ Timing disabled
 ### Configuration
 
 **Set Options**:
+
 ```
 geode> \set keymap vi
 Keymap set to: vi
@@ -241,6 +262,7 @@ Keymap set to: emacs
 ```
 
 **View Settings**:
+
 ```
 geode> \set
 keymap: emacs
@@ -253,6 +275,7 @@ timing: on
 ### Single-Line Queries
 
 **Press Enter to Execute**:
+
 ```gql
 geode> RETURN 1 + 1
 ┌───┐
@@ -263,6 +286,7 @@ geode> RETURN 1 + 1
 ### Multi-Line Queries
 
 **End with Semicolon**:
+
 ```gql
 geode> MATCH (p:Person)
 geode> WHERE p.age > 25
@@ -276,6 +300,7 @@ geode> RETURN p.name, p.age;
 ```
 
 **Indicators**:
+
 ```
 geode>   # Ready for new command
 geode-   # Continuation of multi-line query
@@ -284,6 +309,7 @@ geode-   # Continuation of multi-line query
 ### Query Cancellation
 
 **Press Ctrl+C**:
+
 ```gql
 geode> MATCH (n)-[r*1..10]->(m)
 geode- WHERE n.id = 1
@@ -297,24 +323,28 @@ Query cancelled
 ### Emacs Mode (Default)
 
 **Navigation**:
+
 - `Ctrl+A`: Beginning of line
 - `Ctrl+E`: End of line
 - `Alt+F`: Forward one word
 - `Alt+B`: Backward one word
 
 **Editing**:
+
 - `Ctrl+K`: Kill to end of line
 - `Ctrl+U`: Kill to beginning of line
 - `Ctrl+W`: Kill word backward
 - `Ctrl+Y`: Yank (paste) from kill ring
 
 **History**:
+
 - `Ctrl+P`: Previous history entry
 - `Ctrl+N`: Next history entry
 - `Ctrl+R`: Reverse search history
 - `Ctrl+S`: Forward search history
 
 **Control**:
+
 - `Ctrl+L`: Clear screen
 - `Ctrl+C`: Cancel current input
 - `Ctrl+D`: Delete character or exit on empty line
@@ -322,17 +352,20 @@ Query cancelled
 ### Vi Mode
 
 **Activate**:
+
 ```
 geode> \set keymap vi
 ```
 
 **Command Mode**:
+
 - `ESC`: Enter command mode
 - `i`: Insert mode
 - `a`: Append mode
 - `A`: Append at end of line
 
 **Navigation** (command mode):
+
 - `h`: Left
 - `l`: Right
 - `w`: Forward word
@@ -341,6 +374,7 @@ geode> \set keymap vi
 - `$`: End of line
 
 **Editing** (command mode):
+
 - `dd`: Delete line
 - `dw`: Delete word
 - `x`: Delete character
@@ -351,11 +385,13 @@ geode> \set keymap vi
 ### Reverse Search
 
 **Press Ctrl+R**:
+
 ```
 (reverse-i-search)`cre': CREATE (n:Person {name: 'Alice'})
 ```
 
 **Type to Filter**:
+
 ```
 (reverse-i-search)`match': MATCH (n:Person) RETURN n.name
 ```
@@ -366,11 +402,13 @@ geode> \set keymap vi
 ### History File
 
 **Location**:
+
 - Linux: `~/.local/share/geode/history`
 - macOS: `~/Library/Application Support/geode/history`
 - Windows: `%APPDATA%\geode\history`
 
 **Custom Location**:
+
 ```bash
 export GEODE_HISTORY=/path/to/custom/history
 geode shell
@@ -381,6 +419,7 @@ geode shell
 ### Query Variables
 
 **Set Variable**:
+
 ```gql
 geode> WITH 30 AS age_threshold
 geode- MATCH (p:Person)
@@ -389,6 +428,7 @@ geode- RETURN p.name, p.age;
 ```
 
 **Reuse in Multiple Queries**:
+
 ```gql
 geode> CREATE (n:Config {threshold: 30})
 geode> MATCH (c:Config)
@@ -401,6 +441,7 @@ geode- RETURN p.name;
 ### Pipeline Queries
 
 **WITH Clause Chaining**:
+
 ```gql
 geode> MATCH (u:User)-[:PLACED]->(o:Order)
 geode- WITH u, count(o) AS order_count
@@ -412,6 +453,7 @@ geode- ORDER BY order_count DESC;
 ### Parameterized Queries
 
 **Future Feature**:
+
 ```gql
 geode> :set min_age 30
 geode> MATCH (p:Person) WHERE p.age > $min_age RETURN p.name;
@@ -422,6 +464,7 @@ geode> MATCH (p:Person) WHERE p.age > $min_age RETURN p.name;
 ### Data Exploration
 
 **Count Nodes**:
+
 ```gql
 geode> MATCH (n) RETURN labels(n) AS label, count(n) AS count
 ┌────────┬───────┐
@@ -433,11 +476,13 @@ geode> MATCH (n) RETURN labels(n) AS label, count(n) AS count
 ```
 
 **Sample Data**:
+
 ```gql
 geode> MATCH (n:Person) RETURN n LIMIT 5
 ```
 
 **Schema Discovery**:
+
 ```gql
 geode> CALL db.schema.nodeLabels()
 ┌────────┐
@@ -452,6 +497,7 @@ geode> CALL db.schema.nodeLabels()
 ### Database Administration
 
 **Show Indexes**:
+
 ```gql
 geode> CALL db.indexes()
 ┌──────────────────┬──────────┬────────┐
@@ -463,6 +509,7 @@ geode> CALL db.indexes()
 ```
 
 **Database Statistics**:
+
 ```gql
 geode> CALL db.stats()
 ┌──────────────┬────────┐
@@ -477,18 +524,21 @@ geode> CALL db.stats()
 ### Development Workflow
 
 **1. Test Query**:
+
 ```gql
 geode> EXPLAIN MATCH (n:Person) WHERE n.age > 25 RETURN n.name
 # Review query plan
 ```
 
 **2. Optimize**:
+
 ```gql
 geode> CREATE INDEX person_age_idx ON Person (age)
 Index created
 ```
 
 **3. Verify**:
+
 ```gql
 geode> PROFILE MATCH (n:Person) WHERE n.age > 25 RETURN n.name
 # Check performance metrics
@@ -501,6 +551,7 @@ geode> PROFILE MATCH (n:Person) WHERE n.age > 25 RETURN n.name
 **Issue**: "REPL error: FileNotFound"
 
 **Solution**:
+
 ```bash
 # Create history directory
 mkdir -p ~/.local/share/geode  # Linux
@@ -514,6 +565,7 @@ mkdir -p ~/Library/Application\ Support/geode  # macOS
 **Cause**: Missing semicolon on multi-line query
 
 **Solution**:
+
 ```gql
 geode> MATCH (n)
 geode- RETURN n;  # Add semicolon
@@ -524,6 +576,7 @@ geode- RETURN n;  # Add semicolon
 **Issue**: Connection lost during query
 
 **Solution**:
+
 ```
 geode> \connect localhost:3141
 geode> # Re-run query
@@ -534,6 +587,7 @@ geode> # Re-run query
 **Issue**: Output too wide for terminal
 
 **Solution**:
+
 ```
 geode> \format json
 # Or use SELECT to limit columns
@@ -545,6 +599,7 @@ geode> MATCH (n) RETURN n.id, n.name  # Fewer columns
 ### Query Development
 
 1. **Start Simple**:
+
    ```gql
    geode> MATCH (n:Person) RETURN count(n)  # Test filter
    geode> MATCH (n:Person) RETURN n LIMIT 1  # Inspect structure
@@ -552,12 +607,14 @@ geode> MATCH (n) RETURN n.id, n.name  # Fewer columns
    ```
 
 2. **Use EXPLAIN**:
+
    ```gql
    geode> EXPLAIN MATCH (n:Person)-[:KNOWS]->(m) RETURN n, m
    # Verify query plan before executing
    ```
 
 3. **Limit Results**:
+
    ```gql
    geode> MATCH (n) RETURN n LIMIT 100  # Always limit during development
    ```
@@ -565,12 +622,14 @@ geode> MATCH (n) RETURN n.id, n.name  # Fewer columns
 ### History Management
 
 **Search History**:
+
 ```
 # Press Ctrl+R, type 'CREATE'
 # Find previous CREATE statements quickly
 ```
 
 **Save Important Queries**:
+
 ```bash
 # Copy history to file
 cat ~/.local/share/geode/history | grep CREATE > important_queries.txt
@@ -579,6 +638,7 @@ cat ~/.local/share/geode/history | grep CREATE > important_queries.txt
 ### Productivity Tips
 
 **1. Use Aliases for Long Queries**:
+
 ```bash
 # Create shell alias
 alias gq='geode query --insecure'
@@ -586,12 +646,14 @@ gq "MATCH (n:Person) RETURN count(n)"
 ```
 
 **2. Format Output for Scripts**:
+
 ```
 geode> \format json
 geode> # Pipe to jq for processing
 ```
 
 **3. Transaction Batching**:
+
 ```gql
 geode> \begin
 geode> # Multiple CREATE/UPDATE statements
@@ -616,16 +678,19 @@ geode> \commit
 ## Next Steps
 
 **For Beginners**:
+
 - [GQL Guide](/docs/gql/guide/) - Query language fundamentals
 - [Data Model](/docs/model/data-model-and-types/) - Graph concepts
 - [Getting Started](/guides/installation/) - Installation guide
 
 **For Developers**:
+
 - [Advanced REPL Features](/docs/development/repl-advanced/) - Scripting, automation
 - [Testing Strategies](/docs/guides/testing-strategies/) - Query testing
 - [Client Libraries](/docs/client-libraries/go-client/) - Programmatic access
 
 **For Administrators**:
+
 - [Server Configuration](/docs/configuration/server-configuration/) - REPL server settings
 - [Monitoring](/docs/ops/observability/) - Query monitoring
 - [Security](/docs/security/overview/) - Authentication setup

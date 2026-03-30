@@ -1,0 +1,26 @@
+{{- $content := .content | default "" -}}
+{{- if ne $content "" -}}
+  {{- $version := partialCached "geode/version-data.html" site "geode-version-data" | transform.Unmarshal -}}
+  {{- $rendered := $content -}}
+  {{- $rendered = replace $rendered "__GEODE_RELEASE_DATE_LONG__" (index $version "release_date_long") -}}
+  {{- $rendered = replace $rendered "__GEODE_RELEASE_MONTH_YEAR__" (index $version "release_month_year") -}}
+  {{- $rendered = replace $rendered "__GEODE_RELEASE_DATE__" (index $version "release_date") -}}
+  {{- $rendered = replace $rendered "__GEODE_TAG__" (index $version "tag") -}}
+  {{- $rendered = replace $rendered "__GEODE_VERSION__" (index $version "display") -}}
+  {{- $rendered = replace $rendered "__GEODE_LATEST_RELEASE_DATE_LONG__" (index $version "latest_release_date_long") -}}
+  {{- $rendered = replace $rendered "__GEODE_LATEST_RELEASE_MONTH_YEAR__" (index $version "latest_release_month_year") -}}
+  {{- $rendered = replace $rendered "__GEODE_LATEST_RELEASE_TAG__" (index $version "latest_release_tag") -}}
+  {{- $rendered = replace $rendered "__GEODE_LATEST_RELEASE_VERSION__" (index $version "latest_release_version") -}}
+  {{- $rendered = replace $rendered "__GEODE_LATEST_RELEASE_DATE__" (index $version "latest_release_date") -}}
+  {{- $rendered = replace $rendered "GEODE_RELEASE_DATE_LONG" (index $version "release_date_long") -}}
+  {{- $rendered = replace $rendered "GEODE_RELEASE_MONTH_YEAR" (index $version "release_month_year") -}}
+  {{- $rendered = replace $rendered "GEODE_RELEASE_DATE" (index $version "release_date") -}}
+  {{- $rendered = replace $rendered "GEODE_TAG" (index $version "tag") -}}
+  {{- $rendered = replace $rendered "GEODE_VERSION" (index $version "display") -}}
+  {{- $rendered = replace $rendered "GEODE_LATEST_RELEASE_DATE_LONG" (index $version "latest_release_date_long") -}}
+  {{- $rendered = replace $rendered "GEODE_LATEST_RELEASE_MONTH_YEAR" (index $version "latest_release_month_year") -}}
+  {{- $rendered = replace $rendered "GEODE_LATEST_RELEASE_TAG" (index $version "latest_release_tag") -}}
+  {{- $rendered = replace $rendered "GEODE_LATEST_RELEASE_VERSION" (index $version "latest_release_version") -}}
+  {{- $rendered = replace $rendered "GEODE_LATEST_RELEASE_DATE" (index $version "latest_release_date") -}}
+  {{- $rendered -}}
+{{- end -}}

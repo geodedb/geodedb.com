@@ -85,6 +85,7 @@ Arithmetic operators perform mathematical operations on numeric values.
 **Description:** Adds two numeric values.
 
 **Examples:**
+
 ```gql
 RETURN 5 + 3 AS sum;                    -- Returns: 8
 RETURN 10.5 + 2.3 AS decimal_sum;       -- Returns: 12.8
@@ -96,6 +97,7 @@ RETURN p.name, p.age + 1 AS next_year_age;
 ```
 
 **Type Compatibility:**
+
 - `INTEGER + INTEGER` → `INTEGER`
 - `REAL + REAL` → `REAL`
 - `INTEGER + REAL` → `REAL` (automatic type promotion)
@@ -107,6 +109,7 @@ RETURN p.name, p.age + 1 AS next_year_age;
 **Description:** Subtracts the second value from the first.
 
 **Examples:**
+
 ```gql
 RETURN 10 - 3 AS difference;            -- Returns: 7
 RETURN 5.5 - 2.2 AS decimal_diff;       -- Returns: 3.3
@@ -125,6 +128,7 @@ RETURN abs(p1.age - p2.age) AS age_difference;
 **Description:** Multiplies two numeric values.
 
 **Examples:**
+
 ```gql
 RETURN 5 * 3 AS product;                -- Returns: 15
 RETURN 2.5 * 4 AS decimal_product;      -- Returns: 10.0
@@ -141,6 +145,7 @@ RETURN item.name, item.quantity * item.price AS total_cost;
 **Description:** Divides the first value by the second.
 
 **Examples:**
+
 ```gql
 RETURN 10 / 2 AS quotient;              -- Returns: 5
 RETURN 7 / 2 AS integer_div;            -- Returns: 3 (integer division)
@@ -152,6 +157,7 @@ RETURN sum(p.age) / count(p) AS average_age;
 ```
 
 **Error Handling:**
+
 - Division by zero: Returns `EvalError.DivisionByZero` at runtime
 
 ### Modulo (`%`)
@@ -161,6 +167,7 @@ RETURN sum(p.age) / count(p) AS average_age;
 **Description:** Computes the remainder of integer division.
 
 **Examples:**
+
 ```gql
 RETURN 17 % 5 AS remainder;             -- Returns: 2
 RETURN 20 % 4 AS even_check;            -- Returns: 0 (evenly divisible)
@@ -177,6 +184,7 @@ RETURN 10 + 17 % 5 AS result;           -- Returns: 12 (precedence: 10 + (17 % 5
 ```
 
 **Type Compatibility:**
+
 - Requires integer operands
 - Non-integer operands: Returns `EvalError.TypeMismatch`
 
@@ -195,6 +203,7 @@ Unary operators operate on a single operand.
 **Description:** Returns the operand unchanged. Used for symmetry with unary minus.
 
 **Examples:**
+
 ```gql
 RETURN +42 AS positive;                 -- Returns: 42
 RETURN +3.14 AS positive_decimal;       -- Returns: 3.14
@@ -206,6 +215,7 @@ RETURN -+42 AS result;                  -- Returns: -42 (parsed as −(+42))
 ```
 
 **Type Support:**
+
 - Integers: Returns value unchanged
 - Decimals: Returns value unchanged
 - Other types: Returns `EvalError.TypeMismatch`
@@ -219,6 +229,7 @@ RETURN -+42 AS result;                  -- Returns: -42 (parsed as −(+42))
 **Description:** Negates a numeric value.
 
 **Examples:**
+
 ```gql
 RETURN -42 AS negative;                 -- Returns: -42
 RETURN -(-5) AS double_negative;        -- Returns: 5
@@ -234,6 +245,7 @@ RETURN p.name, -p.debt AS credit;
 **Description:** Negates a boolean value.
 
 **Examples:**
+
 ```gql
 RETURN NOT true AS result;              -- Returns: false
 RETURN NOT false AS result;             -- Returns: true
@@ -257,6 +269,7 @@ Comparison operators compare two values and return a boolean result.
 **Description:** Tests if two values are equal.
 
 **Examples:**
+
 ```gql
 RETURN 5 = 5 AS result;                 -- Returns: true
 RETURN 'hello' = 'hello' AS string_eq;  -- Returns: true
@@ -274,6 +287,7 @@ RETURN p.name;
 **Description:** Tests if two values are not equal.
 
 **Examples:**
+
 ```gql
 RETURN 5 <> 10 AS result;               -- Returns: true
 RETURN 'hello' <> 'world' AS string_ne; -- Returns: true
@@ -291,6 +305,7 @@ RETURN p.name;
 **Description:** Tests if the first value is less than the second.
 
 **Examples:**
+
 ```gql
 RETURN 5 < 10 AS result;                -- Returns: true
 RETURN 10 < 5 AS reverse;               -- Returns: false
@@ -308,6 +323,7 @@ RETURN p.name AS minors;
 **Description:** Tests if the first value is less than or equal to the second.
 
 **Examples:**
+
 ```gql
 RETURN 5 <= 10 AS result;               -- Returns: true
 RETURN 5 <= 5 AS equal;                 -- Returns: true
@@ -324,6 +340,7 @@ RETURN p.name;
 **Description:** Tests if the first value is greater than the second.
 
 **Examples:**
+
 ```gql
 RETURN 10 > 5 AS result;                -- Returns: true
 RETURN 5 > 10 AS reverse;               -- Returns: false
@@ -340,6 +357,7 @@ RETURN p.name AS high_earners;
 **Description:** Tests if the first value is greater than or equal to the second.
 
 **Examples:**
+
 ```gql
 RETURN 10 >= 5 AS result;               -- Returns: true
 RETURN 5 >= 5 AS equal;                 -- Returns: true
@@ -371,6 +389,7 @@ Logical operators combine boolean expressions.
 | false | false | false |
 
 **Examples:**
+
 ```gql
 RETURN true AND true AS result;         -- Returns: true
 RETURN true AND false AS result;        -- Returns: false
@@ -401,6 +420,7 @@ RETURN p.name;
 | false | false | false |
 
 **Examples:**
+
 ```gql
 RETURN true OR false AS result;         -- Returns: true
 RETURN false OR false AS result;        -- Returns: false
@@ -428,6 +448,7 @@ String operators perform text operations.
 **Description:** Concatenates two strings.
 
 **Examples:**
+
 ```gql
 RETURN 'Hello' || ' ' || 'World' AS greeting;  -- Returns: 'Hello World'
 RETURN 'Mr. ' || 'Smith' AS title;             -- Returns: 'Mr. Smith'
@@ -443,6 +464,7 @@ RETURN p.first_name || ' ' || p.last_name AS full_name;
 **Description:** Tests if a string starts with a given prefix.
 
 **Examples:**
+
 ```gql
 RETURN 'hello' STARTS WITH 'he' AS result;     -- Returns: true
 RETURN 'world' STARTS WITH 'he' AS result;     -- Returns: false
@@ -459,6 +481,7 @@ RETURN p.name AS admins;
 **Description:** Tests if a string ends with a given suffix.
 
 **Examples:**
+
 ```gql
 RETURN 'hello' ENDS WITH 'lo' AS result;       -- Returns: true
 RETURN 'world' ENDS WITH 'ld' AS result;       -- Returns: true
@@ -475,6 +498,7 @@ RETURN p.name AS company_employees;
 **Description:** Tests if a string contains a substring.
 
 **Examples:**
+
 ```gql
 RETURN 'hello world' CONTAINS 'lo wo' AS result;  -- Returns: true
 RETURN 'hello world' CONTAINS 'xyz' AS result;    -- Returns: false
@@ -491,6 +515,7 @@ RETURN p.name;
 **Description:** Tests if text matches a regular expression pattern.
 
 **Examples:**
+
 ```gql
 RETURN 'hello123' =~ '[a-z]+[0-9]+' AS result;  -- Returns: true
 RETURN 'test@example.com' =~ '.*@.*\\.com' AS email_check;
@@ -513,6 +538,7 @@ Postfix operators operate on the right side of an operand.
 **Description:** Accesses a property of a node, relationship, or map.
 
 **Examples:**
+
 ```gql
 MATCH (p:Person) RETURN p.name, p.age;
 
@@ -530,6 +556,7 @@ RETURN {person: {name: 'Alice', age: 30}}.person.name AS result;  -- Returns: 'A
 **Description:** Accesses an element from a list/array by its zero-based index.
 
 **Examples:**
+
 ```gql
 RETURN [1, 2, 3][0] AS first;                  -- Returns: 1
 RETURN [1, 2, 3][2] AS third;                  -- Returns: 3
@@ -553,6 +580,7 @@ RETURN n.friends[0].name AS best_friend;
 ```
 
 **Behavior:**
+
 - **Out of bounds:** Returns `null` (no error)
 - **Negative indices:** Returns `null` (does not wrap around)
 - **Non-list target:** Returns `null`
@@ -567,6 +595,7 @@ RETURN n.friends[0].name AS best_friend;
 **Description:** Calls a built-in or user-defined function.
 
 **Examples:**
+
 ```gql
 RETURN count(*) AS total;
 RETURN length('hello') AS string_length;      -- Returns: 5
@@ -589,6 +618,7 @@ Set operators test membership and null values.
 **Description:** Tests if a value exists in a list.
 
 **Examples:**
+
 ```gql
 RETURN 1 IN [1, 2, 3] AS result;               -- Returns: true
 RETURN 5 IN [1, 2, 3] AS result;               -- Returns: false
@@ -606,6 +636,7 @@ RETURN p.name;
 **Description:** Tests if a value is null.
 
 **Examples:**
+
 ```gql
 RETURN null IS NULL AS result;                 -- Returns: true
 RETURN 5 IS NULL AS result;                    -- Returns: false
@@ -622,6 +653,7 @@ RETURN p.name AS no_middle_name;
 **Description:** Tests if a value is not null.
 
 **Examples:**
+
 ```gql
 RETURN 5 IS NOT NULL AS result;                -- Returns: true
 RETURN null IS NOT NULL AS result;             -- Returns: false
@@ -760,12 +792,14 @@ RETURN null IS NULL AS result;          -- Returns: true
 ### Optimization Tips
 
 **1. Use indexes for equality checks:**
+
 ```gql
 -- Fast with index on :Person(email)
 MATCH (p:Person) WHERE p.email = 'user@example.com' RETURN p;
 ```
 
 **2. Avoid expensive string operations in tight loops:**
+
 ```gql
 -- Inefficient: String concatenation in every row
 MATCH (p:Person)
@@ -775,6 +809,7 @@ RETURN p.first_name || ' ' || p.last_name AS full_name;
 ```
 
 **3. Use short-circuit evaluation:**
+
 ```gql
 -- AND short-circuits on first false
 MATCH (p:Person)
@@ -829,6 +864,7 @@ RETURN 10 + 2 * 5 % 3 AS result;
 **Task:** Write a query to find people with Gmail or Yahoo email addresses.
 
 **Solution:**
+
 ```gql
 MATCH (p:Person)
 WHERE p.email =~ '.*@(gmail|yahoo)\\.com'
@@ -840,6 +876,7 @@ RETURN p.name, p.email;
 **Task:** Get the second friend's name for each person.
 
 **Solution:**
+
 ```gql
 MATCH (p:Person)
 WHERE size(p.friends) >= 2
@@ -867,5 +904,5 @@ RETURN p.name, p.friends[1].name AS second_friend;
 ---
 
 **Last Updated:** January 24, 2026
-**Geode Version:** v0.1.3+
+**Geode Version:** **GEODE_TAG**+
 **ISO GQL Conformance Profile:** ISO/IEC 39075:2024 compliance (see conformance profile)

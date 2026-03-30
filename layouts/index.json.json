@@ -1,7 +1,7 @@
 {{- $pages := where site.RegularPages "Kind" "!=" "taxonomy" -}}
 {{- $index := slice -}}
 {{- range $pages -}}
-  {{- $content := .Plain | truncate 5000 "" -}}
+  {{- $content := partial "geode/render-text.html" (dict "content" .Plain) | truncate 5000 "" -}}
   {{- $entry := dict
     "title" .Title
     "permalink" .Permalink

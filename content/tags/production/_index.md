@@ -28,18 +28,21 @@ Deploy Geode graph database to production environments with confidence. This com
 Geode is battle-tested for demanding production workloads:
 
 **Proven Reliability**:
+
 - 97.4% test coverage (1644/1688 tests passing)
 - 100% GQL compliance (see conformance profile)
 - ACID-compliant transactions
 - Production deployments handling high query volumes
 
 **Enterprise Features**:
+
 - Row-level security for multi-tenant architectures
 - Full transactional consistency with savepoints
 - TLS 1.3 encryption for all connections
 - Comprehensive audit logging
 
 **Architecture for Scale**:
+
 - Memory-mapped I/O for efficient storage access
 - Connection pooling for concurrent clients
 - Distributed deployment with up to 32 shards
@@ -49,12 +52,14 @@ Geode is battle-tested for demanding production workloads:
 ### Single-Node Deployment
 
 **Use Cases**:
+
 - Development and testing environments
 - Low-traffic production workloads
 - Applications requiring ACID guarantees without replication complexity
 - Budget-constrained deployments
 
 **Configuration**:
+
 ```yaml
 # geode.yaml
 server:
@@ -84,6 +89,7 @@ performance:
 ```
 
 **Deployment**:
+
 ```bash
 # SystemD service
 cat > /etc/systemd/system/geode.service <<EOF
@@ -112,12 +118,14 @@ systemctl start geode
 ### High-Availability Cluster
 
 **Use Cases**:
+
 - Business-critical applications requiring 99.99% uptime
 - High-traffic workloads (throughput depends on workload and server limits)
 - Geographic distribution for disaster recovery
 - Applications with strict RTO/RPO requirements
 
 **Architecture**:
+
 ```
 ┌─────────────┐     ┌─────────────┐     ┌─────────────┐
 │   Leader    │────▶│  Follower 1 │     │  Follower 2 │
@@ -130,6 +138,7 @@ systemctl start geode
 ```
 
 **Configuration (Leader)**:
+
 ```yaml
 server:
   listen: 0.0.0.0:3141
@@ -148,6 +157,7 @@ replication:
 ```
 
 **Configuration (Follower)**:
+
 ```yaml
 server:
   listen: 0.0.0.0:3141
@@ -167,6 +177,7 @@ replication:
 ### Kubernetes Deployment
 
 **StatefulSet Configuration**:
+
 ```yaml
 apiVersion: apps/v1
 kind: StatefulSet
@@ -197,7 +208,7 @@ spec:
 
       containers:
       - name: geode
-        image: geodedb/geode:0.1.3
+        image: geodedb/geode:__GEODE_VERSION__
         ports:
         - containerPort: 3141
           name: client
@@ -250,6 +261,7 @@ spec:
 ```
 
 **Headless Service**:
+
 ```yaml
 apiVersion: v1
 kind: Service
@@ -268,6 +280,7 @@ spec:
 ```
 
 **Load Balancer for Reads**:
+
 ```yaml
 apiVersion: v1
 kind: Service
@@ -291,6 +304,7 @@ spec:
 ### TLS Configuration
 
 **Generate Certificates**:
+
 ```bash
 # Certificate Authority
 openssl genrsa -out ca.key 4096
@@ -309,6 +323,7 @@ openssl x509 -req -in server.csr -CA ca.crt -CAkey ca.key \
 ```
 
 **Server Configuration**:
+
 ```yaml
 server:
   tls:
@@ -320,6 +335,7 @@ server:
 ```
 
 **Client Configuration**:
+
 ```python
 client = Client(
     "geode.example.com:3141",
@@ -333,6 +349,7 @@ client = Client(
 ### Authentication & Authorization
 
 **User Management**:
+
 ```gql
 -- Create admin user
 CREATE USER admin WITH PASSWORD 'strong_password_here' ROLE administrator;
@@ -346,6 +363,7 @@ GRANT SELECT, INSERT, UPDATE ON GRAPH social_network TO app_user;
 ```
 
 **Row-Level Security**:
+
 ```gql
 -- Multi-tenant isolation policy
 CREATE POLICY tenant_isolation ON User
@@ -365,6 +383,7 @@ USING (
 ### Network Security
 
 **Firewall Rules**:
+
 ```bash
 # Allow only application servers to connect
 iptables -A INPUT -p tcp --dport 3141 -s 10.0.1.0/24 -j ACCEPT
@@ -376,6 +395,7 @@ iptables -A INPUT -p tcp --dport 3142 -j DROP
 ```
 
 **VPC Configuration** (AWS):
+
 ```terraform
 resource "aws_security_group" "geode" {
   name        = "geode-production"
@@ -412,6 +432,7 @@ resource "aws_security_group" "geode" {
 ### Metrics Collection
 
 **Prometheus Configuration**:
+
 ```yaml
 # prometheus.yml
 scrape_configs:
@@ -423,6 +444,7 @@ scrape_configs:
 ```
 
 **Key Metrics**:
+
 ```python
 # Expose metrics endpoint (Python client application)
 from prometheus_client import Counter, Histogram, Gauge, start_http_server
@@ -444,6 +466,7 @@ async def execute_query(client, query):
 ```
 
 **Grafana Dashboard**:
+
 ```json
 {
   "dashboard": {
@@ -537,6 +560,7 @@ groups:
 ### Backup Strategy
 
 **Full Backups**:
+
 ```bash
 #!/bin/bash
 # daily_backup.sh
@@ -559,6 +583,7 @@ find "$BACKUP_DIR" -name "geode_full_*.tar.gz" -mtime +7 -delete
 ```
 
 **Incremental Backups**:
+
 ```bash
 #!/bin/bash
 # hourly_incremental.sh
@@ -577,6 +602,7 @@ aws s3 cp "$BACKUP_DIR/wal_$DATE.tar.gz" "s3://backups/geode/wal/"
 ### Recovery Procedures
 
 **Full Restore**:
+
 ```bash
 # Stop Geode
 systemctl stop geode
@@ -598,6 +624,7 @@ systemctl start geode
 ```
 
 **Point-in-Time Recovery (PITR)**:
+
 ```bash
 # Restore base backup
 ./geode restore --input /backups/geode/geode_full_20250124.tar.gz
@@ -614,23 +641,27 @@ systemctl start geode
 ### Sizing Guidelines
 
 **Memory Requirements**:
+
 - Base: 2GB for Geode process
 - Working set: 50-70% of total graph size for hot data
 - Query cache: 10-20% of memory
 - Connection overhead: 10MB per 1000 connections
 
 **Example**:
+
 - 10GB graph, 1000 connections, 10% query cache
-- Memory needed: 2 + (10 * 0.6) + (10 * 0.1) + (1 * 10/1000) = ~9GB
+- Memory needed: 2 + (10 *0.6) + (10* 0.1) + (1 * 10/1000) = ~9GB
 - Recommended: 16GB for headroom
 
 **Storage Requirements**:
+
 - Data: 1.2-1.5x raw data size (compression + overhead)
 - WAL: 20-30% of data size for write-heavy workloads
 - Snapshots: Full data size per backup
 - Indexes: 10-30% of data size depending on indexed properties
 
 **CPU Requirements**:
+
 - Query parsing and planning scale with query complexity and concurrency
 - Transaction processing scales with write mix and index maintenance
 - Replication overhead depends on follower count and network latency
@@ -667,6 +698,7 @@ class GeodeUser(User):
 ```
 
 Run load test:
+
 ```bash
 locust -f load_test.py --host geode.example.com --users 1000 --spawn-rate 10 --run-time 1h
 ```
@@ -678,12 +710,14 @@ locust -f load_test.py --host geode.example.com --users 1000 --spawn-rate 10 --r
 **Symptoms**: CPU > 80% for 5+ minutes
 
 **Investigation**:
+
 1. Check active queries: `SELECT * FROM system.queries WHERE duration > 10s`
 2. Profile slow queries: Use PROFILE command
 3. Check connection count: Monitor active_connections metric
 4. Review recent schema changes
 
 **Resolution**:
+
 - Kill long-running queries: `KILL QUERY 'query-id'`
 - Add missing indexes
 - Scale horizontally (add replicas)
@@ -694,12 +728,14 @@ locust -f load_test.py --host geode.example.com --users 1000 --spawn-rate 10 --r
 **Symptoms**: Follower > 10s behind leader
 
 **Investigation**:
+
 1. Check network latency between nodes
 2. Review follower logs for errors
 3. Check disk I/O on follower
 4. Verify follower isn't overloaded with read queries
 
 **Resolution**:
+
 - Increase replication batch size
 - Switch to asynchronous replication
 - Add dedicated read replicas
@@ -710,11 +746,13 @@ locust -f load_test.py --host geode.example.com --users 1000 --spawn-rate 10 --r
 **Symptoms**: Connection timeouts, pool at 100%
 
 **Investigation**:
+
 1. Check for connection leaks in application
 2. Review connection lifecycle management
 3. Analyze query patterns (long-running queries?)
 
 **Resolution**:
+
 - Increase pool size
 - Reduce query timeout
 - Fix application connection leaks

@@ -47,7 +47,7 @@ curl -f http://localhost:8080/health || echo "Health check failed"
 {
   "status": "healthy",
   "timestamp": "2024-01-15T14:30:00Z",
-  "version": "0.1.3"
+  "version": "__GEODE_VERSION__"
 }
 ```
 
@@ -62,6 +62,7 @@ curl -f http://localhost:8080/health || echo "Health check failed"
 ```
 
 **HTTP status codes**:
+
 - `200 OK` - Healthy
 - `503 Service Unavailable` - Unhealthy
 
@@ -332,6 +333,7 @@ security:
 ### What's Logged
 
 **Events logged**:
+
 - ✅ Authentication (login, logout, failed attempts)
 - ✅ Authorization decisions (policy evaluations)
 - ✅ Schema changes (CREATE/ALTER/DROP)
@@ -339,6 +341,7 @@ security:
 - ✅ Query metadata (timestamp, user, graph, execution time)
 
 **Events NOT logged** (privacy/security):
+
 - ❌ Query text (avoid logging sensitive data)
 - ❌ Query parameters
 - ❌ Result sets
@@ -363,6 +366,7 @@ security:
 ```
 
 **Tamper-evident properties**:
+
 - **Hash chain**: Each entry includes `prev_log_hash` (SHA-256 of previous entry)
 - **Signatures**: Entries signed with server private key for non-repudiation
 - **Tracing IDs**: `trace_id` correlates events across distributed systems
@@ -370,6 +374,7 @@ security:
 ### Tracing IDs
 
 **Purpose**: Correlate events across:
+
 - Multiple queries in a transaction
 - Distributed query execution (federated queries)
 - CDC webhooks and downstream processing
@@ -456,6 +461,7 @@ services:
 ```
 
 **Defaults**:
+
 - **Development**: `debug`
 - **Production**: `info`
 
@@ -499,25 +505,30 @@ From `deployment/DEPLOYMENT.md`:
 ### Dashboard Panels
 
 **Query Performance**:
+
 - Query rate (QPS)
 - 50th/95th/99th percentile latency
 - Error rate
 
 **Transaction Metrics**:
+
 - Active transactions
 - Commit/abort rate
 - Serialization error rate
 
 **Storage**:
+
 - Cache hit ratio
 - Page read/write rate
 - WAL write throughput
 
 **Connections**:
+
 - Active connections
 - Connection rate
 
 **Alerts**:
+
 - High error rate (>1%)
 - High latency (p95 >1s)
 - Cache hit ratio low (<80%)

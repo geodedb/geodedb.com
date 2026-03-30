@@ -1,6 +1,6 @@
 ---
 title: "Authentication"
-description: "Configure authentication mechanisms in Geode including username/password, API keys, MFA, LDAP/AD integration, and OAuth2/OIDC"
+description: "Current Geode authentication surface: username/password, sessions, API keys, MFA, mTLS, offline auth integrity tooling, and planned LDAP/OIDC work"
 url: /docs/security/authentication/
 weight: 20
 tags:
@@ -25,591 +25,220 @@ keywords:
   - API keys
 ---
 
-<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-28 -->
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-03-30 -->
 
 # Authentication
 
-Authentication (AuthN) verifies user identity before granting access to Geode. This guide covers all supported authentication mechanisms, configuration options, and security best practices.
+Authentication (AuthN) verifies user identity before granting access to Geode. This page reflects the current tagged Geode authentication surface in `__GEODE_TAG__` plus the known auth gaps documented on `main` as of 2026-03-30.
 
-## Overview
+> **Current state**
+>
+> - Implemented today: username/password, session tokens, API keys, MFA (TOTP), and mTLS
+> - Planned, not implemented: LDAP/Active Directory (`GAP-0246`) and OAuth2/OIDC (`GAP-0247`)
+> - Known limitation on `main`: CLI auth management commands still operate on the local auth store instead of delegating to a running server (`GAP-0270`)
 
-Geode supports multiple authentication methods to accommodate different deployment scenarios:
+## Feature Status
 
-| Method | Use Case | Security Level |
-|--------|----------|----------------|
-| Username/Password | Interactive users, development | Medium |
-| API Keys | Service accounts, automation | Medium-High |
-| MFA (TOTP) | Administrative access, compliance | High |
-| LDAP/Active Directory | Enterprise environments | High |
-| OAuth2/OIDC | SSO integration, cloud-native | High |
-| mTLS (Mutual TLS) | Zero-trust, service mesh | Very High |
+| Method | Status | Notes |
+|--------|--------|-------|
+| Username/Password | Implemented | Authentication is enabled by default |
+| Session tokens | Implemented | Stored in `~/.geode/credentials.json` when saved |
+| API keys | Implemented | Managed with `geode apikey ...` |
+| MFA (TOTP) | Implemented | Core MFA support exists; some CLI end-to-end flows are affected by `GAP-0270` |
+| mTLS | Implemented | Certificate-based client identity |
+| LDAP / Active Directory | Planned | Not implemented in `src/security/` as of 2026-03-30 |
+| OAuth2 / OIDC | Planned | Not implemented in `src/security/` as of 2026-03-30 |
 
-**Default Behavior**: Authentication is **enabled by default** in Geode v0.1.3+. Configure at least one authentication method before production deployment.
+## Default Bootstrap
 
-## Username/Password Authentication
-
-### Default Admin User
-
-On first startup, Geode creates a default admin user from environment variables:
+Authentication is enabled by default in modern Geode builds. On first startup, Geode creates the bootstrap admin user from environment variables.
 
 ```bash
-# Set admin credentials before first startup
-export GEODE_ADMIN_USERNAME="admin"
+# Defaults to username "geode" if not overridden
+export GEODE_ADMIN_USERNAME="geode"
 export GEODE_DEFAULT_PASSWORD="change-me-immediately"
 
-# Start server (creates admin user on first run)
 ./geode serve --listen 0.0.0.0:3141
 ```
 
-**Security Warning**: Change the default password immediately after first login.
+If `GEODE_ADMIN_USERNAME` is omitted, the default bootstrap username is `geode`. The docs site previously used `admin` in examples; that is no longer the correct default.
 
-### User Management
+## Current CLI Surface
 
-```gql
--- Create new user
-CREATE USER alice WITH PASSWORD 'secure-password-123';
+### Login and Session Management
 
--- Create user with roles
-CREATE USER bob WITH PASSWORD 'password' ROLES ['analyst', 'reader'];
+```bash
+# Login and save a session
+geode auth login -U geode --save-session
 
--- Change password
-ALTER USER alice SET PASSWORD 'new-password-456';
+# Reuse saved credentials automatically
+geode query "RETURN 1 AS x"
 
--- List users
-SHOW USERS;
-
--- Drop user
-DROP USER bob;
+# Inspect or clear saved credentials
+geode auth token
+geode auth logout
 ```
 
-### Password Policies
+`geode auth --help` currently exposes:
 
-Configure password requirements in `geode.yaml`:
+- `login`
+- `logout`
+- `token`
+- `init`
+- `reseal`
+- `verify`
+
+### Query and Shell Authentication
+
+```bash
+# Explicit credentials
+geode query -U geode -P "RETURN 1 AS x"
+geode shell --server localhost:3141 -U geode -P secret
+
+# DSN-based credentials
+geode query --dsn quic://geode:secret@localhost:3141 "RETURN 1 AS x"
+geode shell --dsn quic://geode:secret@localhost:3141/social
+```
+
+### Offline Auth Integrity Workflows
+
+Auth storage now uses a graph-backed internal store with HMAC integrity support. The offline maintenance commands are:
+
+```bash
+geode auth init --data-dir /var/lib/geode
+geode auth reseal --data-dir /var/lib/geode
+geode auth verify --data-dir /var/lib/geode
+```
+
+Use these on-host against a stopped or explicitly managed data directory, not as a substitute for live server-side user administration.
+
+## Important Limitation: Local vs Server-Side Auth Commands
+
+As of the 2026-03-30 audit, these commands still manage the **local auth store** and do **not** yet delegate to the running server over QUIC:
+
+- `geode user ...`
+- `geode role ...`
+- `geode policy ...`
+- `geode grant ...`
+- `geode revoke ...`
+- `geode apikey ...`
+- CLI MFA enrollment and verification flows
+
+That is the root of `GAP-0270`, which currently accounts for most of the remaining geodetestlab failures on `main`.
+
+**Practical guidance**:
+
+- Use these commands for **offline/on-host administration** where local data-dir access is intended.
+- Do not assume they operate against a live remote server yet.
+- Track the next auth patch if you need server-delegated CLI user and API-key administration.
+
+## Password Security
+
+Geode documents and uses Argon2id-style password handling and enforces password policy at login/update time.
 
 ```yaml
 security:
   password_policy:
-    min_length: 16            # Minimum password length
-    max_length: 128           # Maximum password length
-    require_uppercase: true   # At least one uppercase letter
-    require_lowercase: true   # At least one lowercase letter
-    require_digits: true      # At least one number
-    require_special: true     # At least one special character
-    expiration_days: 90       # Password expires after 90 days
-    history_count: 5          # Prevent reuse of last 5 passwords
-    lockout_attempts: 5       # Lock account after 5 failed attempts
-    lockout_duration_minutes: 30  # Lockout duration
+    min_length: 16
+    require_uppercase: true
+    require_lowercase: true
+    require_digits: true
+    require_special: true
+    expiration_days: 90
+    history_count: 5
 ```
 
-### Password Hashing
+The CLI help and current auth docs also assume:
 
-Geode uses **Argon2id** for secure password storage:
+- the default bootstrap user is `geode`
+- password prompts are preferred over inline plaintext arguments
+- saved sessions live at `~/.geode/credentials.json`
 
-```yaml
-security:
-  password_hashing:
-    algorithm: "argon2id"     # argon2id, bcrypt, or pbkdf2
-    argon2:
-      memory: 65536           # 64 MB memory cost
-      iterations: 3           # Time cost (iterations)
-      parallelism: 4          # Parallel threads
-      salt_length: 16         # Salt length in bytes
-      hash_length: 32         # Output hash length
-```
+## API Keys
 
-**Why Argon2id?**
-- **Memory-hard**: Resistant to GPU/ASIC brute-force attacks
-- **Side-channel resistant**: Constant-time operations
-- **Winner of Password Hashing Competition**: Industry recommended
-
-**Hash Format**:
-```
-$argon2id$v=19$m=65536,t=3,p=4$<salt>$<hash>
-```
-
-See [Password Hashing](/docs/security/password-hashing/) for detailed configuration.
-
-## API Key Authentication
-
-API keys provide programmatic access for service accounts and automation.
-
-### Creating API Keys
+API keys are managed through the `apikey` subcommand family:
 
 ```bash
-# Generate API key for user
-geode admin create-api-key \
-  --user alice \
-  --name "production-app" \
-  --expires 365d
-
-# Output:
-# API Key: gsk_live_abc123xyz789...
-# Key ID: key_01HQGR5T2N...
-# Expires: 2027-01-28
-#
-# WARNING: This key will only be shown once. Store it securely.
+geode apikey create --user alice --name prod-app --scope query:execute
+geode apikey list --user alice
+geode apikey revoke --user alice --name prod-app
+geode apikey revoke-all --user alice --yes
 ```
 
-### Using API Keys
-
-```bash
-# Via environment variable
-export GEODE_API_KEY="gsk_live_abc123xyz789..."
-geode shell
-
-# Via command line
-geode query "MATCH (n) RETURN n LIMIT 10" --api-key "$GEODE_API_KEY"
-
-# In client libraries (Go example)
-import "go.codepros.org/geode"
-
-client, err := geode.Connect("quic://localhost:3141",
-    geode.WithAPIKey("gsk_live_abc123xyz789..."))
-```
-
-### API Key Management
-
-```bash
-# List API keys for user
-geode admin list-api-keys --user alice
-
-# Output:
-# Key ID                   Name             Created            Expires
-# key_01HQGR5T2N...        production-app   2026-01-28         2027-01-28
-# key_01HQGR5V3M...        staging-app      2026-01-15         2026-07-15
-
-# Revoke API key
-geode admin revoke-api-key --key-id key_01HQGR5T2N...
-
-# Rotate API key (create new, revoke old)
-geode admin rotate-api-key --key-id key_01HQGR5T2N...
-```
-
-### API Key Configuration
-
-```yaml
-security:
-  api_keys:
-    enabled: true
-    prefix: "gsk_"           # Key prefix for identification
-    max_keys_per_user: 10    # Maximum keys per user
-    default_expiry_days: 365 # Default expiration
-    min_expiry_days: 1       # Minimum expiration
-    max_expiry_days: 730     # Maximum expiration (2 years)
-```
+**Current caveat**: CLI API key management still falls under the local-store limitation described above.
 
 ## Multi-Factor Authentication (MFA)
 
-MFA adds an additional verification step beyond username/password.
-
-### TOTP Configuration
-
-Configure Time-based One-Time Passwords (TOTP):
+Geode includes TOTP-based MFA support and recent March hardening fixes addressed deterministic secret generation. Core MFA support exists, but some CLI-driven MFA workflows are still constrained by `GAP-0270` because they do not yet delegate to the running server.
 
 ```yaml
 security:
   mfa:
     enabled: true
-    required_for_roles:       # Require MFA for specific roles
-      - admin
-      - dba
     totp:
-      issuer: "Geode"         # Displayed in authenticator app
-      digits: 6               # OTP length (6 or 8)
-      period: 30              # OTP validity period in seconds
-      algorithm: "SHA1"       # SHA1, SHA256, or SHA512
-      skew: 1                 # Allow 1 period before/after
+      issuer: "Geode"
+      digits: 6
+      period: 30
 ```
 
-### Enabling MFA for Users
+Use MFA for:
 
-```bash
-# Enable MFA for user
-geode admin enable-mfa --user alice
-
-# Output:
-# MFA Enrollment
-# ==============
-# Scan this QR code with your authenticator app:
-# [QR Code displayed]
-#
-# Manual entry:
-# Secret: JBSWY3DPEHPK3PXP
-# Algorithm: SHA1
-# Digits: 6
-# Period: 30
-#
-# Enter the current code to verify: _
-
-# Enter TOTP code from authenticator
-123456
-
-# Output:
-# MFA enabled successfully for user: alice
-# Backup codes:
-# - abc123def456
-# - ghi789jkl012
-# ...
-# Store these backup codes securely. They can be used for recovery.
-```
-
-### MFA Login Flow
-
-```bash
-# Login with MFA
-geode shell --username alice
-
-# Output:
-# Password: ********
-# MFA Code: 123456
-# Connected to Geode v0.1.3
-```
-
-### Backup Codes
-
-```bash
-# Generate new backup codes (invalidates old codes)
-geode admin regenerate-backup-codes --user alice
-
-# View remaining backup code count
-geode admin mfa-status --user alice
-
-# Output:
-# MFA Status for alice
-# ====================
-# MFA Enabled: Yes
-# Method: TOTP
-# Backup Codes Remaining: 8/10
-# Last Used: 2026-01-27 14:30:00 UTC
-```
-
-## LDAP/Active Directory Integration
-
-Integrate with enterprise directory services for centralized user management.
-
-### LDAP Configuration
-
-```yaml
-security:
-  ldap:
-    enabled: true
-    url: "ldap://ldap.example.com:389"
-    use_tls: true                     # STARTTLS
-    tls_skip_verify: false            # Verify LDAP server certificate
-
-    # Bind credentials (service account)
-    bind_dn: "cn=geode-service,ou=services,dc=example,dc=com"
-    bind_password: "${LDAP_BIND_PASSWORD}"
-
-    # User search
-    user_search_base: "ou=users,dc=example,dc=com"
-    user_search_filter: "(uid={username})"
-    user_attribute: "uid"
-
-    # Group mapping
-    group_search_base: "ou=groups,dc=example,dc=com"
-    group_search_filter: "(member={dn})"
-    group_attribute: "cn"
-
-    # Role mapping (LDAP group -> Geode role)
-    role_mapping:
-      "geode-admins": "admin"
-      "geode-analysts": "analyst"
-      "geode-readers": "reader"
-```
-
-### Active Directory Configuration
-
-```yaml
-security:
-  ldap:
-    enabled: true
-    url: "ldap://dc.example.com:389"
-    use_tls: true
-
-    # AD bind credentials
-    bind_dn: "CN=Geode Service,OU=Service Accounts,DC=example,DC=com"
-    bind_password: "${AD_BIND_PASSWORD}"
-
-    # AD user search (sAMAccountName)
-    user_search_base: "OU=Users,DC=example,DC=com"
-    user_search_filter: "(sAMAccountName={username})"
-    user_attribute: "sAMAccountName"
-
-    # AD group search
-    group_search_base: "OU=Groups,DC=example,DC=com"
-    group_search_filter: "(member:1.2.840.113556.1.4.1941:={dn})"  # Recursive
-    group_attribute: "cn"
-
-    # UPN login support
-    upn_domain: "example.com"
-```
-
-### Testing LDAP Configuration
-
-```bash
-# Test LDAP connection
-geode admin test-ldap
-
-# Output:
-# Testing LDAP connection...
-# [OK] Connected to ldap://ldap.example.com:389
-# [OK] STARTTLS negotiated
-# [OK] Bind successful as cn=geode-service,...
-# [OK] User search base accessible
-# [OK] Group search base accessible
-# LDAP configuration valid.
-
-# Test user authentication
-geode admin test-ldap --user alice
-
-# Output:
-# Testing authentication for user: alice
-# [OK] User found: cn=alice,ou=users,dc=example,dc=com
-# [OK] Password verified
-# [OK] Groups: geode-analysts, geode-readers
-# [OK] Mapped roles: analyst, reader
-```
-
-## OAuth2/OIDC Integration
-
-Integrate with identity providers for Single Sign-On (SSO).
-
-### OAuth2 Configuration
-
-```yaml
-security:
-  oauth2:
-    enabled: true
-    provider: "generic"       # generic, okta, auth0, azure-ad, google
-
-    # OAuth2 endpoints
-    issuer_url: "https://auth.example.com"
-    authorization_endpoint: "https://auth.example.com/oauth/authorize"
-    token_endpoint: "https://auth.example.com/oauth/token"
-    userinfo_endpoint: "https://auth.example.com/oauth/userinfo"
-    jwks_uri: "https://auth.example.com/.well-known/jwks.json"
-
-    # Client credentials
-    client_id: "${OAUTH_CLIENT_ID}"
-    client_secret: "${OAUTH_CLIENT_SECRET}"
-
-    # Scopes
-    scopes:
-      - openid
-      - profile
-      - email
-
-    # Callback URL
-    redirect_uri: "https://geode.example.com/auth/callback"
-
-    # Token validation
-    audience: "geode-api"
-
-    # Claim mapping
-    claims:
-      username: "preferred_username"
-      email: "email"
-      groups: "groups"
-
-    # Role mapping
-    role_mapping:
-      "geode-admin": "admin"
-      "geode-user": "reader"
-```
-
-### Provider-Specific Configuration
-
-**Okta**:
-```yaml
-security:
-  oauth2:
-    enabled: true
-    provider: "okta"
-    issuer_url: "https://your-org.okta.com/oauth2/default"
-    client_id: "${OKTA_CLIENT_ID}"
-    client_secret: "${OKTA_CLIENT_SECRET}"
-    scopes: ["openid", "profile", "email", "groups"]
-```
-
-**Azure AD**:
-```yaml
-security:
-  oauth2:
-    enabled: true
-    provider: "azure-ad"
-    tenant_id: "${AZURE_TENANT_ID}"
-    client_id: "${AZURE_CLIENT_ID}"
-    client_secret: "${AZURE_CLIENT_SECRET}"
-    scopes: ["openid", "profile", "email"]
-```
-
-**Auth0**:
-```yaml
-security:
-  oauth2:
-    enabled: true
-    provider: "auth0"
-    domain: "your-tenant.auth0.com"
-    client_id: "${AUTH0_CLIENT_ID}"
-    client_secret: "${AUTH0_CLIENT_SECRET}"
-    audience: "https://geode.example.com/api"
-```
+- administrative users
+- privileged automation accounts with interactive fallback
+- regulated environments requiring step-up authentication
 
 ## Mutual TLS (mTLS)
 
-Certificate-based authentication for zero-trust environments.
-
-### mTLS Configuration
+Certificate-based client identity is available for zero-trust or service-mesh deployments.
 
 ```yaml
 security:
   mtls:
     enabled: true
-    client_ca: "/etc/geode/certs/client-ca.pem"  # CA for client certs
-    verify_client: "require"                      # require, optional, none
-
-    # Certificate mapping (CN -> username)
-    cn_mapping:
-      enabled: true
-      extract_username: "cn"    # Extract from CN field
-
-    # SAN mapping (alternative)
-    san_mapping:
-      enabled: false
-      extract_username: "email" # Extract from email SAN
+    client_ca: "/etc/geode/certs/client-ca.pem"
+    verify_client: "require"
 ```
 
-### Generating Client Certificates
+Client usage:
 
 ```bash
-# Generate client CA (one-time)
-openssl genrsa -out client-ca-key.pem 4096
-openssl req -x509 -new -nodes -key client-ca-key.pem \
-  -sha256 -days 3650 -out client-ca.pem \
-  -subj "/CN=Geode Client CA"
-
-# Generate client certificate for user
-openssl genrsa -out alice-key.pem 2048
-openssl req -new -key alice-key.pem -out alice.csr \
-  -subj "/CN=alice/O=Engineering"
-
-openssl x509 -req -in alice.csr -CA client-ca.pem \
-  -CAkey client-ca-key.pem -CAcreateserial \
-  -out alice-cert.pem -days 365 -sha256
-
-# Connect with client certificate
-geode shell \
-  --cert alice-cert.pem \
-  --key alice-key.pem
+geode query \
+  --ca-cert /etc/ssl/ca.crt \
+  --client-cert /etc/ssl/client.crt \
+  --client-key /etc/ssl/client.key \
+  --server secure.example.com:3141 \
+  "RETURN 1 AS x"
 ```
 
-## Authentication Events and Audit
+## Planned Integrations
 
-All authentication events are logged for security monitoring:
+### LDAP / Active Directory
 
-```yaml
-security:
-  audit:
-    authentication_events:
-      - login_success
-      - login_failure
-      - logout
-      - mfa_challenge
-      - mfa_success
-      - mfa_failure
-      - password_change
-      - api_key_created
-      - api_key_revoked
-      - session_created
-      - session_expired
-```
+LDAP/AD remains **planned** and is still tracked as `GAP-0246`. The March 2026 audits explicitly confirmed there is no LDAP/AD implementation in `src/security/`.
 
-**Sample Audit Log**:
-```json
-{
-  "timestamp": "2026-01-28T14:30:00.123Z",
-  "event_type": "login_failure",
-  "user": "alice",
-  "source_ip": "192.168.1.100",
-  "method": "password",
-  "reason": "invalid_password",
-  "attempts": 3,
-  "trace_id": "abc123..."
-}
-```
+For enterprise identity requirements today, use one of:
 
-## Security Best Practices
+- mTLS with your existing PKI
+- username/password plus MFA
+- API keys for scoped automation
 
-### Password Security
+### OAuth2 / OIDC
 
-1. **Enforce strong passwords**: Minimum 16 characters with complexity requirements
-2. **Enable password expiration**: 90 days maximum
-3. **Prevent password reuse**: Track last 5-10 passwords
-4. **Use account lockout**: 5 failed attempts, 30-minute lockout
+OAuth2/OIDC remains **planned** and is still tracked as `GAP-0247`. The March 2026 audits explicitly confirmed there is no OAuth/OIDC implementation in `src/security/`.
 
-### MFA Requirements
+Do not treat old draft configuration examples as deployable current-state guidance.
 
-1. **Require MFA for admins**: All users with admin role
-2. **Provide backup codes**: Store securely for account recovery
-3. **Monitor MFA events**: Alert on repeated failures
-4. **Regular backup code rotation**: Regenerate annually
+## Best Practices
 
-### API Key Management
-
-1. **Use short-lived keys**: 90 days maximum for production
-2. **Implement key rotation**: Rotate keys before expiration
-3. **Monitor key usage**: Alert on unusual patterns
-4. **Principle of least privilege**: Grant minimum required permissions
-
-### Enterprise Integration
-
-1. **Use LDAP/AD for user management**: Centralized user lifecycle
-2. **Implement SSO with OAuth2/OIDC**: Single point of authentication
-3. **Enable mTLS for service accounts**: Certificate-based authentication
-4. **Regular access reviews**: Audit user permissions quarterly
-
-## Troubleshooting
-
-### Common Issues
-
-**Issue**: "Invalid credentials" error
-```bash
-# Check user exists
-geode admin show-user alice
-
-# Verify password policy compliance
-geode admin validate-password --user alice
-
-# Check account lockout status
-geode admin account-status --user alice
-```
-
-**Issue**: LDAP connection failure
-```bash
-# Test LDAP connectivity
-geode admin test-ldap --verbose
-
-# Check TLS certificate
-openssl s_client -connect ldap.example.com:636 -showcerts
-```
-
-**Issue**: MFA not working
-```bash
-# Verify server time synchronization
-timedatectl status
-
-# Check MFA configuration
-geode admin mfa-status --user alice
-
-# Reset MFA (requires admin)
-geode admin reset-mfa --user alice
-```
+1. Use `GEODE_DEFAULT_PASSWORD` only for bootstrap, then rotate immediately.
+2. Prefer `geode auth login --save-session` over repeated inline passwords.
+3. Use `--ca-cert` instead of `--insecure-tls-skip-verify` outside development.
+4. Treat `geode user|role|policy|grant|revoke|apikey` as local/offline tools until `GAP-0270` is closed.
+5. Reject semicolons in any caller-controlled FLE role input until the `GAP-0271` patch lands.
 
 ## Related Documentation
 
-- **[Security Overview](/docs/security/overview/)** - Complete security architecture
-- **[Authorization](/docs/security/authorization/)** - RBAC, ABAC, and RLS
-- **[Password Hashing](/docs/security/password-hashing/)** - Argon2id configuration
-- **[Session Management](/docs/security/session-management/)** - Session security
-- **[Audit Logging](/docs/ops/audit-logging/)** - Authentication audit trail
+- [Security Overview](/docs/security/overview/)
+- [Field-Level Encryption](/docs/security/field-level-encryption/)
+- [DSN Specification](/docs/reference/dsn/)
+- [CLI and API](/docs/reference/cli-and-api/)

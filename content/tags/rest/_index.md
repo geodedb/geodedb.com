@@ -111,6 +111,7 @@ Execute a GQL query and return results.
 **Endpoint**: `POST /api/v1/query`
 
 **Request**:
+
 ```json
 {
   "query": "MATCH (p:Person)-[:KNOWS]->(friend:Person) WHERE p.name = $name RETURN friend.name, friend.age",
@@ -124,6 +125,7 @@ Execute a GQL query and return results.
 ```
 
 **Response**:
+
 ```json
 {
   "schema": {
@@ -145,6 +147,7 @@ Execute a GQL query and return results.
 ```
 
 **Example with curl**:
+
 ```bash
 curl -X POST https://geode.example.com/api/v1/query \
   -H "Authorization: Bearer token_abc123" \
@@ -156,6 +159,7 @@ curl -X POST https://geode.example.com/api/v1/query \
 ```
 
 **Example with Python**:
+
 ```python
 import requests
 
@@ -184,6 +188,7 @@ for row in result.rows['data']:
 ```
 
 **Example with JavaScript/Node.js**:
+
 ```javascript
 const axios = require('axios');
 
@@ -220,6 +225,7 @@ Get query execution plan without executing the query.
 **Endpoint**: `POST /api/v1/query/explain`
 
 **Request**:
+
 ```json
 {
   "query": "MATCH (p:Person)-[:KNOWS*1..3]->(friend) WHERE p.age > 25 RETURN friend.name"
@@ -227,6 +233,7 @@ Get query execution plan without executing the query.
 ```
 
 **Response**:
+
 ```json
 {
   "plan": {
@@ -261,6 +268,7 @@ Execute query and return detailed performance metrics.
 **Endpoint**: `POST /api/v1/query/profile`
 
 **Request**:
+
 ```json
 {
   "query": "MATCH (p:Person)-[:KNOWS]->(f) RETURN f.name",
@@ -269,6 +277,7 @@ Execute query and return detailed performance metrics.
 ```
 
 **Response**:
+
 ```json
 {
   "data": [...],
@@ -308,6 +317,7 @@ Start a new transaction and receive a transaction ID.
 **Endpoint**: `POST /api/v1/transaction/begin`
 
 **Request**:
+
 ```json
 {
   "isolation_level": "READ_COMMITTED",
@@ -316,6 +326,7 @@ Start a new transaction and receive a transaction ID.
 ```
 
 **Response**:
+
 ```json
 {
   "transaction_id": "tx_abc123def456",
@@ -330,6 +341,7 @@ Execute a query within an existing transaction.
 **Endpoint**: `POST /api/v1/transaction/{transaction_id}/query`
 
 **Request**:
+
 ```json
 {
   "query": "CREATE (p:Person {name: $name, age: $age})",
@@ -341,6 +353,7 @@ Execute a query within an existing transaction.
 ```
 
 **Response**:
+
 ```json
 {
   "schema": {...},
@@ -359,6 +372,7 @@ Commit all changes in a transaction.
 **Endpoint**: `POST /api/v1/transaction/{transaction_id}/commit`
 
 **Response**:
+
 ```json
 {
   "status": "committed",
@@ -374,6 +388,7 @@ Rollback all changes in a transaction.
 **Endpoint**: `POST /api/v1/transaction/{transaction_id}/rollback`
 
 **Request**:
+
 ```json
 {
   "to_savepoint": "savepoint_1"
@@ -381,6 +396,7 @@ Rollback all changes in a transaction.
 ```
 
 **Response**:
+
 ```json
 {
   "status": "rolled_back",
@@ -466,6 +482,7 @@ Execute multiple queries in a single request for efficiency.
 **Endpoint**: `POST /api/v1/batch`
 
 **Request**:
+
 ```json
 {
   "queries": [
@@ -487,6 +504,7 @@ Execute multiple queries in a single request for efficiency.
 ```
 
 **Response**:
+
 ```json
 {
   "results": [
@@ -522,10 +540,11 @@ Check database health and connectivity.
 **Endpoint**: `GET /api/v1/health`
 
 **Response**:
+
 ```json
 {
   "status": "healthy",
-  "version": "0.1.3",
+  "version": "__GEODE_VERSION__",
   "uptime_seconds": 86400,
   "checks": {
     "database": "ok",
@@ -542,9 +561,10 @@ Get detailed server status and statistics.
 **Endpoint**: `GET /api/v1/status`
 
 **Response**:
+
 ```json
 {
-  "version": "0.1.3",
+  "version": "__GEODE_VERSION__",
   "uptime_seconds": 86400,
   "node_id": "node_abc123",
   "role": "primary",
@@ -569,6 +589,7 @@ Prometheus-compatible metrics endpoint.
 **Endpoint**: `GET /api/v1/metrics`
 
 **Response** (text/plain):
+
 ```
 # HELP geode_queries_total Total number of queries executed
 # TYPE geode_queries_total counter
@@ -666,6 +687,7 @@ def execute_with_retry(query, parameters, max_retries=3):
 The REST API implements rate limiting to prevent abuse:
 
 **Headers**:
+
 ```
 X-RateLimit-Limit: 1000
 X-RateLimit-Remaining: 999
@@ -673,6 +695,7 @@ X-RateLimit-Reset: 1706112000
 ```
 
 **Rate Limit Exceeded Response** (HTTP 429):
+
 ```json
 {
   "error": {
@@ -688,6 +711,7 @@ X-RateLimit-Reset: 1706112000
 The REST API supports Cross-Origin Resource Sharing (CORS) for browser-based applications:
 
 **Preflight Request**:
+
 ```bash
 curl -X OPTIONS https://geode.example.com/api/v1/query \
   -H "Origin: https://app.example.com" \
@@ -695,6 +719,7 @@ curl -X OPTIONS https://geode.example.com/api/v1/query \
 ```
 
 **Response**:
+
 ```
 Access-Control-Allow-Origin: https://app.example.com
 Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS
@@ -709,6 +734,7 @@ For real-time updates and streaming queries, the API supports WebSocket connecti
 **Endpoint**: `wss://geode.example.com/api/v1/stream`
 
 **JavaScript Example**:
+
 ```javascript
 const ws = new WebSocket('wss://geode.example.com/api/v1/stream');
 

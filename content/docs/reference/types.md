@@ -63,6 +63,7 @@ RETURN coalesce(p.nickname, p.name) AS display_name;
 ```
 
 **Properties:**
+
 - NULL propagates through most operations
 - NULL = NULL evaluates to NULL (not true)
 - Use `IS NULL` / `IS NOT NULL` for comparisons
@@ -90,6 +91,7 @@ RETURN p.name, p.age >= 18 AS is_adult;
 ```
 
 **Constructor:**
+
 ```gql
 toBoolean('true')   -- true
 toBoolean('false')  -- false
@@ -117,6 +119,7 @@ RETURN 7 / 2 AS quotient;     -- 3 (truncates)
 ```
 
 **Constructor:**
+
 ```gql
 toInteger('42')     -- 42
 toInteger(3.7)      -- 3 (truncates)
@@ -145,6 +148,7 @@ RETURN 7.0 / 2 AS division;  -- 3.5
 ```
 
 **Constructor:**
+
 ```gql
 toFloat('3.14')     -- 3.14
 toFloat(42)         -- 42.0
@@ -174,6 +178,7 @@ RETURN length('hello') AS len;             -- 5
 ```
 
 **Constructor:**
+
 ```gql
 toString(42)              -- '42'
 toString(3.14)            -- '3.14'
@@ -204,6 +209,7 @@ RETURN length(f.data) AS bytes;
 ```
 
 **Constructor:**
+
 ```gql
 '\\x48656c6c6f'::bytea    -- Hex encoding
 bytes_from_hex('48656c6c6f')
@@ -257,6 +263,7 @@ RETURN decimal('0.1') + decimal('0.2') AS sum;  -- 0.3 (exact)
 ```
 
 **Constructor:**
+
 ```gql
 decimal('123.456')
 decimal('999999999999999999.999999999999')
@@ -701,6 +708,7 @@ RETURN '{"a": 1}'::jsonb ? 'a';  -- true
 ```
 
 **Advantages over JSON:**
+
 - Faster queries (pre-parsed)
 - Indexable with JSONB inverted index
 - Supports containment operators
@@ -837,5 +845,5 @@ RETURN value IS NULL AS is_null;
 ---
 
 **Last Updated:** January 28, 2026
-**Geode Version:** v0.1.3+
+**Geode Version:** **GEODE_TAG**+
 **Type Count:** 50+ specialized types

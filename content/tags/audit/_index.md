@@ -56,7 +56,7 @@ Every audit event contains:
     "session_id": "sess_abc123def456",
     "roles": ["analyst", "viewer"],
     "ip_address": "192.168.1.100",
-    "user_agent": "geode-client-python/0.1.3"
+    "user_agent": "geode-client-python/0.3.19"
   },
 
   "operation": {
@@ -235,6 +235,7 @@ audit:
 ```
 
 Authentication subtypes:
+
 - `login_success` - Successful login
 - `login_failure` - Failed login attempt
 - `logout` - User logout
@@ -266,6 +267,7 @@ Authentication subtypes:
 ```
 
 Authorization subtypes:
+
 - `access_granted` - Permission check passed
 - `access_denied` - Permission check failed
 - `permission_granted` - New permission added
@@ -296,6 +298,7 @@ Authorization subtypes:
 ```
 
 Data access subtypes:
+
 - `query_executed` - Read query completed
 - `data_exported` - Bulk data export
 - `report_generated` - Report creation
@@ -326,6 +329,7 @@ Data access subtypes:
 ```
 
 Modification subtypes:
+
 - `node_created` - New node inserted
 - `node_updated` - Node properties changed
 - `node_deleted` - Node removed
@@ -353,6 +357,7 @@ Modification subtypes:
 ```
 
 Schema subtypes:
+
 - `graph_created` - New graph
 - `graph_dropped` - Graph deleted
 - `constraint_created` - New constraint
@@ -381,6 +386,7 @@ Schema subtypes:
 ```
 
 Administrative subtypes:
+
 - `user_created` - New user account
 - `user_modified` - User properties changed
 - `user_deleted` - User account removed

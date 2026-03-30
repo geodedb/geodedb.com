@@ -27,6 +27,12 @@ keywords:
 
 This guide covers safe upgrade procedures for Geode, including pre-upgrade planning, various upgrade strategies, and rollback procedures.
 
+> **Release-line note (2026-03-30)**
+>
+> - Current stable release: `__GEODE_TAG__`
+> - `main` already contains post-`__GEODE_TAG__` storage persistence and pager-encryption fixes
+> - Upgrades from older `v0.1.x` builds must account for the March 2026 storage transition: monolithic persistence -> per-graph storage -> graph-storage-backed persistence
+
 ## Overview
 
 Geode supports multiple upgrade strategies:
@@ -44,9 +50,10 @@ Geode supports multiple upgrade strategies:
 
 | From Version | To Version | Upgrade Path | Notes |
 |--------------|------------|--------------|-------|
-| 0.16.x | 0.17.x | Direct | Config changes required |
-| 0.17.x | 0.18.x | Direct | Auth now required by default |
-| 0.15.x | 0.18.x | Staged | Via 0.16.x, 0.17.x |
+| 0.2.14 | **GEODE_VERSION** | Direct | Stable patch upgrade |
+| 0.2.0-0.2.13 | **GEODE_VERSION** | Direct | Review DSN graph binding and auth/TLS flags |
+| 0.1.28-0.1.39 | **GEODE_VERSION** | Direct with backup validation | Per-graph storage already present; validate restart and graph binding behavior |
+| 0.1.3-0.1.27 | **GEODE_VERSION** | Staged / restore-tested | Storage layout changed significantly across March 2026 |
 
 ### Pre-Upgrade Checklist
 
@@ -56,6 +63,7 @@ geode --version
 
 # 2. Review release notes for target version
 # https://geodedb.com/docs/releases/
+# https://geodedb.com/docs/reference/changelog/
 
 # 3. Check system requirements
 # - Zig version compatibility
@@ -75,6 +83,8 @@ geode backup \
 # - Deploy to staging environment first
 # - Run full test suite
 # - Verify application compatibility
+# - Verify graph counts and restart persistence after first boot
+# - Verify DSN graph binding if clients use /graph in connection strings
 
 # 7. Document current configuration
 cp /etc/geode/geode.yaml /etc/geode/geode.yaml.backup
@@ -121,7 +131,7 @@ For single-node deployments or development environments.
 
 set -euo pipefail
 
-NEW_VERSION="0.1.3"
+NEW_VERSION="__GEODE_VERSION__"
 BACKUP_DIR="/var/lib/geode/upgrade-backup-$(date +%Y%m%d)"
 
 echo "=== In-Place Upgrade to $NEW_VERSION ==="
@@ -170,7 +180,7 @@ geode --version
 # 7. Update configuration (if needed)
 echo "Updating configuration..."
 # Apply any required config changes for new version
-# geode config migrate --from 0.17.x --to 0.18.x
+# For v0.1.x -> v0.2.x, validate storage and DSN behavior in staging first
 
 # 8. Start server
 echo "Starting Geode server..."
@@ -239,7 +249,7 @@ For distributed clusters with zero downtime.
 
 set -euo pipefail
 
-NEW_VERSION="0.1.3"
+NEW_VERSION="__GEODE_VERSION__"
 NODES=("geode-node1" "geode-node2" "geode-node3")
 GEODE_BIN_URL="https://releases.geodedb.com/v$NEW_VERSION/geode-linux-amd64"
 
@@ -372,7 +382,7 @@ For critical production with instant rollback capability.
 
 set -euo pipefail
 
-NEW_VERSION="0.1.3"
+NEW_VERSION="__GEODE_VERSION__"
 BLUE_CLUSTER="geode-blue"
 GREEN_CLUSTER="geode-green"
 
@@ -494,7 +504,7 @@ For gradual rollout with monitoring.
 
 set -euo pipefail
 
-NEW_VERSION="0.1.3"
+NEW_VERSION="__GEODE_VERSION__"
 CANARY_PERCENTAGE=5
 
 echo "=== Canary Deployment to $NEW_VERSION ==="

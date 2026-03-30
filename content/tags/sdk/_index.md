@@ -281,7 +281,7 @@ Add to `build.zig.zon`:
 ```zig
 .dependencies = .{
     .geode_client = .{
-        .url = "https://gitlab.com/devnw/codepros/geode/geode-client-zig/archive/v0.1.3.tar.gz",
+        .url = "https://gitlab.com/devnw/codepros/geode/geode-client-zig/archive/v0.1.0.tar.gz",
         .hash = "...",
     },
 }
@@ -347,6 +347,7 @@ Full Zig SDK documentation: [Zig Client Guide](/docs/client-libraries/zig-client
 ### Connection Management
 
 **Go**:
+
 ```go
 db, err := sql.Open("geode", "quic://localhost:3141")
 db.SetMaxOpenConns(100)
@@ -355,6 +356,7 @@ db.SetConnMaxLifetime(time.Hour)
 ```
 
 **Python**:
+
 ```python
 from geode_client import ConnectionPool
 
@@ -367,6 +369,7 @@ pool = ConnectionPool(
 ```
 
 **Rust**:
+
 ```rust
 let client = Client::builder()
     .url("localhost:3141")
@@ -378,6 +381,7 @@ let client = Client::builder()
 ### Error Handling
 
 **Go**:
+
 ```go
 import "geodedb.com/geode/errors"
 
@@ -393,6 +397,7 @@ if err != nil {
 ```
 
 **Python**:
+
 ```python
 from geode_client import Client, SyntaxError, ConstraintViolation
 
@@ -405,6 +410,7 @@ except ConstraintViolation as e:
 ```
 
 **Rust**:
+
 ```rust
 use geode_client::Error;
 
@@ -421,6 +427,7 @@ match client.execute(query, params).await {
 All SDKs support ACID transactions:
 
 **Go**:
+
 ```go
 tx, err := db.Begin()
 defer tx.Rollback() // Safe to call even after commit
@@ -432,6 +439,7 @@ err = tx.Commit()
 ```
 
 **Python**:
+
 ```python
 async with client.connection() as conn:
     await conn.begin()
@@ -445,6 +453,7 @@ async with client.connection() as conn:
 ```
 
 **Rust**:
+
 ```rust
 use geode_client::Value;
 use std::collections::HashMap;
@@ -465,6 +474,7 @@ conn.commit().await?;
 ### Prepared Statements
 
 **Go**:
+
 ```go
 stmt, err := db.Prepare("MATCH (n:Node {id: $id}) RETURN n")
 defer stmt.Close()
@@ -476,6 +486,7 @@ for id := 1; id <= 100; id++ {
 ```
 
 **Python**:
+
 ```python
 stmt = await conn.prepare(
     "MATCH (n:Node {id: $id}) RETURN n"
@@ -552,6 +563,7 @@ async def test_create_node(client):
 ### From Neo4j Driver
 
 **Neo4j (Python)**:
+
 ```python
 from neo4j import GraphDatabase
 
@@ -564,6 +576,7 @@ with driver.session() as session:
 ```
 
 **Geode (Python)**:
+
 ```python
 from geode_client import Client
 
@@ -579,11 +592,13 @@ async with client.connection() as conn:
 ### From SQL
 
 **SQL (Go)**:
+
 ```go
 rows, err := db.Query("SELECT * FROM users WHERE name = ?", "Alice")
 ```
 
 **GQL (Go with Geode)**:
+
 ```go
 rows, err := db.Query("MATCH (u:User {name: $name}) RETURN u", "Alice")
 ```

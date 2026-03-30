@@ -15,6 +15,7 @@
 
 {{/* Get description */}}
 {{ $description := .Params.description | default .Summary | default "" }}
+{{ $description = partial "geode/render-text.html" (dict "content" ($description | plainify)) }}
 
 <div class="docs-shell">
   {{/* Clean header matching docs style */}}
@@ -150,7 +151,7 @@
           {{/* Rich content from taxonomy _index.md */}}
           {{ if $hasDetailContent }}
             <div class="article-body mb-5" itemprop="mainEntity">
-              {{ .Content }}
+              {{ partial "geode/render-content.html" (dict "content" .Content) }}
             </div>
             <hr class="my-5">
           {{ end }}
@@ -193,10 +194,10 @@
                         </div>
                         <h3 class="article-title">{{ .Title }}</h3>
                         {{ with .Description }}
-                          <p class="article-description">{{ . | truncate 150 }}</p>
+                          <p class="article-description">{{ partial "geode/render-text.html" (dict "content" .) | truncate 150 }}</p>
                         {{ else }}
                           {{ with .Summary }}
-                            <p class="article-description">{{ . | plainify | truncate 150 }}</p>
+                            <p class="article-description">{{ partial "geode/render-text.html" (dict "content" (. | plainify)) | truncate 150 }}</p>
                           {{ end }}
                         {{ end }}
                       </div>

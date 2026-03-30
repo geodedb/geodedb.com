@@ -33,25 +33,28 @@ Geode uses semantic versioning (SemVer) to communicate the nature and impact of 
 Geode version numbers follow the format `MAJOR.MINOR.PATCH`:
 
 - **MAJOR** (e.g., 1.0.0 → 2.0.0): Breaking changes requiring migration
-- **MINOR** (e.g., 0.1.2 → 0.1.3): New features, backward compatible
-- **PATCH** (e.g., 0.1.3 → 0.1.3): Bug fixes, security patches
+- **MINOR** (e.g., 0.2.15 → 0.3.0): New features, backward compatible
+- **PATCH** (e.g., 0.2.14 → 0.2.15): Bug fixes, security patches
 
-**Current Version:** v0.1.3 (Production Ready, January 2026)
+**Current Version:** **GEODE_TAG** (Current stable release, **GEODE_RELEASE_DATE_LONG**)
 
 ### Release Types
 
 **Production Releases**
+
 - Full feature set with comprehensive testing
 - 97.4% test coverage (1644/1688 tests passing)
 - 100% GQL compliance (see conformance profile)
 - Suitable for enterprise production environments
 
 **Release Candidates (RC)**
+
 - Feature-complete pre-release versions
 - Beta testing phase for community validation
 - Typically released 2-4 weeks before production release
 
 **Patch Releases**
+
 - Critical bug fixes and security updates
 - Released as needed, typically within 1-2 weeks of issue discovery
 - Minimal risk, recommended for immediate deployment
@@ -68,15 +71,15 @@ Verify your installed Geode version using the CLI:
 
 ```bash
 ./geode --version
-# Output: Geode v0.1.3 (2026-01-15)
+# Output: Geode __GEODE_TAG__ (__GEODE_RELEASE_DATE__)
 
 # Check detailed build information
 ./geode version --verbose
 # Output:
 # Geode Graph Database
-# Version: 0.1.3
-# Build Date: 2026-01-15
-# Git Commit: a3f7b92
+# Version: __GEODE_VERSION__
+# Build Date: __GEODE_RELEASE_DATE__
+# Git Commit: <release-sha>
 # GQL Standard: ISO/IEC 39075:2024
 # Zig Version: 0.1.0
 ```
@@ -84,6 +87,7 @@ Verify your installed Geode version using the CLI:
 Check version from client libraries:
 
 **Go:**
+
 ```go
 import "geodedb.com/geode"
 
@@ -92,12 +96,14 @@ fmt.Printf("Client version: %s\n", version)
 ```
 
 **Python:**
+
 ```python
 import geode_client
 print(f"Client version: {geode_client.__version__}")
 ```
 
 **Rust:**
+
 ```rust
 use geode_client;
 println!("Client version: {}", geode_client::VERSION);
@@ -118,6 +124,7 @@ Recommended for critical production environments:
 5. Deploy to production during maintenance window
 
 **Advantages:**
+
 - Minimizes exposure to undiscovered issues
 - Community identifies edge cases first
 - More time for internal testing
@@ -134,6 +141,7 @@ Recommended for most production environments:
 4. Follow documented upgrade procedures
 
 **Advantages:**
+
 - Access to new features relatively quickly
 - Reduced accumulation of technical debt
 - Security patches applied promptly
@@ -150,6 +158,7 @@ Recommended for development environments and early adopters:
 4. Accept higher risk for access to cutting-edge features
 
 **Advantages:**
+
 - Immediate access to new capabilities
 - Contribute to community testing
 - Influence future development
@@ -173,8 +182,8 @@ For single-instance deployments or small clusters:
 
 # 3. Replace binary
 mv geode geode.old
-wget https://geodedb.com/releases/geode-v0.1.3-linux-amd64
-mv geode-v0.1.3-linux-amd64 geode
+wget https://geodedb.com/releases/geode-__GEODE_TAG__-linux-amd64
+mv geode-__GEODE_TAG__-linux-amd64 geode
 chmod +x geode
 
 # 4. Run migration (if needed)
@@ -197,11 +206,11 @@ For high-availability clusters with zero downtime:
 docker run -d --name geode-green \
   -v /data/geode:/data \
   -p 3142:3141 \
-  geodedb/geode:0.1.3
+  geodedb/geode:__GEODE_VERSION__
 
 # 2. Verify green environment health
 curl http://localhost:3142/health
-# {"status": "healthy", "version": "0.1.3"}
+# {"status": "healthy", "version": "__GEODE_VERSION__"}
 
 # 3. Run smoke tests against green
 ./test-harness --target localhost:3142 --suite smoke
@@ -231,7 +240,7 @@ for node in node1 node2 node3; do
   ssh $node "systemctl stop geode"
 
   # Replace binary
-  scp geode-v0.1.3 $node:/usr/local/bin/geode
+  scp geode-__GEODE_TAG__ $node:/usr/local/bin/geode
 
   # Migrate (if needed)
   ssh $node "./geode migrate --apply"
@@ -272,11 +281,11 @@ Preview migration steps:
 ```bash
 ./geode migrate --dry-run
 # Output:
-# Migration plan for v0.1.2 → v0.1.3:
-# 1. Add vector_embeddings table
-# 2. Create index on node_properties(property_key)
-# 3. Update query optimizer statistics
-# 4. Rebuild label indexes
+# Migration plan for v0.2.14 → v0.2.15:
+# 1. Validate graph metadata and name-to-UUID mappings
+# 2. Rebuild storage free-space bookkeeping if required
+# 3. Refresh query and catalog statistics
+# 4. Re-open graph stores and verify restart behavior
 # No data loss expected
 ```
 
@@ -316,9 +325,9 @@ Understand compatibility between server and client library versions.
 
 | Server Version | Go Client | Python Client | Rust Client | Zig Client |
 |----------------|-----------|---------------|-------------|------------|
-| v0.1.3        | v0.1.x   | v0.1.x       | v0.1.x     | v0.1.x    |
-| v0.1.2        | v0.1.x   | v0.1.x       | v0.1.x     | v0.1.x    |
-| v0.1.1        | v0.1.x   | v0.1.x       | v0.1.x     | v0.1.x    |
+| v0.2.15       | rolling  | 0.3.19       | 0.1.1-alpha.8 | 0.1.0 |
+| v0.1.28-v0.1.39 | rolling | 0.3.19+    | 0.1.1-alpha.8+ | 0.1.0+ |
+| v0.1.3-v0.1.27 | validate in staging | 0.3.x | 0.1.x | 0.1.x |
 
 **General Rule:** Match minor versions between server and clients for guaranteed compatibility.
 
@@ -334,9 +343,9 @@ Geode's Protobuf wire protocol maintains backward compatibility within major ver
 
 Geode tracks GQL standard evolution:
 
-- **v0.1.3:** ISO/IEC 39075:2024 compliance
-- **v0.1.2:** ISO/IEC 39075:2024 alignment (pre-profile)
-- **v0.1.1:** ISO/IEC 39075:2024 draft alignment (pre-profile)
+- **v0.2.15:** Stable 100% ISO/IEC 39075:2024 compliance with CTE and DOT fixes
+- **v0.2.14:** CTE execution and DOT support landed in the release train
+- **v0.2.12-v0.2.13:** security hardening, per-graph storage, and QUIC stream multiplexing
 
 Queries written for v0.1.1+ remain valid in newer versions unless they rely on deprecated features.
 
@@ -355,47 +364,47 @@ Release notes for each version include:
 5. **Security Updates:** CVEs addressed, security improvements
 6. **Deprecations:** Features marked for future removal with migration guidance
 
-### Example Release Note (v0.1.3)
+### Example Release Note (v0.2.15)
 
 ```markdown
-## Geode v0.1.3 - January 2026
+## Geode v0.2.15 - March 2026
 
 ### Breaking Changes
 - None
 
 ### New Features
-- Vector embeddings support for similarity search
-- Multi-version concurrency control (MVCC) optimization
-- Enhanced query profiler with flame graphs
-- Row-level security (RLS) policy engine
+- CTE execution in the stable release line
+- DOT graph output fixes
+- 32-bit ARM UUIDv7 fix
+- Current release-line docs and upgrade guidance
 
 ### Enhancements
-- 40% faster graph traversal for deep paths (>5 hops)
-- Connection pooling improvements in Python client
-- Reduced memory usage for large result sets (35% reduction)
-- Enhanced EXPLAIN output with cost estimates
+- QUIC stream multiplexing for better concurrency
+- Poll-loop tuning for accepted-connection handling
+- Storage fixes for graph metadata and adapter label dictionaries
+- Release process now distinguishes stable `v0.2.15` from unreleased `main` fixes
 
 ### Bug Fixes
-- #492: Fixed race condition in transaction commit
-- #487: Corrected ORDER BY behavior with NULL values
-- #481: Resolved connection leak in Go client under high concurrency
+- Fixed 32-bit ARM UUIDv7 generation
+- Corrected DOT output regressions carried through the March release train
+- Stabilized graph-storage restart behavior in post-tag `main` work
 
 ### Security Updates
-- Updated QUIC library to address CVE-2025-1234
-- Enhanced certificate validation in client libraries
+- Continued QUIC library maintenance and accepted-connection handling updates
+- Documentation now reflects current auth, API key, and mTLS support
 
 ### Deprecations
-- Legacy transaction API (removed in v0.2.0, use new transaction context)
+- None in the tagged `__GEODE_TAG__` release; see unreleased `main` notes for open follow-up work
 ```
 
 ### Accessing Release Notes
 
 Release notes are available through multiple channels:
 
-- **Website:** https://geodedb.com/releases/
-- **GitHub:** https://github.com/geodedb/geode/releases
-- **CLI:** `./geode release-notes --version 0.1.3`
-- **API:** `curl https://geodedb.com/api/v1/releases/0.1.3`
+- **Website:** <https://geodedb.com/releases/>
+- **GitHub:** <https://github.com/geodedb/geode/releases>
+- **CLI:** `./geode release-notes --version __GEODE_VERSION__`
+- **API:** `curl https://geodedb.com/api/v1/releases/__GEODE_VERSION__`
 
 ## Update Notifications
 
@@ -431,17 +440,17 @@ Configure Geode to check for updates:
 # Check for updates manually
 ./geode check-update
 # Output:
-# Current version: v0.1.2
-# Latest version: v0.1.3
+# Current version: v0.2.14
+# Latest version: __GEODE_TAG__
 # Update available: YES
-# Release notes: https://geodedb.com/releases/v0.1.3
+# Release notes: https://gitlab.com/devnw/codepros/geode/geode/-/releases/__GEODE_TAG__
 ```
 
 ### Security Advisories
 
 Critical security updates are announced via:
 
-- Security mailing list (security@geodedb.com)
+- Security mailing list (<security@geodedb.com>)
 - GitHub Security Advisories
 - CVE database entries
 - In-product security alerts
@@ -460,7 +469,7 @@ Create a staging environment mirroring production:
 ./geode restore --input /backup/prod.db --target staging:3141
 
 # Deploy new version to staging
-ssh staging "docker pull geodedb/geode:0.1.3"
+ssh staging "docker pull geodedb/geode:__GEODE_VERSION__"
 ssh staging "docker-compose up -d"
 
 # Run test suite
@@ -508,7 +517,7 @@ Keep client libraries synchronized with server versions.
 
 ```bash
 # Update to specific version
-go get geodedb.com/geode@v0.1.3
+go get geodedb.com/geode@__GEODE_TAG__
 
 # Update to latest
 go get -u geodedb.com/geode
@@ -521,7 +530,7 @@ go list -m geodedb.com/geode
 
 ```bash
 # Update to specific version
-pip install geode-client==0.1.3
+pip install geode-client==0.3.19
 
 # Update to latest
 pip install --upgrade geode-client
@@ -535,7 +544,7 @@ pip show geode-client
 ```bash
 # Update Cargo.toml
 [dependencies]
-geode-client = "0.18"
+geode-client = "0.1.1-alpha.8"
 
 # Update dependencies
 cargo update
@@ -548,7 +557,7 @@ cargo tree | grep geode-client
 
 ```bash
 # Update build.zig.zon
-.dependencies.geode_client.url = "https://geodedb.com/zig/geode-client-0.1.3.tar.gz"
+.dependencies.geode_client.url = "https://geodedb.com/zig/geode-client-0.1.0.tar.gz"
 
 # Fetch updated dependency
 zig build --fetch
@@ -575,7 +584,7 @@ Read release notes carefully, focusing on breaking changes section:
 
 ```bash
 # Display breaking changes only
-./geode release-notes --version 0.1.3 --filter breaking
+./geode release-notes --version __GEODE_VERSION__ --filter breaking
 ```
 
 ### Test in Non-Production First
@@ -656,10 +665,10 @@ Engage with the Geode community for update assistance.
 ### Update Assistance Channels
 
 - **Documentation:** /docs/releases/
-- **Community Forum:** https://community.geodedb.com
-- **GitHub Issues:** https://github.com/geodedb/geode/issues
-- **Discord:** https://discord.gg/geodedb
-- **Enterprise Support:** support@geodedb.com
+- **Community Forum:** <https://community.geodedb.com>
+- **GitHub Issues:** <https://github.com/geodedb/geode/issues>
+- **Discord:** <https://discord.gg/geodedb>
+- **Enterprise Support:** <support@geodedb.com>
 
 ### Contributing to Updates
 

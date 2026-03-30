@@ -42,6 +42,7 @@ Geode provides extensive observability capabilities:
 | Logs | Structured JSON logs | stdout/file |
 
 **Golden Signals** to monitor:
+
 - **Latency**: Request duration (p50, p95, p99)
 - **Traffic**: Requests per second
 - **Errors**: Error rate and types
@@ -91,6 +92,7 @@ scrape_configs:
 ### Key Metrics
 
 **Query Performance**:
+
 ```promql
 # Query latency (p50, p95, p99)
 histogram_quantile(0.50, rate(geode_query_duration_seconds_bucket[5m]))
@@ -106,6 +108,7 @@ rate(geode_query_total[5m])
 ```
 
 **Connection Metrics**:
+
 ```promql
 # Active connections
 geode_connections_active
@@ -118,6 +121,7 @@ rate(geode_connection_errors_total[5m])
 ```
 
 **Storage Metrics**:
+
 ```promql
 # Page cache hit ratio
 geode_storage_cache_hits_total /
@@ -131,6 +135,7 @@ geode_storage_disk_usage_bytes
 ```
 
 **Resource Utilization**:
+
 ```promql
 # Memory usage
 geode_process_memory_bytes
@@ -239,6 +244,7 @@ Create a comprehensive Geode dashboard:
 ### Pre-built Dashboards
 
 Import pre-built dashboards from Grafana.com:
+
 - Dashboard ID: `XXXXX` - Geode Overview
 - Dashboard ID: `XXXXX` - Geode Query Performance
 - Dashboard ID: `XXXXX` - Geode Storage
@@ -246,6 +252,7 @@ Import pre-built dashboards from Grafana.com:
 ### Dashboard Panels
 
 **System Health Panel**:
+
 ```json
 {
   "title": "System Health",
@@ -265,6 +272,7 @@ Import pre-built dashboards from Grafana.com:
 ```
 
 **Query Performance Panel**:
+
 ```json
 {
   "title": "Query Performance",
@@ -438,7 +446,7 @@ curl http://localhost:8080/health
 # Output:
 {
   "status": "healthy",
-  "version": "0.1.3",
+  "version": "__GEODE_VERSION__",
   "uptime": "72h15m30s",
   "checks": {
     "storage": "healthy",

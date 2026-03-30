@@ -14,6 +14,10 @@ canonical: "https://geodedb.com/docs/security/field-level-encryption/"
 
 Geode provides native, application-level field-level encryption (FLE) with transparent encryption/decryption, equality search on encrypted fields, and online key rotation.
 
+> **Known issue (2026-03-30)**
+>
+> `GAP-0271` tracks a remaining parser bug on `main`: semicolon-delimited role input must be rejected or sanitized to prevent unintended plaintext access to FLE-protected fields. Until that patch ships, treat all role lists as trusted server-side data and reject `;` in any caller-controlled role parameter.
+
 ## Overview
 
 ### What is Field-Level Encryption?
@@ -92,7 +96,7 @@ This allows equality searches (`WHERE email = 'alice@example.com'`) on encrypted
 
 ### Prerequisites
 
-- Geode 0.1.3+
+- Geode 0.2.x
 - Understanding of your data classification requirements
 - RBAC/roles configured for your users
 
@@ -143,6 +147,7 @@ Enable encryption for a field:
 ```
 
 **Parameters**:
+
 - `alg`: "AES-256-GCM" (default) or "CHACHA20-POLY1305"
 - `key_scope`: "field" (per-field key) or "schema" (shared schema key)
 - `rotate`: Optional rotation interval hint (e.g., "90d", "1y")
@@ -156,6 +161,7 @@ Enable equality search via blind index:
 ```
 
 **Parameters**:
+
 - `index`: "blind-hmac-sha256" (only supported option)
 
 **Use case**: Email addresses, usernames, account IDs
@@ -171,6 +177,7 @@ RBAC gate for plaintext access:
 ```
 
 **Parameters**:
+
 - `to_roles`: List of roles permitted to see plaintext
 
 Users without these roles see `"[REDACTED]"` or ciphertext.
@@ -184,6 +191,7 @@ Sensitivity classification tags:
 ```
 
 **Parameters**:
+
 - `tags`: Classification labels for audit and compliance
 
 ## Common Use Cases
@@ -213,6 +221,7 @@ CREATE NODE TYPE Patient (
 ```
 
 **Access control**:
+
 - Physicians: See all PHI fields
 - Nurses: See diagnosis, not SSN
 - Billing staff: Search by MRN, see redacted diagnosis
@@ -275,6 +284,7 @@ CREATE (:Customer {
 ```
 
 **What happens**:
+
 1. Geode detects `@encrypted` annotation on `email` and `ssn`
 2. Generates unique nonce
 3. Encrypts values with appropriate FEK
@@ -284,18 +294,21 @@ CREATE (:Customer {
 ### Querying Encrypted Fields
 
 **Equality search** (requires `@searchable`):
+
 ```gql
 MATCH (c:Customer {email: 'alice@example.com'})
 RETURN c.name, c.email;
 ```
 
 **What happens**:
+
 1. Geode computes blind index: `BI = HMAC(BIK, 'alice@example.com')`
 2. Looks up records with matching BI
 3. For authorized users, decrypts `email` field
 4. Returns plaintext to authorized users, `"[REDACTED]"` to others
 
 **Non-searchable fields**:
+
 ```gql
 -- ERROR: Cannot filter on non-searchable encrypted field
 MATCH (c:Customer)
@@ -364,6 +377,7 @@ geode show rotation-status --tenant default
 ```
 
 **How it works**:
+
 1. **Create new key version** (vN+1)
 2. **New writes** use vN+1 immediately
 3. **Background migration** re-encrypts existing records
@@ -420,6 +434,7 @@ geode migrate encrypt \
 ```
 
 **Migration features**:
+
 - **Resumable**: Can restart after failure
 - **Batched**: Processes records in configurable batches
 - **Progress tracking**: Real-time migration status
@@ -472,6 +487,7 @@ geode stats key-cache
 ### Threat Model
 
 **Protected Against**:
+
 - ✅ Data breach (ciphertext without keys)
 - ✅ Ciphertext tampering (authenticated encryption)
 - ✅ Context-swapping attacks (AAD binding)
@@ -479,6 +495,7 @@ geode stats key-cache
 - ✅ Plaintext in logs (never logged)
 
 **Not Protected Against**:
+
 - ❌ Master key compromise
 - ❌ Frequency analysis (blind indexes)
 - ❌ Access pattern leakage
@@ -487,18 +504,21 @@ geode stats key-cache
 ### Best Practices
 
 **Key Management**:
+
 - Store master keys in KMS (AWS KMS, Vault, Azure Key Vault)
 - Rotate keys regularly (FEK: 90d, TRK: 1y)
 - Separate tenant keys
 - Monitor key access
 
 **Access Control**:
+
 - Principle of least privilege
 - Regular access reviews
 - Audit all READ_PLAINTEXT grants
 - MFA for sensitive role assignment
 
 **Operational**:
+
 - Never log plaintext or keys
 - Secure memory cleanup (`secureZero`)
 - Monitor encryption/decryption rates
@@ -521,15 +541,18 @@ geode stats key-cache
 ### Issue: Permission Denied on Query
 
 **Error**:
+
 ```
 Error: SearchNotPermitted - Cannot filter on encrypted field 'ssn'
 ```
 
 **Causes**:
+
 1. Field not marked `@searchable`
 2. User lacks `READ_PLAINTEXT` privilege
 
 **Solutions**:
+
 ```gql
 -- Option 1: Make field searchable (if appropriate)
 ALTER NODE TYPE Customer ALTER PROPERTY ssn
@@ -542,16 +565,19 @@ GRANT READ_PLAINTEXT ON Customer.ssn TO ROLE analyst;
 ### Issue: Decryption Failures
 
 **Error**:
+
 ```
 Error: AuthenticationFailed - AEAD tag verification failed
 ```
 
 **Causes**:
+
 1. Corrupted ciphertext
 2. Wrong key used
 3. AAD mismatch
 
 **Solutions**:
+
 ```bash
 # Check key version consistency
 geode verify encryption --tenant default --schema Customer --field ssn
@@ -565,6 +591,7 @@ geode key rotate --tenant default --schema Customer --field ssn --scope FEK --fo
 **Symptom**: Queries on encrypted fields are slow
 
 **Diagnosis**:
+
 ```bash
 # Check cache hit rate
 geode stats key-cache
@@ -574,6 +601,7 @@ PROFILE MATCH (c:Customer {email: 'alice@example.com'}) RETURN c;
 ```
 
 **Solutions**:
+
 1. Ensure blind indexes are created
 2. Increase key cache size
 3. Review access patterns
@@ -595,6 +623,7 @@ const CustomKMSProvider = struct {
 ### Streaming Large Fields
 
 For fields >64KB:
+
 ```zig
 // Use streaming encryption
 const encrypted_stream = try aead.encryptStream(plaintext_reader, fek);
@@ -603,6 +632,7 @@ const encrypted_stream = try aead.encryptStream(plaintext_reader, fek);
 ### Post-Quantum Cryptography
 
 Future support for PQC:
+
 - Kyber for key wrapping
 - Dilithium for signatures
 - CRYSTALS suite integration

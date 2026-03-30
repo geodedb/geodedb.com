@@ -96,6 +96,7 @@ func main() {
 ```
 
 **Integration Benefits**:
+
 - Drop-in replacement for SQL databases in Go applications
 - Works with ORMs and query builders expecting database/sql
 - Automatic connection pooling and lifecycle management
@@ -183,6 +184,7 @@ async def get_user_purchases(
 ```
 
 **Integration Benefits**:
+
 - Native async/await support for asyncio applications
 - Connection pooling for high-concurrency workloads
 - FastAPI, Django Channels, and AIOHTTP compatibility
@@ -290,6 +292,7 @@ async fn server() -> std::io::Result<()> {
 ```
 
 **Integration Benefits**:
+
 - Zero-cost abstractions with compile-time optimization
 - Native tokio integration for async Rust applications
 - Type-safe query execution with serde deserialization
@@ -707,7 +710,7 @@ spec:
     spec:
       containers:
       - name: geode
-        image: geodedb/geode:0.1.3
+        image: geodedb/geode:__GEODE_VERSION__
         ports:
         - containerPort: 3141
           name: quic

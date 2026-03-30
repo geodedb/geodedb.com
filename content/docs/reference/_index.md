@@ -59,6 +59,7 @@ Use this section when you need precise details about specific functionality, err
 ### Common Functions
 
 **Aggregation Functions**:
+
 ```gql
 COUNT(*), COUNT(expr)
 SUM(expr), AVG(expr)
@@ -66,6 +67,7 @@ MIN(expr), MAX(expr)
 ```
 
 **String Functions**:
+
 ```gql
 lower(str), upper(str)
 substring(str, start, length)
@@ -73,6 +75,7 @@ trim(str), ltrim(str), rtrim(str)
 ```
 
 **Temporal Functions**:
+
 ```gql
 now(), timestamp()
 date('2024-01-01')
@@ -80,6 +83,7 @@ duration({days: 7})
 ```
 
 **Spatial Functions**:
+
 ```gql
 distance(point1, point2)
 point({latitude: 47.6, longitude: -122.3})
@@ -90,6 +94,7 @@ See [API Reference](/docs/reference/api-reference-complete/) for complete functi
 ### Common Operators
 
 **Comparison**:
+
 ```gql
 =, <>, <, <=, >, >=
 IS NULL, IS NOT NULL
@@ -97,16 +102,19 @@ IN, NOT IN
 ```
 
 **Arithmetic**:
+
 ```gql
 +, -, *, /, %
 ```
 
 **Logical**:
+
 ```gql
 AND, OR, NOT, XOR
 ```
 
 **Pattern**:
+
 ```gql
 STARTS WITH, ENDS WITH, CONTAINS
 =~  -- Regular expression match
@@ -117,6 +125,7 @@ See [Operators](/docs/reference/operators/) for complete reference.
 ### CLI Commands
 
 **Server Management**:
+
 ```bash
 geode serve              # Start server
 geode shell              # Interactive shell
@@ -124,6 +133,7 @@ geode --version          # Show version
 ```
 
 **Client Operations**:
+
 ```bash
 geode query "query"      # Execute query
 geode query -f file.gql  # Execute file
@@ -131,6 +141,7 @@ geode query --format json "RETURN 1"  # JSON output
 ```
 
 **Administration**:
+
 ```bash
 geode backup             # Create backup
 geode restore            # Restore backup
@@ -243,12 +254,15 @@ See [Unicode Support](/docs/reference/unicode-support/) for details.
 
 ## Version Information
 
-Current version: **v0.1.3** (Production Ready)
+Current stable release: ****GEODE_TAG****
+Current development branch: **main** (unreleased)
 
 Key metrics:
-- **Test Coverage**: 97.4% (1,644/1,688 tests passing)
+
+- **Full geodetestlab audit**: 3,847 passed, 70 failed, 35 skipped (3,952 total)
+- **Unit tests**: 619/619 passing on the `__GEODE_TAG__` release line
 - **GQL Compliance**: see conformance profile
-- **CANARY Markers**: 1,735 tracking 2,190+ requirements
+- **Known open gaps on main**: CLI auth delegation, FLE role-semicolon sanitization, stdin bulk `MERGE` error surfacing
 
 See [Changelog](/docs/reference/changelog/) for version history.
 
@@ -317,7 +331,7 @@ from geode_client import AuthClient, Client
 client = Client(host="localhost", port=3141)
 async with client.connection() as conn:
     auth = AuthClient(conn)
-    session = await auth.login("admin", "secret")
+    session = await auth.login("geode", "secret")
     print(session.token)
 ```
 
@@ -400,16 +414,19 @@ See [Configuration Reference](/docs/configuration/) for all options.
 Geode uses **length-prefixed Protobuf messages** over QUIC (default) or gRPC. The full schema is defined in `src/proto/geode.proto`.
 
 **Client Messages**:
+
 - `HelloRequest` / `PingRequest`
 - `ExecuteRequest` (RUN_GQL)
 - `PullRequest`
 - `BeginRequest` / `CommitRequest` / `RollbackRequest`
 
 **Server Responses**:
+
 - `HelloResponse`
 - `ExecutionResponse` (payloads: `SchemaDefinition`, `DataPage`, `Error`, `ExplainPayload`, `ProfilePayload`)
 
 See [Wire Protocol](/docs/protocol/) for the full specification.
+
 - PROFILE: Performance metrics
 
 ## Performance Characteristics
@@ -417,17 +434,20 @@ See [Wire Protocol](/docs/protocol/) for the full specification.
 Reference performance metrics:
 
 **Query Performance**:
+
 - Point lookup: <1ms (typically 100-500us)
 - Short path (1-2 hops): 1-5ms
 - Multi-hop path (3-5 hops): 10-100ms
 - Large aggregation (1M rows): 100-500ms
 
 **Architecture**:
+
 - Vector similarity: HNSW indexes with SIMD acceleration
 - Storage: Memory-mapped I/O with page-level caching
 - Indexes: Six specialized index types for different workloads
 
 **Scalability**:
+
 - Distributed deployment with up to 32 shards
 - Connection pooling for concurrent clients
 

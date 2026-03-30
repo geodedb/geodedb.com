@@ -47,6 +47,7 @@ RETURN friend.name
 ```
 
 The query optimizer automatically:
+
 - Chooses join order and strategies
 - Selects indexes to use
 - Determines filtering order
@@ -124,12 +125,14 @@ GQL syntax cheat sheet for quick lookup of common patterns, functions, and opera
 ### Basic Queries
 
 **Finding nodes by property**:
+
 ```gql
 MATCH (p:Person {name: 'Alice'})
 RETURN p
 ```
 
 **Finding relationships**:
+
 ```gql
 MATCH (p:Person)-[k:KNOWS]->(f:Person)
 WHERE p.name = 'Alice'
@@ -137,6 +140,7 @@ RETURN f.name, k.since
 ```
 
 **Filtering with WHERE**:
+
 ```gql
 MATCH (p:Person)
 WHERE p.age > 30 AND p.city = 'San Francisco'
@@ -147,6 +151,7 @@ ORDER BY p.age DESC
 ### Pattern Matching
 
 **Multi-hop traversals**:
+
 ```gql
 MATCH (p:Person)-[:KNOWS*2..4]->(friend)
 WHERE p.name = 'Alice'
@@ -154,6 +159,7 @@ RETURN DISTINCT friend.name
 ```
 
 **Optional patterns**:
+
 ```gql
 MATCH (p:Person)
 OPTIONAL MATCH (p)-[:WORKS_AT]->(c:Company)
@@ -161,6 +167,7 @@ RETURN p.name, c.name
 ```
 
 **Multiple patterns**:
+
 ```gql
 MATCH (p:Person)-[:KNOWS]->(f:Person),
       (p)-[:WORKS_AT]->(c:Company),
@@ -171,6 +178,7 @@ RETURN p.name, f.name, c.name
 ### Aggregations
 
 **Count and group**:
+
 ```gql
 MATCH (p:Person)-[:WORKS_AT]->(c:Company)
 RETURN c.name, COUNT(p) AS employees
@@ -178,6 +186,7 @@ ORDER BY employees DESC
 ```
 
 **Multiple aggregations**:
+
 ```gql
 MATCH (p:Person)
 RETURN
@@ -188,6 +197,7 @@ RETURN
 ```
 
 **Collecting values**:
+
 ```gql
 MATCH (c:Company)<-[:WORKS_AT]-(p:Person)
 RETURN c.name, COLLECT(p.name) AS employees
@@ -196,6 +206,7 @@ RETURN c.name, COLLECT(p.name) AS employees
 ### Subqueries
 
 **Scalar subqueries**:
+
 ```gql
 MATCH (p:Person)
 RETURN p.name,
@@ -204,6 +215,7 @@ ORDER BY friend_count DESC
 ```
 
 **Existential subqueries**:
+
 ```gql
 MATCH (p:Person)
 WHERE EXISTS {
@@ -213,6 +225,7 @@ RETURN p.name
 ```
 
 **List subqueries**:
+
 ```gql
 MATCH (c:Company)
 RETURN c.name,
@@ -222,6 +235,7 @@ RETURN c.name,
 ### Path Queries
 
 **Shortest paths**:
+
 ```gql
 MATCH path = shortestPath(
   (a:Person {name: 'Alice'})-[:KNOWS*]-(b:Person {name: 'Bob'})
@@ -230,6 +244,7 @@ RETURN length(path), nodes(path)
 ```
 
 **All paths with constraints**:
+
 ```gql
 MATCH path = (a:Person)-[:KNOWS*1..5]-(b:Person)
 WHERE a.name = 'Alice' AND b.name = 'Bob'
@@ -238,6 +253,7 @@ LIMIT 10
 ```
 
 **Path filtering**:
+
 ```gql
 MATCH path = (a:Person)-[:KNOWS*]-(b:Person)
 WHERE a.name = 'Alice'
@@ -251,6 +267,7 @@ RETURN path
 ### Index-Driven Queries
 
 **Anchor patterns with indexes**:
+
 ```gql
 // Good: Start with indexed property
 MATCH (p:Person {id: $userId})-[:KNOWS]->(f)
@@ -263,6 +280,7 @@ RETURN f
 ```
 
 **Use relationship type indexes**:
+
 ```gql
 // Index on :KNOWS relationship enables fast lookup
 MATCH ()-[k:KNOWS]->()
@@ -273,6 +291,7 @@ RETURN COUNT(k)
 ### Filter Pushdown
 
 **Filter early in the pipeline**:
+
 ```gql
 // Good: Filter immediately after MATCH
 MATCH (p:Person)
@@ -289,6 +308,7 @@ RETURN f
 ### Cardinality Optimization
 
 **Order patterns by selectivity**:
+
 ```gql
 // Good: Start with most selective pattern
 MATCH (rare:RareLabel {unique_id: $id}),
@@ -304,6 +324,7 @@ RETURN common
 ### Limit Early
 
 **Use LIMIT to bound results**:
+
 ```gql
 // Good: Limit as soon as possible
 MATCH (p:Person)-[:KNOWS]->(f)
@@ -332,6 +353,7 @@ RETURN f.name
 ```
 
 EXPLAIN shows:
+
 - Operator pipeline
 - Index usage
 - Join strategies
@@ -350,6 +372,7 @@ RETURN f.name
 ```
 
 PROFILE provides:
+
 - Actual execution time per operator
 - Rows processed at each stage
 - Cache hit rates
@@ -434,17 +457,20 @@ RETURN p.name,
 ### Creating Data
 
 **Insert nodes**:
+
 ```gql
 INSERT (:Person {name: 'Alice', age: 30, city: 'SF'})
 ```
 
 **Insert relationships**:
+
 ```gql
 MATCH (a:Person {name: 'Alice'}), (b:Person {name: 'Bob'})
 INSERT (a)-[:KNOWS {since: '2020-01-01'}]->(b)
 ```
 
 **Bulk inserts**:
+
 ```gql
 UNWIND $batch AS row
 INSERT (:Person {name: row.name, age: row.age})
@@ -453,12 +479,14 @@ INSERT (:Person {name: row.name, age: row.age})
 ### Updating Data
 
 **Set properties**:
+
 ```gql
 MATCH (p:Person {name: 'Alice'})
 SET p.age = 31, p.updated_at = timestamp()
 ```
 
 **Conditional updates**:
+
 ```gql
 MATCH (p:Person)
 WHERE p.age < 18
@@ -466,6 +494,7 @@ SET p.category = 'minor'
 ```
 
 **Merge (upsert)**:
+
 ```gql
 MERGE (p:Person {email: $email})
 ON CREATE SET p.name = $name, p.created_at = timestamp()
@@ -475,18 +504,21 @@ ON MATCH SET p.updated_at = timestamp()
 ### Deleting Data
 
 **Delete nodes**:
+
 ```gql
 MATCH (p:Person {name: 'Alice'})
 DELETE p
 ```
 
 **Delete relationships**:
+
 ```gql
 MATCH (p:Person {name: 'Alice'})-[k:KNOWS]->()
 DELETE k
 ```
 
 **Detach delete (remove relationships first)**:
+
 ```gql
 MATCH (p:Person {name: 'Alice'})
 DETACH DELETE p
@@ -531,6 +563,7 @@ DETACH DELETE p
 ### Social Networks
 
 **Friend recommendations**:
+
 ```gql
 MATCH (me:User {id: $userId})-[:FRIENDS*2..2]->(fof)
 WHERE fof <> me AND NOT (me)-[:FRIENDS]->(fof)
@@ -543,6 +576,7 @@ LIMIT 10
 ### E-Commerce
 
 **Product recommendations**:
+
 ```gql
 MATCH (me:User {id: $userId})-[:PURCHASED]->(p:Product)
       <-[:PURCHASED]-(other)-[:PURCHASED]->(rec:Product)
@@ -556,6 +590,7 @@ LIMIT 10
 ### Knowledge Graphs
 
 **Entity relationships**:
+
 ```gql
 MATCH (entity:Entity {id: $entityId})-[r]-(related)
 RETURN type(r) AS relationship,
@@ -567,6 +602,7 @@ ORDER BY relationship, name
 ### Fraud Detection
 
 **Suspicious patterns**:
+
 ```gql
 MATCH (account:Account)-[:TRANSFER]->(intermediary)-[:TRANSFER]->(destination)
 WHERE account.flagged = true
@@ -657,4 +693,4 @@ ORDER BY total DESC
 **Query Language**: ISO/IEC 39075:2024 GQL
 **Optimization**: Cost-based optimizer with index awareness
 **Last Updated**: January 2026
-**Geode Version**: v0.1.3+
+**Geode Version**: **GEODE_TAG**+

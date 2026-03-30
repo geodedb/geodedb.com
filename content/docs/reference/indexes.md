@@ -659,5 +659,5 @@ RETURN p.email;
 ---
 
 **Last Updated:** January 28, 2026
-**Geode Version:** v0.1.3+
+**Geode Version:** **GEODE_TAG**+
 **ISO GQL Conformance Profile:** ISO/IEC 39075:2024 compliance (see conformance profile)

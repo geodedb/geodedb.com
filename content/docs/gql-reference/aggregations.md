@@ -27,6 +27,7 @@ Aggregation functions compute summary values over groups of rows. This reference
 ## Overview
 
 Aggregation functions:
+
 - Operate on multiple rows to produce single values
 - Support implicit grouping (non-aggregated columns become group keys)
 - Can use DISTINCT to aggregate unique values
@@ -457,6 +458,7 @@ RETURN start.name, end.name,
 ### Efficient Aggregation
 
 1. **Filter before aggregating**
+
    ```gql
    -- Good: Filter first
    MATCH (o:Order)
@@ -471,6 +473,7 @@ RETURN start.name, end.name,
    ```
 
 2. **Use indexes for grouping keys**
+
    ```gql
    -- Create index on grouping column
    CREATE INDEX order_category ON Order(category);
@@ -480,6 +483,7 @@ RETURN start.name, end.name,
    ```
 
 3. **Limit result set**
+
    ```gql
    -- Get top N
    MATCH (p:Product)<-[:PURCHASED]-(c:Customer)
@@ -586,5 +590,5 @@ ORDER BY age_group;
 ---
 
 **Last Updated:** January 28, 2026
-**Geode Version:** v0.1.3+
+**Geode Version:** **GEODE_TAG**+
 **GQL Compliance:** ISO/IEC 39075:2024

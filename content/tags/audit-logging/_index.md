@@ -40,6 +40,7 @@ Geode's audit logging system captures detailed information about every database 
 - **Administrative Actions**: User management, backup operations, maintenance tasks
 
 All audit events include:
+
 - Timestamp with microsecond precision
 - User identity and session information
 - Client IP address and connection details
@@ -93,7 +94,7 @@ Geode supports multiple audit log formats to integrate with existing security in
     "username": "analyst@example.com",
     "roles": ["data_analyst", "viewer"],
     "ip_address": "192.168.1.100",
-    "user_agent": "geode-client-python/0.1.3"
+    "user_agent": "geode-client-python/0.3.19"
   },
   "operation": {
     "type": "SELECT",
@@ -129,7 +130,7 @@ Jan 24 10:15:32 geode-server audit[12345]: event=query_execution user=analyst@ex
 For SIEM systems that support CEF:
 
 ```
-CEF:0|CodePros|Geode|0.1.3|query_execution|Query Executed|5|src=192.168.1.100 suser=analyst@example.com act=SELECT outcome=success rt=Jan 24 2026 10:15:32 cs1=sess_abc123 cs1Label=SessionID
+CEF:0|CodePros|Geode|__GEODE_VERSION__|query_execution|Query Executed|5|src=192.168.1.100 suser=analyst@example.com act=SELECT outcome=success rt=Jan 24 2026 10:15:32 cs1=sess_abc123 cs1Label=SessionID
 ```
 
 ## Compliance Requirements

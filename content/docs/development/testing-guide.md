@@ -12,60 +12,42 @@ canonical: "https://geodedb.com/docs/development/testing-guide"
 
 # Testing Guide
 
-Geode maintains comprehensive test coverage with 95.9% extended integration test pass rate (3395/3540 tests) and 100% GQL compliance (see conformance profile). This guide covers all testing frameworks, strategies, and best practices.
+Geode maintains broad automated coverage across unit tests, geodetestlab integration specs, transport tests, and release validation. This page reflects the latest full-suite audit and release-line test status from March 2026.
 
 ## Overview
 
 ### Test Coverage Summary
 
-**Current Status** (as of February 2026):
+**Current Status** (as of March 29, 2026):
 
 ```text
 Extended Integration Tests (full suite):
-  Total: 3,540 tests
-  Passing: 3,395 tests (95.9%)
-  Failing: 110 tests (3.1%)
-  Skipped: 35 tests (1.0%)
-
-Integration Tests (geodetestlab core):
-  Total: 1,688 tests
-  Passing: 1,644 tests (97.4%)
+  Total: 3,952 tests
+  Passing: 3,847 tests (97.4%)
+  Failing: 70 tests (1.8%)
+  Skipped: 35 tests (0.9%)
 
 Unit Tests (Zig):
-  Total: 393 test blocks
-  Passing: 393 tests (100%)
+  Total: 619 test blocks
+  Passing: 619 tests (100%)
 
 GQL Conformance Profile:
   Scope: ISO/IEC 39075:2024 compliance (see conformance profile)
   Status: tracked in CI with published diagnostics
-  Note: spec timeout increased to 30s for CI reliability (QUIC handshake latency)
+  Note: conformance remains green while transport and storage regression suites continue to grow
 
 CANARY Governance:
-  Total: 1,735 markers
-  Requirements: 2,190+
-  Tested: 81.4%
-  Benched: 6.0%
-  Implemented: 5.7%
-  Exempt: 7.7%
+  Status: tracked continuously; see current release notes and governance tooling
 ```
 
-**Coverage by Category**:
+**Current open failure concentration**:
 
-| Category | Tests | Pass Rate |
-|----------|-------|-----------|
-| Authentication & Authorization | 285 | 100% |
-| User Management | 134 | 100% |
-| Role & Policy Management | 178 | 100% |
-| Query Execution | 912 | 97.3% |
-| Server Operations | 468 | 93.8% |
-| CLI Commands | 356 | 98.6% |
-| GQL Conformance (profile) | see profile | see profile |
-| Storage & Backup | 246 | 97.2% |
-| Distributed Systems | 174 | 91.4% |
-| Security Features | 312 | 100% |
-| Advanced Features | 166 | 93.4% |
-| Rapid Sequential Writes (#479) | 29 | 100% |
-| Regression (self-ref pointer, write-all I/O, DecimalValue) | 280 | 94.6% |
+| Area | Current Note |
+|------|--------------|
+| CLI auth delegation | Majority of remaining failures (`GAP-0270`) |
+| FLE role parsing | One high-severity open issue (`GAP-0271`) |
+| stdin bulk `MERGE` | One stability issue (`GAP-0272`) |
+| Storage persistence regressions | March 29 fixes substantially reduced failures; audit now distinguishes released vs post-tag fixes |
 
 ### Testing Frameworks
 
