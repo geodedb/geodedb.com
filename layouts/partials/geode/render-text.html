@@ -22,5 +22,5 @@
   {{- $rendered = replace $rendered "GEODE_LATEST_RELEASE_TAG" (index $version "latest_release_tag") -}}
   {{- $rendered = replace $rendered "GEODE_LATEST_RELEASE_VERSION" (index $version "latest_release_version") -}}
   {{- $rendered = replace $rendered "GEODE_LATEST_RELEASE_DATE" (index $version "latest_release_date") -}}
-  {{- $rendered -}}
+  {{- $rendered | safeHTML -}}
 {{- end -}}
