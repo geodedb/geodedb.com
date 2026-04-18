@@ -9,6 +9,10 @@
 
 image: ubuntu:24.04
 
+default:
+  tags:
+    - company
+
 include:
   - component: gitlab.com/devnw/ci-catalog/cloudflare-pages-deploy@v1.19.2
     inputs:
