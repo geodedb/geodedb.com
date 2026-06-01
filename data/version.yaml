@@ -1,36 +1,40 @@
 # Geode Version Information
-# The site now resolves the latest version from GitLab at build time.
-# These values act as fallbacks plus the source of truth for non-GitLab metadata
-# such as client library versions and development-channel labels.
+# The site resolves the latest version from GitLab at build time
+# (see layouts/partials/geode/version-data.html — it reads the newest
+# semver-ordered release tag via the GitLab Tags API).
+# These values act as fallbacks (used only when the GitLab API is
+# unreachable at build time) plus the source of truth for non-GitLab
+# metadata such as client library versions and development-channel labels.
 
 # Fallback current release version
-current: 0.2.15
+current: 0.6.10
 
 # Fallback display version
-display: 0.2.15
+display: 0.6.10
 
 # Fallback semantic version
-semver: 0.2.15
+semver: 0.6.10
 
 # Latest development version (includes unreleased main-branch changes)
-development: 0.2.16-dev
+development: 0.6.11-dev
 
 # Release date (ISO 8601 format)
-release_date: '2026-03-29'
+release_date: '2026-06-01'
 
 # Client library versions
 clients:
-  go: rolling
-  python: 0.3.19
-  rust: 0.1.1-alpha.8
-  zig: 0.1.0
-  nodejs: 1.0.0-alpha.15
+  go: 0.1.21
+  python: 0.3.20
+  rust: 0.1.1-alpha.21
+  zig: 0.2.10
+  nodejs: 1.0.1
+  ui: 0.1.1
 
 # Docker image tags
 docker:
   latest: latest
-  stable: v0.2.15
-  development: v0.2.16-dev
+  stable: v0.6.10
+  development: v0.6.11-dev
 
 # GitLab project metadata
 gitlab:

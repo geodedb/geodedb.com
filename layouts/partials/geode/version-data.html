@@ -3,7 +3,9 @@
 {{- $projectPath := index $gitlab "project_path" | default "devnw/codepros/geode/geode" -}}
 {{- $projectURL := index $gitlab "project_url" | default (printf "https://gitlab.com/%s" $projectPath) -}}
 {{- $apiProjectPath := replace $projectPath "/" "%2F" -}}
-{{- $tagsAPIURL := printf "https://gitlab.com/api/v4/projects/%s/repository/tags?per_page=1" $apiProjectPath -}}
+{{- /* order_by=version sorts tags by semver (newest release first), so the
+       site always tracks the latest release tag regardless of tag push order. */ -}}
+{{- $tagsAPIURL := printf "https://gitlab.com/api/v4/projects/%s/repository/tags?order_by=version&sort=desc&per_page=1" $apiProjectPath -}}
 {{- $latestReleaseAPIURL := printf "https://gitlab.com/api/v4/projects/%s/releases/permalink/latest" $apiProjectPath -}}
 
 {{- $fallbackDisplay := index $fallback "display" | default (index $fallback "current") -}}
@@ -79,33 +81,55 @@
   {{- end -}}
 {{- end -}}
 
+{{- /* Default the "latest release" fields to the newest tag resolved above so
+       they never lag behind it (the newest tag IS the latest release). */ -}}
+{{- $data = merge $data (dict
+  "latest_release_tag" (index $data "tag")
+  "latest_release_version" (index $data "display")
+  "latest_release_date" (index $data "release_date")
+  "latest_release_date_long" (index $data "release_date_long")
+  "latest_release_month_year" (index $data "release_month_year")
+  "latest_release_url" (index $data "release_url")
+) -}}
+
+{{- /* If a GitLab Release object exists for the newest tag, enrich the
+       latest_release_* fields with its release-notes URL and released_at date.
+       A Release that points at an OLDER tag is ignored so the displayed
+       version can never regress below the newest tag. */ -}}
 {{- with resources.GetRemote $latestReleaseAPIURL -}}
-  {{- $latestRelease := transform.Unmarshal .Content -}}
-  {{- $releaseTag := index $latestRelease "tag_name" | default "" -}}
-  {{- $releaseVersion := strings.TrimPrefix "v" $releaseTag -}}
-  {{- $releaseDate := "" -}}
-  {{- $releaseDateLong := "" -}}
-  {{- $releaseMonthYear := "" -}}
-  {{- with index $latestRelease "released_at" -}}
-    {{- $parsedDate := time.AsTime . -}}
-    {{- $releaseDate = time.Format "2006-01-02" $parsedDate -}}
-    {{- $releaseDateLong = time.Format "January 2, 2006" $parsedDate -}}
-    {{- $releaseMonthYear = time.Format "January 2006" $parsedDate -}}
-  {{- end -}}
-  {{- $latestReleaseURL := "" -}}
-  {{- with index (index $latestRelease "_links") "self" -}}
-    {{- $latestReleaseURL = . -}}
-  {{- end -}}
-  {{- $data = merge $data (dict
-    "latest_release_tag" $releaseTag
-    "latest_release_version" $releaseVersion
-    "latest_release_date" $releaseDate
-    "latest_release_date_long" $releaseDateLong
-    "latest_release_month_year" $releaseMonthYear
-    "latest_release_url" $latestReleaseURL
-  ) -}}
-  {{- if and (ne $releaseTag "") (eq $releaseTag (index $data "tag")) (ne $latestReleaseURL "") -}}
-    {{- $data = merge $data (dict "release_url" $latestReleaseURL "source" "gitlab-release") -}}
+  {{- with .Content -}}
+    {{- $latestRelease := transform.Unmarshal . -}}
+    {{- if reflect.IsMap $latestRelease -}}
+      {{- $releaseTag := index $latestRelease "tag_name" | default "" -}}
+      {{- if and (ne $releaseTag "") (eq $releaseTag (index $data "tag")) -}}
+        {{- $releaseVersion := strings.TrimPrefix "v" $releaseTag -}}
+        {{- $releaseDate := index $data "latest_release_date" -}}
+        {{- $releaseDateLong := index $data "latest_release_date_long" -}}
+        {{- $releaseMonthYear := index $data "latest_release_month_year" -}}
+        {{- with index $latestRelease "released_at" -}}
+          {{- $parsedDate := time.AsTime . -}}
+          {{- $releaseDate = time.Format "2006-01-02" $parsedDate -}}
+          {{- $releaseDateLong = time.Format "January 2, 2006" $parsedDate -}}
+          {{- $releaseMonthYear = time.Format "January 2006" $parsedDate -}}
+        {{- end -}}
+        {{- $latestReleaseURL := index $data "latest_release_url" -}}
+        {{- with index $latestRelease "_links" -}}
+          {{- with index . "self" -}}
+            {{- $latestReleaseURL = . -}}
+          {{- end -}}
+        {{- end -}}
+        {{- $data = merge $data (dict
+          "latest_release_tag" $releaseTag
+          "latest_release_version" $releaseVersion
+          "latest_release_date" $releaseDate
+          "latest_release_date_long" $releaseDateLong
+          "latest_release_month_year" $releaseMonthYear
+          "latest_release_url" $latestReleaseURL
+          "release_url" $latestReleaseURL
+          "source" "gitlab-release"
+        ) -}}
+      {{- end -}}
+    {{- end -}}
   {{- end -}}
 {{- end -}}
 
