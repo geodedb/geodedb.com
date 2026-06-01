@@ -19,7 +19,7 @@ params:
     noindex: false
 ---
 
-<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-06-01 -->
 
 Managing database versions effectively is critical for maintaining stable, secure, and performant systems. Geode provides comprehensive version management capabilities including explicit version tracking, compatibility matrices, automated upgrade paths, and multi-version deployment support for enterprise environments.
 
@@ -29,7 +29,7 @@ As an ISO/IEC 39075:2024 GQL-compliant graph database, Geode follows semantic ve
 
 Geode uses semantic versioning (SemVer 2.0.0):
 
-```
+```text
 MAJOR.MINOR.PATCH[-PRERELEASE][+BUILD]
 
 Current Version: __GEODE_VERSION__
@@ -83,13 +83,13 @@ GQL: ISO/IEC 39075:2024
 geodedb.com/geode __GEODE_TAG__
 
 # Python
-geode-client==0.3.19
+geode-client=={{< version "clients.python" >}}
 
 # Rust
-geode-client = "0.1.1-alpha.8"
+geode-client = "{{< version "clients.rust" >}}"
 
 # Zig
-geode-client v0.1.0
+geode-client v{{< version "clients.zig" >}}
 ```
 
 ## Version Compatibility Matrix
@@ -98,7 +98,7 @@ geode-client v0.1.0
 
 | Server Version | Go Client | Python Client | Rust Client | Zig Client | Protocol |
 |----------------|-----------|---------------|-------------|------------|----------|
-| 0.2.x          | rolling   | 0.3.19+       | 0.1.1-alpha.8+ | 0.1.0+  | QUIC v1 |
+| 0.2.x          | rolling   | {{< version "clients.python" >}}+       | {{< version "clients.rust" >}}+ | {{< version "clients.zig" >}}+  | QUIC v1 |
 | 0.1.28-0.1.39  | rolling   | 0.3.19+       | 0.1.1-alpha.8+ | 0.1.0+  | QUIC v1 |
 | 0.1.3-0.1.27   | validate in staging | 0.3.x | 0.1.x | 0.1.x | QUIC v1 |
 
@@ -454,21 +454,21 @@ geode migrate validate
 
 **Version Mismatch Errors**:
 
-```
+```text
 Error: Client version 0.2.0 incompatible with server __GEODE_VERSION__
 Solution: Upgrade client to the current published line for your language
 ```
 
 **Protocol Incompatibility**:
 
-```
+```text
 Error: Protocol QUIC v1 required, but client uses TCP
 Solution: Upgrade to client library version 1.0.0+
 ```
 
 **Feature Not Available**:
 
-```
+```text
 Error: CTE support not available in server version 0.2.13
 Solution: Upgrade server to __GEODE_VERSION__+
 ```

@@ -1,7 +1,10 @@
 ---
 title: "Monitoring and Telemetry"
-description: "Monitor Geode with health checks and Prometheus metrics, enable optional paging telemetry, and configure tamper-evident audit logging with tracing IDs"
+description: "Monitor Geode with health checks and Prometheus metrics, native OpenTelemetry (OTLP) export, optional paging telemetry, and tamper-evident audit logging"
+summary: "Health and readiness endpoints, Prometheus metrics, native OpenTelemetry (OTLP/HTTP) metrics and traces, optional paging telemetry, and audit logging for Geode."
 url: /docs/ops/observability/
+date: 2026-06-01
+lastmod: 2026-06-01
 weight: 20
 tags:
   - monitoring
@@ -10,6 +13,8 @@ tags:
   - metrics
   - telemetry
   - audit-logging
+  - opentelemetry
+  - otlp
 categories:
   - deployment-and-devops
 keywords:
@@ -19,6 +24,8 @@ keywords:
   - audit logging
   - grafana
   - loki
+  - opentelemetry
+  - otlp
 ---
 
 <!-- CANARY: REQ=REQ-SERVER-STARTUP-INTEGRATION-001; FEATURE="Server Startup Integration Tests"; ASPECT=EndToEndServerTesting; STATUS=TESTED; OWNER=server; UPDATED=2025-10-05 -->
@@ -139,7 +146,7 @@ From `USAGE.md`, key metrics list:
 
 #### Query Metrics
 
-```
+```text
 # HELP geode_queries_total Total number of queries executed
 # TYPE geode_queries_total counter
 geode_queries_total{graph="SocialNetwork",status="success"} 12345
@@ -161,7 +168,7 @@ geode_query_errors_total{graph="SocialNetwork",error_type="constraint_violation"
 
 #### Transaction Metrics
 
-```
+```text
 # HELP geode_transactions_active Currently active transactions
 # TYPE geode_transactions_active gauge
 geode_transactions_active 3
@@ -184,7 +191,7 @@ geode_transaction_duration_seconds_bucket{le="10.0"} 5670
 
 #### Storage Metrics
 
-```
+```text
 # HELP geode_storage_pages_total Total number of data pages
 # TYPE geode_storage_pages_total gauge
 geode_storage_pages_total 1234567
@@ -208,7 +215,7 @@ geode_wal_writes_bytes 123456789012
 
 #### Connection Metrics
 
-```
+```text
 # HELP geode_connections_active Currently active client connections
 # TYPE geode_connections_active gauge
 geode_connections_active 42
@@ -220,7 +227,7 @@ geode_connections_total 12345
 
 #### Index Metrics
 
-```
+```text
 # HELP geode_index_lookups_total Index lookup count
 # TYPE geode_index_lookups_total counter
 geode_index_lookups_total{index="person_age_idx",type="btree"} 45678
@@ -266,6 +273,148 @@ geode_storage_cache_hit_ratio
 
 # Transaction abort rate
 rate(geode_transactions_aborted[5m])
+```
+
+## OpenTelemetry (OTLP)
+
+Geode ships with native OpenTelemetry (OTel) instrumentation. Alongside the Prometheus `/metrics` endpoint, the server can export metrics and traces directly to an OpenTelemetry collector over OTLP. The same instruments back both surfaces, so the Prometheus output and the OTLP export show the same logical metric set.
+
+### Architecture: geode owns its instrumentation, libs off
+
+Geode follows a "geode-owns-instrumentation, libs-off" design. Every dependency library ships its OpenTelemetry seam **disabled** (hardcoded off), and Geode passes no observability build flag to any dependency. As a result, dependency-library OTel adds **zero runtime overhead** — the per-library spans and metrics (WAL, GQL, DNS, thread pool, and similar internal seams) do not fire.
+
+Instead, Geode emits its own metrics and spans, and bridges the runtime data it needs out of those libraries through public getters into geode-scoped metrics. This is the perf-safe way to get the full performance picture without enabling per-library OTel.
+
+{{< callout type="note" >}}
+The export protocol is **OTLP/HTTP** (`http/protobuf`). The OTLP HTTP transport is compiled into the server by default.
+{{< /callout >}}
+
+### Enabling export
+
+Export is off by default and enabled at runtime through standard OpenTelemetry environment variables. Set the exporter to `otlp` and point it at your collector.
+
+```bash
+export OTEL_METRICS_EXPORTER=otlp
+export OTEL_TRACES_EXPORTER=otlp
+export OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318
+
+./geode serve
+```
+
+The supported environment variables:
+
+| Variable | Default | Description |
+| --- | --- | --- |
+| `OTEL_METRICS_EXPORTER` | (unset) | Set to `otlp` to enable OTLP metric export. |
+| `OTEL_TRACES_EXPORTER` | (unset) | Set to `otlp` to enable OTLP trace export. |
+| `OTEL_EXPORTER_OTLP_ENDPOINT` | `http://localhost:4318` | Base OTLP/HTTP endpoint for the collector. |
+| `OTEL_EXPORTER_OTLP_METRICS_ENDPOINT` | (derived from base) | Override the endpoint for metrics only. |
+| `OTEL_EXPORTER_OTLP_TRACES_ENDPOINT` | (derived from base) | Override the endpoint for traces only. |
+| `OTEL_METRIC_EXPORT_INTERVAL` | `60000` (ms) | Periodic metric export interval. |
+| `OTEL_BSP_SCHEDULE_DELAY` | `5000` (ms) | Batch span processor schedule delay. |
+| `OTEL_TRACES_SAMPLER` | — | Trace sampler, e.g. `always_on`. |
+| `OTEL_DEPLOYMENT_ENVIRONMENT` | — | Deployment environment (e.g. `prod`, `staging`). |
+
+### Instrumentation scope and resource attributes
+
+All Geode metrics and spans are emitted under a single instrumentation scope:
+
+```text
+meter.name = com.geodedb.geode
+schema_url = https://schemas.geodedb.com/otel/geode/metrics/1.0.0
+```
+
+Attach OpenTelemetry resource attributes so the collector can identify and group the server. Set these via `OTEL_RESOURCE_ATTRIBUTES` (or the dedicated variables above). Recommended attributes:
+
+| Attribute | Required | Example | Notes |
+| --- | --- | --- | --- |
+| `service.name` | yes | `geode` | Required by OTel service conventions. |
+| `service.instance.id` | yes | UUID | Must distinguish horizontally scaled instances. |
+| `service.namespace` | recommended | `codepros` | Groups Geode services. |
+| `service.version` | recommended | `__GEODE_VERSION__` | Build or release version. |
+| `deployment.environment.name` | recommended | `prod`, `staging` | Use bounded values. |
+| `geode.node.id` | required in cluster mode | `node-1` | Stable node identity. |
+| `geode.cluster.name` | required in cluster mode | `production-cluster` | Cluster name. |
+| `geode.node.role` | required in cluster mode | `standalone`, `leader`, `follower`, `coordinator` | Low cardinality. |
+
+{{< callout type="warning" >}}
+Keep resource and metric attribute values low-cardinality. Never include usernames, raw tokens, key IDs, policy text, session IDs, or literal property values as metric attributes.
+{{< /callout >}}
+
+### Exported metric families
+
+Geode emits OTel instruments grouped by subsystem. Names use the `geode.<subsystem>.<thing>.<measurement>` convention, durations carry unit `s`, and byte counters carry unit `By`. The tables below are representative of the families actually exported; each family contains additional instruments.
+
+**Server, query, and transactions**
+
+| Metric family | Kind | Description |
+| --- | --- | --- |
+| `geode.server.*` | gauge / counter | Server lifecycle and health. |
+| `geode.query.count` | counter | Queries executed. |
+| `geode.query.active` | up-down counter | Currently running queries. |
+| `geode.query.execution.duration` | histogram | Server-side full query execution latency. |
+| `geode.query.parse.duration` | histogram | GQL parse/lex duration. |
+| `geode.query.rows.returned` | histogram | Rows returned by server execution. |
+| `geode.transaction.*` | counter / up-down counter / histogram | Transaction counts, active transactions, and durations. |
+
+**Transport (QUIC / TLS)**
+
+| Metric family | Kind | Description |
+| --- | --- | --- |
+| `geode.transport.connection.*` | up-down counter / counter | Connection counts and opened/closed events. |
+| `geode.transport.request.duration` | histogram | End-to-end server request handling latency. |
+| `geode.transport.request.inflight` | up-down counter | Active protocol requests. |
+| `geode.transport.bytes` | counter | Bytes sent/received. |
+
+**Storage, WAL, and index**
+
+| Metric family | Kind | Description |
+| --- | --- | --- |
+| `geode.storage.*` | counter / histogram / gauge | Storage operations, latencies, and page-cache activity. |
+| `geode.wal.*` | counter / histogram / gauge | WAL records, bytes, append/flush durations, and size. |
+| `geode.index.*` | counter / histogram / up-down counter | Index lookups, latencies, and counts. |
+
+**Security and audit**
+
+| Metric family | Kind | Description |
+| --- | --- | --- |
+| `geode.security.authorization.check.*` | counter / histogram | RBAC authorization checks and latency. |
+| `geode.security.rls.evaluation.*` | counter / histogram | Row-level security evaluations (when a compiled RLS policy is active). |
+| `geode.audit.*` | counter / up-down counter / histogram | Audit events (when an audit append routes through the security graph). |
+
+**Runtime bridge (`geode.runtime.*`)**
+
+The `geode.runtime.*` family is a set of observable gauges that bridge process-global runtime metrics out of the transport layer into geode-scoped instruments. It republishes the "lib-internal" QUIC statistics — QUIC RTT, congestion window, bytes-in-flight, poll-phase timings, stream-write counters, first-stream phase metrics, the proto-reader, and the leaked-connection reaper — while the libraries themselves stay off. These observable gauges are registered at server startup.
+
+### Traces
+
+Geode emits one active server span today:
+
+| Span | Kind | Per |
+| --- | --- | --- |
+| `geode.query.execute` | SERVER | statement |
+
+The span carries a bounded set of attributes:
+
+| Attribute | Description |
+| --- | --- |
+| `db.operation.name` | GQL operation (e.g. `MATCH`, `CREATE`, `MERGE`). |
+| `db.namespace` | Logical database/graph namespace. |
+| `geode.query.is_mutation` | Whether the statement mutates data. |
+| `geode.result.row_count` | Rows returned by the statement. |
+| `error.type` | Set on failed operations where known. |
+
+{{< callout type="note" title="Not yet emitted" >}}
+Cross-process trace propagation (a client-supplied `traceparent`) is deferred: the request wire format has no trace-context field, so Geode roots a new trace per request for now. Several areas are also honest deferrals because there is no clean instrumentation point in the current single-tenant default path: transaction timeout / lock-wait, a separable query-plan span, resource-count gauges, distributed/cluster/CDC/analytics metrics (inactive unless cluster mode is enabled), and QUIC TLS handshake timing.
+{{< /callout >}}
+
+### Verify locally
+
+Bring up Geode plus an OpenTelemetry collector and assert that Geode's metrics and spans land:
+
+```bash
+make otel-compose-up
+make otel-compose-verify
 ```
 
 ## Optional Telemetry
@@ -469,7 +618,7 @@ services:
 
 **Text format** (human-readable):
 
-```
+```text
 2024-01-15T14:30:00.123Z INFO  [geode::server] Server started on 0.0.0.0:3141
 2024-01-15T14:30:01.456Z DEBUG [geode::query] Executing query for user 'alice'
 2024-01-15T14:30:01.789Z WARN  [geode::storage] Cache miss for page 12345

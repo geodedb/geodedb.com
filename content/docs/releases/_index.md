@@ -25,7 +25,7 @@ params:
     description: "Complete Geode release history with detailed changelogs, upgrade guides, and migration instructions"
 ---
 
-<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-03-30 -->
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-06-01 -->
 
 # Releases
 
@@ -33,47 +33,71 @@ Complete version history, release notes, and upgrade guides for all Geode releas
 
 ## Overview
 
-This section documents the current stable release, the active development line, and the major release series that landed after the docs site was last synchronized in February 2026.
+This section documents the current stable release, the active development line, and the major release series that landed since the docs site was last synchronized. The `v0.3` through `v0.6` series — released between April and June 2026 — added native time-series, BM25 full-text search, and OpenTelemetry instrumentation, alongside continued transport, storage, and security hardening.
+
+{{< callout type="tip" >}}
+The version shown across this site is resolved automatically from the **latest release tag** in GitLab at build time. For the authoritative, per-tag release notes, browse the [Geode tags on GitLab](https://gitlab.com/devnw/codepros/geode/geode/-/tags).
+{{< /callout >}}
 
 ## Current Release
 
-### __GEODE_TAG__ (Current Stable)
+### **GEODE_TAG** (Current Stable)
 
-__Release Date__: __GEODE_RELEASE_DATE_LONG__
-__Status__: Stable patch release
+**Release Date**: **GEODE_RELEASE_DATE_LONG**
+**Status**: Stable release
 
-__Key Highlights__:
+**Key Highlights**:
 
-- fixes UUIDv7 generation for 32-bit ARM targets
-- includes the March 28 CTE execution and DOT output fixes
-- confirms `619/619` unit tests passing on the release line
-- continues the `v0.2.x` storage, QUIC, and security work started earlier in March
+- First `v0.6.x` release to clear the full `test-harness-integration` suite and reach the apt deploy chain
+- Release-pipeline hardening: tag-version stamping, build-toolchain fixes, and bounded QUIC workers
+- Carries the full `v0.3`–`v0.6` feature surface: native [time-series](/docs/query/timeseries/), [full-text search](/docs/query/full-text-search/), and [OpenTelemetry instrumentation](/docs/ops/observability/)
+- Ships as Debian packages through the official apt repository and as `geodedb/geode:__GEODE_VERSION__` container images
 
-See [Changelog](/docs/reference/changelog/) for complete details.
+See the [Changelog](/docs/reference/changelog/) for complete details.
 
 ## Development Branch
 
 ### main (unreleased)
 
-The `main` branch can move ahead of `__GEODE_TAG__`. Recent follow-up areas have included:
-
-- engine-backed persistence only (legacy `graph_store.dat` removed)
-- graph name-to-UUID persistence fixes
-- free-space bitmap rebuild-on-open
-- post-open reload of graph state into memory
-- pager-level TDE page encryption wiring
-- lower-idle-CPU QUIC accept/poll behavior
-- current open-gap documentation for `GAP-0270` through `GAP-0272`
+The `main` branch can move ahead of `__GEODE_TAG__` with fixes and features that have not yet been cut into a tagged release. Track in-flight work on the [GitLab project](https://gitlab.com/devnw/codepros/geode/geode).
 
 ## Release Schedule
 
-Geode follows a predictable release schedule:
+Geode follows a predictable release cadence:
 
-- __Major Releases__: Architectural changes and storage-format shifts
-- __Minor Releases__: New features and transport/security expansions
-- __Patch Releases__: Bug fixes, security hardening, and release validation
+- **Major Releases**: Architectural changes and storage-format shifts
+- **Minor Releases**: New features and transport/security expansions
+- **Patch Releases**: Bug fixes, security hardening, and release validation
 
 ## Version History
+
+{{< callout type="note" >}}
+The list below summarizes the major series. For the complete, authoritative per-version history, see the [GitLab tags](https://gitlab.com/devnw/codepros/geode/geode/-/tags).
+{{< /callout >}}
+
+### v0.6.0 – **GEODE_TAG** (May 25 – **GEODE_RELEASE_DATE_LONG**)
+
+- Release-pipeline and CI hardening across the `v0.6.x` patch line
+- `__GEODE_TAG__` is the first `v0.6.x` release to clear the full integration test harness and reach the apt deploy chain
+- Stabilization of the time-series and full-text-search GQL surfaces introduced earlier in the line
+
+### v0.5.0 (April 29, 2026)
+
+- OpenTelemetry instrumentation surface — native OTLP metrics and traces (see [Observability](/docs/ops/observability/))
+
+### v0.4.0 (April 27, 2026)
+
+- Feature and hardening release in the `v0.3`–`v0.5` development line
+
+### v0.3.0 (April 12, 2026)
+
+- First release of the `v0.3` series, continuing the storage, transport, and GQL work that followed the `v0.2` line
+
+### Major capabilities added since the last docs sync
+
+- **Native time-series** — the `geode.ts.*` GQL procedure surface for append-friendly `(ts, value)` series ([docs](/docs/query/timeseries/))
+- **Full-text search** — durable, BM25-ranked fulltext indexes via `CREATE INDEX ... USING fulltext` and `CALL geode.fts.search(...)` ([docs](/docs/query/full-text-search/))
+- **OpenTelemetry** — first-party OTLP metrics and `geode.query.execute` traces ([docs](/docs/ops/observability/))
 
 ### v0.2.12 - v0.2.15 (March 27-29, 2026)
 
@@ -107,11 +131,11 @@ Geode follows a predictable release schedule:
 
 ### Before Upgrading
 
-1. __Read Release Notes__: Review changes, especially storage and transport changes
-2. __Test in Staging__: Upgrade a staging environment first
-3. __Backup Data__: Create a full backup before upgrading
-4. __Check Compatibility__: Verify client library, DSN, and certificate usage
-5. __Review storage format changes__: `v0.1.28+` introduced per-graph storage; `main` after `v0.2.15` removes the legacy monolithic path entirely
+1. **Read Release Notes**: Review changes, especially storage and transport changes
+2. **Test in Staging**: Upgrade a staging environment first
+3. **Backup Data**: Create a full backup before upgrading
+4. **Check Compatibility**: Verify client library, DSN, and certificate usage
+5. **Review storage format changes**: `v0.1.28+` introduced per-graph storage; later releases removed the legacy monolithic path entirely
 
 ### Example Docker Upgrade
 
@@ -133,21 +157,23 @@ docker run -d \
   geodedb/geode:__GEODE_VERSION__
 ```
 
-### Compatibility
+### Recommended Client Versions
 
-| Server Version | Go Client | Python Client | Rust Client | Zig Client |
-|----------------|-----------|---------------|-------------|------------|
-| v0.2.x | rolling | 0.3.19+ | 0.1.1-alpha.8+ | 0.1.0+ |
-| v0.1.39 | rolling | 0.3.19+ | 0.1.1-alpha.8+ | 0.1.0+ |
+Always pair the current server with the latest client library releases:
 
-## Breaking-Change Themes
+| Client | Recommended Version |
+|--------|---------------------|
+| Go | {{< version "clients.go" >}} |
+| Python | {{< version "clients.python" >}} |
+| Rust | {{< version "clients.rust" >}} |
+| Zig | {{< version "clients.zig" >}} |
+| Node.js | {{< version "clients.nodejs" >}} |
 
-- `v0.2.x` introduces graph-bound DSNs and stronger graph/session isolation semantics
-- March 2026 storage work moved from monolithic persistence toward per-graph and graph-storage-backed layouts
-- auth and security tooling now include offline graph-backed integrity workflows in addition to online login/session flows
+See [Client Libraries](/docs/client-libraries/) for installation and compatibility details.
 
 ## Related Documentation
 
 - [Changelog](/docs/reference/changelog/)
 - [Upgrade Procedures](/docs/operations/upgrades/)
 - [DSN Specification](/docs/reference/dsn/)
+- [Geode UI](/docs/geode-ui/)

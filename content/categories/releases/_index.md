@@ -16,7 +16,7 @@ params:
     noindex: false
 ---
 
-<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-03-30 -->
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-06-01 -->
 
 The **Releases and Changelog** category documents the evolution of Geode across all versions, including release notes, new features, bug fixes, breaking changes, and upgrade guidance.
 
@@ -35,9 +35,17 @@ This is the current stable release line for the docs site. It includes the curre
 - graph-storage engine integration and per-graph storage evolution
 - enterprise security hardening across QUIC, gRPC, MFA, API keys, and TDE
 - QUIC multiplexing and major latency / throughput improvements
-- polyglot client libraries (Go, Python, Rust, Node.js, Zig)
+- native [time-series](/docs/query/timeseries/) (`geode.ts.*`) and BM25 [full-text search](/docs/query/full-text-search/) (`geode.fts.*`) GQL surfaces
+- first-party [OpenTelemetry](/docs/ops/observability/) metrics and traces (OTLP)
+- polyglot client libraries (Go, Python, Rust, Node.js, Zig) plus the new [Geode UI](/docs/geode-ui/) web console
 
 ## Release History
+
+### v0.3.0 – **GEODE_TAG** (April 12 – **GEODE_RELEASE_DATE_LONG**)
+
+- native time-series GQL surface (`geode.ts.*`) and durable BM25 full-text search (`CREATE INDEX ... USING fulltext`, `CALL geode.fts.search(...)`)
+- OpenTelemetry instrumentation surface introduced in `v0.5.0` (OTLP metrics and traces)
+- release-pipeline and CI hardening across the `v0.6.x` line; `__GEODE_TAG__` reaches the apt deploy chain
 
 ### v0.2.12 - v0.2.15 (March 27-29, 2026)
 
@@ -70,10 +78,13 @@ This is the current stable release line for the docs site. It includes the curre
 
 ## What Changed Most Since February 2026
 
-1. **Connection semantics**: DSNs can now bind a session to a graph during the HELLO handshake.
-2. **Storage internals**: Geode moved from monolithic persistence toward per-graph and graph-storage-backed layouts.
-3. **Transport behavior**: QUIC now includes multiplexing, improved polling, and better retry/handshake behavior.
-4. **Security posture**: gRPC parity, auth rate limiting, password-handling fixes, and stronger TLS/CA handling all landed in March.
+1. **New query surfaces**: native time-series (`geode.ts.*`) and durable, BM25-ranked full-text search (`geode.fts.*`) are now first-class GQL extensions.
+2. **Observability**: first-party OpenTelemetry instrumentation exports OTLP metrics and `geode.query.execute` traces.
+3. **Web console**: the new [Geode UI](/docs/geode-ui/) ships a browser and desktop console for queries, visualization, and administration.
+4. **Connection semantics**: DSNs can bind a session to a graph during the HELLO handshake.
+5. **Storage internals**: Geode moved from monolithic persistence toward per-graph and graph-storage-backed layouts.
+6. **Transport behavior**: QUIC includes multiplexing, improved polling, and better retry/handshake behavior.
+7. **Security posture**: gRPC parity, auth rate limiting, password-handling fixes, and stronger TLS/CA handling.
 
 ## Upgrade Guidance
 

@@ -5,7 +5,7 @@ summary: "Comprehensive built-in functions reference covering all GQL functions 
 slug: "functions"
 url: "/docs/gql-reference/functions/"
 date: 2026-01-28
-lastmod: 2026-01-28
+lastmod: 2026-06-01
 draft: false
 weight: 30
 keywords: ["functions", "aggregate functions", "scalar functions", "string functions", "math functions", "list functions", "temporal functions"]
@@ -52,7 +52,7 @@ Returns the number of rows or non-null values.
 
 **Signatures:**
 
-```
+```text
 COUNT(*) -> INTEGER
 COUNT(expression) -> INTEGER
 COUNT(DISTINCT expression) -> INTEGER
@@ -82,7 +82,7 @@ Returns the sum of numeric values.
 
 **Signature:**
 
-```
+```text
 SUM(numeric_expression) -> FLOAT | INTEGER
 ```
 
@@ -111,7 +111,7 @@ Returns the arithmetic mean.
 
 **Signature:**
 
-```
+```text
 AVG(numeric_expression) -> FLOAT
 ```
 
@@ -134,7 +134,7 @@ Returns minimum or maximum value.
 
 **Signatures:**
 
-```
+```text
 MIN(expression) -> same type as input
 MAX(expression) -> same type as input
 ```
@@ -163,7 +163,7 @@ Aggregates values into a list.
 
 **Signature:**
 
-```
+```text
 COLLECT(expression) -> LIST
 COLLECT(DISTINCT expression) -> LIST
 ```
@@ -192,7 +192,7 @@ Returns standard deviation.
 
 **Signatures:**
 
-```
+```text
 STDEV(numeric_expression) -> FLOAT   -- Sample standard deviation
 STDEVP(numeric_expression) -> FLOAT  -- Population standard deviation
 ```
@@ -213,7 +213,7 @@ Returns percentile values.
 
 **Signatures:**
 
-```
+```text
 PERCENTILE_CONT(numeric_expression, percentile) -> FLOAT  -- Continuous (interpolated)
 PERCENTILE_DISC(numeric_expression, percentile) -> FLOAT  -- Discrete (actual value)
 ```
@@ -236,7 +236,7 @@ Converts string case.
 
 **Signatures:**
 
-```
+```text
 lower(string) -> STRING
 upper(string) -> STRING
 ```
@@ -261,7 +261,7 @@ Removes whitespace.
 
 **Signatures:**
 
-```
+```text
 trim(string) -> STRING
 ltrim(string) -> STRING
 rtrim(string) -> STRING
@@ -285,7 +285,7 @@ Extracts a portion of a string.
 
 **Signature:**
 
-```
+```text
 substring(string, start) -> STRING
 substring(string, start, length) -> STRING
 ```
@@ -313,7 +313,7 @@ Replaces occurrences in a string.
 
 **Signature:**
 
-```
+```text
 replace(string, search, replacement) -> STRING
 ```
 
@@ -336,7 +336,7 @@ Splits a string into a list.
 
 **Signature:**
 
-```
+```text
 split(string, delimiter) -> LIST<STRING>
 ```
 
@@ -355,7 +355,7 @@ Returns string length.
 
 **Signature:**
 
-```
+```text
 length(string) -> INTEGER
 ```
 
@@ -376,7 +376,7 @@ Reverses a string.
 
 **Signature:**
 
-```
+```text
 reverse(string) -> STRING
 ```
 
@@ -394,7 +394,7 @@ Extracts characters from start or end.
 
 **Signatures:**
 
-```
+```text
 left(string, count) -> STRING
 right(string, count) -> STRING
 ```
@@ -414,7 +414,7 @@ Pads a string to a length.
 
 **Signatures:**
 
-```
+```text
 lpad(string, length, pad_string) -> STRING
 rpad(string, length, pad_string) -> STRING
 ```
@@ -434,7 +434,7 @@ Converts any value to string.
 
 **Signature:**
 
-```
+```text
 toString(value) -> STRING
 ```
 
@@ -457,7 +457,7 @@ Returns absolute value.
 
 **Signature:**
 
-```
+```text
 abs(number) -> same type
 ```
 
@@ -476,7 +476,7 @@ Rounds to integer.
 
 **Signatures:**
 
-```
+```text
 ceil(number) -> INTEGER
 floor(number) -> INTEGER
 ```
@@ -498,7 +498,7 @@ Rounds to specified precision.
 
 **Signature:**
 
-```
+```text
 round(number) -> INTEGER
 round(number, precision) -> FLOAT
 ```
@@ -519,7 +519,7 @@ Returns sign of number.
 
 **Signature:**
 
-```
+```text
 sign(number) -> INTEGER  -- Returns -1, 0, or 1
 ```
 
@@ -539,7 +539,7 @@ Square root and cube root.
 
 **Signatures:**
 
-```
+```text
 sqrt(number) -> FLOAT
 cbrt(number) -> FLOAT
 ```
@@ -559,7 +559,7 @@ Exponential and logarithmic functions.
 
 **Signatures:**
 
-```
+```text
 power(base, exponent) -> FLOAT
 exp(number) -> FLOAT              -- e^x
 log(number) -> FLOAT              -- Natural logarithm
@@ -583,7 +583,7 @@ Trigonometric functions.
 
 **Signatures:**
 
-```
+```text
 sin(radians) -> FLOAT
 cos(radians) -> FLOAT
 tan(radians) -> FLOAT
@@ -609,7 +609,7 @@ Returns random number.
 
 **Signature:**
 
-```
+```text
 rand() -> FLOAT  -- Returns 0.0 <= x < 1.0
 ```
 
@@ -638,7 +638,7 @@ Returns list length.
 
 **Signature:**
 
-```
+```text
 size(list) -> INTEGER
 length(list) -> INTEGER  -- Alias
 ```
@@ -658,7 +658,7 @@ Extracts list elements.
 
 **Signatures:**
 
-```
+```text
 head(list) -> element type
 last(list) -> element type
 tail(list) -> LIST  -- All except first
@@ -680,7 +680,7 @@ Creates a list of integers.
 
 **Signature:**
 
-```
+```text
 range(start, end) -> LIST<INTEGER>
 range(start, end, step) -> LIST<INTEGER>
 ```
@@ -701,7 +701,7 @@ Reverses a list.
 
 **Signature:**
 
-```
+```text
 reverse(list) -> LIST
 ```
 
@@ -719,7 +719,7 @@ Reduces a list to a single value.
 
 **Signature:**
 
-```
+```text
 reduce(accumulator = initial_value, element IN list | expression) -> result
 ```
 
@@ -748,7 +748,7 @@ Filters a list.
 
 **Signature:**
 
-```
+```text
 [element IN list WHERE condition]
 [element IN list WHERE condition | expression]
 ```
@@ -771,7 +771,7 @@ Concatenates lists.
 
 **Signature:**
 
-```
+```text
 list1 + list2 -> LIST
 ```
 
@@ -789,7 +789,7 @@ Tests list membership.
 
 **Signature:**
 
-```
+```text
 element IN list -> BOOLEAN
 ```
 
@@ -814,7 +814,7 @@ Returns map keys.
 
 **Signature:**
 
-```
+```text
 keys(map) -> LIST<STRING>
 keys(node) -> LIST<STRING>
 keys(relationship) -> LIST<STRING>
@@ -837,7 +837,7 @@ Returns map values.
 
 **Signature:**
 
-```
+```text
 values(map) -> LIST
 ```
 
@@ -855,7 +855,7 @@ Returns properties as map.
 
 **Signature:**
 
-```
+```text
 properties(node) -> MAP
 properties(relationship) -> MAP
 ```
@@ -878,7 +878,7 @@ Constructs temporal values.
 
 **Signatures:**
 
-```
+```text
 date() -> DATE                        -- Current date
 date(string) -> DATE                  -- Parse ISO string
 date({year, month, day}) -> DATE      -- From components
@@ -909,7 +909,7 @@ Constructs duration values.
 
 **Signature:**
 
-```
+```text
 duration(string) -> DURATION           -- ISO 8601 format
 duration({days, hours, ...}) -> DURATION
 ```
@@ -969,7 +969,7 @@ Returns relationship type.
 
 **Signature:**
 
-```
+```text
 type(relationship) -> STRING
 ```
 
@@ -988,7 +988,7 @@ Returns node labels.
 
 **Signature:**
 
-```
+```text
 labels(node) -> LIST<STRING>
 ```
 
@@ -1012,7 +1012,7 @@ Returns internal ID.
 
 **Signature:**
 
-```
+```text
 id(node) -> INTEGER
 id(relationship) -> INTEGER
 ```
@@ -1060,7 +1060,7 @@ Returns all nodes in a path.
 
 **Signature:**
 
-```
+```text
 nodes(path) -> LIST<NODE>
 ```
 
@@ -1083,7 +1083,7 @@ Returns all relationships in a path.
 
 **Signature:**
 
-```
+```text
 relationships(path) -> LIST<RELATIONSHIP>
 ```
 
@@ -1106,7 +1106,7 @@ Returns path length (number of relationships).
 
 **Signature:**
 
-```
+```text
 length(path) -> INTEGER
 ```
 
@@ -1127,7 +1127,7 @@ Calculates distance between two points.
 
 **Signature:**
 
-```
+```text
 geo_distance(point1, point2) -> FLOAT  -- Returns meters
 ```
 
@@ -1150,7 +1150,7 @@ Tests if point is within bounding box.
 
 **Signature:**
 
-```
+```text
 geo_within_box(point, southwest, northeast) -> BOOLEAN
 ```
 
@@ -1170,7 +1170,7 @@ Tests if point is within polygon.
 
 **Signature:**
 
-```
+```text
 geo_within_polygon(point, polygon) -> BOOLEAN
 ```
 
@@ -1184,7 +1184,7 @@ Euclidean distance between vectors.
 
 **Signature:**
 
-```
+```text
 vector_distance_l2(vector1, vector2) -> FLOAT
 ```
 
@@ -1205,7 +1205,7 @@ Cosine distance between vectors.
 
 **Signature:**
 
-```
+```text
 vector_distance_cosine(vector1, vector2) -> FLOAT
 ```
 
@@ -1217,7 +1217,7 @@ Dot product (inner product) of vectors.
 
 **Signature:**
 
-```
+```text
 vector_distance_dot(vector1, vector2) -> FLOAT
 ```
 
@@ -1229,7 +1229,7 @@ Returns vector dimensionality.
 
 **Signature:**
 
-```
+```text
 vector_dimension(vector) -> INTEGER
 ```
 
@@ -1243,7 +1243,7 @@ Tests if property or pattern exists.
 
 **Signature:**
 
-```
+```text
 exists(property) -> BOOLEAN
 EXISTS { pattern } -> BOOLEAN
 ```
@@ -1270,7 +1270,7 @@ List predicates.
 
 **Signatures:**
 
-```
+```text
 all(x IN list WHERE predicate) -> BOOLEAN
 any(x IN list WHERE predicate) -> BOOLEAN
 none(x IN list WHERE predicate) -> BOOLEAN
@@ -1301,7 +1301,7 @@ Returns first non-null value.
 
 **Signature:**
 
-```
+```text
 coalesce(value1, value2, ...) -> first non-null
 ```
 
@@ -1361,6 +1361,72 @@ RETURN p.name,
 
 ---
 
+## Built-in Procedures (CALL)
+
+In addition to scalar and aggregate functions, Geode exposes native procedures invoked with ISO GQL's `CALL` statement. Procedures are used (rather than scalar functions) because they return a row set, surfaced through `CALL … YIELD`. `YIELD` is optional on every procedure — a bare `CALL` auto-projects the result columns as rows. Results ride the generic GQL Execute+rows protocol over QUIC, so no client, proto, or transport changes are required to consume them.
+
+Two families are documented here for quick reference. For full guides, see [Time-Series](/docs/query/timeseries/) and [Full-Text Search](/docs/query/full-text-search/).
+
+### Time-Series Procedures (`geode.ts.*`)
+
+A time-series is identified by a `(device_id, metric)` pair, where `device_id` is an integer and `metric` is a string. All `ts` and `value` arguments are integers (`i64`); a float/decimal literal for a `ts` or `value` is rejected. The write procedures (`insert`, `insert_many`) are classified as mutating and require write privilege; the read procedures are read-only.
+
+| Procedure | Signature | YIELD columns |
+|-----------|-----------|---------------|
+| `geode.ts.insert` | `CALL geode.ts.insert(device_id, metric, ts, value)` | `inserted` (count of points written) |
+| `geode.ts.insert_many` | `CALL geode.ts.insert_many(device_id, metric, [[ts1, value1], [ts2, value2], ...])` | `inserted` (count of points written) |
+| `geode.ts.range` | `CALL geode.ts.range(device_id, metric, start_ts, end_ts)` | `ts`, `value` — all points in `[start_ts, end_ts]` (inclusive) |
+| `geode.ts.last` | `CALL geode.ts.last(device_id, metric)` | `ts`, `value` — the most recent point (0 or 1 row) |
+| `geode.ts.bucket_avg` | `CALL geode.ts.bucket_avg(device_id, metric, start_ts, end_ts, bucket_seconds)` | `bucket_ts`, `avg` — average per fixed-width bucket |
+| `geode.ts.sample_by` | `CALL geode.ts.sample_by(device_id, metric, interval_ms, start_ts, end_ts, agg)` | `bucket_ts`, `value` — downsample by interval with `agg` |
+
+For `geode.ts.sample_by`, `agg` is one of `avg`, `sum`, `min`, `max`, `count`, `first`, or `last`. `geode.ts.last` on an empty or missing series returns 0 rows (not an error); for `bucket_avg` and `sample_by`, an empty bucket yields a `NULL` value.
+
+**Examples:**
+
+```gql
+-- Ingest a single point: device 1, metric 'cpu.load', ts 1000, value 72
+CALL geode.ts.insert(1, 'cpu.load', 1000, 72) YIELD inserted;
+
+-- Batch ingest
+CALL geode.ts.insert_many(1, 'cpu.load', [[1010, 73], [1020, 71], [1030, 75]]);
+
+-- Read every point in [0, 2000] (inclusive) — rows of (ts, value)
+CALL geode.ts.range(1, 'cpu.load', 0, 2000) YIELD ts, value;
+
+-- Newest point
+CALL geode.ts.last(1, 'cpu.load') YIELD ts, value;
+
+-- 60-second bucket averages
+CALL geode.ts.bucket_avg(1, 'cpu.load', 0, 3600, 60) YIELD bucket_ts, avg;
+
+-- Per-minute max via interval downsampling
+CALL geode.ts.sample_by(1, 'cpu.load', 60000, 0, 3600000, 'max') YIELD bucket_ts, value;
+```
+
+{{< callout type="note" >}}
+Time-series values are integer (`i64`) only in this release. Use `100`, not `100.0` — a float/decimal literal for a `ts` or `value` argument is rejected with an error.
+{{< /callout >}}
+
+### Full-Text Search Procedure (`geode.fts.*`)
+
+Full-text search is backed by a durable, BM25-ranked index created with `CREATE INDEX <name> FOR (n:Label) ON (n.prop[, n.prop2]) USING fulltext`. The search procedure queries that index.
+
+| Procedure | Signature | YIELD columns |
+|-----------|-----------|---------------|
+| `geode.fts.search` | `CALL geode.fts.search('<index>', '<query>'[, <max>])` | `node` (matching node's id), `score` (BM25 relevance score) |
+
+The optional third argument caps the number of results.
+
+**Example:**
+
+```gql
+-- Search the 'doc_idx' index — returns rows of (node, score)
+CALL geode.fts.search('doc_idx', 'quick brown') YIELD node, score;
+```
+
+---
+
 ## Related Documentation
 
 - [Operators Reference](/docs/reference/operators/) - All operators
@@ -1370,6 +1436,6 @@ RETURN p.name,
 
 ---
 
-**Last Updated:** January 28, 2026
+**Last Updated:** June 1, 2026
 **Geode Version:** **GEODE_TAG**+
 **Function Count:** 80+ built-in functions

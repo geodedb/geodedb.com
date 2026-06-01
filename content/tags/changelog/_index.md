@@ -19,7 +19,7 @@ params:
     noindex: false
 ---
 
-<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-06-01 -->
 
 Understanding what changes between versions is critical for maintaining stable, secure, and performant graph database deployments. Geode maintains a comprehensive changelog documenting every feature addition, bug fix, performance improvement, and breaking change across all releases. This transparency enables informed upgrade decisions and smooth migration paths.
 
@@ -51,9 +51,12 @@ Geode's changelog follows the "Keep a Changelog" format with entries organized b
 - Current mainline GAP analysis tracking 3847 passed, 70 failed, 35 skipped
 - Enterprise-ready with full ACID transactions
 - QUIC + TLS 1.3 protocol support
-- Multi-language client libraries (Go, Python, Rust, Zig)
+- Multi-language client libraries (Go, Python, Rust, Zig, Node.js)
+- Native time-series support (`geode.ts.*`) — /docs/query/timeseries/
+- BM25 full-text search (`geode.fts.*`) — /docs/query/full-text-search/
+- OpenTelemetry/OTLP observability — /docs/ops/observability/
 
-### Added in v0.2.15
+### Added in **GEODE_TAG**
 
 **Core Features**:
 
@@ -72,10 +75,11 @@ Geode's changelog follows the "Keep a Changelog" format with entries organized b
 
 **Client Libraries**:
 
-- Go client rolling stable module
-- Python async client v0.3.19
-- Rust client v0.1.1-alpha.8
-- Zig client v0.1.0
+- Go client {{< version "clients.go" >}}
+- Python async client {{< version "clients.python" >}}
+- Rust client {{< version "clients.rust" >}}
+- Zig client {{< version "clients.zig" >}}
+- Node.js client {{< version "clients.nodejs" >}}
 
 **Tooling**:
 
@@ -85,14 +89,14 @@ Geode's changelog follows the "Keep a Changelog" format with entries organized b
 - Data import/export tools (JSON, CSV, GraphML)
 - Prometheus metrics integration
 
-### Changed in v0.2.15
+### Changed in **GEODE_TAG**
 
 - `v0.2.x` became the active stable line for the docs and release process
 - Release notes now distinguish the tagged stable release from unreleased `main` fixes
 - Auth, storage, and upgrade guidance now reflect the March 2026 release train
 - TDE wiring and post-tag storage fixes are tracked separately as unreleased `main` work
 
-### Fixed in v0.2.15
+### Fixed in **GEODE_TAG**
 
 - UUIDv7 generation on 32-bit ARM
 - CTE execution stability issues found during the March release train
@@ -103,7 +107,7 @@ Geode's changelog follows the "Keep a Changelog" format with entries organized b
 
 **Semantic Versioning**:
 
-```
+```text
 MAJOR.MINOR.PATCH
 
 MAJOR: Breaking changes, incompatible API changes
@@ -129,7 +133,7 @@ Geode maintains backward compatibility within major versions. Breaking changes a
 
 **Example Breaking Change Process**:
 
-```
+```text
 v1.5.0: Feature marked as deprecated
 v1.6.0: Deprecation warning in logs
 v1.7.0: Migration guide published
@@ -249,7 +253,7 @@ Security vulnerabilities are tracked separately and disclosed responsibly:
 
 **Reporting Security Issues**:
 
-```
+```text
 Email: security@codepros.org
 PGP Key: https://geodedb.com/security/pgp-key.asc
 Response Time: 48 hours

@@ -5,7 +5,7 @@ summary: "Learn how Geode implements BM25 full-text search with relevance rankin
 slug: "full-text-search"
 url: "/docs/query/full-text-search/"
 date: 2026-01-24
-lastmod: 2026-01-24
+lastmod: 2026-06-01
 draft: false
 weight: 350
 keywords: ["BM25", "full-text search", "relevance ranking", "text indexing", "search optimization", "TF-IDF", "information retrieval", "query planning"]
@@ -29,16 +29,113 @@ Geode provides enterprise-grade BM25 scoring integration with the IndexOptimizer
 **BM25** (Best Matching 25) is a probabilistic relevance ranking function used by search engines to estimate the relevance of documents to a given search query. It's the industry standard for full-text search, used by Elasticsearch, Apache Solr, and modern database systems.
 
 **Key Advantages**:
+
 - **Relevance Scoring**: Returns results ordered by relevance, not just term matching
 - **Corpus-Aware**: Considers document length and term frequency across the entire collection
 - **Tunable Parameters**: Adjustable for different content types and search scenarios
 - **Production-Proven**: Decades of research and real-world deployment
 
+## Full-Text Search GQL Surface
+
+Geode exposes durable, BM25-ranked full-text search as a native GQL extension. The surface is ISO-GQL-compliant in form: index creation uses the standard `CREATE INDEX … USING` clause, and search uses ISO GQL's `CALL` procedure (not a scalar function, and not Cypher's `UNWIND … YIELD`).
+
+{{< callout type="note" >}}
+The `CREATE INDEX … USING fulltext` and `CALL geode.fts.search(…)` surface is a native Geode extension. Each index is backed by an on-disk LSM store, so indexes are durable across restarts.
+{{< /callout >}}
+
+### Quick Start
+
+```gql
+-- Create a fulltext index on the `body` property of `:Doc` nodes
+-- (backfills any existing matching nodes)
+CREATE INDEX doc_idx FOR (d:Doc) ON (d.body) USING fulltext;
+
+-- Search the index — returns rows of (node, score)
+CALL geode.fts.search('doc_idx', 'quick brown');   -- node id + BM25 score
+
+-- Drop the index when no longer needed (server stays alive)
+DROP INDEX doc_idx;
+```
+
+### Creating an Index
+
+```gql
+CREATE INDEX <name> FOR (n:Label) ON (n.prop[, n.prop2]) USING fulltext;
+```
+
+`CREATE INDEX … USING fulltext` creates a fulltext index over the named string properties of `:Label` nodes and **backfills** all existing matching nodes into the index. You may index multiple properties on a single index:
+
+```gql
+CREATE INDEX doc_idx FOR (d:Doc) ON (d.title, d.body) USING fulltext;
+```
+
+### Searching an Index
+
+```gql
+CALL geode.fts.search('<index>', '<query>'[, <max>]);
+```
+
+`CALL geode.fts.search` returns one row per match with two columns:
+
+- `node` — the matching node's id
+- `score` — the BM25 relevance score, computed by the backing engine
+
+The optional third argument caps the number of results. For example, return the top 10 matches:
+
+```gql
+CALL geode.fts.search('doc_idx', 'quick brown', 10);
+```
+
+You can also use the explicit `YIELD` form to name the returned columns:
+
+```gql
+CALL geode.fts.search('doc_idx', 'quick brown', 10) YIELD node, score;
+```
+
+### Dropping an Index
+
+```gql
+DROP INDEX [IF EXISTS] <name>;
+```
+
+`DROP INDEX` drops the fulltext index while the server stays alive during the drop. Use `IF EXISTS` to make the drop a no-op when the index is absent:
+
+```gql
+DROP INDEX IF EXISTS doc_idx;
+```
+
+### Durability
+
+Each fulltext index is its own on-disk storage engine — an LSM store with its own WAL, on-disk segments, and manifest — living under `{graph_dir}/fts/<index_name>/`:
+
+```text
+graph dir
+└── fts/
+    ├── doc_idx/      ← fulltext storage engine (WAL + segments + manifest)
+    └── other_idx/    ← fulltext storage engine
+```
+
+Indexes survive a server restart. After a restart, on-disk fts indexes are **lazily re-opened on the first query** against them — no explicit reload step is required, and there is no in-memory snapshot to rebuild.
+
+### Live Index Maintenance
+
+Once an index exists, ordinary write paths keep it current automatically:
+
+- **Node create** — newly created nodes matching the index label/property are tokenized and indexed (including nodes inserted *after* the index was created).
+- **`SET`** — updating an indexed property re-indexes the node.
+- **Delete** — deleting a node removes it from the index.
+
+#### Known Limitation: bulk-MERGE fast path
+
+{{< callout type="warning" >}}
+The **bulk-MERGE fast path** does **not** auto-index its nodes into full-text search. Nodes created via the bulk-MERGE path become searchable only after re-running `CREATE INDEX <name> … USING fulltext`, which backfills all existing matching nodes. All other write paths are covered by live maintenance.
+{{< /callout >}}
+
 ## BM25 Mathematical Foundation
 
 ### The BM25 Formula
 
-```
+```text
 score(q,d) = Σ IDF(qi) × [f(qi,d) × (k1 + 1)] / [f(qi,d) + k1 × (1 - b + b × |d| / avgdl)]
 
 Where:
@@ -55,17 +152,20 @@ Where:
 ### Components Explained
 
 **IDF (Inverse Document Frequency)**:
+
 - Measures how rare or common a term is across the entire corpus
 - Rare terms have higher IDF scores (more discriminating)
 - Common terms like "the" have low IDF scores (less useful for ranking)
 
 **Term Frequency Saturation (k1)**:
+
 - Controls how quickly term frequency score saturates
 - k1 = 1.2 is standard (OWASP recommendation)
 - Higher k1 = term frequency has more impact
 - Lower k1 = diminishing returns on repeated terms
 
 **Length Normalization (b)**:
+
 - Controls how much document length affects scoring
 - b = 0.75 balances between penalizing long documents and ignoring length
 - b = 0: No length normalization
@@ -140,6 +240,7 @@ CREATE INDEX article_content_idx ON Article (content) USING fulltext
 ```
 
 **Properties**:
+
 - Automatically enables BM25-optimized cost estimation
 - Tokenizes content using standard text analyzer
 - Builds inverted index for fast term lookup
@@ -153,6 +254,7 @@ CREATE INDEX article_search_idx ON Article (title, abstract, content) USING full
 ```
 
 **Use Cases**:
+
 - Search across all text fields simultaneously
 - Weighted scoring (title matches rank higher)
 - Comprehensive document search
@@ -189,6 +291,7 @@ ORDER BY article.relevance_score DESC
 ```
 
 **BM25 Behavior**:
+
 - Automatically uses BM25 for relevance scoring
 - Returns results ordered by relevance
 - Considers term frequency and document length
@@ -207,6 +310,7 @@ LIMIT 10
 ```
 
 **Query Complexity**:
+
 - Each additional term increases cost by 30%
 - BM25 scores combine across all terms
 - More selective terms rank higher
@@ -221,6 +325,7 @@ RETURN article.title
 ```
 
 **Phrase Matching**:
+
 - Terms must appear in exact order
 - Higher precision, lower recall
 - Useful for technical terms and proper nouns
@@ -244,6 +349,7 @@ ORDER BY bm25_score(doc.text, 'database graph network') DESC
 Geode automatically adjusts BM25 costs based on corpus characteristics:
 
 **Technical Documentation** (high vocabulary density):
+
 ```gql
 -- Complex terminology, specialized vocabulary
 MATCH (tech_doc:TechnicalDocument)
@@ -252,6 +358,7 @@ RETURN tech_doc.title, tech_doc.complexity_score
 ```
 
 **Optimization**:
+
 - Higher IDF costs for specialized terms
 - Vocabulary density > 100 terms/doc
 - 20% cost increase for complex vocabularies
@@ -259,6 +366,7 @@ RETURN tech_doc.title, tech_doc.complexity_score
 ---
 
 **News Articles** (moderate vocabulary):
+
 ```gql
 -- General news content, varied length
 MATCH (news:NewsArticle)
@@ -268,6 +376,7 @@ ORDER BY news.relevance DESC
 ```
 
 **Optimization**:
+
 - Balanced length normalization
 - Standard BM25 parameters (k1=1.2, b=0.75)
 - Moderate vocabulary density (20-100 terms/doc)
@@ -275,6 +384,7 @@ ORDER BY news.relevance DESC
 ---
 
 **Social Media Posts** (low vocabulary, short):
+
 ```gql
 -- Short-form content, simple vocabulary
 MATCH (post:SocialPost)
@@ -284,6 +394,7 @@ ORDER BY post.timestamp DESC
 ```
 
 **Optimization**:
+
 - Reduced length penalty for short documents
 - Lower IDF complexity
 - Vocabulary density < 20 terms/doc
@@ -330,16 +441,19 @@ if (search_queries > 5) {
 ### Real-World Performance
 
 **Query Relevance**:
+
 - **40-60% improvement** in search result quality
 - Automatic relevance sorting without explicit ORDER BY
 - Context-aware scoring considers document characteristics
 
 **Cost Estimation Accuracy**:
+
 - **25-35% more accurate** cost estimation for complex queries
 - Adaptive optimization based on corpus characteristics
 - Historical performance integration for continuous improvement
 
 **Enterprise Scalability**:
+
 - **Logarithmic scaling** with corpus size (vs linear for basic full-text)
 - Tested with **100,000+ documents** maintaining sub-second response times
 - Vocabulary density adaptation for specialized domains
@@ -373,6 +487,7 @@ Complex query (5+ terms):
 While Geode uses standard BM25 parameters (k1=1.2, b=0.75), you can tune for specific use cases:
 
 **High Term Frequency Importance** (k1 = 2.0):
+
 ```yaml
 # For technical documentation where repeated terms matter
 fulltext_indexes:
@@ -382,6 +497,7 @@ fulltext_indexes:
 ```
 
 **No Length Normalization** (b = 0.0):
+
 ```yaml
 # For fixed-length documents (tweets, titles)
 fulltext_indexes:
@@ -391,6 +507,7 @@ fulltext_indexes:
 ```
 
 **Strong Length Penalty** (b = 1.0):
+
 ```yaml
 # For variable-length documents where length matters
 fulltext_indexes:
@@ -402,6 +519,7 @@ fulltext_indexes:
 ### Field Boosting
 
 **Weighted Multi-Field Search**:
+
 ```gql
 -- Title matches rank 3x higher than content matches
 MATCH (article:Article)
@@ -428,6 +546,7 @@ analyzers:
 ```
 
 **Query with Synonyms**:
+
 ```gql
 -- Automatically expands "db" to include "database"
 MATCH (doc:Document)
@@ -449,6 +568,7 @@ ORDER BY article.relevance_score DESC
 ```
 
 **Execution Plan**:
+
 ```json
 {
   "logical": [
@@ -464,6 +584,7 @@ ORDER BY article.relevance_score DESC
 ```
 
 **Cost Comparison**:
+
 ```plaintext
 Sequential Scan: 1000.0 (scan all 100K docs)
 Basic Full-Text: 28.0 (term matching only)
@@ -473,12 +594,14 @@ BM25 Full-Text: 32.5 (relevance ranking) ✅ SELECTED
 ### Query Plan Caching
 
 **Cached BM25 Plans**:
+
 - Repeated queries use cached execution plans
 - Parameters (k1, b) optimized for specific patterns
 - LRU eviction for memory efficiency
 - Cache warming for common queries
 
 **Example**:
+
 ```gql
 -- First execution: 135ms (plan + execute)
 MATCH (doc:Document) WHERE doc.text CONTAINS 'climate'
@@ -494,6 +617,7 @@ RETURN doc.title ORDER BY relevance DESC
 ### Document Search
 
 **Enterprise Document Management**:
+
 ```gql
 CREATE INDEX document_content_idx ON Document (title, content) USING fulltext
 
@@ -510,6 +634,7 @@ LIMIT 20
 ### E-commerce Product Search
 
 **Product Catalog Search**:
+
 ```gql
 CREATE INDEX product_search_idx ON Product (name, description, tags) USING fulltext
 
@@ -527,6 +652,7 @@ LIMIT 50
 ### Knowledge Base Search
 
 **Technical Documentation**:
+
 ```gql
 CREATE INDEX kb_article_idx ON KBArticle (title, content, tags) USING fulltext
 
@@ -556,6 +682,7 @@ zig test tests/integration_bm25_optimizer.zig
 ```
 
 **Test Scenarios**:
+
 - ✅ Mathematical model validation (k1, b parameters)
 - ✅ Cost estimation accuracy
 - ✅ Statistics integration
@@ -565,6 +692,7 @@ zig test tests/integration_bm25_optimizer.zig
 ### Query Testing
 
 **Relevance Testing**:
+
 ```gql
 -- Create test corpus
 CREATE (doc1:TestDoc {text: 'machine learning algorithms for classification'})
@@ -592,6 +720,7 @@ ORDER BY score DESC
 **Issue**: BM25 scores seem incorrect
 
 **Diagnosis**:
+
 ```gql
 -- Check corpus statistics
 EXPLAIN ANALYZE MATCH (doc:Document)
@@ -603,6 +732,7 @@ CALL db.index.stats('document_content_idx')
 ```
 
 **Solution**:
+
 ```bash
 # Rebuild index statistics
 geode query "CALL db.index.rebuild('document_content_idx')" --insecure
@@ -616,6 +746,7 @@ geode query "CALL db.index.analyze('document_content_idx')" --insecure
 **Issue**: Slow full-text queries
 
 **Diagnosis**:
+
 ```gql
 PROFILE MATCH (doc:Document)
 WHERE doc.content CONTAINS 'slow query'
@@ -623,6 +754,7 @@ RETURN doc.title
 ```
 
 **Solution**:
+
 ```gql
 -- Add index if missing
 CREATE INDEX document_content_idx ON Document (content) USING fulltext
@@ -639,6 +771,7 @@ RETURN doc.title
 **Issue**: Unexpected ranking order
 
 **Analysis**:
+
 ```gql
 -- Show BM25 components
 MATCH (doc:Document)
@@ -652,6 +785,7 @@ ORDER BY score DESC
 ```
 
 **Common Causes**:
+
 - Document length differences (short docs rank higher with b=0.75)
 - Term saturation (diminishing returns after k1=1.2 threshold)
 - IDF effects (rare terms dominate common terms)
@@ -661,6 +795,7 @@ ORDER BY score DESC
 ### Index Design
 
 1. **Index Appropriate Fields**:
+
    ```gql
    -- ✅ Good: Index text fields
    CREATE INDEX article_idx ON Article (content) USING fulltext
@@ -670,12 +805,14 @@ ORDER BY score DESC
    ```
 
 2. **Multi-Field Strategy**:
+
    ```gql
    -- Index related fields together
    CREATE INDEX article_search ON Article (title, abstract, content) USING fulltext
    ```
 
 3. **Avoid Over-Indexing**:
+
    ```gql
    -- Don't index every text field
    -- Focus on frequently searched fields
@@ -684,6 +821,7 @@ ORDER BY score DESC
 ### Query Optimization
 
 1. **Combine with Filters**:
+
    ```gql
    -- ✅ Good: Filter then search
    MATCH (doc:Document)
@@ -693,6 +831,7 @@ ORDER BY score DESC
    ```
 
 2. **Use Appropriate Limits**:
+
    ```gql
    -- Always limit full-text queries
    MATCH (doc:Document)
@@ -703,6 +842,7 @@ ORDER BY score DESC
    ```
 
 3. **Leverage Scoring**:
+
    ```gql
    -- Use BM25 scores for ranking
    RETURN doc.title, bm25_score(doc.content, query) AS relevance
@@ -712,12 +852,14 @@ ORDER BY score DESC
 ### Performance Tuning
 
 1. **Monitor Statistics**:
+
    ```bash
    # Regular statistics updates
    0 2 * * * geode query "CALL db.index.analyze('*')"
    ```
 
 2. **Tune Parameters**:
+
    ```yaml
    # Adjust for your corpus
    fulltext_indexes:
@@ -727,6 +869,7 @@ ORDER BY score DESC
    ```
 
 3. **Cache Frequently Used Plans**:
+
    ```yaml
    query_cache:
      max_plans: 1000
@@ -742,15 +885,15 @@ ORDER BY score DESC
 
 - **Manning et al. (2008)**: "Introduction to Information Retrieval"
   - Comprehensive text on search algorithms
-  - https://nlp.stanford.edu/IR-book/
+  - <https://nlp.stanford.edu/IR-book/>
 
 ### Standards & Implementations
 
 - **Apache Lucene**: Reference BM25 implementation
-  - https://lucene.apache.org/
+  - <https://lucene.apache.org/>
 
 - **Elasticsearch BM25**: Production-proven search engine
-  - https://www.elastic.co/guide/en/elasticsearch/reference/current/index-modules-similarity.html
+  - <https://www.elastic.co/guide/en/elasticsearch/reference/current/index-modules-similarity.html>
 
 ### Code Location
 
@@ -762,24 +905,27 @@ ORDER BY score DESC
 ## Next Steps
 
 **For New Users**:
+
 - [Indexing Guide](/docs/query/indexing-and-optimization/) - Full indexing overview
 - [Query Performance Tuning](/docs/query/performance-tuning/) - Optimization strategies
 - [GQL Guide](/docs/gql/guide/) - Complete query language reference
 
 **For Advanced Users**:
+
 - [Materialized Views](/docs/query/materialized-views/) - Pre-computed search results
 - [Query Optimization](/docs/query/performance-tuning/) - EXPLAIN and PROFILE analysis
 - [Advanced GQL Patterns](/docs/gql/advanced-patterns/) - Complex search patterns
 
 **For Administrators**:
+
 - [Performance Tuning](/docs/query/performance-tuning/) - System optimization
 - [Monitoring](/docs/ops/observability/) - Search performance tracking
 - [Scaling](/docs/architecture/performance-and-scaling/) - Large-scale deployments
 
 ---
 
-**Document Version**: 1.0
-**Last Updated**: January 24, 2026
+**Document Version**: 1.1
+**Last Updated**: June 1, 2026
 **Status**: Production Ready
 **Test Coverage**: 10 comprehensive tests (6 unit + 4 integration)
 **Performance**: 40-60% search quality improvement, sub-second queries on 100K+ documents

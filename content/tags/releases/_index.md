@@ -19,7 +19,7 @@ params:
     noindex: false
 ---
 
-<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-06-01 -->
 
 Effective release management ensures database stability, predictable upgrade paths, and clear communication of changes. Geode follows industry-standard semantic versioning combined with rigorous testing and transparent release processes to deliver reliable, enterprise-grade graph database releases.
 
@@ -88,6 +88,9 @@ Examples:
 - Memory-mapped I/O with page-level caching
 - Cost-based query optimization
 - CTE execution and DOT output support
+- Native time-series support (`geode.ts.*`) — see [/docs/query/timeseries/](/docs/query/timeseries/)
+- BM25 full-text search (`geode.fts.*`) — see [/docs/query/full-text-search/](/docs/query/full-text-search/)
+- OpenTelemetry/OTLP observability — see [/docs/ops/observability/](/docs/ops/observability/)
 
 **Protocol**:
 
@@ -98,10 +101,11 @@ Examples:
 
 **Client Libraries**:
 
-- Go client rolling stable module
-- Python client v0.3.19
-- Rust client v0.1.1-alpha.8
-- Zig client v0.1.0
+- Go client v{{< version "clients.go" >}}
+- Python client v{{< version "clients.python" >}}
+- Rust client v{{< version "clients.rust" >}}
+- Zig client v{{< version "clients.zig" >}}
+- Node.js client v{{< version "clients.nodejs" >}}
 
 ### Upgrade into v0.2.x
 
@@ -132,8 +136,8 @@ geode serve --config /etc/geode/config.yaml
 
 # 6. Update client libraries
 go get -u geodedb.com/geode@__GEODE_TAG__
-pip install --upgrade geode-client==0.3.19
-cargo update -p geode-client --precise 0.1.1-alpha.8
+pip install --upgrade geode-client=={{< version "clients.python" >}}
+cargo update -p geode-client --precise {{< version "clients.rust" >}}
 ```
 
 ## Release Channels
@@ -275,9 +279,9 @@ Before any release, Geode undergoes comprehensive testing:
 
 **Current Versions**:
 
-- v0.2.x: Full support (current stable feature line)
-- v0.1.28-v0.1.39: Upgrade-planned support for existing March 2026 deployments
-- v0.1.3-v0.1.27: Legacy line; upgrade with backup and restore validation
+- v0.6.x: Full support (current stable feature line)
+- v0.3.x-v0.5.x: Maintenance support; upgrade to the latest patch recommended
+- v0.1.x-v0.2.x: Legacy lines; upgrade with backup and restore validation
 
 **Support Levels**:
 

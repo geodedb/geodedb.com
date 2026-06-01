@@ -43,11 +43,22 @@ Welcome to the complete documentation for Geode, an enterprise-ready graph datab
   - [Python Client](/docs/client-libraries/python-client/) - Async Python with type hints
   - [Rust Client](/docs/client-libraries/rust-client/) - High-performance type-safe client
 
+### Tools and Interfaces
+
+- **[Geode UI](/docs/geode-ui/)** - Web and desktop console with a GQL editor, interactive graph visualization, schema explorer, and admin/ops tooling
+
+### New Query Capabilities
+
+- **[Time-Series](/docs/query/timeseries/)** - Native `geode.ts.*` GQL surface for append-friendly time-series data
+- **[Full-Text Search](/docs/query/full-text-search/)** - Durable, BM25-ranked search via `CREATE INDEX ... USING fulltext` and `CALL geode.fts.search(...)`
+- **[Observability](/docs/ops/observability/)** - First-party OpenTelemetry (OTLP) metrics and traces
+
 ## Key Features
 
 ### 100% GQL compliance
 
 Geode maintains 100% ISO/IEC 39075:2024 GQL compliance:
+
 - ✅ Deterministic ordering and pagination policies
 - ✅ MATCH pattern matching with bounded expansions and OPTIONAL MATCH
 - ✅ Full aggregation support
@@ -71,6 +82,7 @@ Geode maintains 100% ISO/IEC 39075:2024 GQL compliance:
 ### Advanced Data Types
 
 Over 50 specialized types including:
+
 - Vectors (VectorF32/VectorI32) with SIMD acceleration
 - Geographic (LatLon, GeoPoint) with R-tree indexing
 - Network (IpAddr, Subnet) with Patricia trie indexing

@@ -20,7 +20,7 @@ params:
     noindex: false
 ---
 
-<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-15 -->
+<!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-06-01 -->
 
 Keeping your Geode database deployment current ensures you benefit from the latest features, performance improvements, security patches, and bug fixes. Geode follows semantic versioning and provides clear upgrade paths with comprehensive release documentation.
 
@@ -325,7 +325,7 @@ Understand compatibility between server and client library versions.
 
 | Server Version | Go Client | Python Client | Rust Client | Zig Client |
 |----------------|-----------|---------------|-------------|------------|
-| v0.2.15       | rolling  | 0.3.19       | 0.1.1-alpha.8 | 0.1.0 |
+| **GEODE_TAG** | {{< version "clients.go" >}} | {{< version "clients.python" >}} | {{< version "clients.rust" >}} | {{< version "clients.zig" >}} |
 | v0.1.28-v0.1.39 | rolling | 0.3.19+    | 0.1.1-alpha.8+ | 0.1.0+ |
 | v0.1.3-v0.1.27 | validate in staging | 0.3.x | 0.1.x | 0.1.x |
 
