@@ -7,7 +7,7 @@
 # This ensures production deployments are intentional (release branch) while
 # development changes are automatically deployed for preview.
 
-image: ubuntu:24.04
+image: ubuntu:26.04
 
 default:
   tags:
@@ -123,7 +123,7 @@ pages:
 # CLOUDFLARE_ACCOUNT_ID), and variables for Vault auth automatically.
 cloudflare-pages-deploy:
   extends: .setup
-  image: ubuntu:24.04
+  image: ubuntu:26.04
   script:
     - hugo -b https://geodedb.com --minify --gc
     # Vault secrets are file-type variables; read contents for wrangler
