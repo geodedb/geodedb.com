@@ -344,9 +344,14 @@ From `API_REFERENCE_GENERATED.md`, key GQL keywords:
 
 | Function | Description | Example |
 |----------|-------------|---------|
-| `vector_distance_l2()` | Euclidean distance | `RETURN vector_distance_l2($a, $b)` |
-| `vector_distance_cosine()` | Cosine distance | `RETURN vector_distance_cosine($a, $b)` |
-| `vector_distance_dot()` | Dot product | `RETURN vector_distance_dot($a, $b)` |
+| `vector_l2()` | Euclidean distance (lower = more similar) | `RETURN vector_l2($a, $b)` |
+| `euclidean()` | Alias of `vector_l2()` | `RETURN euclidean($a, $b)` |
+| `manhattan()` | Manhattan (L1) distance | `RETURN manhattan($a, $b)` |
+| `vector_cosine()` | Cosine similarity (higher = more similar) | `RETURN vector_cosine($a, $b)` |
+| `vector_dot()` | Dot product | `RETURN vector_dot($a, $b)` |
+| `distance()` | Distance, metric `l2` (default) / `euclidean` / `cosine` / `dot` | `RETURN distance($a, $b, 'cosine')` |
+| `similarity()` | Similarity, metric `cosine` (default) / `dot` | `RETURN similarity($a, $b)` |
+| `vector_knn()` | k nearest ids by vector property (alias `knn()`) | `RETURN vector_knn('embedding', $q, 10, 'cosine')` |
 
 ### Data Types
 

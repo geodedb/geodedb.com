@@ -259,12 +259,7 @@ Index embeddings for similarity search:
 CREATE VECTOR INDEX product_embedding_idx
 ON :Product(embedding)
 USING HNSW
-WITH (
-  dimensions = 384,
-  metric = 'cosine',
-  m = 16,
-  ef_construction = 200
-);
+WITH (metric = 'cosine');
 
 // Similarity search
 MATCH (p:Product)

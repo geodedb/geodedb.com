@@ -147,7 +147,7 @@ CREATE INDEX location_coords_idx ON Location(coordinates) USING spatial;
 -- Vector index for embeddings
 CREATE INDEX doc_embedding_idx ON Document(embedding)
 USING vector
-WITH (M = 16, ef_construction = 200);
+WITH (metric = 'cosine');
 
 -- Full-text index for text search
 CREATE INDEX article_content_idx ON Article(content)

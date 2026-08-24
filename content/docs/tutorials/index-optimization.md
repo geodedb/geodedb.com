@@ -24,6 +24,7 @@ Learn how to optimize query performance in Geode through strategic index design,
 ## Learning Objectives
 
 By completing this tutorial, you will:
+
 1. Understand different index types and their use cases
 2. Use EXPLAIN to analyze query execution plans
 3. Create and optimize B-tree indexes
@@ -119,6 +120,7 @@ EXPLAIN MATCH (c:Customer {email: 'alice@example.com'}) RETURN c
 
 **Expected Output**:
 \`\`\`
+
 | plan              |
 |-------------------|
 | EXPLAIN           |
@@ -130,6 +132,7 @@ EXPLAIN MATCH (c:Customer {email: 'alice@example.com'}) RETURN c
 \`\`\`
 
 **Analysis**:
+
 - **NodeScan**: Scans all Customer nodes (O(n) complexity)
 - **Filter**: Applies email predicate after scan
 - **Problem**: Inefficient for large datasets
@@ -150,6 +153,7 @@ EXPLAIN MATCH (c:Customer {email: 'alice@example.com'}) RETURN c
 
 **Improved Output**:
 \`\`\`
+
 | plan              |
 |-------------------|
 | EXPLAIN           |
@@ -160,6 +164,7 @@ EXPLAIN MATCH (c:Customer {email: 'alice@example.com'}) RETURN c
 \`\`\`
 
 **Analysis**:
+
 - **IndexSeek**: Uses B-tree index for O(log n) lookup
 - **No Filter**: Predicate handled by index
 - **Benefit**: Significantly faster for large datasets
@@ -174,6 +179,7 @@ PROFILE MATCH (c:Customer {email: 'alice@example.com'}) RETURN c
 
 **Output**:
 \`\`\`
+
 | metric              | value |
 |---------------------|-------|
 | rows_returned       | 1     |
@@ -182,6 +188,7 @@ PROFILE MATCH (c:Customer {email: 'alice@example.com'}) RETURN c
 \`\`\`
 
 **Interpretation**:
+
 - Query completes in ~1ms with index
 - Without index: ~50-100ms for 100k customers
 
@@ -204,6 +211,7 @@ ORDER BY p.price
 
 **Plan Analysis**:
 \`\`\`
+
 | plan              |
 |-------------------|
 | EXPLAIN           |
@@ -215,6 +223,7 @@ ORDER BY p.price
 \`\`\`
 
 **Benefits**:
+
 - Index handles both WHERE predicates
 - ORDER BY can use index ordering
 - No separate sort operation needed
@@ -264,10 +273,12 @@ CREATE INDEX ON :Product(in_stock)  -- Only true/false values
 \`\`\`
 
 2. **Frequently Updated Fields**:
+
 - Index maintenance overhead on writes
 - Consider read/write ratio
 
 3. **Large Text Fields**:
+
 - Use full-text indexes instead
 
 ## Part 3: HNSW Vector Index for Similarity Search
@@ -279,19 +290,18 @@ Create a vector index for product embeddings:
 \`\`\`gql
 CREATE VECTOR INDEX product_embeddings
 ON :Product(embedding)
-OPTIONS {
-    dimensions: 8,
-    distance: 'cosine',
-    ef_construction: 200,
-    m: 16
-}
+WITH (metric = 'cosine')
 \`\`\`
 
 **Index Parameters**:
-- **dimensions**: Vector dimensionality (8 in our example)
-- **distance**: Distance metric (cosine, euclidean, manhattan, dot_product)
-- **ef_construction**: Build-time quality (higher = better quality, slower build)
-- **m**: Max connections per node (higher = better recall, more memory)
+
+- **metric**: Distance metric the index is built for. One of `l2` (default),
+  `euclidean`, `cosine`, `dot`, `dot_product`, `inner_product`.
+
+`metric` is the only supported parameter. Vector dimensionality is inferred
+from the indexed data, and the HNSW graph parameters (`m`, `ef_construction`,
+`ef_search`) are not currently tunable — they use engine-managed defaults and
+are reserved for a future release. Passing them returns an error.
 
 ### Step 2: Similarity Search Query
 
@@ -305,41 +315,32 @@ ORDER BY vector_similarity(p.embedding, [0.15, 0.35, 0.45, 0.25, 0.75, 0.45, 0.5
 LIMIT 5
 \`\`\`
 
-### Step 3: Optimize HNSW Parameters
+### Step 3: Choose the Right Metric
 
-**For High Recall (Recommendation Systems)**:
+**For Normalized Text/ML Embeddings (Recommendation Systems)**:
 \`\`\`gql
-CREATE VECTOR INDEX product_embeddings_high_recall
+CREATE VECTOR INDEX product_embeddings_cosine
 ON :Product(embedding)
-OPTIONS {
-    dimensions: 8,
-    distance: 'cosine',
-    ef_construction: 400,  -- Higher for better quality
-    m: 32,                 -- More connections
-    ef_search: 200         -- Search-time parameter
-}
+WITH (metric = 'cosine')
 \`\`\`
 
-**For Low Latency (Real-time Search)**:
+**For Magnitude-Sensitive Embeddings (Image Features, Coordinates)**:
 \`\`\`gql
-CREATE VECTOR INDEX product_embeddings_fast
+CREATE VECTOR INDEX product_embeddings_l2
 ON :Product(embedding)
-OPTIONS {
-    dimensions: 8,
-    distance: 'euclidean',
-    ef_construction: 100,  -- Lower for faster build
-    m: 8,                  -- Fewer connections
-    ef_search: 50          -- Faster search
-}
+WITH (metric = 'euclidean')
 \`\`\`
 
 **Performance Trade-offs**:
 
-| Parameter | Higher Value | Lower Value |
-|-----------|--------------|-------------|
-| ef_construction | Better recall, slower build | Faster build, lower recall |
-| m | Better recall, more memory | Less memory, lower recall |
-| ef_search | Better recall, slower query | Faster query, lower recall |
+Because the HNSW graph parameters are engine-managed, tune the recall/latency
+trade-off at query time instead:
+
+| Lever | Higher Value | Lower Value |
+|-------|--------------|-------------|
+| Distance threshold | More candidates, better recall, slower | Fewer candidates, faster, lower recall |
+| `LIMIT` | Better recall, slower | Faster, lower recall |
+| Pre-filtering (label/property) | Faster by shrinking the candidate set | Larger scan, slower |
 
 ### Step 4: Distance Metric Selection
 
@@ -384,6 +385,7 @@ OPTIONS {
 \`\`\`
 
 **BM25 Parameters**:
+
 - **k1**: Term frequency saturation (typical: 1.2-2.0)
 - **b**: Length normalization (0.0 = no normalization, 1.0 = full normalization)
 - **analyzer**: Text tokenization (standard, english, whitespace)
@@ -494,11 +496,12 @@ RETURN name, type, properties, options
 
 **Output**:
 \`\`\`
+
 | name                  | type      | properties        | options              |
 |-----------------------|-----------|-------------------|----------------------|
 | customer_email        | btree     | ["email"]         | {}                   |
 | product_category_price| btree     | ["category","price"]| {}                 |
-| product_embeddings    | hnsw      | ["embedding"]     | {dimensions:8,...}   |
+| product_embeddings    | hnsw      | ["embedding"]     | {metric:'cosine'}    |
 | product_search        | fulltext  | ["name","description"]| {k1:1.2,b:0.75} |
 | customer_locations    | spatial   | ["location"]      | {dimensions:2}       |
 \`\`\`
@@ -596,7 +599,9 @@ RETURN p.name, p.category  -- Only indexed properties
 Create a benchmark dataset:
 
 \`\`\`bash
+
 # Generate 100k customers
+
 for i in {1..100000}; do
   echo "CREATE (:Customer {
     id: $i,
@@ -653,9 +658,12 @@ async def benchmark_queries(db, num_queries=1000):
     print(f"Queries: {num_queries}, Time: {elapsed:.2f}s, QPS: {qps:.0f}")
 
 # Run benchmark
+
 db = open_database("quic://localhost:3141", pool_size=50)
 asyncio.run(benchmark_queries(db, 1000))
+
 # Output: Queries: 1000, Time: 2.15s, QPS: 465
+
 \`\`\`
 
 ## Part 9: Common Pitfalls and Solutions
@@ -687,7 +695,7 @@ CREATE INDEX ON :Product(embedding)
 
 -- Correct: HNSW for embeddings
 CREATE VECTOR INDEX ON :Product(embedding)
-OPTIONS {dimensions: 8, distance: 'cosine'}
+WITH (metric = 'cosine')
 \`\`\`
 
 ### Pitfall 3: Unselective Indexes
@@ -729,6 +737,7 @@ LIMIT 20
 \`\`\`
 
 **Steps**:
+
 1. Create composite B-tree index: category + price
 2. Create full-text index on description
 3. Verify with EXPLAIN
@@ -760,6 +769,7 @@ ORDER BY distance_m
 \`\`\`
 
 **Steps**:
+
 1. Create spatial indexes on both Customer and Store locations
 2. Use EXPLAIN to verify R-tree usage
 3. Compare performance with/without indexes
@@ -791,21 +801,16 @@ LIMIT 10
 \`\`\`
 
 **Steps**:
-1. Create HNSW index with optimal parameters
+
+1. Create the HNSW index with the metric your queries use
 2. Test different distance metrics
-3. Tune ef_search for recall/latency trade-off
+3. Tune the threshold and `LIMIT` for the recall/latency trade-off
 
 **Solution**:
 \`\`\`gql
 CREATE VECTOR INDEX product_recommendations
 ON :Product(embedding)
-OPTIONS {
-    dimensions: 8,
-    distance: 'cosine',
-    ef_construction: 200,
-    m: 16,
-    ef_search: 100
-}
+WITH (metric = 'cosine')
 
 -- Query uses index automatically
 MATCH (p:Product {id: 101})
@@ -862,6 +867,7 @@ LIMIT 10
 5. **Performance Testing** - Benchmark with realistic workloads
 
 **Related Documentation**:
+
 - [Query Performance Tuning](/docs/query/performance-tuning)
 - [EXPLAIN/PROFILE Commands](/docs/query/explain-profile)
 - [Full-Text Search](/docs/query/full-text-search)

@@ -116,7 +116,7 @@ CREATE FULLTEXT INDEX person_bio ON Person(bio) USING BM25
 
 -- Vector index
 CREATE VECTOR INDEX product_embedding ON Product(embedding)
-  USING HNSW WITH {dimensions: 768, metric: 'cosine'}
+  USING HNSW WITH (metric = 'cosine')
 ```
 
 **Index Selection**: Geode's optimizer chooses indexes based on:

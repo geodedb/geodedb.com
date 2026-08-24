@@ -30,6 +30,7 @@ Vector embeddings transform complex data (text, images, user behaviors) into fix
 **Dimensionality**: Embeddings typically range from 128 to 1536 dimensions, depending on the model used (e.g., OpenAI ada-002: 1536d, sentence-transformers: 384d).
 
 **Similarity Metrics**: Geode supports multiple distance functions for comparing vectors:
+
 - Cosine similarity (default for normalized vectors)
 - Euclidean distance (L2)
 - Inner product (dot product)
@@ -89,32 +90,25 @@ Geode uses Hierarchical Navigable Small World (HNSW) graphs for approximate near
 CREATE VECTOR INDEX product_embedding_idx
 ON :Product(embedding)
 USING HNSW
-WITH (
-  dimensions = 384,
-  metric = 'cosine',
-  m = 16,              // Number of bi-directional links per node
-  ef_construction = 200 // Size of dynamic candidate list during construction
-);
+WITH (metric = 'cosine');
 
 // Create index for document text embeddings
 CREATE VECTOR INDEX document_text_idx
 ON :Document(text_embedding)
 USING HNSW
-WITH (
-  dimensions = 1536,
-  metric = 'cosine',
-  m = 32,
-  ef_construction = 400
-);
+WITH (metric = 'cosine');
 ```
 
 ### Index Configuration
 
-**m (max connections)**: Controls index size and search quality. Higher values (16-48) improve recall but increase memory usage.
+**metric**: The distance metric the index is built for. One of `l2` (default),
+`euclidean`, `cosine`, `dot`, `dot_product`, `inner_product`. Match it to the
+function your queries use.
 
-**ef_construction**: Affects build time and index quality. Values of 100-800 balance construction speed with search accuracy.
-
-**ef_search**: Query-time parameter controlling search accuracy. Set dynamically based on precision requirements.
+`metric` is the only supported parameter. Vector dimensionality is inferred
+from the indexed data, and the HNSW graph parameters (`m`, `ef_construction`,
+`ef_search`) are not currently tunable — they use engine-managed defaults and
+are reserved for a future release.
 
 ## Similarity Search Queries
 
@@ -282,14 +276,21 @@ ORDER BY similarity DESC;
 
 ### Index Tuning
 
-Optimize HNSW parameters for your workload:
+HNSW search effort is managed by the engine and has no runtime setting. Tune
+precision and latency with the result set size and pre-filtering:
 
 ```gql
-// High-precision search (slower, more accurate)
-SET vector_index.ef_search = 400;
+// High-precision search: retrieve a deeper candidate set, then re-rank
+MATCH (p:Product)
+WITH p, vector.similarity(p.embedding, $query_embedding, 'cosine') AS score
+ORDER BY score DESC
+LIMIT 100;
 
 // Fast search (faster, slightly lower recall)
-SET vector_index.ef_search = 100;
+MATCH (p:Product)
+WITH p, vector.similarity(p.embedding, $query_embedding, 'cosine') AS score
+ORDER BY score DESC
+LIMIT 10;
 
 // Check index statistics
 SHOW VECTOR INDEX product_embedding_idx STATISTICS;
@@ -451,11 +452,11 @@ async def normalize_embeddings(client):
         WHERE d.embedding IS NOT NULL
         RETURN d.doc_id AS id, d.embedding AS embedding
     """)
-    
+
     for row in result.rows:
         doc_id, embedding = row['id'], np.array(row['embedding'])
         normalized = embedding / np.linalg.norm(embedding)
-        
+
         # Update with normalized version
         await client.execute("""
             MATCH (d:Document {doc_id: $id})
@@ -500,11 +501,11 @@ async def embedding_pipeline(client, batch_size=100):
         RETURN d.doc_id AS id, d.content AS text
         LIMIT $batch_size
     """, {"batch_size": batch_size})
-    
+
     # Batch embed
     texts = [row['text'] for row in docs.rows]
     embeddings = sentence_transformer.encode(texts, batch_size=32)
-    
+
     # Store in Geode
     for doc, embedding in zip(docs.rows, embeddings):
         await client.execute("""

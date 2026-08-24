@@ -370,30 +370,32 @@ CREATE INDEX [index_name] ON :Label(property) USING VECTOR;
 
 ```gql
 CREATE INDEX embedding_idx ON :Document(embedding) USING VECTOR
-  OPTIONS {
-    dimensions: 512,         -- Vector dimensions (required if not inferred)
-    metric: 'l2',            -- Distance metric
-    m: 16,                   -- HNSW max connections per layer
-    ef_construction: 200,    -- Build-time search width
-    ef_search: 100           -- Query-time search width
-  };
+  WITH (metric = 'l2');
 ```
 
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
-| `dimensions` | Integer | (inferred) | Vector dimensions |
-| `metric` | String | 'l2' | Distance metric: 'l2', 'cosine', 'dot' |
-| `m` | Integer | 16 | Max connections per node per layer |
-| `ef_construction` | Integer | 200 | Construction search width (accuracy vs speed) |
-| `ef_search` | Integer | 100 | Query search width (accuracy vs speed) |
+| `metric` | String | 'l2' | Distance metric: 'l2', 'euclidean', 'cosine', 'dot', 'dot_product', 'inner_product' |
+
+`metric` is the only supported index option. Vector dimensionality is inferred
+from the indexed data. Any other option is rejected at index creation time.
+
+{{< callout type="info" >}}
+**HNSW internals are not currently tunable.** The graph parameters (`m`,
+`ef_construction`, `ef_search`) use engine-managed defaults and are reserved
+for a future release. Passing them to `CREATE INDEX` returns an error.
+{{< /callout >}}
 
 ### Distance Metrics
 
-| Metric | Function | Best For |
-|--------|----------|----------|
-| `l2` | `vector_distance_l2()` | Euclidean distance (general purpose) |
-| `cosine` | `vector_distance_cosine()` | Normalized vectors (text embeddings) |
-| `dot` | `vector_distance_dot()` | Inner product (maximum inner product search) |
+| Metric | Query function | Best For |
+|--------|----------------|----------|
+| `l2` / `euclidean` | `vector_l2()`, `euclidean()`, `distance(v1, v2)` | Euclidean distance (general purpose) |
+| `cosine` | `distance(v1, v2, 'cosine')` for distance, `vector_cosine()` / `similarity()` for similarity | Normalized vectors (text embeddings) |
+| `dot` / `dot_product` / `inner_product` | `vector_dot()`, `similarity(v1, v2, 'dot')` | Inner product (maximum inner product search) |
+
+Query-time metric names are `l2`, `euclidean`, `cosine` and `dot`. `CREATE INDEX`
+additionally accepts the `dot_product` and `inner_product` spellings.
 
 ### Performance Characteristics
 
@@ -408,48 +410,45 @@ Build              | O(N log N)      | Initial index construction
 
 ### HNSW Tuning Guide
 
-| Parameter | Low Value | High Value |
-|-----------|-----------|------------|
-| `m` | Faster build, less memory | Better recall, more memory |
-| `ef_construction` | Faster build | Better index quality |
-| `ef_search` | Faster queries | Better recall |
+HNSW graph parameters are managed by the engine and are not exposed as index
+options in this release. Choose the `metric` that matches how your embeddings
+are compared, and tune recall at query time with your distance threshold and
+`LIMIT` instead:
 
-**Recommended settings by use case:**
-
-| Use Case | m | ef_construction | ef_search |
-|----------|---|-----------------|-----------|
-| Low latency | 8 | 100 | 50 |
-| Balanced | 16 | 200 | 100 |
-| High recall | 32 | 400 | 200 |
+| Goal | Approach |
+|------|----------|
+| Lower latency | Narrow the candidate set first (label/property filters), use a smaller `LIMIT` |
+| Higher recall | Loosen the distance threshold, raise `LIMIT` and re-rank in the query |
+| Correct ranking | Match `metric` to the query function (`cosine` index with cosine queries, and so on) |
 
 ### Examples
 
 ```gql
 -- Create vector index
 CREATE INDEX doc_embedding_idx ON :Document(embedding) USING VECTOR
-  OPTIONS { metric: 'cosine', m: 16, ef_search: 100 };
+  WITH (metric = 'cosine');
 
 -- k-NN similarity search
 MATCH (d:Document)
-WITH d, vector_distance_cosine(d.embedding, $query_vector) AS distance
+WITH d, distance(d.embedding, $query_vector, 'cosine') AS distance
 WHERE distance < 0.5
 RETURN d.title, distance
 ORDER BY distance
 LIMIT 10;
 
--- Find similar documents to a given document
+-- Find similar documents to a given document (ranked by similarity, highest first)
 MATCH (source:Document {id: 123})
 MATCH (d:Document)
 WHERE d.id <> source.id
-WITH d, vector_distance_cosine(d.embedding, source.embedding) AS similarity
+WITH d, similarity(d.embedding, source.embedding) AS similarity
 RETURN d.title, similarity
-ORDER BY similarity
+ORDER BY similarity DESC
 LIMIT 5;
 
 -- Hybrid search: vector + filter
 MATCH (d:Document)
 WHERE d.category = 'technical'
-WITH d, vector_distance_l2(d.embedding, $query_vector) AS distance
+WITH d, vector_l2(d.embedding, $query_vector) AS distance
 RETURN d.title, distance
 ORDER BY distance
 LIMIT 10;

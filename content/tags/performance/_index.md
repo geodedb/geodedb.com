@@ -39,6 +39,7 @@ Unlike traditional relational databases optimized for tabular data, graph databa
 Geode is implemented in Zig, a modern systems programming language that provides:
 
 **Memory Control**: Direct control over allocation with no garbage collection pauses
+
 ```zig
 // Predictable memory allocation
 var arena = std.heap.ArenaAllocator.init(allocator);
@@ -60,12 +61,14 @@ These features enable Geode to achieve performance comparable to C/C++ implement
 Geode uses QUIC (Quick UDP Internet Connections) instead of traditional TCP:
 
 **Benefits over TCP**:
+
 - **0-RTT Connection Resumption**: Clients reconnect instantly without handshake
 - **Multiplexing Without Head-of-Line Blocking**: Multiple queries over single connection
 - **Built-in TLS 1.3**: Security without performance penalty
 - **Better Loss Recovery**: Faster recovery from packet loss
 
 **Performance Impact**:
+
 - Lower latency for short queries (workload dependent)
 - Higher throughput under packet loss (workload dependent)
 - Connection pooling effectiveness improved
@@ -84,6 +87,7 @@ LIMIT 10;
 ```
 
 **Planner optimizations**:
+
 1. **Index Selection**: Chooses best index for filtering
 2. **Join Ordering**: Orders traversals to minimize intermediate results
 3. **Predicate Pushdown**: Applies filters as early as possible
@@ -104,6 +108,7 @@ ORDER BY friend_likes DESC;
 ```
 
 **Output**:
+
 ```
 QueryPlan:
   1. IndexSeek: User.id = $user_id (cost: 1)
@@ -116,6 +121,7 @@ Estimated Cost: 3152
 ```
 
 **Interpreting plans**:
+
 - **IndexSeek**: Fast lookup using index (best case)
 - **IndexScan**: Scanning index range
 - **NodeScan**: Full table scan (avoid if possible)
@@ -133,6 +139,7 @@ RETURN p.name, count(*) AS purchase_paths;
 ```
 
 **Output**:
+
 ```
 Execution Profile:
   IndexSeek (User.id): 0.05ms, 1 row
@@ -145,6 +152,7 @@ Execution Profile:
 ```
 
 **Key metrics**:
+
 - **Time per operation**: Identify bottlenecks
 - **Row counts**: Detect unexpected cardinality
 - **Cache hit rates**: Memory efficiency
@@ -179,6 +187,7 @@ async def profile_query():
 ### Indexing Strategies
 
 **B-Tree Indexes for Equality and Range Queries**:
+
 ```gql
 -- Create indexes on frequently filtered properties
 CREATE INDEX user_email ON User(email);
@@ -195,6 +204,7 @@ RETURN p;
 ```
 
 **Composite Indexes**:
+
 ```gql
 -- Index multiple properties together
 CREATE INDEX product_category_price ON Product(category, price);
@@ -206,6 +216,7 @@ RETURN p;
 ```
 
 **Full-Text Search Indexes**:
+
 ```gql
 CREATE TEXT INDEX product_description ON Product(description)
 WITH (analyzer = 'english', tokenizer = 'standard');
@@ -218,9 +229,10 @@ ORDER BY relevance DESC;
 ```
 
 **Vector Indexes (HNSW)**:
+
 ```gql
 CREATE VECTOR INDEX product_embeddings ON Product(embedding)
-WITH (metric = 'cosine', dimensions = 768, m = 16);
+WITH (metric = 'cosine');
 
 -- Fast similarity search
 MATCH (p:Product)
@@ -234,6 +246,7 @@ LIMIT 10;
 ### Query Optimization Patterns
 
 **Pattern 1: Filter Before Traversal**
+
 ```gql
 -- BAD: Traverse then filter
 MATCH (u:User)-[:PURCHASED]->(p:Product)
@@ -246,6 +259,7 @@ RETURN p.name;
 ```
 
 **Pattern 2: Limit Early in Pipeline**
+
 ```gql
 -- BAD: Process all then limit
 MATCH (u:User)-[:FRIEND]->(friend)-[:LIKES]->(p:Post)
@@ -264,6 +278,7 @@ LIMIT 10;
 ```
 
 **Pattern 3: Avoid Cartesian Products**
+
 ```gql
 -- BAD: Creates cartesian product
 MATCH (u:User), (p:Product)
@@ -276,6 +291,7 @@ RETURN u.name, p.name;
 ```
 
 **Pattern 4: Use Aggregation Efficiently**
+
 ```gql
 -- BAD: Collect all then count
 MATCH (u:User)-[:PURCHASED]->(p:Product)
@@ -292,6 +308,7 @@ RETURN u.name, count(p) AS purchase_count;
 Connection pooling improves client performance by reusing connections:
 
 **Python Client with Pooling**:
+
 ```python
 from geode_client import Client, ConnectionPool
 
@@ -316,6 +333,7 @@ for _ in range(10000):
 ```
 
 **Go Client Connection Management**:
+
 ```go
 import "geodedb.com/geode"
 
@@ -368,6 +386,7 @@ await insert_users_batch(user_list)  # 10,000 users in 2-3 seconds
 ### Schema Design for Performance
 
 1. **Denormalize Strategically**: Store frequently accessed computed values
+
 ```gql
 -- Store aggregate counts for fast access
 CREATE (u:User {
@@ -378,6 +397,7 @@ CREATE (u:User {
 ```
 
 2. **Use Appropriate Relationship Direction**:
+
 ```gql
 -- Model relationships in query direction
 -- If you frequently query "who follows X", use:
@@ -388,6 +408,7 @@ CREATE (u:User {
 ```
 
 3. **Partition Large Graphs**: Use domain-specific nodes as hubs
+
 ```gql
 -- Use year nodes to partition time-series data
 (year:Year {year: 2024})-[:HAS_MONTH]->(month:Month {month: 3})
@@ -397,12 +418,14 @@ CREATE (u:User {
 ### Monitoring and Metrics
 
 **Built-in Metrics** (exposed via Prometheus):
+
 ```bash
 # Query Geode metrics endpoint
 curl http://localhost:9090/metrics
 ```
 
 **Key metrics to monitor**:
+
 - `geode_queries_total`: Total queries executed
 - `geode_query_duration_seconds`: Query latency distribution
 - `geode_connections_active`: Active client connections
@@ -411,6 +434,7 @@ curl http://localhost:9090/metrics
 - `geode_transactions_active`: Concurrent transactions
 
 **Python monitoring integration**:
+
 ```python
 from prometheus_client import start_http_server, Counter, Histogram
 
@@ -434,22 +458,26 @@ start_http_server(8000)
 **Estimate resource requirements**:
 
 **Memory**:
+
 - Base: `nodes × 256 bytes + relationships × 128 bytes`
 - Indexes: `20-50% overhead per indexed property`
 - HNSW: `vectors × dimensions × 4 × (1 + m × 16)`
 - Working set: Keep hot data in RAM
 
 **Storage**:
+
 - Graph data: `nodes × 512 bytes + rels × 256 bytes`
 - WAL: 10-20% of database size
 - Indexes: 30-100% of data size (varies by index type)
 
 **CPU**:
+
 - 2-4 cores: Development and testing
 - 8-16 cores: Production workloads (benchmark dependent)
 - 32+ cores: High-throughput workloads (benchmark dependent)
 
 **Example calculation** (1M nodes, 5M relationships):
+
 - Memory: ~1.5GB graph + ~2GB indexes = 3.5GB minimum
 - Storage: ~2.5GB graph + ~2GB indexes = 5GB total
 - CPU: 8 cores for moderate workloads; benchmark for your workload
@@ -461,11 +489,13 @@ start_http_server(8000)
 **Symptom**: Queries taking seconds to complete
 
 **Diagnosis**:
+
 ```gql
 PROFILE [your slow query]
 ```
 
 **Common causes**:
+
 1. Missing indexes → Add appropriate index
 2. Cartesian products → Restructure query with relationships
 3. Excessive intermediate results → Add LIMIT clauses
@@ -476,12 +506,14 @@ PROFILE [your slow query]
 **Symptom**: Server memory consumption growing over time
 
 **Diagnosis**:
+
 ```bash
 # Check Geode memory stats
 curl http://localhost:9090/metrics | grep memory
 ```
 
 **Solutions**:
+
 1. Tune cache size configuration
 2. Review index memory usage
 3. Close idle connections
@@ -492,6 +524,7 @@ curl http://localhost:9090/metrics | grep memory
 **Symptom**: "Too many connections" errors
 
 **Solutions**:
+
 ```python
 # Increase pool size
 pool = ConnectionPool(

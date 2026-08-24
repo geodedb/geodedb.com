@@ -17,6 +17,7 @@ Measure and optimize Geode performance with comprehensive benchmarking and profi
 ## Overview
 
 Benchmarking helps you:
+
 - **Establish baselines**: Measure current performance
 - **Track improvements**: Verify optimizations work
 - **Identify bottlenecks**: Find performance issues
@@ -26,36 +27,44 @@ Benchmarking helps you:
 ## Benchmark Types
 
 ### 1. Microbenchmarks
+
 Test specific operations in isolation
 
 **Examples**:
+
 - Single query latency
 - Vector distance calculation speed
 - Index lookup performance
 - MVCC transaction overhead
 
 ### 2. Workload Benchmarks
+
 Simulate realistic usage patterns
 
 **Examples**:
+
 - OLTP (transactional workload)
 - OLAP (analytical queries)
 - Mixed read/write workload
 - Graph traversal patterns
 
 ### 3. Stress Tests
+
 Test system limits and behavior under extreme load
 
 **Examples**:
+
 - Maximum concurrent connections
 - Sustained high throughput
 - Large dataset queries
 - Memory pressure scenarios
 
 ### 4. Endurance Tests
+
 Long-running tests for stability
 
 **Examples**:
+
 - 24-hour continuous load
 - Memory leak detection
 - Performance degradation over time
@@ -66,12 +75,14 @@ Long-running tests for stability
 ### Hardware Recommendations
 
 **Minimum (Development)**:
+
 - CPU: 4 cores
 - RAM: 8GB
 - Storage: 50GB SSD
 - Network: 1Gbps
 
 **Recommended (Production Benchmarking)**:
+
 - CPU: 16+ cores
 - RAM: 32GB+
 - Storage: 500GB NVMe SSD
@@ -124,6 +135,7 @@ zig build bench -- --filter "HNSW"
 ```
 
 **Categories**:
+
 - `Storage`: Page manager, WAL, cache
 - `Query`: Pattern matching, aggregations
 - `Index`: B-tree, HNSW, full-text search
@@ -145,6 +157,7 @@ Benchmark: PageRank (100 nodes, 500 edges)
 ```
 
 **Key Metrics**:
+
 - **Time**: Average execution time
 - **Throughput**: Operations per second
 - **Memory**: Peak memory usage
@@ -165,6 +178,7 @@ RETURN DISTINCT fof.name;
 ```
 
 **Output**:
+
 ```
 QUERY PLAN:
 ┌─ Project [fof.name]
@@ -187,6 +201,7 @@ RETURN DISTINCT fof.name;
 ```
 
 **Output**:
+
 ```
 PROFILE RESULTS:
   Operation: Project
@@ -383,6 +398,7 @@ Aggregated                   10000        0        6     2      98      5      1
 ```
 
 **Key Metrics**:
+
 - **RPS**: Requests per second (throughput)
 - **Avg/Median**: Average and median latency
 - **Max**: Worst-case latency (outliers)
@@ -610,10 +626,10 @@ class VectorSearchUser(BaseGeodeUser):
 
         self._run(self.conn.query("""
             MATCH (p:Product)
-            WHERE vector_distance_cosine(p.embedding, $query_vec) < 0.5
+            WHERE distance(p.embedding, $query_vec, 'cosine') < 0.5
             RETURN p.name,
-                   vector_distance_cosine(p.embedding, $query_vec) AS similarity
-            ORDER BY similarity ASC
+                   distance(p.embedding, $query_vec, 'cosine') AS distance
+            ORDER BY distance ASC
             LIMIT 10
         """, {'query_vec': query_vec}))
 ```
@@ -689,6 +705,7 @@ Max:        1000ms  - Worst-case outlier
 ```
 
 **Good Performance**:
+
 - P50 < 10ms
 - P95 < 50ms
 - P99 < 100ms

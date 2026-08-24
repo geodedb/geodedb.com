@@ -27,6 +27,7 @@ Learn to create indexes and optimize query performance using EXPLAIN and PROFILE
 **Topics**: Index creation, query plans, performance profiling, optimization strategies
 
 By the end of this tutorial, you'll be able to:
+
 - Identify slow queries using PROFILE
 - Create appropriate indexes for query patterns
 - Use EXPLAIN to verify index usage
@@ -54,6 +55,7 @@ CREATE
 ```
 
 **Expected output**:
+
 ```
 Created 5 nodes
 ```
@@ -77,6 +79,7 @@ ORDER BY p.salary DESC;
 ```
 
 **Expected output**:
+
 ```
 name      | age | salary
 ----------|-----|--------
@@ -122,6 +125,7 @@ CREATE INDEX person_age_idx ON Person(age) USING btree;
 ```
 
 **Expected output**:
+
 ```
 Index 'person_age_idx' created successfully
 Indexed 5 nodes
@@ -142,6 +146,7 @@ Build time: 0.12ms
 ```
 
 Examples:
+
 - `person_age_idx`
 - `product_price_idx`
 - `user_email_idx`
@@ -166,6 +171,7 @@ ORDER BY p.salary DESC;
 ```
 
 **Expected output**:
+
 ```
 QUERY PLAN:
 ┌─ Project [p.name, p.age, p.salary]
@@ -190,6 +196,7 @@ QUERY PLAN:
 ### Verify Index Used
 
 Look for:
+
 - `IndexScan` instead of `SeqScan`
 - Index name (`person_age_idx`)
 - Condition pushed down to index
@@ -214,6 +221,7 @@ ORDER BY p.salary DESC;
 ```
 
 **Expected output**:
+
 ```
 name      | age | salary
 ----------|-----|--------
@@ -233,11 +241,13 @@ PROFILE:
 ### Performance Improvements
 
 **Before Index**:
+
 - Operation: SeqScan
 - Rows scanned: 5
 - Execution time: 0.234ms
 
 **After Index**:
+
 - Operation: IndexScan
 - Rows scanned: 3 (only matching rows!)
 - Execution time: 0.08ms
@@ -260,6 +270,7 @@ CREATE INDEX person_city_age_idx ON Person(city, age) USING btree;
 ```
 
 **Expected output**:
+
 ```
 Index 'person_city_age_idx' created successfully
 Indexed 5 nodes
@@ -269,6 +280,7 @@ Build time: 0.15ms
 ### When to Use Composite Indexes
 
 **Good for**:
+
 ```gql
 -- Uses city_age index efficiently
 WHERE city = 'Seattle' AND age > 30
@@ -276,6 +288,7 @@ WHERE city = 'Seattle'  -- Uses first column only
 ```
 
 **Not optimal**:
+
 ```gql
 -- Cannot use city_age index (skips first column)
 WHERE age > 30
@@ -286,6 +299,7 @@ WHERE age > 30
 **Rule**: Most selective column first, then range column
 
 **Example**:
+
 - `city` has few distinct values (low selectivity)
 - `age` has many distinct values (high selectivity)
 - For equality + range: put equality first
@@ -341,8 +355,8 @@ WHERE fulltext_match(content, "graph database")
 CREATE INDEX product_emb_idx ON Product(embedding) USING vector;
 
 -- Optimal for:
-WHERE vector_distance_cosine(embedding, $query_vec) < 0.5
-ORDER BY vector_distance_cosine(embedding, $query_vec)
+WHERE distance(embedding, $query_vec, 'cosine') < 0.5
+ORDER BY distance(embedding, $query_vec, 'cosine')
 LIMIT 10
 ```
 
@@ -389,6 +403,7 @@ RETURN p.name;
 ```
 
 **Expected output**:
+
 ```
 QUERY PLAN:
 └─ IndexScan [person_age_city_idx]
@@ -428,6 +443,7 @@ ANALYZE Person;
 ```
 
 **Expected output**:
+
 ```
 Statistics updated for label 'Person'
   Rows: 5
@@ -480,6 +496,7 @@ SHOW INDEXES ON Person;
 ```
 
 **Expected output**:
+
 ```
 name                  | label  | properties   | type   | unique | status
 ----------------------|--------|--------------|--------|--------|--------
@@ -495,6 +512,7 @@ DROP INDEX person_age_idx;
 ```
 
 **Expected output**:
+
 ```
 Index 'person_age_idx' dropped successfully
 ```
@@ -578,6 +596,7 @@ ORDER BY p.rating DESC;
 ```
 
 **Expected plan**:
+
 ```
 └─ Project [p.name, p.price, p.rating]
    └─ Sort [p.rating DESC] using prod_rating_idx
@@ -621,17 +640,20 @@ ORDER BY p.rating DESC;
 ### Index Selection Guidelines
 
 **Always index**:
+
 - Primary keys and unique constraints
 - Foreign key columns (join conditions)
 - Columns in frequent WHERE clauses
 - ORDER BY and GROUP BY columns
 
 **Consider indexing**:
+
 - Columns with high cardinality (many distinct values)
 - Columns in complex queries
 - Frequently accessed properties
 
 **Don't index**:
+
 - Low cardinality columns (few distinct values, like boolean)
 - Rarely queried properties
 - Columns updated frequently (write overhead)
@@ -694,7 +716,7 @@ WHERE product.price BETWEEN 50 AND 100
 WHERE fulltext_match(article.content, "graph database")
 
 -- Query D
-WHERE vector_distance_l2(image.embedding, $query_vec) < 0.3
+WHERE vector_l2(image.embedding, $query_vec) < 0.3
 
 -- Query E
 WHERE 'featured' IN product.tags
@@ -718,6 +740,7 @@ ORDER BY e.timestamp;
 
 -- Should show IndexScan with event_timestamp_idx
 ```
+
 </details>
 
 <details>
@@ -740,6 +763,7 @@ MATCH (u:User)
 WHERE u.country = 'USA' AND u.age > 25 AND u.active = true
 RETURN u.name, u.email;
 ```
+
 </details>
 
 <details>
@@ -761,6 +785,7 @@ CREATE INDEX image_embedding_idx ON Image(embedding) USING vector;
 -- Query E: Bloom filter (membership testing)
 CREATE INDEX product_tags_idx ON Product(tags) USING bloom;
 ```
+
 </details>
 
 ## Troubleshooting
@@ -770,6 +795,7 @@ CREATE INDEX product_tags_idx ON Product(tags) USING bloom;
 **Problem**: EXPLAIN shows SeqScan despite index existing
 
 **Solutions**:
+
 1. Update statistics: `ANALYZE Person;`
 2. Check index covers query columns
 3. Verify WHERE clause uses indexed columns
@@ -781,6 +807,7 @@ CREATE INDEX product_tags_idx ON Product(tags) USING bloom;
 **Problem**: CREATE INDEX takes too long
 
 **Solutions**:
+
 1. Build indexes during maintenance windows
 2. Use `CONCURRENTLY` option (if available)
 3. Increase memory for index build
@@ -791,6 +818,7 @@ CREATE INDEX product_tags_idx ON Product(tags) USING bloom;
 **Problem**: Performance degraded post-indexing
 
 **Solutions**:
+
 1. Update statistics: `ANALYZE`
 2. Check if wrong index chosen
 3. Consider dropping conflicting indexes

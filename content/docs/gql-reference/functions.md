@@ -1178,59 +1178,205 @@ geo_within_polygon(point, polygon) -> BOOLEAN
 
 ## Vector Functions
 
-### vector_distance_l2
+### vectorf32 / vectori32
 
-Euclidean distance between vectors.
+Construct a vector value from a list.
 
 **Signature:**
 
 ```text
-vector_distance_l2(vector1, vector2) -> FLOAT
+vectorf32(list) -> VECTOR
+vectori32(list) -> VECTOR_I32
+```
+
+**Examples:**
+
+```gql
+RETURN vectorf32([1.0, 2.0, 3.0]) AS v;
+RETURN vectori32([1, 2, 3]) AS v;
+```
+
+---
+
+### vector_l2
+
+L2 (Euclidean) distance between vectors. Lower values mean more similar, so
+order ascending.
+
+**Signature:**
+
+```text
+vector_l2(vector1, vector2) -> FLOAT
 ```
 
 **Examples:**
 
 ```gql
 MATCH (d:Document)
-RETURN d.title, vector_distance_l2(d.embedding, $query_vector) AS distance
+RETURN d.title, vector_l2(d.embedding, $query_vector) AS distance
 ORDER BY distance
 LIMIT 10;
 ```
 
----
-
-### vector_distance_cosine
-
-Cosine distance between vectors.
-
-**Signature:**
-
-```text
-vector_distance_cosine(vector1, vector2) -> FLOAT
+```gql
+RETURN vector_l2(vectorf32([1, 2]), vectorf32([3, 4]));  -- 2.828427
 ```
 
 ---
 
-### vector_distance_dot
+### vector_cosine
 
-Dot product (inner product) of vectors.
+Cosine **similarity** between vectors, in the range `[-1, 1]`. Despite the
+`vector_cosine` name, this function returns a similarity, not a distance:
+higher values mean more similar, so order **descending**. Use
+`distance(v1, v2, 'cosine')` when you need cosine *distance* (`1 - similarity`).
 
 **Signature:**
 
 ```text
-vector_distance_dot(vector1, vector2) -> FLOAT
+vector_cosine(vector1, vector2) -> FLOAT
+```
+
+**Examples:**
+
+```gql
+MATCH (d:Document)
+RETURN d.title, vector_cosine(d.embedding, $query_vector) AS score
+ORDER BY score DESC
+LIMIT 10;
+```
+
+```gql
+RETURN vector_cosine(vectorf32([1, 2]), vectorf32([3, 4]));  -- 0.983869
 ```
 
 ---
 
-### vector_dimension
+### vector_dot
 
-Returns vector dimensionality.
+Dot product (inner product) of two vectors. Higher values mean more similar,
+so order descending. Returns an INTEGER when the result is integral.
 
 **Signature:**
 
 ```text
-vector_dimension(vector) -> INTEGER
+vector_dot(vector1, vector2) -> FLOAT
+```
+
+**Examples:**
+
+```gql
+RETURN vector_dot(vectori32([1, 2]), vectori32([3, 4]));  -- 11
+```
+
+---
+
+### distance
+
+Distance between two vectors under the selected metric. Lower values mean more
+similar, so order ascending.
+
+**Signature:**
+
+```text
+distance(vector1, vector2 [, metric]) -> FLOAT
+```
+
+`metric` is one of `'l2'` (default), `'euclidean'`, `'cosine'` or `'dot'`.
+With `'cosine'` this returns true cosine *distance* (`1 - cosine similarity`).
+
+**Examples:**
+
+```gql
+MATCH (d:Document)
+RETURN d.title, distance(d.embedding, $query_vector, 'cosine') AS distance
+ORDER BY distance
+LIMIT 10;
+```
+
+```gql
+RETURN distance(vectorf32([1, 2]), vectorf32([3, 4]));            -- 2.828427
+RETURN distance(vectorf32([1, 2]), vectorf32([3, 4]), 'cosine');  -- 0.016130
+```
+
+---
+
+### similarity
+
+Similarity between two vectors under the selected metric. Higher values mean
+more similar, so order descending.
+
+**Signature:**
+
+```text
+similarity(vector1, vector2 [, metric]) -> FLOAT
+```
+
+`metric` is one of `'cosine'` (default) or `'dot'`. Use `distance()` for `'l2'`.
+
+**Examples:**
+
+```gql
+MATCH (d:Document)
+RETURN d.title, similarity(d.embedding, $query_vector) AS score
+ORDER BY score DESC
+LIMIT 10;
+```
+
+```gql
+RETURN similarity(vectorf32([1, 2]), vectorf32([3, 4]));  -- 0.983869
+```
+
+---
+
+### euclidean
+
+Euclidean distance between vectors. Alias of `vector_l2`.
+
+**Signature:**
+
+```text
+euclidean(vector1, vector2) -> FLOAT
+```
+
+---
+
+### manhattan
+
+Manhattan (L1) distance between vectors. Lower values mean more similar.
+
+**Signature:**
+
+```text
+manhattan(vector1, vector2) -> FLOAT
+```
+
+**Examples:**
+
+```gql
+RETURN manhattan(vectorf32([1, 2]), vectorf32([3, 4]));  -- 4.0
+```
+
+---
+
+### vector_knn / knn
+
+Returns the ids of the `k` nearest nodes or edges by vector property.
+`knn` is an alias of `vector_knn`.
+
+**Signature:**
+
+```text
+vector_knn(property, query_vector, k, metric) -> LIST
+knn(property, query_vector, k, metric) -> LIST
+```
+
+`metric` is one of `'l2'` / `'euclidean'`, `'cosine'` or `'dot'`.
+
+**Examples:**
+
+```gql
+RETURN vector_knn('embedding', $query_vector, 10, 'cosine');
 ```
 
 ---

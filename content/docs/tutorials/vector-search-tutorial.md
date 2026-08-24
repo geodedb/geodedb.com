@@ -28,6 +28,7 @@ Learn to implement semantic search using vector embeddings and HNSW indexing in 
 **Topics**: Vector embeddings, HNSW indexing, similarity metrics, semantic search
 
 By the end of this tutorial, you'll be able to:
+
 - Generate vector embeddings from text
 - Store vectors in Geode
 - Create HNSW indexes for fast similarity search
@@ -39,6 +40,7 @@ By the end of this tutorial, you'll be able to:
 Vector embeddings convert data (text, images, audio) into numerical arrays that capture semantic meaning. Similar items have vectors that are close in vector space.
 
 **Example**:
+
 ```
 "cat" → [0.2, 0.8, 0.1, ...]
 "dog" → [0.3, 0.7, 0.2, ...]  (close to "cat")
@@ -215,21 +217,23 @@ print("✓ Created HNSW vector index")
 ### Index Parameters (Optional)
 
 ```python
-# Advanced: Configure HNSW parameters
+# Choose the distance metric the index is built for
 await conn.execute("""
-    CREATE INDEX movie_embedding_advanced_idx ON Movie(embedding) USING vector
-    WITH {
-        m: 16,              -- Max connections per layer (default: 16)
-        ef_construction: 200, -- Size of dynamic candidate list (default: 200)
-        ef_search: 100       -- Search-time candidate list size (default: 100)
-    }
+    CREATE INDEX movie_embedding_cosine_idx ON Movie(embedding) USING vector
+    WITH (metric = 'cosine')
 """)
 ```
 
 **Parameters**:
-- `m`: Higher = better recall, more memory (typical: 12-48)
-- `ef_construction`: Higher = better index quality, slower build (typical: 100-400)
-- `ef_search`: Higher = better accuracy, slower search (typical: 50-200)
+
+- `metric`: Distance metric the index is built for. One of `l2` (default),
+  `euclidean`, `cosine`, `dot`, `dot_product`, `inner_product`. Match it to the
+  function you query with so the index can serve the query.
+
+`metric` is the only supported parameter. The HNSW graph parameters (`m`,
+`ef_construction`, `ef_search`) are not currently tunable — they use
+engine-managed defaults and are reserved for a future release. Passing them
+returns an error.
 
 ## Step 4: Similarity Search
 
@@ -243,10 +247,10 @@ query_embedding = model.encode(query_text).tolist()
 # Find similar movies using cosine distance
 page, _ = await conn.query("""
     MATCH (m:Movie)
-    WHERE vector_distance_cosine(m.embedding, $query_vec) < 0.5
+    WHERE distance(m.embedding, $query_vec, 'cosine') < 0.5
     RETURN m.title,
            m.description,
-           vector_distance_cosine(m.embedding, $query_vec) AS distance
+           distance(m.embedding, $query_vec, 'cosine') AS distance
     ORDER BY distance ASC
     LIMIT 5
 """, {'query_vec': query_embedding})
@@ -262,6 +266,7 @@ for i, row in enumerate(page.rows, 1):
 ```
 
 **Expected output**:
+
 ```
 Query: 'space exploration adventure'
 
@@ -286,7 +291,7 @@ Most similar movies:
 page, _ = await conn.query("""
     MATCH (m:Movie)
     RETURN m.title,
-           vector_distance_cosine(m.embedding, $query_vec) AS cosine_dist
+           distance(m.embedding, $query_vec, 'cosine') AS cosine_dist
     ORDER BY cosine_dist ASC
     LIMIT 5
 """, {'query_vec': query_embedding})
@@ -302,7 +307,7 @@ page, _ = await conn.query("""
 page, _ = await conn.query("""
     MATCH (m:Movie)
     RETURN m.title,
-           vector_distance_l2(m.embedding, $query_vec) AS l2_dist
+           vector_l2(m.embedding, $query_vec) AS l2_dist
     ORDER BY l2_dist ASC
     LIMIT 5
 """, {'query_vec': query_embedding})
@@ -318,7 +323,7 @@ page, _ = await conn.query("""
 page, _ = await conn.query("""
     MATCH (m:Movie)
     RETURN m.title,
-           vector_inner_product(m.embedding, $query_vec) AS similarity
+           vector_dot(m.embedding, $query_vec) AS similarity
     ORDER BY similarity DESC
     LIMIT 5
 """, {'query_vec': query_embedding})
@@ -336,10 +341,10 @@ query_embedding = model.encode(query_text).tolist()
 page, _ = await conn.query("""
     MATCH (m:Movie)
     WHERE m.genre = 'Sci-Fi'
-      AND vector_distance_cosine(m.embedding, $query_vec) < 0.6
+      AND distance(m.embedding, $query_vec, 'cosine') < 0.6
     RETURN m.title,
            m.genre,
-           vector_distance_cosine(m.embedding, $query_vec) AS distance
+           distance(m.embedding, $query_vec, 'cosine') AS distance
     ORDER BY distance ASC
 """, {'query_vec': query_embedding})
 
@@ -357,7 +362,7 @@ for row in page.rows:
 page, _ = await conn.query("""
     MATCH (m:Movie)
     WITH m,
-         vector_distance_cosine(m.embedding, $query_vec) AS vec_dist,
+         distance(m.embedding, $query_vec, 'cosine') AS vec_dist,
          m.rating AS rating
     RETURN m.title,
            vec_dist,
@@ -386,7 +391,7 @@ for query_text in queries:
     page, _ = await conn.query("""
         MATCH (m:Movie)
         RETURN m.title,
-               vector_distance_cosine(m.embedding, $query_vec) AS distance
+               distance(m.embedding, $query_vec, 'cosine') AS distance
         ORDER BY distance ASC
         LIMIT 3
     """, {'query_vec': query_emb})
@@ -406,9 +411,9 @@ page, _ = await conn.query("""
     MATCH (ref:Movie {title: 'The Matrix'})
     MATCH (similar:Movie)
     WHERE similar <> ref
-      AND vector_distance_cosine(similar.embedding, ref.embedding) < 0.4
+      AND distance(similar.embedding, ref.embedding, 'cosine') < 0.4
     RETURN similar.title,
-           vector_distance_cosine(similar.embedding, ref.embedding) AS distance
+           distance(similar.embedding, ref.embedding, 'cosine') AS distance
     ORDER BY distance ASC
     LIMIT 5
 """)
@@ -464,8 +469,8 @@ for cluster_id in range(2):
 page, _ = await conn.query("""
     PROFILE
     MATCH (m:Movie)
-    WHERE vector_distance_cosine(m.embedding, $query_vec) < 0.5
-    RETURN m.title, vector_distance_cosine(m.embedding, $query_vec) AS dist
+    WHERE distance(m.embedding, $query_vec, 'cosine') < 0.5
+    RETURN m.title, distance(m.embedding, $query_vec, 'cosine') AS dist
     ORDER BY dist ASC
     LIMIT 10
 """, {'query_vec': query_embedding})
@@ -474,23 +479,23 @@ page, _ = await conn.query("""
 # Look for "IndexScan [movie_embedding_idx]" in profile output
 ```
 
-### Adjust HNSW Parameters
+### Match the Index Metric to the Query
 
 ```python
-# Rebuild index with different parameters for better recall
+# Rebuild the index for the metric your queries actually use
 await conn.execute("DROP INDEX movie_embedding_idx")
 
 await conn.execute("""
     CREATE INDEX movie_embedding_idx ON Movie(embedding) USING vector
-    WITH {
-        m: 32,              -- More connections = better recall
-        ef_construction: 400, -- Higher quality index
-        ef_search: 200       -- More thorough search
-    }
+    WITH (metric = 'cosine')
 """)
 
-# Trade-off: Better accuracy, but slower search and more memory
+# An index built for 'cosine' serves cosine queries; an 'l2' index serves
+# vector_l2()/euclidean() queries. A mismatched metric forces a full scan.
 ```
+
+The HNSW graph parameters (`m`, `ef_construction`, `ef_search`) are not
+currently tunable and are reserved for a future release.
 
 ### Limit Search Space
 
@@ -499,9 +504,9 @@ await conn.execute("""
 page, _ = await conn.query("""
     MATCH (m:Movie)
     WHERE m.genre = 'Sci-Fi'  -- Fast index lookup first
-      AND vector_distance_cosine(m.embedding, $query_vec) < 0.5
+      AND distance(m.embedding, $query_vec, 'cosine') < 0.5
     RETURN m.title
-    ORDER BY vector_distance_cosine(m.embedding, $query_vec) ASC
+    ORDER BY distance(m.embedding, $query_vec, 'cosine') ASC
     LIMIT 10
 """, {'query_vec': query_embedding})
 ```
@@ -537,9 +542,9 @@ await conn.execute("""
 page, _ = await conn.query("""
     MATCH (m:Movie)
     WHERE m.embedding IS NOT NULL
-      AND vector_distance_cosine(m.embedding, $query_vec) < 0.5
+      AND distance(m.embedding, $query_vec, 'cosine') < 0.5
     RETURN m.title
-    ORDER BY vector_distance_cosine(m.embedding, $query_vec) ASC
+    ORDER BY distance(m.embedding, $query_vec, 'cosine') ASC
 """, {'query_vec': query_embedding})
 ```
 
@@ -604,10 +609,10 @@ query_emb = model.encode(query).tolist()
 
 page, _ = await conn.query("""
     MATCH (p:Product)
-    WHERE vector_distance_cosine(p.embedding, $query_vec) < 0.7
+    WHERE distance(p.embedding, $query_vec, 'cosine') < 0.7
     RETURN p.name,
            p.price,
-           vector_distance_cosine(p.embedding, $query_vec) AS relevance
+           distance(p.embedding, $query_vec, 'cosine') AS relevance
     ORDER BY relevance ASC
     LIMIT 3
 """, {'query_vec': query_emb})
@@ -633,6 +638,7 @@ for i, row in enumerate(page.rows, 1):
 **Problem**: Queries slow despite having vector index
 
 **Solutions**:
+
 ```python
 # 1. Verify index exists
 await conn.query("SHOW INDEXES ON Movie")
@@ -644,7 +650,7 @@ await conn.query("SHOW INDEXES ON Movie")
 await conn.query("""
     EXPLAIN
     MATCH (m:Movie)
-    WHERE vector_distance_cosine(m.embedding, $vec) < 0.5
+    WHERE distance(m.embedding, $vec, 'cosine') < 0.5
     RETURN m
 """, {'vec': query_embedding})
 # Look for "IndexScan [movie_embedding_idx]"
@@ -655,8 +661,8 @@ await conn.query("""
 **Problem**: Large embeddings cause memory issues
 
 **Solutions**:
+
 - Use smaller embedding models (384 dims vs 768 dims)
-- Reduce `ef_construction` and `m` parameters
 - Index only frequently searched items
 - Use dimensionality reduction (PCA)
 
@@ -665,17 +671,12 @@ await conn.query("""
 **Problem**: Missing relevant results
 
 **Solutions**:
-```python
-# Increase ef_search parameter
-await conn.execute("""
-    CREATE INDEX better_recall_idx ON Movie(embedding) USING vector
-    WITH {ef_search: 300}  -- Higher = better recall
-""")
 
+```python
 # Increase distance threshold
 page, _ = await conn.query("""
     MATCH (m:Movie)
-    WHERE vector_distance_cosine(m.embedding, $query_vec) < 0.8  -- More lenient
+    WHERE distance(m.embedding, $query_vec, 'cosine') < 0.8  -- More lenient
     RETURN m.title
 """, {'query_vec': query_embedding})
 ```
@@ -691,18 +692,33 @@ page, _ = await conn.query("""
 
 ### Distance Functions
 
+Order **ascending** — lower means more similar:
+
 ```gql
--- Cosine distance (0-2, lower = more similar)
-vector_distance_cosine(vec1, vec2)
+-- Cosine distance (1 - cosine similarity)
+distance(vec1, vec2, 'cosine')
 
--- L2 distance (Euclidean)
-vector_distance_l2(vec1, vec2)
-
--- Inner product (higher = more similar)
-vector_inner_product(vec1, vec2)
+-- L2 distance (Euclidean); euclidean() is an alias
+vector_l2(vec1, vec2)
+distance(vec1, vec2)  -- 'l2' is the default metric
 
 -- Manhattan distance (L1)
-vector_distance_l1(vec1, vec2)
+manhattan(vec1, vec2)
+```
+
+### Similarity Functions
+
+Order **descending** — higher means more similar:
+
+```gql
+-- Cosine similarity. Note: vector_cosine() returns a SIMILARITY,
+-- not a distance, despite its name.
+vector_cosine(vec1, vec2)
+similarity(vec1, vec2)  -- 'cosine' is the default metric
+
+-- Dot product (inner product)
+vector_dot(vec1, vec2)
+similarity(vec1, vec2, 'dot')
 ```
 
 ### Index Commands
@@ -711,9 +727,10 @@ vector_distance_l1(vec1, vec2)
 -- Create vector index
 CREATE INDEX idx_name ON Label(property) USING vector;
 
--- Create with parameters
+-- Create with a distance metric
+-- metric: l2 (default), euclidean, cosine, dot, dot_product, inner_product
 CREATE INDEX idx_name ON Label(property) USING vector
-WITH {m: 16, ef_construction: 200, ef_search: 100};
+WITH (metric = 'cosine');
 
 -- Drop index
 DROP INDEX idx_name;

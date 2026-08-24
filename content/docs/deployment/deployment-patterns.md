@@ -1011,12 +1011,7 @@ SET SESSION gpu_acceleration = true;
 -- Create HNSW index with GPU support
 CREATE INDEX user_embeddings_gpu ON Person(embedding)
   USING HNSW
-  WITH (
-    metric = 'euclidean',
-    ef_construction = 200,
-    m = 16,
-    gpu_enabled = true
-  );
+  WITH (metric = 'euclidean');
 
 -- GPU-accelerated vector search
 MATCH (user:Person)

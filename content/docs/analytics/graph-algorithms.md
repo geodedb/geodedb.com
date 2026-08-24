@@ -69,6 +69,7 @@ CREATE (e)-[:KNOWS]->(f), (f)-[:KNOWS]->(e);
 ```
 
 **Graph structure**:
+
 ```
 Alice --- Bob
   |        |
@@ -82,6 +83,7 @@ Alice --- Bob
 **Measures** node importance based on incoming relationships.
 
 **Use cases**:
+
 - Influence ranking in social networks
 - Citation importance in academic graphs
 - Website ranking
@@ -120,6 +122,7 @@ Frank    | 0.135
 **Measures** how often a node appears on shortest paths between other nodes.
 
 **Use cases**:
+
 - Bottleneck identification
 - Bridge detection in networks
 - Information flow control points
@@ -155,6 +158,7 @@ Frank    | 0.0
 **Measures** average distance to all other nodes.
 
 **Use cases**:
+
 - Access efficiency
 - Broadcast source selection
 - Epidemic spread analysis
@@ -177,6 +181,7 @@ ORDER BY score DESC;
 **Detects** communities (clusters of densely connected nodes).
 
 **Use cases**:
+
 - Customer segmentation
 - Topic clustering
 - Organizational structure detection
@@ -279,6 +284,7 @@ From `ML_GRAPH_EMBEDDINGS.md`:
 **Random walk-based** embedding generation.
 
 **Parameters**:
+
 - `dimensions`: Embedding dimension (e.g., 128)
 - `walk_length`: Length of random walks (e.g., 80)
 - `num_walks`: Walks per node (e.g., 10)
@@ -314,6 +320,7 @@ RETURN p.name, p.embedding[0..5] AS embedding_sample;
 **Graph Sampling and Aggregation** for inductive embeddings.
 
 **Aggregation strategies**:
+
 - `mean` - Average neighbor features
 - `pool` - Max pooling
 - `lstm` - LSTM aggregation
@@ -357,6 +364,7 @@ SET n.embedding = embedding;
 ## Vector Similarity Search
 
 **Once embeddings are generated**, use vector similarity for:
+
 - Similar node discovery
 - Recommendations
 - Anomaly detection (outliers)
@@ -375,11 +383,11 @@ CREATE INDEX person_embedding_idx ON Person(embedding) USING vector;
 MATCH (alice:Person {name: "Alice"})
 MATCH (p:Person)
 WHERE p.id <> alice.id
-  AND vector_distance_cosine(p.embedding, alice.embedding) < 0.5
+  AND distance(p.embedding, alice.embedding, 'cosine') < 0.5
 RETURN
   p.name,
-  vector_distance_cosine(p.embedding, alice.embedding) AS similarity
-ORDER BY similarity ASC
+  distance(p.embedding, alice.embedding, 'cosine') AS distance
+ORDER BY distance ASC
 LIMIT 5;
 ```
 
@@ -396,10 +404,10 @@ WHERE NOT p IN friends
   AND p.name <> "Alice"
 WITH p, friends
 UNWIND friends AS f
-WITH p, AVG(vector_distance_cosine(p.embedding, f.embedding)) AS avg_similarity
-WHERE avg_similarity < 0.6
-RETURN p.name, avg_similarity
-ORDER BY avg_similarity ASC
+WITH p, AVG(distance(p.embedding, f.embedding, 'cosine')) AS avg_distance
+WHERE avg_distance < 0.6
+RETURN p.name, avg_distance
+ORDER BY avg_distance ASC
 LIMIT 5;
 ```
 
@@ -440,16 +448,19 @@ From `GRAPH_ALGORITHM_PERFORMANCE_ENHANCEMENTS.md`:
 ### When to Run Algorithms
 
 **Offline** (batch processing):
+
 - Large-scale community detection (millions of nodes)
 - Full-graph PageRank computation
 - Embedding generation for all nodes
 
 **Online** (query-time):
+
 - Shortest path between specific nodes
 - Local clustering coefficient
 - k-hop neighborhood queries
 
 **Hybrid** (materialized views):
+
 - Precompute PageRank, cache in node property
 - Update periodically (e.g., daily) via batch job
 - Query from cached property for fast access
@@ -478,11 +489,13 @@ LIMIT 10;
 ### Resource and Latency Caveats
 
 **Memory usage**:
+
 - **Embeddings**: `num_nodes * dimensions * 4 bytes` (for float32)
-  - Example: 1M nodes * 128 dims * 4B = 512 MB
+  - Example: 1M nodes × 128 dims × 4B = 512 MB
 - **Algorithm state**: Varies (PageRank: ~2x node count)
 
 **Latency**:
+
 - **PageRank** (1M nodes, 20 iterations): ~2-5 seconds
 - **Louvain** (1M nodes): ~10-30 seconds
 - **Node2Vec** (100K nodes, 10 walks): ~5-15 minutes
@@ -496,6 +509,7 @@ From `REAL_TIME_ANALYTICS.md`:
 **Combine** graph algorithms with Change Data Capture (CDC) for real-time analytics.
 
 **Architecture**:
+
 1. **CDC stream**: Capture graph changes (node/edge inserts/updates/deletes)
 2. **Incremental update**: Update algorithm state (e.g., incremental PageRank)
 3. **Anomaly detection**: Detect unusual patterns (e.g., sudden centrality spike)
@@ -533,6 +547,7 @@ cdc:
 ```
 
 **Analytics service**:
+
 1. Receives CDC event
 2. Queries graph for context (e.g., transaction history, account relationships)
 3. Computes anomaly score (e.g., transaction amount >> avg, new relationship)

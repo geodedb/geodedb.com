@@ -24,6 +24,7 @@ Hierarchical Navigable Small World (HNSW) is a graph-based algorithm for approxi
 The algorithm solves a critical problem in modern AI applications: how to efficiently search through millions or billions of high-dimensional vectors (embeddings) to find the most similar items. Traditional exact search has O(N) complexity—you must compare against every vector. HNSW achieves sub-linear search time through a clever graph structure.
 
 HNSW is used in:
+
 - **Semantic search**: Find documents similar to a query embedding
 - **Recommendation systems**: Discover similar products, content, or users
 - **Image search**: Find visually similar images
@@ -122,21 +123,18 @@ Build an HNSW index on vector properties:
 CREATE VECTOR INDEX document_embeddings
 FOR (d:Document)
 ON (d.embedding)
-OPTIONS {
-  dimensions: 768,          -- Embedding dimensionality
-  similarity: 'cosine',     -- cosine, euclidean, or dot_product
-  m: 16,                    -- Connections per layer
-  ef_construction: 200,     -- Build-time search depth
-  ef_search: 100            -- Query-time search depth
-};
+WITH (metric = 'cosine');
 ```
 
 Parameters:
-- **dimensions**: Vector dimensionality (e.g., 768 for BERT, 1536 for OpenAI)
-- **similarity**: Distance metric (cosine, euclidean, dot product)
-- **m**: Number of bi-directional connections per node (trade-off: higher = better accuracy but more memory)
-- **ef_construction**: Size of candidate set during construction (higher = better quality graph)
-- **ef_search**: Size of candidate set during search (higher = better recall but slower)
+
+- **metric**: Distance metric the index is built for. One of `l2` (default),
+  `euclidean`, `cosine`, `dot`, `dot_product`, `inner_product`.
+
+`metric` is the only supported parameter. Vector dimensionality is inferred
+from the indexed data, and the HNSW graph parameters (`m`, `ef_construction`,
+`ef_search`) are not currently tunable — they use engine-managed defaults and
+are reserved for a future release.
 
 ### Vector Similarity Search
 
@@ -154,8 +152,7 @@ LIMIT 10;
 CALL vector.search({
   index: 'document_embeddings',
   query: $query_embedding,
-  k: 10,
-  ef: 150  -- Override default ef_search for this query
+  k: 10
 })
 YIELD node, similarity
 RETURN node.title, similarity;
@@ -286,21 +283,21 @@ LIMIT 20;
 
 Balance accuracy, speed, and memory:
 
-**M (connections per layer)**:
-- Low (4-8): Faster search, lower memory, lower recall
-- Medium (12-24): Balanced (recommended for most cases)
-- High (32-64): Better recall, more memory, slightly slower
+The HNSW graph parameters (`m`, `ef_construction`, `ef_search`) are managed by
+the engine and are not currently exposed as index options. Tune the accuracy,
+speed and memory trade-off with the levers you do control:
 
-**ef_construction**:
-- Low (50-100): Faster index build, lower quality graph
-- Medium (100-200): Balanced (recommended)
-- High (400-800): Slower build, higher quality graph
+**metric**: Match the index metric to the function your queries use, otherwise
+the index cannot serve the query.
 
-**ef_search**:
-- Low (10-50): Faster search, lower recall
-- Medium (50-150): Balanced
-- High (200-500): Better recall, slower search
-- Can be adjusted per-query based on accuracy requirements
+**Query shape**: Pre-filter on labels and properties to shrink the candidate
+set, and keep `LIMIT` as small as the application allows.
+
+**Recall**: Loosen the distance threshold and raise `LIMIT`, then re-rank in
+the query when you need more relevant results.
+
+**Memory**: Use smaller embeddings (384 dims instead of 768) and index only the
+properties you actually search.
 
 ### Embedding Generation
 
@@ -312,6 +309,7 @@ Use high-quality embeddings:
    - Multimodal: CLIP, ALIGN
 
 2. **Normalize embeddings**: For cosine similarity, normalize to unit length
+
    ```python
    embedding = model.encode(text)
    embedding = embedding / np.linalg.norm(embedding)
@@ -322,6 +320,7 @@ Use high-quality embeddings:
 ### Index Maintenance
 
 **Incremental updates**: Add vectors as needed
+
 ```gql
 -- Add new document to existing index
 INSERT (:Document {
@@ -332,16 +331,18 @@ INSERT (:Document {
 ```
 
 **Rebuild for better quality**: Periodically rebuild for optimal graph structure
+
 ```gql
--- Rebuild index with new parameters
+-- Rebuild index
 DROP INDEX document_embeddings;
 CREATE VECTOR INDEX document_embeddings FOR (d:Document) ON (d.embedding)
-OPTIONS {m: 20, ef_construction: 300};
+WITH (metric = 'cosine');
 ```
 
 ### Query Optimization
 
 **Pre-filter when possible**:
+
 ```gql
 -- Efficient: Filter before vector search
 MATCH (d:Document)
@@ -357,14 +358,15 @@ WHERE node.category = 'science'  -- Post-filter
 RETURN node;
 ```
 
-**Adjust ef_search for accuracy needs**:
+**Size `k` for the accuracy you need**:
+
 ```gql
--- High-recall search (slower)
-CALL vector.search({index: '...', query: $q, k: 10, ef: 500})
+-- High-recall search: retrieve more candidates, then re-rank
+CALL vector.search({index: '...', query: $q, k: 100})
 YIELD node, similarity;
 
 -- Fast search (may miss some results)
-CALL vector.search({index: '...', query: $q, k: 10, ef: 50})
+CALL vector.search({index: '...', query: $q, k: 10})
 YIELD node, similarity;
 ```
 
@@ -382,11 +384,14 @@ YIELD node, similarity;
 ```
 Memory = N * (dimensions * 4 bytes + M * 8 bytes per layer)
 
-Example (1M vectors, 768 dims, M=16):
+Example (1M vectors, 768 dims, engine default M=16):
 = 1M * (768 * 4 + 16 * 8 * 2.5 layers)
 = 1M * (3,072 + 320)
 = 3.4 GB
 ```
+
+`M` here is the internal HNSW graph degree. It is fixed by the engine and is
+not a user-settable index option.
 
 ### Performance Benchmarks
 
@@ -394,7 +399,7 @@ Typical performance (10k vectors, 10-NN):
 
 - **Latency**: 1-5ms at ~90% recall
 - **Recall@10**: ~90% (parameter dependent)
-- **Notes**: Performance varies with ef_search, vector dimensions, and hardware
+- **Notes**: Performance varies with result set size, vector dimensions, and hardware
 
 ## Monitoring and Troubleshooting
 
@@ -418,13 +423,13 @@ RETURN node, similarity;
 
 ### Common Issues
 
-**Low recall**: Increase ef_search or rebuild with higher M/ef_construction
+**Low recall**: Loosen the distance threshold, raise `LIMIT`/`k` and re-rank
 
-**High latency**: Decrease ef_search or optimize pre-filtering
+**High latency**: Lower `LIMIT`/`k` or optimize pre-filtering
 
-**Out of memory**: Reduce M, use smaller embeddings, or partition data
+**Out of memory**: Use smaller embeddings or partition data
 
-**Slow indexing**: Reduce ef_construction or batch inserts
+**Slow indexing**: Batch inserts and rebuild the index once after a bulk load
 
 ## Related Topics
 
@@ -464,27 +469,28 @@ For M = 4:
 ### Connection Strategy
 
 Each node maintains:
+
 - **M connections** at layers > 0
 - **2M connections** at layer 0 (base layer for higher recall)
 
 **Heuristic selection**: Choose neighbors that maximize navigability:
+
 ```
 score(candidate) = distance(query, candidate) - distance(query, current_best)
 ```
 
 ## Query Optimization Strategies
 
-### Adaptive ef_search
+### Adaptive Candidate Sizing
 
-Dynamically adjust search effort:
+Dynamically adjust search effort with `k`:
 
 ```gql
--- High-stakes query: maximize recall
+-- High-stakes query: retrieve a deep candidate set and re-rank
 CALL vector.search({
     index: 'critical_docs',
     query: $query,
-    k: 10,
-    ef: 500  // Deep search
+    k: 100
 })
 YIELD node, similarity;
 
@@ -492,8 +498,7 @@ YIELD node, similarity;
 CALL vector.search({
     index: 'product_catalog',
     query: $query,
-    k: 10,
-    ef: 32  // Fast approximate search
+    k: 10
 })
 YIELD node, similarity;
 ```
@@ -516,11 +521,11 @@ async def adaptive_vector_search(client, query_emb, min_confidence=0.95):
             RETURN node, similarity
             ORDER BY similarity DESC
         """, {"query": query_emb, "ef": ef})
-        
+
         top_score = results.rows[0]['similarity']
         if top_score >= min_confidence:
             return results.rows  # Early termination
-    
+
     return results.rows  # Max effort reached
 ```
 
@@ -545,7 +550,7 @@ CALL {
 -- Rebuild index after bulk load
 DROP INDEX embeddings_idx;
 CREATE VECTOR INDEX embeddings_idx FOR (n:Node) ON (n.embedding)
-OPTIONS {m: 16, ef_construction: 200};
+WITH (metric = 'cosine');
 ```
 
 ### Incremental Index Maintenance
@@ -559,10 +564,7 @@ WITH inserts * 1.0 / total AS insert_ratio
 WHERE insert_ratio > 0.1  // 10% growth
 
 -- Trigger rebuild
-CALL vector.index.rebuild('embeddings_idx', {
-    m: 20,  // Increase connections for larger graph
-    ef_construction: 300
-});
+CALL vector.index.rebuild('embeddings_idx');
 ```
 
 ## Distance Metrics Deep Dive
@@ -582,6 +584,7 @@ Range: [-1, 1]
 ```
 
 **Optimization**: Pre-normalize vectors to unit length, then use dot product:
+
 ```gql
 -- Pre-normalize at insertion
 MATCH (n:Node)
@@ -630,15 +633,15 @@ Separate indexes for different embedding types:
 ```gql
 -- Text embeddings (768d, BERT)
 CREATE VECTOR INDEX text_embeddings FOR (d:Document) ON (d.text_embedding)
-OPTIONS {dimensions: 768, metric: 'cosine', m: 16};
+WITH (metric = 'cosine');
 
 -- Image embeddings (512d, CLIP)
 CREATE VECTOR INDEX image_embeddings FOR (p:Product) ON (p.image_embedding)
-OPTIONS {dimensions: 512, metric: 'cosine', m: 20};
+WITH (metric = 'cosine');
 
 -- User embeddings (128d, custom)
 CREATE VECTOR INDEX user_embeddings FOR (u:User) ON (u.behavior_embedding)
-OPTIONS {dimensions: 128, metric: 'euclidean', m: 12};
+WITH (metric = 'euclidean');
 
 -- Query appropriate index
 CALL vector.search({index: 'text_embeddings', query: $text_query})
@@ -668,7 +671,7 @@ RETURN 'Index healthy' AS status;
 ```python
 async def measure_recall(client, test_queries, ground_truth, k=10):
     recalls = []
-    
+
     for query_emb, true_neighbors in zip(test_queries, ground_truth):
         # HNSW approximate search
         results, _ = await client.query("""
@@ -680,19 +683,19 @@ async def measure_recall(client, test_queries, ground_truth, k=10):
             YIELD node
             RETURN node.id AS id
         """, {"query": query_emb, "k": k})
-        
+
         retrieved = {row['id'] for row in results.rows}
         relevant = set(true_neighbors[:k])
-        
+
         recall = len(retrieved & relevant) / k
         recalls.append(recall)
-    
+
     return np.mean(recalls)
 
-# Typical results:
-# ef_search=50, M=16: recall@10 ≈ 0.93, latency ≈ 2ms
-# ef_search=100, M=16: recall@10 ≈ 0.97, latency ≈ 5ms
-# ef_search=200, M=32: recall@10 ≈ 0.99, latency ≈ 15ms
+# Typical results with engine-managed graph parameters:
+# k=10:  recall@10 ≈ 0.93, latency ≈ 2ms
+# k=50:  recall@10 ≈ 0.97, latency ≈ 5ms
+# k=200: recall@10 ≈ 0.99, latency ≈ 15ms
 ```
 
 ### Throughput vs Latency Trade-offs
@@ -700,18 +703,14 @@ async def measure_recall(client, test_queries, ground_truth, k=10):
 ```python
 # Latency-optimized (single query)
 config_latency = {
-    "m": 12,
-    "ef_construction": 100,
-    "ef_search": 32,
+    "k": 10,
     "batch_size": 1
 }
-# Latency and recall depend on dataset, dimensions, and ef_search
+# Latency and recall depend on dataset, dimensions, and result set size
 
 # Throughput-optimized (batch queries)
 config_throughput = {
-    "m": 16,
-    "ef_construction": 200,
-    "ef_search": 64,
+    "k": 50,
     "batch_size": 100
 }
 # Throughput and recall depend on dataset, dimensions, and hardware
@@ -722,7 +721,7 @@ config_throughput = {
 - **HNSW Original Paper**: Malkov & Yashunin (2016) - Efficient and Robust ANN Search
 - **Graph-Based ANN**: NSW, HNSW, NSG, and DiskANN Algorithms
 - **Distance Metrics**: Cosine, Euclidean, Inner Product, and Custom Metrics
-- **Index Tuning**: M, ef_construction, ef_search Parameter Optimization
+- **Index Tuning**: Choosing the Right Metric and Query Shape
 - **Production Systems**: Scaling to Billions of Vectors
 
 Browse tagged content for comprehensive HNSW and vector search documentation.

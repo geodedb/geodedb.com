@@ -39,6 +39,7 @@ Graph databases and artificial intelligence are natural partners. While graphs e
 ### Why Combine Graphs with AI?
 
 Traditional AI applications often struggle with:
+
 - **Context**: Understanding relationships between entities
 - **Explainability**: Tracing how conclusions were reached
 - **Knowledge Integration**: Combining learned patterns with structured facts
@@ -81,22 +82,12 @@ Enable fast similarity search with HNSW indexes:
 -- Create HNSW index for document embeddings
 CREATE VECTOR INDEX document_embeddings
 ON Document(embedding)
-WITH (
-  metric = 'cosine',
-  dimensions = 1536,
-  ef_construction = 200,
-  m = 16
-);
+WITH (metric = 'cosine');
 
 -- Create index for multi-modal search
 CREATE VECTOR INDEX product_images
 ON Product(image_embedding)
-WITH (
-  metric = 'cosine',
-  dimensions = 512,
-  ef_construction = 256,
-  m = 24
-);
+WITH (metric = 'cosine');
 ```
 
 ### Similarity Search Queries

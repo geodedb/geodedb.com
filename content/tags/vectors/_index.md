@@ -102,15 +102,18 @@ Geode stores vectors as property arrays on nodes and relationships.
 Common embedding models and their dimensions:
 
 **Text Embeddings:**
+
 - `sentence-transformers/all-MiniLM-L6-v2`: 384 dimensions
 - `text-embedding-ada-002` (OpenAI): 1536 dimensions
 - `bert-base-uncased`: 768 dimensions
 
 **Image Embeddings:**
+
 - `CLIP`: 512 dimensions
 - `ResNet-50`: 2048 dimensions
 
 **Code Embeddings:**
+
 - `codebert-base`: 768 dimensions
 
 ### Embedding Generation
@@ -118,6 +121,7 @@ Common embedding models and their dimensions:
 Generate embeddings using external models before storing:
 
 **Python Example with SentenceTransformers:**
+
 ```python
 from sentence_transformers import SentenceTransformer
 from geode_client import Client
@@ -146,6 +150,7 @@ async def store_document_with_embedding(client, doc_id, title, content):
 ```
 
 **Go Example with OpenAI:**
+
 ```go
 import (
     "context"
@@ -199,6 +204,7 @@ ORDER BY similarity DESC
 ```
 
 **Properties:**
+
 - Range: -1 (opposite) to 1 (identical)
 - Normalized by vector magnitude
 - Best for normalized embeddings
@@ -216,6 +222,7 @@ ORDER BY distance ASC
 ```
 
 **Properties:**
+
 - Range: 0 (identical) to infinity
 - Sensitive to vector magnitude
 - Useful for absolute distance metrics
@@ -233,6 +240,7 @@ ORDER BY score DESC
 ```
 
 **Properties:**
+
 - Range: unbounded
 - Faster computation than cosine similarity
 - Best when embeddings are pre-normalized
@@ -311,22 +319,19 @@ For large-scale vector search, use ANN indexes:
 CREATE VECTOR INDEX product_embedding_idx
 ON Product(embedding)
 USING HNSW
-WITH {
-  dimensions: 384,
-  distance_metric: 'cosine',
-  m: 16,              -- Number of connections per layer
-  ef_construction: 200 -- Size of dynamic candidate list
-}
+WITH (metric = 'cosine')
 ```
 
 **Index Types:**
 
 **HNSW (Hierarchical Navigable Small World)**
+
 - Fast approximate search
 - Good recall/performance trade-off
 - Memory intensive
 
 **IVF (Inverted File Index)**
+
 - Partitions vector space into clusters
 - Lower memory footprint
 - Configurable speed/accuracy trade-off
@@ -347,6 +352,7 @@ LIMIT 10
 ```
 
 **Performance Tips:**
+
 - Pre-normalize embeddings when using cosine similarity
 - Use appropriate similarity thresholds to limit candidates
 - Consider approximate search for large datasets (>100K vectors)

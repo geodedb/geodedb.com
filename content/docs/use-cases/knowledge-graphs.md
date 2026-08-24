@@ -42,12 +42,14 @@ A knowledge graph is a network of entities (people, places, concepts) connected 
 **Challenge**: Organize organizational knowledge across departments
 
 **Solution**: Build a unified knowledge graph of:
+
 - People (employees, customers, partners)
 - Projects and deliverables
 - Documents and assets
 - Expertise and skills
 
 **Benefits**:
+
 - Find relevant expertise quickly
 - Discover hidden project connections
 - Automate knowledge discovery
@@ -58,12 +60,14 @@ A knowledge graph is a network of entities (people, places, concepts) connected 
 **Challenge**: Navigate millions of papers, authors, and citations
 
 **Solution**: Create research knowledge graph with:
+
 - Authors and affiliations
 - Papers and citations
 - Topics and keywords
 - Funding sources
 
 **Benefits**:
+
 - Find related research
 - Identify collaboration opportunities
 - Track research trends
@@ -74,12 +78,14 @@ A knowledge graph is a network of entities (people, places, concepts) connected 
 **Challenge**: Organize complex product hierarchies with attributes
 
 **Solution**: Model products as knowledge graph:
+
 - Products and variants
 - Categories and taxonomies
 - Attributes and specifications
 - Customer preferences
 
 **Benefits**:
+
 - Semantic product search
 - Intelligent recommendations
 - Cross-selling opportunities
@@ -430,10 +436,10 @@ async def embed_entities():
         query_embedding = model.encode("nuclear physics research")
         page, _ = await conn.query("""
             MATCH (e:Entity)
-            WHERE vector_distance_cosine(e.embedding, $query_vec) < 0.5
+            WHERE distance(e.embedding, $query_vec, 'cosine') < 0.5
             RETURN e.name, e.type,
-                   vector_distance_cosine(e.embedding, $query_vec) AS similarity
-            ORDER BY similarity ASC
+                   distance(e.embedding, $query_vec, 'cosine') AS distance
+            ORDER BY distance ASC
             LIMIT 10
         """, {'query_vec': query_embedding.tolist()})
 

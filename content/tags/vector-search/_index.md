@@ -42,19 +42,18 @@ HNSW indexes are stored alongside graph data, allowing seamless integration of v
 ```gql
 CREATE VECTOR INDEX product_embeddings
 ON Product(embedding)
-WITH (
-  metric = 'cosine',
-  dimensions = 768,
-  ef_construction = 200,
-  m = 16
-);
+WITH (metric = 'cosine');
 ```
 
 **Parameters explained**:
-- `metric`: Distance function (cosine, euclidean, dot_product)
-- `dimensions`: Vector dimensionality (must match your embeddings)
-- `ef_construction`: Build-time accuracy parameter (higher = more accurate, slower build)
-- `m`: Maximum connections per node (higher = better recall, more memory)
+
+- `metric`: Distance function the index is built for. One of `l2` (default),
+  `euclidean`, `cosine`, `dot`, `dot_product`, `inner_product`.
+
+`metric` is the only supported parameter. Vector dimensionality is inferred
+from the indexed data, and the HNSW graph parameters (`m`, `ef_construction`,
+`ef_search`) are not currently tunable — they use engine-managed defaults and
+are reserved for a future release.
 
 ### Native GQL Vector Functions
 
@@ -113,7 +112,7 @@ async def create_document_index():
         await conn.execute("""
             CREATE VECTOR INDEX doc_embeddings
             ON Document(embedding)
-            WITH (metric = 'cosine', dimensions = 384, m = 16);
+            WITH (metric = 'cosine');
         """)
 
         # Insert documents with embeddings
@@ -188,25 +187,28 @@ async def find_similar_images(image_path, limit=10):
 ### Choosing Index Parameters
 
 **Dimensions**: Match your embedding model exactly:
+
 - Sentence transformers: 384, 768, 1024
 - OpenAI ada-002: 1536
 - CLIP: 512 or 768
 - Custom models: verify output shape
 
 **Metric selection**:
+
 - **Cosine**: Best for normalized embeddings (most common)
 - **Euclidean**: When magnitude matters
 - **Dot product**: For sparse vectors or specific models
 
 **HNSW tuning**:
-- `m = 16` (default): Good balance for most cases
-- `m = 32`: Higher recall, 2x memory usage
-- `ef_construction = 200`: Production default
-- `ef_construction = 400`: Higher quality index, slower build
+
+- The graph parameters (`m`, `ef_construction`, `ef_search`) are not currently
+  tunable and are reserved for a future release
+- Tune recall and latency with the distance threshold, `LIMIT` and pre-filtering
 
 ### Embedding Generation
 
 **Consistency is critical**:
+
 ```python
 # WRONG: Different models or preprocessing
 doc_embedding = model_v1.encode(text)
@@ -219,6 +221,7 @@ def generate_embedding(text):
 ```
 
 **Batch processing for efficiency**:
+
 ```python
 async def index_documents_batch(documents, batch_size=100):
     client = Client(host="localhost", port=3141)
@@ -240,6 +243,7 @@ async def index_documents_batch(documents, batch_size=100):
 ### Query Optimization
 
 **Use appropriate similarity thresholds**:
+
 ```gql
 -- Too restrictive: May return no results
 WHERE vector_similarity(n.emb, $query, 'cosine') > 0.95
@@ -252,6 +256,7 @@ WHERE vector_similarity(n.emb, $query, 'cosine') > 0.7
 ```
 
 **Limit result sets**:
+
 ```gql
 -- HNSW is optimized for top-k queries
 MATCH (d:Document)
@@ -265,21 +270,24 @@ LIMIT 20  -- HNSW explores only as needed
 ### Indexing Performance
 
 **Build time scales with dataset size**:
+
 - 100K vectors: ~1-2 minutes
 - 1M vectors: ~15-30 minutes
 - 10M vectors: ~3-5 hours
 
 **Memory requirements**:
+
 - Base: `num_vectors * dimensions * 4 bytes` (float32)
 - HNSW overhead: `num_vectors * m * 16 * 4 bytes`
 - Example: 1M vectors × 768D × 16M = ~50GB RAM
 
 **Incremental indexing**:
+
 ```gql
 -- Create index first
 CREATE VECTOR INDEX CONCURRENTLY product_embeddings
 ON Product(embedding)
-WITH (metric = 'cosine', dimensions = 768);
+WITH (metric = 'cosine');
 
 -- Insert nodes normally; index updates incrementally
 CREATE (p:Product {name: 'New Item', embedding: $emb});
@@ -288,15 +296,15 @@ CREATE (p:Product {name: 'New Item', embedding: $emb});
 ### Query Performance
 
 **Typical latency** (10k vectors, 10-NN):
+
 - Single vector search: 1-5ms at ~90% recall
 - Combined graph + vector: workload-dependent (varies by traversal and filters)
 - Batch queries: throughput depends on workload and hardware
 
-**Tuning runtime accuracy** (not yet exposed, coming soon):
-```gql
--- Higher ef_search = more accurate, slower
-SET vector_search_ef = 100;  -- Default: 50
+**Tuning runtime accuracy**: search-effort settings are not exposed. Control
+the accuracy/latency trade-off with the result set size instead:
 
+```gql
 MATCH (d:Document)
 WITH d, vector_similarity(d.embedding, $query, 'cosine') AS score
 ORDER BY score DESC
@@ -306,11 +314,13 @@ LIMIT 10;
 ### Scaling Vector Search
 
 **Horizontal scaling**:
+
 - Partition large datasets by category or domain
 - Use graph structure to route queries to relevant partitions
 - Combine results from distributed searches
 
 **Caching strategies**:
+
 ```python
 # Cache frequently queried embeddings
 embedding_cache = {}
@@ -329,6 +339,7 @@ async def cached_search(query_text):
 
 **Problem**: Results aren't relevant
 **Solutions**:
+
 1. Verify embedding model consistency
 2. Check vector normalization (cosine requires normalized vectors)
 3. Adjust similarity threshold
@@ -336,6 +347,7 @@ async def cached_search(query_text):
 
 **Problem**: Slow query performance
 **Solutions**:
+
 1. Increase `m` parameter (rebuild index)
 2. Add filters before vector search to reduce candidate set
 3. Use EXPLAIN to identify bottlenecks
@@ -343,6 +355,7 @@ async def cached_search(query_text):
 
 **Problem**: High memory usage
 **Solutions**:
+
 1. Reduce `m` parameter (less accuracy, less memory)
 2. Use lower-dimensional embeddings if possible
 3. Partition data across multiple nodes
@@ -351,17 +364,19 @@ async def cached_search(query_text):
 ### Index Maintenance
 
 **Monitoring index health**:
+
 ```gql
 SHOW INDEXES WHERE name = 'product_embeddings';
 -- Returns: size, num_vectors, build_status
 ```
 
 **Rebuilding indexes**:
+
 ```gql
--- If index becomes corrupted or parameters need changing
+-- If the index becomes corrupted or the metric needs changing
 DROP INDEX product_embeddings;
 CREATE VECTOR INDEX product_embeddings ON Product(embedding)
-WITH (metric = 'cosine', dimensions = 768, m = 32);
+WITH (metric = 'cosine');
 ```
 
 ## Related Topics
@@ -376,8 +391,8 @@ WITH (metric = 'cosine', dimensions = 768, m = 32);
 ## Further Reading
 
 - **HNSW Paper**: "Efficient and robust approximate nearest neighbor search using Hierarchical Navigable Small World graphs" (Malkov & Yashunin, 2018)
-- **Sentence Transformers**: https://www.sbert.net/ - Popular embedding models
-- **OpenAI Embeddings**: https://platform.openai.com/docs/guides/embeddings
+- **Sentence Transformers**: <https://www.sbert.net/> - Popular embedding models
+- **OpenAI Embeddings**: <https://platform.openai.com/docs/guides/embeddings>
 - **Geode Vector Search Guide**: `/docs/advanced-features/vector-search/`
 - **Performance Tuning**: `/docs/performance/vector-optimization/`
 
@@ -471,30 +486,20 @@ RETURN candidate, precise_score;
 
 ### HNSW Parameter Impact
 
-**M (connections per layer)**:
-- M=4: ~10MB/million vectors, 85% recall
-- M=16: ~40MB/million vectors, 95% recall
-- M=32: ~80MB/million vectors, 98% recall
+The HNSW graph parameters (`m`, `ef_construction`, `ef_search`) are managed by
+the engine and are not exposed as index options, so index memory and build
+quality are fixed. Memory scales with the number of vectors and their
+dimensionality: roughly `N * dimensions * 4 bytes` for the vectors themselves,
+plus the graph overhead (~40MB per million vectors at 768 dimensions).
 
-**ef_construction**:
-- ef_construction=100: Fast index build, 90% quality
-- ef_construction=200: Balanced (recommended)
-- ef_construction=400: Slow build, 98% quality
-
-**ef_search** (query-time):
-- ef_search=16: <1ms latency, 85% recall
-- ef_search=64: ~2ms latency, 95% recall
-- ef_search=256: ~10ms latency, 99% recall
-
-### Dynamic ef_search Tuning
+### Dynamic Candidate Sizing
 
 ```gql
--- Adjust ef_search based on query importance
+-- Adjust the retrieved candidate set based on query importance
 CALL vector.search({
     index: 'embeddings',
     query: $query,
-    k: 10,
-    ef: CASE WHEN $user_tier = 'premium' THEN 200 ELSE 50 END
+    k: CASE WHEN $user_tier = 'premium' THEN 100 ELSE 10 END
 })
 YIELD node, similarity
 RETURN node, similarity;
@@ -511,10 +516,10 @@ Reduce memory by 4x with minimal accuracy loss:
 def quantize_embeddings(embeddings):
     # Find min/max for normalization
     min_val, max_val = embeddings.min(), embeddings.max()
-    
+
     # Scale to [0, 255]
     quantized = ((embeddings - min_val) / (max_val - min_val) * 255).astype(np.uint8)
-    
+
     return quantized, min_val, max_val
 
 # Store quantized embeddings
@@ -523,7 +528,7 @@ await client.execute("""
     SET d.embedding_quantized = $quantized,
         d.quantization_min = $min_val,
         d.quantization_max = $max_val
-""", {"id": doc_id, "quantized": quantized.tolist(), 
+""", {"id": doc_id, "quantized": quantized.tolist(),
       "min_val": min_val, "max_val": max_val})
 ```
 

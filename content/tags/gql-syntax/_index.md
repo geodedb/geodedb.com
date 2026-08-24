@@ -42,7 +42,7 @@ User ≠ user ≠ USER  // Identifiers are case-sensitive
 Reserved words (case-insensitive):
 
 ```
-MATCH, CREATE, DELETE, SET, REMOVE, MERGE, RETURN, WHERE, WITH, 
+MATCH, CREATE, DELETE, SET, REMOVE, MERGE, RETURN, WHERE, WITH,
 ORDER, BY, LIMIT, OFFSET, SKIP, ASC, DESC, AS, DISTINCT, UNION,
 OPTIONAL, CASE, WHEN, THEN, ELSE, END, AND, OR, NOT, XOR, IN,
 STARTS, WITH, ENDS, CONTAINS, IS, NULL, EXISTS, ALL, ANY, NONE,
@@ -490,7 +490,7 @@ ON (variable.property [, variable.property, ...])
 // Examples
 CREATE INDEX FOR (u:User) ON (u.email)
 CREATE INDEX user_name_idx FOR (u:User) ON (u.name)
-CREATE VECTOR INDEX FOR (d:Doc) ON (d.embedding) OPTIONS {metric: 'cosine'}
+CREATE VECTOR INDEX FOR (d:Doc) ON (d.embedding) WITH (metric = 'cosine')
 ```
 
 ### Constraint

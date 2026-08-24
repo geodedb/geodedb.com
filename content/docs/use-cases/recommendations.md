@@ -29,6 +29,7 @@ Build scalable, real-time recommendation engines using graph traversal, ML embed
 ## Problem Statement
 
 Recommendation systems predict user preferences based on:
+
 - **Collaborative filtering**: Users with similar tastes like similar items
 - **Content-based**: Items with similar features are recommended
 - **Graph-based**: Relationships reveal preferences (friends' likes, purchase patterns)
@@ -91,6 +92,7 @@ ORDER BY recommendation_strength DESC LIMIT 20;
 
 {{< tabs >}}
 {{< tab "Go" >}}
+
 ```go
 func getCollaborativeRecommendations(ctx context.Context, db *sql.DB, userID string) ([]Recommendation, error) {
     rows, err := db.QueryContext(ctx, `
@@ -116,8 +118,10 @@ func getCollaborativeRecommendations(ctx context.Context, db *sql.DB, userID str
     return recs, nil
 }
 ```
+
 {{< /tab >}}
 {{< tab "Python" >}}
+
 ```python
 async def get_collaborative_recommendations(conn, user_id: str, limit: int = 20):
     page, _ = await conn.query("""
@@ -135,8 +139,10 @@ async def get_collaborative_recommendations(conn, user_id: str, limit: int = 20)
         for row in page.rows
     ]
 ```
+
 {{< /tab >}}
 {{< tab "Rust" >}}
+
 ```rust
 async fn get_collaborative_recommendations(conn: &mut Connection, user_id: &str) -> Result<Vec<Recommendation>> {
     let params = [("user_id", Value::string(user_id))].into();
@@ -156,8 +162,10 @@ async fn get_collaborative_recommendations(conn: &mut Connection, user_id: &str)
     }).collect())
 }
 ```
+
 {{< /tab >}}
 {{< tab "Node.js" >}}
+
 ```typescript
 async function getCollaborativeRecommendations(userId: string, limit = 20) {
     const rows = await client.queryAll(`
@@ -176,8 +184,10 @@ async function getCollaborativeRecommendations(userId: string, limit = 20) {
     }));
 }
 ```
+
 {{< /tab >}}
 {{< tab "Zig" >}}
+
 ```zig
 fn getCollaborativeRecommendations(client: *GeodeClient, allocator: std.mem.Allocator, user_id: []const u8) ![]Recommendation {
     // Build params JSON object
@@ -204,6 +214,7 @@ fn getCollaborativeRecommendations(client: *GeodeClient, allocator: std.mem.Allo
     return parseRecommendations(allocator, result);
 }
 ```
+
 {{< /tab >}}
 {{< /tabs >}}
 
@@ -308,12 +319,12 @@ MATCH (recommended:Item)
 WHERE NOT EXISTS {
   MATCH (me:User {id: $user_id})-[:PURCHASED]->(recommended)
 }
-  AND vector_distance_cosine(recommended.embedding, user_embedding) < 0.5
+  AND distance(recommended.embedding, user_embedding, 'cosine') < 0.5
 RETURN
   recommended.name,
   recommended.category,
-  vector_distance_cosine(recommended.embedding, user_embedding) AS similarity
-ORDER BY similarity ASC
+  distance(recommended.embedding, user_embedding, 'cosine') AS distance
+ORDER BY distance ASC  -- cosine distance: lower = more similar
 LIMIT 20;
 ```
 
@@ -336,11 +347,11 @@ WITH recommended, collab_score, COUNT(DISTINCT friend) AS social_score
 -- Similarity score (requires embeddings)
 OPTIONAL MATCH (me)-[:PURCHASED]->(purchased:Item)
 WITH recommended, collab_score, social_score,
-  AVG(vector_distance_cosine(purchased.embedding, recommended.embedding)) AS avg_similarity
+  AVG(distance(purchased.embedding, recommended.embedding, 'cosine')) AS avg_distance
 
--- Weighted final score
+-- Weighted final score (invert the distance so higher = better)
 WITH recommended,
-  (collab_score * 0.5) + (social_score * 0.3) + ((1 - avg_similarity) * 0.2) AS final_score
+  (collab_score * 0.5) + (social_score * 0.3) + ((1 - avg_distance) * 0.2) AS final_score
 RETURN recommended.name, final_score
 ORDER BY final_score DESC
 LIMIT 20;

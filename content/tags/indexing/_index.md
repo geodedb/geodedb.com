@@ -61,7 +61,7 @@ CREATE FULLTEXT INDEX article_content ON :Article(title, body);
 
 -- Create a vector index for similarity search
 CREATE VECTOR INDEX product_embeddings ON :Product(embedding)
-  WITH (dimensions: 384, metric: 'cosine');
+  WITH (metric = 'cosine');
 
 -- View all indexes
 SHOW INDEXES;

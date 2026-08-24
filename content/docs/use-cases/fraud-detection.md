@@ -29,6 +29,7 @@ Build a real-time fraud detection system using graph patterns, machine learning 
 ## Problem Statement
 
 Financial fraud is a graph problem:
+
 - **Transaction rings**: Multiple accounts transferring funds in circles
 - **Velocity anomalies**: Unusual transaction patterns (frequency, amount, location)
 - **Network effects**: Compromised accounts infecting connected accounts
@@ -202,7 +203,7 @@ Find accounts with unusual behavior (outliers):
 MATCH (a:Account)
 MATCH (neighbor:Account)
 WHERE neighbor.id <> a.id
-  AND vector_distance_cosine(a.embedding, neighbor.embedding) < 0.8
+  AND distance(a.embedding, neighbor.embedding, 'cosine') < 0.8
 WITH a, COUNT(neighbor) AS neighbor_count
 WHERE neighbor_count < 3  -- Fewer than 3 similar accounts = anomaly
 RETURN a.holder_name, a.risk_score, neighbor_count

@@ -430,7 +430,7 @@ ORDER BY score DESC;
 ```gql
 -- Vector similarity search (Geode extension)
 MATCH (d:Document)
-RETURN d.title, vector_distance_cosine(d.embedding, $query_vector) AS distance
+RETURN d.title, distance(d.embedding, $query_vector, 'cosine') AS distance
 ORDER BY distance
 LIMIT 10;
 ```

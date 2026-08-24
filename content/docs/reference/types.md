@@ -507,20 +507,22 @@ RETURN '[0.1, 0.2, 0.3, 0.4]'::vector_f32 AS v;
 -- From array
 RETURN vector_f32([0.1, 0.2, 0.3, 0.4]) AS v;
 
--- Distance functions
-RETURN vector_distance_l2(v1, v2) AS euclidean;
-RETURN vector_distance_cosine(v1, v2) AS cosine;
-RETURN vector_distance_dot(v1, v2) AS dot_product;
+-- Distance functions (lower = more similar)
+RETURN vector_l2(v1, v2) AS euclidean;
+RETURN manhattan(v1, v2) AS l1;
+RETURN distance(v1, v2, 'cosine') AS cosine_distance;
 
--- Dimension
-RETURN vector_dimension(v) AS dims;
+-- Similarity functions (higher = more similar)
+RETURN vector_cosine(v1, v2) AS cosine_similarity;
+RETURN similarity(v1, v2) AS score;
+RETURN vector_dot(v1, v2) AS dot_product;
 ```
 
 **Indexing:** HNSW index for approximate nearest neighbor search
 
 ```gql
 CREATE INDEX doc_embedding_idx ON :Document(embedding) USING VECTOR
-  OPTIONS { metric: 'cosine', dimensions: 512 };
+  WITH (metric = 'cosine');
 ```
 
 ---

@@ -22,16 +22,19 @@ This guide covers performance optimization strategies, configuration tuning, and
 ### Architecture
 
 **Query Processing**:
+
 - Cost-based query optimizer with statistics
 - Six specialized index types for different workloads
 - SIMD-accelerated vector distance calculations
 
 **Storage**:
+
 - Memory-mapped I/O for efficient storage access
 - WAL-based durability with configurable tuning
 - Page-level caching with LRU eviction
 
 **Scalability**:
+
 - Connection pooling for concurrent clients
 - Distributed deployment with up to 32 shards
 
@@ -89,6 +92,7 @@ RETURN f.name;
 ```
 
 **Key Metrics to Review**:
+
 - Index usage (are indexes being used?)
 - Estimated vs actual row counts
 - Join methods
@@ -177,11 +181,13 @@ storage:
 ```
 
 Environment variable:
+
 ```bash
 export GEODE_PAGE_CACHE_SIZE=4294967296  # 4GB in bytes
 ```
 
 **Recommendations**:
+
 - Read-heavy: 50-75% of RAM
 - Write-heavy: 25-40% of RAM
 - Mixed workload: 40-50% of RAM
@@ -196,6 +202,7 @@ storage:
 ```
 
 **Tuning Tips**:
+
 - Place WAL on separate fast SSD
 - Increase buffer size for write-heavy workloads
 - Adjust sync interval (lower = more durable, higher = faster)
@@ -231,6 +238,7 @@ optimizer:
 ```
 
 Enable optimizer tracing for diagnostics:
+
 ```bash
 export GEODE_TRACE_OPTIMIZER=1
 ```
@@ -240,25 +248,25 @@ export GEODE_TRACE_OPTIMIZER=1
 ### HNSW Vector Index Tuning
 
 ```gql
--- Create with custom parameters
+-- Create with the metric your queries use
 CREATE INDEX embedding_idx ON Document(embedding)
 USING vector
-WITH (
-  M = 16,                    -- Max connections per node
-  ef_construction = 200,     -- Search width during construction
-  ef_search = 100           -- Search width at query time
-);
+WITH (metric = 'cosine');
 ```
 
 **Parameter Guidelines**:
-- **M**: Higher = better recall, more memory (16-32 typical)
-- **ef_construction**: Higher = better index quality (200-400 typical)
-- **ef_search**: Higher = better recall, slower queries (50-200 typical)
+
+- **metric**: `l2` (default), `euclidean`, `cosine`, `dot`, `dot_product` or
+  `inner_product`. This is the only supported vector index parameter; the HNSW
+  graph parameters (`m`, `ef_construction`, `ef_search`) are not currently
+  tunable and are reserved for a future release.
 
 **Performance Trade-offs**:
-- M=16, ef_search=50: Fast, ~85% recall
-- M=16, ef_search=100: Medium, ~92% recall
-- M=32, ef_search=200: Slow, ~97% recall
+
+- Match `metric` to the query function, otherwise the index cannot serve the
+  query and it degrades to a full scan
+- Tighten the distance threshold and `LIMIT` for lower latency
+- Loosen the distance threshold and raise `LIMIT` for higher recall
 
 ### Spatial Index Optimization
 
@@ -273,6 +281,7 @@ WITH (
 ```
 
 **Best Practices**:
+
 - Higher M = fewer levels, more entries per node
 - Place on SSD for random access patterns
 - Regularly rebuild after bulk inserts
@@ -294,11 +303,13 @@ WITH (
 ### Storage
 
 **SSD vs HDD**:
+
 - **WAL**: Always SSD (write-heavy, sequential)
 - **Data files**: SSD for <1TB, SATA SSD for 1-10TB
 - **Backup storage**: HDD acceptable for cold storage
 
 **RAID Configuration**:
+
 - RAID 10: Best performance (recommended)
 - RAID 5/6: Acceptable for read-heavy workloads
 - RAID 0: Maximum performance (no redundancy)
@@ -306,12 +317,14 @@ WITH (
 ### Memory
 
 **Minimum Requirements**:
+
 - Development: 4GB
 - Small production: 16GB
 - Medium production: 64GB
 - Large production: 256GB+
 
 **Allocation**:
+
 - OS: 2-4GB
 - Page cache: 50-70% of remaining
 - Query execution: 20-30% of remaining
@@ -320,11 +333,13 @@ WITH (
 ### CPU
 
 **Core Count**:
+
 - 4 cores: Minimum for development
 - 8-16 cores: Small to medium production
 - 32+ cores: Large production with high concurrency
 
 **Features**:
+
 - AVX2/AVX-512: 2x+ speedup for vector operations
 - AES-NI: Hardware-accelerated encryption
 - NUMA: Configure for local memory access
@@ -332,11 +347,13 @@ WITH (
 ### Network
 
 **Bandwidth**:
+
 - 1 Gbps: Minimum
 - 10 Gbps: Recommended for distributed setups
 - 25/40 Gbps: High-throughput scenarios
 
 **Latency**:
+
 - <1ms: Same datacenter
 - <10ms: Cross-region acceptable
 - >50ms: Consider caching layer
@@ -371,6 +388,7 @@ LIMIT 10;
 ```
 
 **Profile Output**:
+
 - Execution time per operator
 - Rows processed per operator
 - Memory usage
@@ -386,6 +404,7 @@ monitoring:
 ```
 
 Environment variable:
+
 ```bash
 export GEODE_TELEMETRY_PAGING=1
 ```
@@ -429,6 +448,7 @@ export GEODE_TELEMETRY_PAGING=1
 ### Slow Queries
 
 **Checklist**:
+
 1. ✓ Indexes exist for filtered properties?
 2. ✓ Using EXPLAIN to verify index usage?
 3. ✓ Path expansion bounded?
@@ -438,6 +458,7 @@ export GEODE_TELEMETRY_PAGING=1
 ### High Memory Usage
 
 **Investigation**:
+
 ```bash
 # Check cache hit ratio
 curl http://localhost:9090/metrics | grep cache_hit_ratio
@@ -447,6 +468,7 @@ grep page_cache_size /etc/geode/geode.yaml
 ```
 
 **Solutions**:
+
 - Reduce page cache size
 - Add swap space (temporary)
 - Scale horizontally
@@ -454,12 +476,14 @@ grep page_cache_size /etc/geode/geode.yaml
 ### Write Performance Issues
 
 **Causes**:
+
 - WAL on slow storage
 - Too many indexes
 - Large transactions
 - Disk I/O saturation
 
 **Solutions**:
+
 - Move WAL to fast SSD
 - Batch writes in transactions
 - Increase wal_buffer_size

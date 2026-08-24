@@ -30,6 +30,7 @@ Hands-on learning paths with executable examples and expected outputs.
 Learn fundamental pattern matching:
 
 **Create sample data**:
+
 ```gql
 CREATE GRAPH SocialNetwork;
 USE SocialNetwork;
@@ -44,6 +45,7 @@ CREATE (a)-[:KNOWS {since: 2020}]->(b);
 ```
 
 **Basic queries**:
+
 ```gql
 -- Match all people
 MATCH (p:Person)
@@ -60,6 +62,7 @@ RETURN a.name, b.name, k.since;
 ```
 
 **Expected output**:
+
 ```
 name     | age
 ---------|----
@@ -75,6 +78,7 @@ See [GQL Guide](/docs/gql/guide) for complete syntax.
 Learn to create indexes and use EXPLAIN/PROFILE:
 
 **Step 1: Identify slow query**
+
 ```gql
 PROFILE
 MATCH (p:Person)
@@ -85,11 +89,13 @@ RETURN p.name;
 Output shows `SeqScan` (sequential scan) → slow for large datasets.
 
 **Step 2: Create index**
+
 ```gql
 CREATE INDEX person_age_idx ON Person(age) USING btree;
 ```
 
 **Step 3: Verify index usage**
+
 ```gql
 EXPLAIN
 MATCH (p:Person)
@@ -100,6 +106,7 @@ RETURN p.name;
 Now shows `IndexScan [person_age_idx]` → fast!
 
 **Step 4: Compare performance**
+
 ```gql
 PROFILE
 MATCH (p:Person)
@@ -116,6 +123,7 @@ See [Indexing and Optimization](/docs/query/indexing-and-optimization) for detai
 Run PageRank on social network:
 
 **Setup**:
+
 ```gql
 -- Use social network from Tutorial 1
 USE SocialNetwork;
@@ -126,6 +134,7 @@ CREATE (b)-[:KNOWS]->(c);
 ```
 
 **Run PageRank**:
+
 ```gql
 CALL graph.pageRank('SocialNetwork', {
   relationship_type: 'KNOWS',
@@ -137,6 +146,7 @@ ORDER BY score DESC;
 ```
 
 **Expected output**:
+
 ```
 person   | score
 ---------|-------
@@ -154,6 +164,7 @@ See [Graph Algorithms](/docs/analytics/graph-algorithms) for more algorithms.
 Generate embeddings and find similar items:
 
 **Create item graph**:
+
 ```gql
 CREATE GRAPH ProductCatalog;
 USE ProductCatalog;
@@ -173,6 +184,7 @@ CREATE (laptop)-[:CO_PURCHASED]->(monitor);
 ```
 
 **Generate embeddings**:
+
 ```gql
 CALL graph.node2vec('ProductCatalog', {
   relationship_type: 'CO_PURCHASED',
@@ -188,18 +200,20 @@ SET p.embedding = embedding;
 ```
 
 **Create vector index**:
+
 ```gql
 CREATE INDEX product_embedding_idx ON Product(embedding) USING vector;
 ```
 
 **Find similar products**:
+
 ```gql
 MATCH (laptop:Product {name: "Laptop"})
 MATCH (similar:Product)
 WHERE similar.id <> laptop.id
-  AND vector_distance_cosine(similar.embedding, laptop.embedding) < 0.5
-RETURN similar.name, vector_distance_cosine(similar.embedding, laptop.embedding) AS similarity
-ORDER BY similarity ASC;
+  AND distance(similar.embedding, laptop.embedding, 'cosine') < 0.5
+RETURN similar.name, distance(similar.embedding, laptop.embedding, 'cosine') AS distance
+ORDER BY distance ASC;
 ```
 
 **Expected output**:
@@ -212,6 +226,7 @@ See [Data Model and Types](/docs/model/data-model-and-types) for vector types.
 Protect your data with backups:
 
 **Local backup**:
+
 ```bash
 # Create backup
 ./geode backup --output /backups/social-network-$(date +%Y%m%d).tar.gz
@@ -221,6 +236,7 @@ ls -lh /backups/
 ```
 
 **S3 backup** (requires AWS credentials):
+
 ```bash
 export AWS_ACCESS_KEY_ID="..."
 export AWS_SECRET_ACCESS_KEY="..."
@@ -230,6 +246,7 @@ export AWS_SECRET_ACCESS_KEY="..."
 ```
 
 **Restore**:
+
 ```bash
 # Restore from local backup
 ./geode restore \

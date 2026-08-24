@@ -103,6 +103,7 @@ Page Layout (16 KB):
 ```
 
 **Page Configuration**:
+
 ```toml
 [storage.pages]
 size_kb = 16           # Page size (8, 16, or 32 KB)
@@ -191,6 +192,7 @@ Write Flow:
 ```
 
 **WAL Record Format**:
+
 ```
 WAL Record:
 ┌─────────────────────────────────────────────────────────┐
@@ -233,18 +235,21 @@ archive_command = "/etc/geode/archive_wal.sh %f %p"
 ### WAL Sync Modes
 
 **fsync** (default): Full durability, slightly slower
+
 ```toml
 [storage.wal]
 sync_mode = "fsync"
 ```
 
 **fdatasync**: Faster, skips metadata sync
+
 ```toml
 [storage.wal]
 sync_mode = "fdatasync"
 ```
 
 **async**: Best performance, risk of data loss on crash
+
 ```toml
 [storage.wal]
 sync_mode = "async"
@@ -380,6 +385,7 @@ B-Tree Structure:
 ```
 
 **B-Tree Configuration**:
+
 ```toml
 [storage.indexes.btree]
 # Fill factor for leaf pages
@@ -415,10 +421,8 @@ For similarity search on embeddings:
 
 ```toml
 [storage.indexes.hnsw]
-# HNSW parameters
-m = 16                    # Connections per layer
-ef_construction = 200     # Construction time quality
-ef_search = 50           # Search time quality
+# HNSW graph parameters (m, ef_construction, ef_search) are engine-managed
+# and are not configurable in this release.
 
 # Memory mapping
 mmap_enabled = true
@@ -468,6 +472,7 @@ throttle_mb_per_sec = 100
 ```
 
 **Via GQL**:
+
 ```gql
 -- Compact a specific table
 CALL system.compact('User');
@@ -634,6 +639,7 @@ groups:
 ### Hardware Recommendations
 
 **SSDs**: Strongly recommended for production
+
 ```toml
 [storage]
 # SSD-optimized settings
@@ -643,6 +649,7 @@ read_ahead_kb = 256
 ```
 
 **NVMe**: Best performance for write-heavy workloads
+
 ```toml
 [storage]
 disk_type = "nvme"
@@ -651,6 +658,7 @@ io_depth = 32
 ```
 
 **HDDs**: Only for archival/cold storage
+
 ```toml
 [storage]
 disk_type = "hdd"

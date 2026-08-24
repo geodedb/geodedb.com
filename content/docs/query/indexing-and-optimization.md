@@ -34,6 +34,7 @@ Learn how Geode executes queries, how to create indexes for different access pat
 Indexes accelerate queries by providing efficient data structures for specific access patterns.
 
 **When to index**:
+
 - Columns used in `WHERE` predicates
 - Properties used in `ORDER BY` clauses
 - Join/match columns for relationship traversal
@@ -54,6 +55,7 @@ CREATE INDEX [index_name] ON label(property) USING index_type;
 ```
 
 **Index types**:
+
 - `btree` - B-tree (default)
 - `hash` - Hash table
 - `fulltext` - Full-text search with BM25
@@ -90,6 +92,7 @@ DROP INDEX person_age_idx;
 ### B-tree Indexes
 
 **Best for**:
+
 - Range queries (`>`, `<`, `BETWEEN`)
 - Sorting (`ORDER BY`)
 - Prefix matching (`STARTS WITH`)
@@ -116,10 +119,12 @@ RETURN p.name;
 ### Hash Indexes
 
 **Best for**:
+
 - Exact equality (`=`)
 - High-cardinality columns (emails, UUIDs)
 
 **Not suitable for**:
+
 - Range queries
 - Sorting
 - Prefix matching
@@ -141,11 +146,13 @@ RETURN u;
 ### Full-text Indexes
 
 **Best for**:
+
 - Text search with ranking
 - Natural language queries
 - Document search
 
 **Features** (from `BM25_INDEX_OPTIMIZER_INTEGRATION.md`):
+
 - BM25 relevance scoring
 - Tokenization and stemming
 - Stop word filtering
@@ -172,6 +179,7 @@ LIMIT 10;
 ### Spatial Indexes
 
 **Best for**:
+
 - Geographic queries (distance, containment)
 - Location-based search
 - Geofencing
@@ -202,6 +210,7 @@ RETURN s.name;
 ### Vector Indexes (HNSW)
 
 **Best for**:
+
 - Vector similarity search
 - Approximate Nearest Neighbor (ANN)
 - Embedding-based search (ML models)
@@ -209,6 +218,7 @@ RETURN s.name;
 **Implementation**: HNSW (Hierarchical Navigable Small World) with SIMD acceleration
 
 **Characteristics**:
+
 - SIMD-optimized distance metrics
 - Sub-linear search time O(log N)
 
@@ -220,16 +230,19 @@ CREATE INDEX doc_embedding_idx ON Document(embedding) USING vector;
 
 -- Similarity search (k-NN)
 MATCH (d:Document)
-WHERE vector_distance_l2(d.embedding, '[0.1, 0.2, ..., 0.512]'::vector_f32) < 0.5
-RETURN d.title, vector_distance_l2(d.embedding, '[0.1, 0.2, ..., 0.512]'::vector_f32) AS distance
+WHERE vector_l2(d.embedding, '[0.1, 0.2, ..., 0.512]'::vector_f32) < 0.5
+RETURN d.title, vector_l2(d.embedding, '[0.1, 0.2, ..., 0.512]'::vector_f32) AS distance
 ORDER BY distance
 LIMIT 10;
 ```
 
 **Distance metrics**:
-- `vector_distance_l2()` - Euclidean distance
-- `vector_distance_cosine()` - Cosine similarity
-- `vector_distance_dot()` - Dot product
+
+- `vector_l2()` / `euclidean()` - Euclidean distance (lower = more similar)
+- `manhattan()` - Manhattan (L1) distance (lower = more similar)
+- `distance(v1, v2, 'cosine')` - Cosine distance (lower = more similar)
+- `vector_cosine()` / `similarity()` - Cosine similarity (higher = more similar)
+- `vector_dot()` - Dot product (higher = more similar)
 
 **See also**: [Graph Algorithms and Analytics](/docs/analytics/graph-algorithms) for embeddings
 
@@ -271,12 +284,14 @@ Geode's **Cost-Based Optimizer** selects the best execution plan based on:
 - **Join cost**: Cost of expanding relationships
 
 **How it works**:
+
 1. Parse query into logical plan
 2. Generate alternative physical plans (different index choices, join orders)
 3. Estimate cost for each plan (I/O, CPU, memory)
 4. Select plan with lowest estimated cost
 
 **IndexOptimizer** (from `SERVER_FEATURES.md`):
+
 - Specialized component for index selection
 - Evaluates index applicability for each predicate
 - Combines multiple indexes via bitmap operations
@@ -307,6 +322,7 @@ Project [p.name, friend.name]
 ```
 
 **Plan operators**:
+
 - `Scan` - Read nodes/relationships (with or without index)
 - `Filter` - Apply predicates
 - `Expand` - Traverse relationships
@@ -341,11 +357,13 @@ Project [p.name, friend.name]
 ```
 
 **Metrics**:
+
 - **Rows**: Actual rows processed at each operator
 - **Time**: Execution time per operator
 - **Index**: Index used (if any)
 
 **Performance analysis**:
+
 - High row counts early → poor selectivity, consider better indexes
 - High time in `Expand` → relationship fanout, consider materialized views
 - No index usage → add index for `WHERE`/`ORDER BY` columns
@@ -359,11 +377,13 @@ From `BM25_INDEX_OPTIMIZER_INTEGRATION.md`:
 **BM25 scoring** provides relevance ranking for full-text queries.
 
 **Formula**:
+
 ```
 BM25(d, q) = Σ IDF(qi) * (f(qi, d) * (k1 + 1)) / (f(qi, d) + k1 * (1 - b + b * |d| / avgdl))
 ```
 
 Where:
+
 - `f(qi, d)` = term frequency of query term qi in document d
 - `|d|` = document length
 - `avgdl` = average document length
@@ -390,6 +410,7 @@ LIMIT 10;
 ### 1. Index Key Predicates
 
 **Before**:
+
 ```gql
 -- Sequential scan of all Person nodes
 MATCH (p:Person)
@@ -398,6 +419,7 @@ RETURN p;
 ```
 
 **After**:
+
 ```gql
 -- Create hash index
 CREATE INDEX person_email_idx ON Person(email) USING hash;
@@ -413,11 +435,13 @@ RETURN p;
 **Selectivity** = fraction of rows matching predicate.
 
 **Good** (high selectivity, few matches):
+
 ```gql
 WHERE p.email = "[email protected]"  -- Selectivity ~0.0001%
 ```
 
 **Bad** (low selectivity, many matches):
+
 ```gql
 WHERE p.active = true  -- Selectivity ~90%
 ```
@@ -429,6 +453,7 @@ WHERE p.active = true  -- Selectivity ~90%
 From `match_tutorial.md`: Geode enforces deterministic ordering for pagination.
 
 **Explicit ordering** (required):
+
 ```gql
 MATCH (p:Person)
 RETURN p.name
@@ -437,6 +462,7 @@ LIMIT 10;
 ```
 
 **Unordered pagination** (rejected with `US001`):
+
 ```gql
 MATCH (p:Person)
 RETURN p.name
@@ -446,6 +472,7 @@ LIMIT 10;
 ### 4. Use EXPLAIN Before PROFILE
 
 **Workflow**:
+
 1. Write query
 2. Run `EXPLAIN` to check plan and index usage
 3. Add/adjust indexes if needed
@@ -485,6 +512,7 @@ ORDER BY p.age;
 **High fanout** (many relationships per node) can be expensive.
 
 **Before**:
+
 ```gql
 -- Expands all KNOWS relationships (potentially millions)
 MATCH (p:Person {name: "Alice"})-[:KNOWS*]->(friend)
@@ -492,6 +520,7 @@ RETURN friend.name;
 ```
 
 **After**:
+
 ```gql
 -- Limit depth
 MATCH (p:Person {name: "Alice"})-[:KNOWS*1..3]->(friend)
@@ -517,11 +546,13 @@ RETURN p.name, friend.name;
 ```
 
 **Output**:
+
 - Shows which shards/instances are queried
 - Merge operator for combining results
 - Network cost estimates
 
 **Distributed optimization**:
+
 - Push predicates to remote instances (reduce network transfer)
 - Parallelize shard queries
 - Merge results with deterministic ordering

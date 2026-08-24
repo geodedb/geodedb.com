@@ -100,7 +100,7 @@ CREATE INDEX FOR (u:User) ON (u.last_name, u.first_name);
 
 // HNSW vector index (similarity search)
 CREATE VECTOR INDEX FOR (d:Document) ON (d.embedding)
-OPTIONS {metric: 'cosine', dimensions: 768, m: 16, ef_construction: 200};
+WITH (metric = 'cosine');
 
 // BM25 index (ranking search)
 CREATE BM25 INDEX FOR (a:Article) ON (a.title, a.body);
@@ -499,6 +499,7 @@ Standard protocol support:
 - [GQL Reference](/tags/gql-reference/) - Complete language documentation
 
 Geode's comprehensive feature set provides everything needed for production-grade graph database deployments, from single-node development to distributed enterprise systems.
+
 ## Advanced Enterprise Features
 
 ### Multi-Tenancy Implementation
@@ -509,23 +510,23 @@ Isolate tenant data with Row-Level Security:
 class MultiTenantClient:
     def __init__(self, base_client):
         self.client = base_client
-    
+
     async def setup_tenant_isolation(self):
         """Configure RLS policies for multi-tenancy"""
         await self.client.execute("""
             -- Create RLS policy for users
             CREATE POLICY tenant_users ON User
             USING (tenant_id = current_setting('app.tenant_id'));
-            
+
             -- Create RLS policy for orders
             CREATE POLICY tenant_orders ON Order
             USING (tenant_id = current_setting('app.tenant_id'));
-            
+
             -- Enable RLS
             ALTER LABEL User ENABLE ROW LEVEL SECURITY;
             ALTER LABEL Order ENABLE ROW LEVEL SECURITY;
         """)
-    
+
     async def execute_for_tenant(self, tenant_id, query, params=None):
         """Execute query in tenant context"""
         async with self.client.connection() as conn:
@@ -622,7 +623,7 @@ async def semantic_search(client, query_text, limit=10):
     """Perform semantic search using vector embeddings"""
     # Generate query embedding
     query_embedding = await generate_embedding(query_text)
-    
+
     # Vector similarity search
     results, _ = await client.query("""
         MATCH (d:Document)
@@ -635,20 +636,14 @@ async def semantic_search(client, query_text, limit=10):
         "query_embedding": query_embedding,
         "limit": limit
     })
-    
+
     return results
 
 # HNSW index for fast approximate search
 await client.execute("""
     CREATE VECTOR INDEX document_embeddings
     FOR (d:Document) ON (d.embedding)
-    OPTIONS {
-        metric: 'cosine',
-        dimensions: 768,
-        m: 16,
-        ef_construction: 200,
-        ef_search: 100
-    }
+    WITH (metric = 'cosine')
 """)
 ```
 
@@ -707,7 +702,7 @@ CREATE CONSTRAINT ON (p:Product) ASSERT p.price > 0;
 CREATE CONSTRAINT ON (r:Rating) ASSERT r.score IN [1,2,3,4,5];
 
 -- Pattern constraints
-CREATE CONSTRAINT ON (u:User) 
+CREATE CONSTRAINT ON (u:User)
 ASSERT u.email =~ '^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$';
 
 -- Custom validation functions
@@ -768,29 +763,29 @@ class CachedClient:
     def __init__(self, client, cache_backend):
         self.client = client
         self.cache = cache_backend
-    
+
     def cache_key(self, query, params):
         """Generate cache key from query and params"""
         content = f"{query}:{json.dumps(params, sort_keys=True)}"
         return hashlib.sha256(content.encode()).hexdigest()
-    
+
     async def execute_cached(self, query, params=None, ttl=300):
         """Execute query with result caching"""
         key = self.cache_key(query, params)
-        
+
         # Check cache
         cached = await self.cache.get(key)
         if cached:
             return json.loads(cached)
-        
+
         # Execute query
         result, _ = await self.client.query(query, params)
-        
+
         # Store in cache
         await self.cache.set(key, json.dumps(result), ex=ttl)
-        
+
         return result
-    
+
     async def invalidate_pattern(self, pattern):
         """Invalidate cached queries matching pattern"""
         keys = await self.cache.keys(f"{pattern}*")
@@ -807,7 +802,7 @@ async def batch_insert_users(client, users, batch_size=1000):
     """Insert users in batches"""
     for i in range(0, len(users), batch_size):
         batch = users[i:i + batch_size]
-        
+
         await client.execute("""
             UNWIND $users AS user_data
             CREATE (u:User {

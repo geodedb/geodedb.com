@@ -34,24 +34,28 @@ Geode implements the **property graph** model as defined by ISO/IEC 39075:2024 G
 ### Core Concepts
 
 **Nodes (Vertices)**:
+
 - Basic unit representing entities
 - Can have zero or more **labels** (e.g., `:Person`, `:Employee`)
 - Can have **properties** (key-value pairs)
 - Example: `(:Person {name: "Alice", age: 30})`
 
 **Relationships (Edges)**:
+
 - Directed connections between nodes
 - Have exactly one **type** (e.g., `:KNOWS`, `:WORKS_AT`)
 - Can have **properties** (key-value pairs)
 - Example: `(a)-[:KNOWS {since: 2020}]->(b)`
 
 **Properties**:
+
 - Key-value pairs attached to nodes or relationships
 - Keys are strings
 - Values are typed (see Type System below)
 - Example: `{name: "Alice", age: 30, active: true}`
 
 **Graphs**:
+
 - Named collections of nodes and relationships
 - Created with `CREATE GRAPH <name>`
 - Selected with `USE <name>`
@@ -255,6 +259,7 @@ RETURN d.metadata;
 ```
 
 **JSONB benefits**:
+
 - Parsed and validated on insert
 - Efficient path indexing
 - Faster querying than text JSON
@@ -296,16 +301,19 @@ CREATE (:Image {
 
 -- Distance queries (with HNSW index)
 MATCH (d:Document)
-WHERE vector_distance_l2(d.embedding, '[0.15, 0.25, 0.35, 0.45]'::vector_f32) < 0.5
-RETURN d.id, vector_distance_l2(d.embedding, '[0.15, 0.25, 0.35, 0.45]'::vector_f32) AS distance
+WHERE vector_l2(d.embedding, '[0.15, 0.25, 0.35, 0.45]'::vector_f32) < 0.5
+RETURN d.id, vector_l2(d.embedding, '[0.15, 0.25, 0.35, 0.45]'::vector_f32) AS distance
 ORDER BY distance
 LIMIT 10;
 ```
 
 **Distance metrics**:
-- `vector_distance_l2()` - Euclidean (L2) distance
-- `vector_distance_cosine()` - Cosine distance
-- `vector_distance_dot()` - Dot product (inner product)
+
+- `vector_l2()` / `euclidean()` - Euclidean (L2) distance (lower = more similar)
+- `manhattan()` - Manhattan (L1) distance (lower = more similar)
+- `distance(v1, v2, 'cosine')` - Cosine distance (lower = more similar)
+- `vector_cosine()` / `similarity()` - Cosine similarity (higher = more similar)
+- `vector_dot()` - Dot product (inner product, higher = more similar)
 
 **Optimization**: SIMD-accelerated distance calculations
 

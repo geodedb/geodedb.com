@@ -100,6 +100,7 @@ RETURN p.name, friend.name;
 ```
 
 Output shows:
+
 - Execution plan steps
 - Index selection
 - Estimated cardinality
@@ -118,6 +119,7 @@ RETURN p.name, friend.name;
 ```
 
 Output includes:
+
 - All EXPLAIN information
 - Actual execution time per step
 - Rows processed at each stage
@@ -139,7 +141,7 @@ CREATE INDEX person_email_hash ON :Person(email) USING HASH;
 -- HNSW index for vector search
 CREATE INDEX product_embedding_hnsw
 ON :Product(embedding)
-USING HNSW(distance='cosine', m=16, ef_construction=200);
+USING HNSW WITH (metric = 'cosine');
 
 -- Full-text index
 CREATE INDEX article_content_fulltext
@@ -150,31 +152,37 @@ USING FULLTEXT;
 ### Index Selection Guidelines
 
 **Use B-tree** when:
+
 - Range queries (age > 30, created_at BETWEEN ...)
 - Sorting (ORDER BY)
 - Prefix matching (name STARTS WITH 'A')
 
 **Use Hash** when:
-- Exact equality (email = 'alice@example.com')
+
+- Exact equality (`email = 'alice@example.com'`)
 - High cardinality unique columns
 - No range or sorting requirements
 
 **Use HNSW** when:
+
 - Vector similarity search
 - Approximate K-NN queries
 - Embedding-based retrieval
 
 **Use R-tree** when:
+
 - Geospatial queries
 - Bounding box searches
 - Radius searches
 
 **Use Full-text** when:
+
 - Text search queries
 - Relevance ranking needed
 - Natural language queries
 
 **Use Patricia Trie** when:
+
 - IP address queries
 - CIDR prefix matching
 - Longest Prefix Match (LPM)
@@ -275,6 +283,7 @@ LIMIT 100;
 ```
 
 Refresh strategies:
+
 - **IMMEDIATE**: Updates on data changes (real-time)
 - **DEFERRED**: Batch updates on schedule (periodic)
 - **ON DEMAND**: Manual refresh (controlled)
@@ -298,6 +307,7 @@ LIMIT 10;
 ```
 
 Features:
+
 - BM25 ranking algorithm
 - Tokenization with stop words
 - Stemming support
@@ -321,6 +331,7 @@ ORDER BY execution_time DESC;
 ```
 
 Monitor metrics:
+
 - Query latency (p50, p95, p99)
 - Query throughput (QPS)
 - Error rates
@@ -377,6 +388,7 @@ PROFILE <your slow query>;
 ```
 
 Look for:
+
 - Steps with high execution time
 - Large row counts (potential full scans)
 - Missing index usage
@@ -396,6 +408,7 @@ WHERE table_name = 'Person';
 ### Step 4: Optimize
 
 Based on PROFILE analysis:
+
 - Add missing indexes
 - Rewrite query to use indexes
 - Break complex query into steps

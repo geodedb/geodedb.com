@@ -28,6 +28,7 @@ Real-world domain modeling patterns and implementation guides for common graph d
 Detect fraudulent transactions and anomalous behavior using graph patterns, ML embeddings, and real-time analytics.
 
 **Key features used**:
+
 - Graph algorithms (centrality, community detection)
 - Real-time analytics with CDC
 - Row-Level Security (RLS) for multi-tenant isolation
@@ -40,6 +41,7 @@ Detect fraudulent transactions and anomalous behavior using graph patterns, ML e
 Build personalized recommendation engines using collaborative filtering, embeddings, and vector similarity search.
 
 **Key features used**:
+
 - ML graph embeddings (Node2Vec, GraphSAGE)
 - HNSW vector similarity search
 - Graph traversal patterns
@@ -52,6 +54,7 @@ Build personalized recommendation engines using collaborative filtering, embeddi
 _(Coming soon)_ - Organize and query structured knowledge with semantic relationships, inference, and entity resolution.
 
 **Key features used**:
+
 - GQL pattern matching
 - Full-text search with BM25
 - Schema constraints
@@ -96,9 +99,9 @@ Use embeddings for similarity-based queries:
 ```gql
 -- Find similar items
 MATCH (item:Product)
-WHERE vector_distance_cosine(item.embedding, $query_embedding) < 0.5
-RETURN item.name, vector_distance_cosine(item.embedding, $query_embedding) AS similarity
-ORDER BY similarity ASC
+WHERE distance(item.embedding, $query_embedding, 'cosine') < 0.5
+RETURN item.name, distance(item.embedding, $query_embedding, 'cosine') AS distance
+ORDER BY distance ASC  -- cosine distance: lower = more similar
 LIMIT 10;
 ```
 

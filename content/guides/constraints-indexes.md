@@ -24,10 +24,12 @@ Constraints and indexes are essential tools for maintaining data integrity and o
 ## Overview
 
 **Constraints** enforce data integrity rules:
+
 - Unique constraints prevent duplicate values
 - Existence constraints require properties to be present
 
 **Indexes** improve query performance:
+
 - B-tree indexes for range queries and ordering
 - Hash indexes for exact lookups
 - Composite indexes for multi-property queries
@@ -41,11 +43,13 @@ Constraints and indexes are essential tools for maintaining data integrity and o
 Unique constraints ensure that no two nodes with the same label have the same property value.
 
 **Syntax**:
+
 ```gql
 CREATE CONSTRAINT constraint_name ON :Label(property) ASSERT UNIQUE
 ```
 
 **Examples**:
+
 ```gql
 // Ensure unique email addresses
 CREATE CONSTRAINT user_email_unique ON :User(email) ASSERT UNIQUE
@@ -58,6 +62,7 @@ CREATE CONSTRAINT order_number_unique ON :Order(order_number) ASSERT UNIQUE
 ```
 
 **Multi-Property Unique Constraints**:
+
 ```gql
 // Composite unique constraint (tenant + username)
 CREATE CONSTRAINT tenant_user_unique ON :User(tenant_id, username) ASSERT UNIQUE
@@ -68,6 +73,7 @@ CREATE CONSTRAINT org_repo_unique ON :Repository(org_id, name) ASSERT UNIQUE
 
 {{< tabs >}}
 {{< tab "Go" >}}
+
 ```go
 // Create unique constraint
 _, err := db.ExecContext(ctx, `
@@ -89,8 +95,10 @@ if err != nil {
     log.Printf("Expected error: %v", err)
 }
 ```
+
 {{< /tab >}}
 {{< tab "Python" >}}
+
 ```python
 async with client.connection() as conn:
     # Create unique constraint
@@ -113,8 +121,10 @@ async with client.connection() as conn:
     except ConstraintViolationError as e:
         print(f"Constraint violation: {e}")
 ```
+
 {{< /tab >}}
 {{< tab "Rust" >}}
+
 ```rust
 // Create unique constraint
 conn.query("CREATE CONSTRAINT user_email_unique ON :User(email) ASSERT UNIQUE")
@@ -131,8 +141,10 @@ match conn.query_with_params("CREATE (:User {email: $email})", &params).await {
     Err(e) => println!("Expected constraint violation: {}", e),
 }
 ```
+
 {{< /tab >}}
 {{< tab "Node.js" >}}
+
 ```typescript
 // Create unique constraint
 await client.exec(
@@ -155,8 +167,10 @@ try {
     console.log('Expected constraint violation:', error.message);
 }
 ```
+
 {{< /tab >}}
 {{< tab "Zig" >}}
+
 ```zig
 // Create unique constraint
 try client.sendRunGql(1,
@@ -180,6 +194,7 @@ const result = try client.receiveMessage(30000);
 defer allocator.free(result);
 // Check result for constraint violation error
 ```
+
 {{< /tab >}}
 {{< /tabs >}}
 
@@ -188,11 +203,13 @@ defer allocator.free(result);
 Existence constraints ensure that nodes with a specific label always have certain properties.
 
 **Syntax**:
+
 ```gql
 CREATE CONSTRAINT constraint_name ON :Label(property) ASSERT EXISTS
 ```
 
 **Examples**:
+
 ```gql
 // Require email for all users
 CREATE CONSTRAINT user_email_exists ON :User(email) ASSERT EXISTS
@@ -205,6 +222,7 @@ CREATE CONSTRAINT order_created_exists ON :Order(created_at) ASSERT EXISTS
 ```
 
 **Multi-Property Existence**:
+
 ```gql
 // Require multiple properties
 CREATE CONSTRAINT user_required ON :User(email) ASSERT EXISTS
@@ -213,6 +231,7 @@ CREATE CONSTRAINT user_name_required ON :User(name) ASSERT EXISTS
 
 {{< tabs >}}
 {{< tab "Go" >}}
+
 ```go
 // Create existence constraint
 _, err := db.ExecContext(ctx, `
@@ -235,8 +254,10 @@ if err != nil {
     log.Printf("Expected error: %v", err)
 }
 ```
+
 {{< /tab >}}
 {{< tab "Python" >}}
+
 ```python
 async with client.connection() as conn:
     # Create existence constraint
@@ -259,8 +280,10 @@ async with client.connection() as conn:
     except ConstraintViolationError as e:
         print(f"Missing required property: {e}")
 ```
+
 {{< /tab >}}
 {{< tab "Rust" >}}
+
 ```rust
 // Create existence constraint
 conn.query("CREATE CONSTRAINT user_email_exists ON :User(email) ASSERT EXISTS")
@@ -283,8 +306,10 @@ match conn.query_with_params("CREATE (:User {name: $name})", &bad_params).await 
     Err(e) => println!("Expected missing property error: {}", e),
 }
 ```
+
 {{< /tab >}}
 {{< tab "Node.js" >}}
+
 ```typescript
 // Create existence constraint
 await client.exec(
@@ -307,8 +332,10 @@ try {
     console.log('Missing required property:', error.message);
 }
 ```
+
 {{< /tab >}}
 {{< tab "Zig" >}}
+
 ```zig
 // Create existence constraint
 try client.sendRunGql(1,
@@ -336,23 +363,27 @@ const result = try client.receiveMessage(30000);
 defer allocator.free(result);
 // Response will contain constraint violation error
 ```
+
 {{< /tab >}}
 {{< /tabs >}}
 
 ### Managing Constraints
 
 **View Constraints**:
+
 ```gql
 SHOW CONSTRAINTS
 ```
 
 **Drop Constraints**:
+
 ```gql
 DROP CONSTRAINT user_email_unique
 DROP CONSTRAINT user_email_exists
 ```
 
 **Check Constraint Details**:
+
 ```gql
 SHOW CONSTRAINT user_email_unique
 ```
@@ -364,18 +395,21 @@ Indexes accelerate query performance by creating efficient lookup structures.
 ### B-Tree Indexes
 
 B-tree indexes are the default and most versatile index type. They support:
+
 - Exact matches
 - Range queries (>, <, >=, <=)
 - Prefix matching (STARTS WITH)
 - Ordering (ORDER BY)
 
 **Syntax**:
+
 ```gql
 CREATE INDEX index_name ON :Label(property)
 CREATE BTREE INDEX index_name ON :Label(property)
 ```
 
 **Examples**:
+
 ```gql
 // Simple property index
 CREATE INDEX user_email ON :User(email)
@@ -388,6 +422,7 @@ CREATE INDEX order_date ON :Order(created_at)
 ```
 
 **Query Patterns That Use B-Tree Indexes**:
+
 ```gql
 // Exact match
 MATCH (u:User {email: "alice@example.com"}) RETURN u
@@ -407,11 +442,13 @@ MATCH (o:Order) RETURN o ORDER BY o.created_at DESC
 Hash indexes provide the fastest exact-match lookups but do not support range queries or ordering.
 
 **Syntax**:
+
 ```gql
 CREATE HASH INDEX index_name ON :Label(property)
 ```
 
 **Examples**:
+
 ```gql
 // Hash index for exact lookups
 CREATE HASH INDEX user_id ON :User(id)
@@ -421,12 +458,14 @@ CREATE HASH INDEX order_user_id ON :Order(user_id)
 ```
 
 **When to Use Hash Indexes**:
+
 - Primary key lookups
 - Foreign key relationships
 - Equality-only queries
 - Maximum lookup speed needed
 
 **Query Patterns That Use Hash Indexes**:
+
 ```gql
 // Exact match (fast)
 MATCH (u:User {id: 12345}) RETURN u
@@ -441,11 +480,13 @@ MATCH (u:User {id: 12345}) RETURN u
 Composite indexes cover multiple properties and are essential for multi-property queries.
 
 **Syntax**:
+
 ```gql
 CREATE INDEX index_name ON :Label(property1, property2, ...)
 ```
 
 **Examples**:
+
 ```gql
 // Composite index for multi-tenant queries
 CREATE INDEX user_tenant ON :User(tenant_id, email)
@@ -460,6 +501,7 @@ CREATE INDEX event_time ON :Event(type, timestamp)
 **Important: Left-Prefix Rule**:
 
 Composite indexes follow the left-prefix rule. An index on `(a, b, c)` can be used for queries on:
+
 - `(a)`
 - `(a, b)`
 - `(a, b, c)`
@@ -483,6 +525,7 @@ MATCH (u:User {status: "active"})
 
 {{< tabs >}}
 {{< tab "Go" >}}
+
 ```go
 // Create composite index
 _, err := db.ExecContext(ctx, `
@@ -502,8 +545,10 @@ if err != nil {
 }
 defer rows.Close()
 ```
+
 {{< /tab >}}
 {{< tab "Python" >}}
+
 ```python
 async with client.connection() as conn:
     # Create composite index
@@ -517,8 +562,10 @@ async with client.connection() as conn:
         {"tenant": 1, "email": "alice@example.com"}
     )
 ```
+
 {{< /tab >}}
 {{< tab "Rust" >}}
+
 ```rust
 // Create composite index
 conn.query("CREATE INDEX user_tenant_email ON :User(tenant_id, email)")
@@ -533,8 +580,10 @@ let (page, _) = conn.query_with_params(
     &params
 ).await?;
 ```
+
 {{< /tab >}}
 {{< tab "Node.js" >}}
+
 ```typescript
 // Create composite index
 await client.exec('CREATE INDEX user_tenant_email ON :User(tenant_id, email)');
@@ -545,8 +594,10 @@ const rows = await client.queryAll(
     { params: { tenant: 1, email: 'alice@example.com' } }
 );
 ```
+
 {{< /tab >}}
 {{< tab "Zig" >}}
+
 ```zig
 // Create composite index
 try client.sendRunGql(1,
@@ -569,6 +620,7 @@ try client.sendPull(2, 1000);
 const result = try client.receiveMessage(30000);
 defer allocator.free(result);
 ```
+
 {{< /tab >}}
 {{< /tabs >}}
 
@@ -579,27 +631,26 @@ Vector indexes enable similarity search on high-dimensional vector embeddings, e
 ### Creating Vector Indexes
 
 **Syntax**:
+
 ```gql
 CREATE VECTOR INDEX index_name ON :Label(property)
-OPTIONS {
-  dimensions: 1536,
-  similarity: "cosine"  // or "euclidean", "dot_product"
-}
+WITH (metric = 'cosine')  // or 'l2', 'euclidean', 'dot', 'dot_product', 'inner_product'
 ```
 
 **Examples**:
+
 ```gql
 // OpenAI embedding index (1536 dimensions)
 CREATE VECTOR INDEX document_embedding ON :Document(embedding)
-OPTIONS { dimensions: 1536, similarity: "cosine" }
+WITH (metric = 'cosine')
 
 // Image feature vector (512 dimensions, euclidean distance)
 CREATE VECTOR INDEX image_features ON :Image(features)
-OPTIONS { dimensions: 512, similarity: "euclidean" }
+WITH (metric = 'euclidean')
 
 // Sentence embedding with dot product similarity
 CREATE VECTOR INDEX sentence_embed ON :Sentence(vector)
-OPTIONS { dimensions: 768, similarity: "dot_product" }
+WITH (metric = 'dot_product')
 ```
 
 ### Similarity Search Queries
@@ -627,11 +678,12 @@ LIMIT 20
 
 {{< tabs >}}
 {{< tab "Go" >}}
+
 ```go
 // Create vector index
 _, err := db.ExecContext(ctx, `
     CREATE VECTOR INDEX doc_embedding ON :Document(embedding)
-    OPTIONS { dimensions: 1536, similarity: "cosine" }
+    WITH (metric = 'cosine')
 `)
 if err != nil {
     log.Fatal(err)
@@ -658,8 +710,10 @@ for rows.Next() {
     fmt.Printf("%s (distance: %.4f)\n", title, distance)
 }
 ```
+
 {{< /tab >}}
 {{< tab "Python" >}}
+
 ```python
 import numpy as np
 
@@ -667,7 +721,7 @@ async with client.connection() as conn:
     # Create vector index
     await conn.execute("""
         CREATE VECTOR INDEX doc_embedding ON :Document(embedding)
-        OPTIONS { dimensions: 1536, similarity: "cosine" }
+        WITH (metric = 'cosine')
     """)
 
     # Generate query embedding (using your ML model)
@@ -685,13 +739,15 @@ async with client.connection() as conn:
     for row in page.rows:
         print(f"{row['d.title'].as_string} (distance: {row['distance'].as_float:.4f})")
 ```
+
 {{< /tab >}}
 {{< tab "Rust" >}}
+
 ```rust
 // Create vector index
 conn.query(r#"
     CREATE VECTOR INDEX doc_embedding ON :Document(embedding)
-    OPTIONS { dimensions: 1536, similarity: "cosine" }
+    WITH (metric = 'cosine')
 "#).await?;
 
 // Generate query embedding
@@ -714,13 +770,15 @@ for row in &page.rows {
     println!("{} (distance: {:.4})", title, distance);
 }
 ```
+
 {{< /tab >}}
 {{< tab "Node.js" >}}
+
 ```typescript
 // Create vector index
 await client.exec(`
     CREATE VECTOR INDEX doc_embedding ON :Document(embedding)
-    OPTIONS { dimensions: 1536, similarity: "cosine" }
+    WITH (metric = 'cosine')
 `);
 
 // Generate query embedding
@@ -739,13 +797,15 @@ for (const row of rows) {
     console.log(`${row.get('d.title')?.asString} (distance: ${row.get('distance')?.asNumber.toFixed(4)})`);
 }
 ```
+
 {{< /tab >}}
 {{< tab "Zig" >}}
+
 ```zig
 // Create vector index
 try client.sendRunGql(1,
     \\CREATE VECTOR INDEX doc_embedding ON :Document(embedding)
-    \\OPTIONS { dimensions: 1536, similarity: "cosine" }
+    \\WITH (metric = 'cosine')
 , null);
 _ = try client.receiveMessage(30000);
 
@@ -778,6 +838,7 @@ try client.sendPull(2, 1000);
 const result = try client.receiveMessage(30000);
 defer allocator.free(result);
 ```
+
 {{< /tab >}}
 {{< /tabs >}}
 
@@ -785,12 +846,16 @@ defer allocator.free(result);
 
 | Option | Description | Values |
 |--------|-------------|--------|
-| `dimensions` | Vector dimensionality | 1-4096 |
-| `similarity` | Distance metric | `cosine`, `euclidean`, `dot_product` |
-| `ef_construction` | Build-time accuracy | 16-512 (default: 200) |
-| `m` | Max connections per node | 4-64 (default: 16) |
+| `metric` | Distance metric | `l2` (default), `euclidean`, `cosine`, `dot`, `dot_product`, `inner_product` |
+
+`metric` is the only supported vector index option and uses `=` syntax, for
+example `WITH (metric = 'cosine')`. Vector dimensionality is inferred from the
+indexed data. The HNSW graph parameters (`m`, `ef_construction`, `ef_search`)
+are not currently tunable — they are reserved for a future release and are
+rejected if supplied.
 
 **Choosing Similarity Metrics**:
+
 - **Cosine**: Best for normalized embeddings (text, semantic search)
 - **Euclidean**: Best for spatial/geometric data
 - **Dot Product**: Best for maximum inner product search
@@ -802,6 +867,7 @@ Full-text indexes enable efficient text search with tokenization, stemming, and 
 ### Creating Full-Text Indexes
 
 **Syntax**:
+
 ```gql
 CREATE FULLTEXT INDEX index_name ON :Label(property, ...)
 OPTIONS {
@@ -811,6 +877,7 @@ OPTIONS {
 ```
 
 **Examples**:
+
 ```gql
 // Basic full-text index
 CREATE FULLTEXT INDEX article_content ON :Article(title, content)
@@ -862,6 +929,7 @@ LIMIT 20
 
 {{< tabs >}}
 {{< tab "Go" >}}
+
 ```go
 // Create full-text index
 _, err := db.ExecContext(ctx, `
@@ -892,8 +960,10 @@ for rows.Next() {
     fmt.Printf("%.2f: %s\n", relevance, title)
 }
 ```
+
 {{< /tab >}}
 {{< tab "Python" >}}
+
 ```python
 async with client.connection() as conn:
     # Create full-text index
@@ -914,8 +984,10 @@ async with client.connection() as conn:
     for row in page.rows:
         print(f"{row['relevance'].as_float:.2f}: {row['a.title'].as_string}")
 ```
+
 {{< /tab >}}
 {{< tab "Rust" >}}
+
 ```rust
 // Create full-text index
 conn.query(r#"
@@ -940,8 +1012,10 @@ for row in &page.rows {
     println!("{:.2}: {}", relevance, title);
 }
 ```
+
 {{< /tab >}}
 {{< tab "Node.js" >}}
+
 ```typescript
 // Create full-text index
 await client.exec(`
@@ -962,8 +1036,10 @@ for (const row of rows) {
     console.log(`${row.get('relevance')?.asNumber.toFixed(2)}: ${row.get('a.title')?.asString}`);
 }
 ```
+
 {{< /tab >}}
 {{< tab "Zig" >}}
+
 ```zig
 // Create full-text index
 try client.sendRunGql(1,
@@ -990,6 +1066,7 @@ try client.sendPull(2, 1000);
 const result = try client.receiveMessage(30000);
 defer allocator.free(result);
 ```
+
 {{< /tab >}}
 {{< /tabs >}}
 
@@ -1035,6 +1112,7 @@ Multiple properties in WHERE clause?
 ### Index Overhead
 
 Every index:
+
 - **Increases write latency**: Updates must maintain index
 - **Uses disk space**: Index structures require storage
 - **Uses memory**: Hot indexes are cached
@@ -1052,6 +1130,7 @@ PROFILE MATCH (u:User {email: "alice@example.com"}) RETURN u
 ```
 
 **Interpret EXPLAIN Output**:
+
 ```
 NodeIndexSeek       <- Using index
 NodeByLabelScan     <- Full label scan (slow)
@@ -1077,6 +1156,7 @@ CREATE INDEX user_active_created ON :User(is_active, created_at)
 ### Composite Index Ordering
 
 Order properties in composite indexes by:
+
 1. Equality predicates first
 2. Then range predicates
 3. Highest selectivity first
@@ -1199,6 +1279,7 @@ Effective use of constraints and indexes is crucial for:
 - **Scalability**: Proper indexing enables growth
 
 Key takeaways:
+
 - Use constraints for data integrity rules
 - Choose index types based on query patterns
 - Create composite indexes for multi-property queries
