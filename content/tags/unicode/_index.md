@@ -107,28 +107,38 @@ Unicode defines multiple ways to represent the same character (e.g., "é" can be
 - **NFKC (Compatibility Composition)**: Aggressive composition with compatibility mappings
 - **NFKD (Compatibility Decomposition)**: Aggressive decomposition with compatibility mappings
 
-```gql
--- Normalize text to NFC (recommended for most use cases)
-MATCH (u:User)
-SET u.name = NORMALIZE(u.name, 'NFC');
+{{< callout type="warning" >}}
+Geode does **not** expose a `NORMALIZE()` function to GQL — Unicode normal forms
+are not part of the engine's function registry. Normalization must be performed
+**client-side**, before the value reaches the database.
+{{< /callout >}}
 
--- Compare normalized text
+The practical pattern is to normalize once on ingestion and store the normalized
+string, so that every later comparison is a plain equality against an
+already-normalized property:
+
+```gql
+-- Write the client-normalized (NFC) value
+MATCH (u:User {id: $id})
+SET u.name = $name_nfc;
+
+-- Compare against a client-normalized search term
 MATCH (u:User)
-WHERE NORMALIZE(u.name, 'NFC') = NORMALIZE('José', 'NFC')
+WHERE u.name = $search_term_nfc
 RETURN u;
 
--- Search with normalization
+-- Case-insensitive containment; toLower() and icontains() ARE implemented
 MATCH (u:User)
-WHERE NORMALIZE(LOWER(u.name), 'NFC') CONTAINS NORMALIZE(LOWER('josé'), 'NFC')
+WHERE icontains(u.name, $search_term_nfc)
 RETURN u.name;
 ```
 
-**When to Normalize**:
+**When to Normalize** (all client-side):
 
 - **Data Ingestion**: Normalize on insert to ensure consistency
-- **Comparison**: Normalize before comparing user input with stored data
-- **Indexing**: Create indexes on normalized values for consistent matching
-- **Search**: Normalize search terms and content for accurate matching
+- **Comparison**: Normalize user input with the same form used at ingestion
+- **Indexing**: Index the stored normalized property for consistent matching
+- **Search**: Normalize search terms with the same library used at ingestion
 
 ## Collation and Sorting
 
@@ -170,6 +180,7 @@ ORDER BY u.name COLLATE 'en_US_CI';  -- CI = Case Insensitive
 **Supported Locales**:
 
 Geode supports 100+ locales including:
+
 - Western European: en_US, es_ES, fr_FR, de_DE, it_IT, pt_BR
 - Nordic: sv_SE, no_NO, da_DK, fi_FI
 - Eastern European: pl_PL, cs_CZ, ru_RU, uk_UA
@@ -359,13 +370,17 @@ RETURN DETECT_SCRIPT('Привет');    -- 'Cyrillic'
 
 **Indexing Unicode Text**:
 
-```gql
--- Create index on normalized text
-CREATE INDEX user_name_normalized ON :User(NORMALIZE(name, 'NFC'));
+Indexes are defined over stored properties, not over expressions — and since
+normalization happens client-side, store the normalized form as its own property
+and index that:
 
--- Efficient search with normalization
+```gql
+-- Index the stored, client-normalized (NFC) property
+CREATE INDEX ON :User(name_nfc)
+
+-- Efficient search: plain equality against the indexed normalized property
 MATCH (u:User)
-WHERE NORMALIZE(u.name, 'NFC') = NORMALIZE($search_term, 'NFC')
+WHERE u.name_nfc = $search_term_nfc
 RETURN u;
 ```
 
@@ -431,10 +446,10 @@ CREATE (u:User {
 **International Search**:
 
 ```gql
--- Search across languages with normalization
+-- Case-insensitive search over content stored in NFC form.
+-- Normalize $search_query to NFC client-side before sending it.
 MATCH (doc:Document)
-WHERE NORMALIZE(LOWER(doc.content), 'NFC') CONTAINS
-      NORMALIZE(LOWER($search_query), 'NFC')
+WHERE icontains(doc.content, $search_query_nfc)
 RETURN doc.title, doc.language;
 ```
 

@@ -648,42 +648,54 @@ MATCH (u:User)
 RETURN CORR(u.age, u.purchase_count) AS age_purchase_correlation;
 ```
 
-## Text Search Functions
+## Text Search Procedures
+
+Full-text search is **not** a scalar function in Geode — it is a set of `CALL`
+procedures in the `geode.fts.*` namespace, backed by a durable on-disk index you
+create with `CREATE INDEX ... USING fulltext`.
 
 ### Full-Text Search
 
 ```gql
--- Full-text search
-MATCH (p:Post)
-WHERE FULLTEXT_SEARCH(p.content, 'graph database')
-RETURN p.title, p.content;
+-- Create the index once
+CREATE INDEX post_content_fts FOR (p:Post) ON (p.content) USING fulltext;
 
--- Fuzzy search
-MATCH (u:User)
-WHERE FUZZY_MATCH(u.name, 'Alice', 2)  -- Edit distance <= 2
-RETURN u.name;
+-- BM25-ranked search: yields the matching node's id and its relevance score
+CALL geode.fts.search('post_content_fts', 'graph database', 10) YIELD node, score;
 
--- Soundex matching
-MATCH (u:User)
-WHERE SOUNDEX(u.last_name) = SOUNDEX('Smith')
-RETURN u.name;
+-- Exact phrase match (position-based)
+CALL geode.fts.phrase('post_content_fts', 'graph database') YIELD node, score;
+
+-- Proximity: terms within N positions of each other
+CALL geode.fts.proximity('post_content_fts', 'graph database', 5) YIELD node, score;
 ```
+
+See [Full-Text Search](/docs/query/full-text-search/) for the full reference.
 
 ### Text Analysis
 
+Tokenization, case-folding and stopword removal happen **inside** the full-text
+index at write time; they are not exposed as callable GQL functions. There is no
+`TOKENIZE()`, `STEM()`, `WORD_COUNT()`, `FUZZY_MATCH()` or `SOUNDEX()` in the
+function registry.
+
+For the substring and case-insensitive matching the evaluator does implement:
+
 ```gql
--- Word count
+-- Case-insensitive containment
 MATCH (p:Post)
-RETURN p.title, WORD_COUNT(p.content) AS words;
+WHERE icontains(p.content, 'graph database')
+RETURN p.title;
 
--- Tokenization
-MATCH (t:Text)
-RETURN TOKENIZE(t.content, ' ') AS tokens;
-
--- Stemming
-MATCH (w:Word)
-RETURN w.text, STEM(w.text) AS stemmed;
+-- Prefix matching (STARTS WITH / ENDS WITH are infix operators, not functions)
+MATCH (u:User)
+WHERE u.name STARTS WITH 'Ali'
+RETURN u.name;
 ```
+
+**Limitation**: edit-distance ("fuzzy") matching, phonetic matching, per-document
+word counts and standalone stemming are not implemented in the engine. Compute
+them client-side, or store the derived value as an ordinary indexed property.
 
 ## Vector Functions
 

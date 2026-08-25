@@ -123,14 +123,41 @@ zig build -Doptimize=ReleaseSafe
 
 ### Build Options
 
+Run `zig build --help` for the authoritative list. Geode declares the following
+project-specific options:
+
 ```bash
-# Enable specific features
-zig build -Denable-tde=true          # Transparent Data Encryption
-zig build -Denable-fle=true          # Field-Level Encryption
+# FIPS crypto seam
+zig build -Dfips=true                        # Route security crypto through the OpenSSL FIPS provider
+zig build -Dopenssl_path=/usr/local/ssl      # OpenSSL FIPS prefix
 
-# Disable features
-zig build -Denable-telemetry=false   # Disable telemetry
+# OpenSSL linkage (default: auto-detect on native non-Windows builds)
+zig build -Denable-openssl=true              # Link OpenSSL for gRPC TLS
 
+# OpenTelemetry transport
+zig build -Dotel_use_devnw_tls=false         # Strip the OTLP/HTTP(S) transport (default: on)
+# -Dotel_use_devnw_grpc, -Dotel_disabled and -Dotel_profiles are accepted but are
+# currently no-ops while the OTel seam is hardcoded off.
+
+# Debugging
+zig build -Denable-gpa-debug=true            # Use GeneralPurposeAllocator for leak detection
+
+# Test sharding
+zig build test -Dtest-shard-total=4 -Dtest-shard-index=0
+```
+
+{{< callout type="warning" >}}
+`-Dallow-rls-raw-interp=true` re-enables the legacy raw-string RLS interpreter.
+It defaults to **off** for security reasons; set it only for compatibility tests,
+never for a deployed build.
+{{< /callout >}}
+
+Transparent Data Encryption and Field-Level Encryption are **runtime** features,
+not build-time ones — they are always compiled in and enabled through server
+configuration (see [Server Configuration](/docs/configuration/server-configuration/)).
+There is no `-Denable-tde`, `-Denable-fle` or `-Denable-telemetry` build option.
+
+```bash
 # Cross-compilation
 zig build -Dtarget=x86_64-linux      # Linux x86_64
 zig build -Dtarget=aarch64-linux     # Linux ARM64
@@ -388,17 +415,17 @@ require('lspconfig').zls.setup{
 # All tests
 make test
 
-# Integration tests only
-make geodetestlab
+# Integration tests
+make integration-test
 
-# Specific test file
-zig test tests/test_parser.zig
+# A single named test step (run `zig build --help` for the full list)
+zig build test-fts-storage-adapter
 
-# With filter
-zig build test -Dtest-filter="CANARY"
+# Split the suite across shards
+zig build test -Dtest-shard-total=4 -Dtest-shard-index=0
 
-# With coverage (requires kcov)
-make coverage
+# CANARY governance markers
+make canary-verify
 ```
 
 ### Benchmarks

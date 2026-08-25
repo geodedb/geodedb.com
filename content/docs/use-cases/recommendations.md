@@ -277,23 +277,26 @@ LIMIT 20;
 
 ### Generate Item Embeddings
 
-Use Node2Vec to create item embeddings based on co-purchase patterns:
+Embeddings are **not** generated from GQL — there is no `graph.node2vec`
+procedure in the engine's procedure registry (which dispatches only `db.*`,
+`dbms.*`, `algo.*`, `audit.*`, `tde.*`, `cdc.*` and the `geode.*` families).
+Train the embeddings in your own pipeline (Node2Vec, GraphSAGE, or a hosted
+embedding model), then write the resulting vectors back as `VECTOR` properties:
 
 ```gql
--- Generate item embeddings
-CALL graph.node2vec('RecommendationEngine', {
-  relationship_type: 'PURCHASED',
-  dimensions: 128,
-  walk_length: 80,
-  num_walks: 10,
-  p: 1.0,
-  q: 1.0
-})
-YIELD node, embedding
-WITH node, embedding
-MATCH (item:Item)
-WHERE item.id = node.id
-SET item.embedding = embedding;
+-- Write a client-computed embedding onto the item
+MATCH (item:Item {id: $item_id})
+SET item.embedding = vectorf32($embedding);
+```
+
+Export the co-purchase edges to drive that training with an ordinary query:
+
+```gql
+-- Co-purchase pairs for the embedding trainer
+MATCH (u:User)-[:PURCHASED]->(a:Item)
+MATCH (u)-[:PURCHASED]->(b:Item)
+WHERE id(a) < id(b)
+RETURN a.id AS source, b.id AS target;
 ```
 
 ### Create Vector Index
@@ -421,17 +424,24 @@ CREATE INDEX item_category_idx ON Item(category) USING btree;
 
 Pre-compute recommendations for active users:
 
+There is no built-in recommendation procedure — the nightly batch job scores
+candidates with the vector functions the engine does provide, then writes the
+result back as a property. Serialize the ranked list to JSON in the batch job and
+store it with `jsonb()`:
+
 ```gql
--- Batch job (run nightly)
-MATCH (user:User)
-WHERE EXISTS {MATCH (user)-[:PURCHASED]->(:Item)}
+-- Batch job (run nightly), one user at a time
+MATCH (user:User {id: $user_id})-[:PURCHASED]->(:Item)
+MATCH (candidate:Item)
+WHERE NOT EXISTS {MATCH (user)-[:PURCHASED]->(candidate)}
+WITH candidate, similarity(user.embedding, candidate.embedding) AS score
+ORDER BY score DESC
+LIMIT 50
+RETURN candidate.id AS item_id, score;
 
--- Compute top 50 recommendations
-CALL recommend.hybrid(user.id, {limit: 50}) YIELD item, score
-
--- Store in user property
-WITH user, COLLECT({item_id: item.id, score: score}) AS recommendations
-SET user.cached_recommendations = recommendations::jsonb;
+-- Store the batch result (serialized to a JSON string by the client)
+MATCH (user:User {id: $user_id})
+SET user.cached_recommendations = jsonb($recommendations_json);
 
 -- Real-time query uses cache
 MATCH (user:User {id: $user_id})

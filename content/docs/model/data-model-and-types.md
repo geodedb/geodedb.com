@@ -242,21 +242,24 @@ RETURN e.name;
 **Storage**: Parsed JSON with path indexing support
 
 ```gql
--- JSON literal
+-- JSON literal (jsonb() parses and validates the JSON text)
 CREATE (:Document {
-  metadata: '{"author": "Alice", "tags": ["ai", "ml"], "version": 2}'::jsonb
+  metadata: jsonb('{"author": "Alice", "tags": ["ai", "ml"], "version": 2}')
 });
 
--- JSON path queries
+-- JSON path queries: jsonb_get(doc, '$.dotted.path')
 MATCH (d:Document)
-WHERE d.metadata->'version' = 2
-RETURN d.metadata->'author' AS author;
+WHERE jsonb_get(d.metadata, '$.version') = 2
+RETURN jsonb_get(d.metadata, '$.author') AS author;
 
--- Array access
+-- Array access uses a numeric path segment
 MATCH (d:Document)
-WHERE d.metadata->'tags'->0 = '"ai"'
+WHERE jsonb_get(d.metadata, '$.tags.0') = 'ai'
 RETURN d.metadata;
 ```
+
+`->` and `->>` are not JSON accessors in GQL (`->` is relationship-pattern
+syntax); use `jsonb_get()` and `jsonb_exists()`.
 
 **JSONB benefits**:
 
@@ -271,10 +274,10 @@ RETURN d.metadata;
 **Storage**: Raw binary data
 
 ```gql
--- Bytea from hex
+-- Bytea from hex (the argument must carry the \x prefix)
 CREATE (:File {
-  data: '\\x48656c6c6f'::bytea,
-  hash: '\\xdeadbeef'::bytea
+  data: bytea('\\x48656c6c6f'),
+  hash: bytea('\\xdeadbeef')
 });
 
 -- Length
@@ -416,11 +419,11 @@ timestamp('2024-01-15T14:30:00Z')
 interval('P7D')
 
 -- JSON
-'{"key": "value"}'::json
-'{"key": "value"}'::jsonb
+json('{"key": "value"}')
+jsonb('{"key": "value"}')
 
 -- Binary
-'\\x48656c6c6f'::bytea
+bytea('\\x48656c6c6f')
 
 -- Vector
 vectorf32('[0.1, 0.2, 0.3]')
@@ -531,7 +534,7 @@ CREATE (:User {
   email: "[email protected]",
   created_at: timestamp(),
   verified: true,
-  metadata: '{"preferences": {"newsletter": true}}'::jsonb
+  metadata: jsonb('{"preferences": {"newsletter": true}}')
 });
 
 -- Products with rich types
@@ -540,7 +543,7 @@ CREATE (:Product {
   name: "Laptop",
   price: decimal('999.99'),
   stock: 50,
-  specs: '{"cpu": "i7", "ram": 16, "storage": 512}'::jsonb,
+  specs: jsonb('{"cpu": "i7", "ram": 16, "storage": 512}'),
   embedding: vectorf32('[0.1, 0.2, ..., 0.512]')  -- for recommendations
 });
 

@@ -198,10 +198,7 @@ Raw binary data.
 
 ```gql
 -- Hex literal
-CREATE (:File {data: '\\x48656c6c6f'::bytea});
-
--- Base64 (if supported)
-CREATE (:File {data: base64_decode('SGVsbG8=')});
+CREATE (:File {data: bytea('\\x48656c6c6f')});
 
 -- Length
 MATCH (f:File)
@@ -211,9 +208,12 @@ RETURN length(f.data) AS bytes;
 **Constructor:**
 
 ```gql
-'\\x48656c6c6f'::bytea    -- Hex encoding
-bytes_from_hex('48656c6c6f')
+bytea('\\x48656c6c6f')     -- Hex encoding; the \x prefix is required
+from_hex('\\x48656c6c6f')  -- Alias of bytea(), same \x-prefixed input
 ```
+
+Base64 decoding is not implemented in the engine — decode client-side and pass
+the bytes as a `\x`-prefixed hex string.
 
 ---
 
@@ -677,14 +677,12 @@ JSON text (stored as string, parsed on access).
 **Storage:** Variable (UTF-8 string)
 
 ```gql
--- Constructor
-RETURN '{"name": "Alice", "age": 30}'::json AS j;
-
--- Path access
-RETURN j->'name' AS name;           -- "Alice" (as JSON string)
-RETURN j->>'name' AS name;          -- Alice (as text)
-RETURN j->'tags'->0 AS first_tag;   -- First array element
+-- Constructor (validates the JSON text, stores it as-is)
+RETURN json('{"name": "Alice", "age": 30}') AS j;
 ```
+
+`JSON` is stored as validated text and has no path accessor. Use `JSONB` when you
+need to read individual fields server-side.
 
 ---
 
@@ -696,18 +694,20 @@ Binary JSON (parsed and validated on insert).
 
 ```gql
 -- Constructor
-RETURN '{"name": "Alice", "tags": ["a", "b"]}'::jsonb AS j;
+RETURN jsonb('{"name": "Alice", "tags": ["a", "b"]}') AS j;
 
--- Path access (same as JSON)
-RETURN j->'name' AS name;
-RETURN j->'tags'->0 AS first_tag;
-
--- Containment
-RETURN '{"a": 1}'::jsonb @> '{"a": 1, "b": 2}'::jsonb;  -- Does left contain right?
+-- Path access: jsonb_get(doc, path), where path is a '$.'-rooted
+-- dotted path. Array elements are addressed by numeric index.
+RETURN jsonb_get(jsonb('{"name": "Alice"}'), '$.name') AS name;
+RETURN jsonb_get(jsonb('{"tags": ["a", "b"]}'), '$.tags.0') AS first_tag;
 
 -- Key existence
-RETURN '{"a": 1}'::jsonb ? 'a';  -- true
+RETURN jsonb_exists(jsonb('{"a": 1}'), 'a');  -- true
 ```
+
+There is no PostgreSQL-style containment (`@>`) operator, and `->` / `->>` are
+**not** JSON accessors in GQL — `->` is relationship-pattern syntax. Use
+`jsonb_get()` and `jsonb_exists()`.
 
 **Advantages over JSON:**
 

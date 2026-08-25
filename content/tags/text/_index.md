@@ -324,54 +324,90 @@ RETURN p.name
 ORDER BY NATURAL_SORT(p.name);
 ```
 
-**Similarity Functions**:
+**Fuzzy and Relevance Matching**:
+
+Geode has no scalar string-similarity function — there is no `LEVENSHTEIN`,
+`SOUNDEX` or string-argument `SIMILARITY` in the function registry (`similarity()`
+is a *vector* function and takes two `VECTOR` arguments). Relevance-ranked text
+matching is served by the full-text index and the `geode.fts.*` procedures, which
+return a BM25 `score` per matching node:
 
 ```gql
--- Levenshtein distance
-MATCH (u:User)
-RETURN u.name, LEVENSHTEIN(u.name, 'Alice Johnson') AS distance
-ORDER BY distance
-LIMIT 5;
+-- Create a full-text index over the property you want to rank on
+CREATE INDEX product_name_fts FOR (p:Product) ON (p.name) USING fulltext;
 
--- Soundex (phonetic matching)
-MATCH (u:User)
-WHERE SOUNDEX(u.last_name) = SOUNDEX('Smith')
-RETURN u.name;
-
--- Similarity ratio
-MATCH (p:Product)
-RETURN p.name, SIMILARITY(p.name, 'laptop') AS similarity
-WHERE similarity > 0.5
-ORDER BY similarity DESC;
+-- Relevance-ranked search: one row per match, as (node id, BM25 score)
+CALL geode.fts.search('product_name_fts', 'laptop', 10) YIELD node, score;
 ```
+
+`geode.fts.search` yields the matching node's **id** and its BM25 `score`; resolve
+the ids to full nodes in a follow-up `MATCH ... WHERE id(p) IN $ids` query. See
+[Full-Text Search](/docs/query/full-text-search/) for the complete surface,
+including `geode.fts.phrase` and `geode.fts.proximity`.
+
+For exact or prefix matching that does not need a score, use the operators and
+functions the evaluator actually implements:
+
+```gql
+-- Case-insensitive substring match
+MATCH (p:Product)
+WHERE icontains(p.name, 'laptop')
+RETURN p.name;
+
+-- Case-insensitive equality via normalization to a single case
+MATCH (u:User)
+WHERE toLower(u.last_name) = toLower('Smith')
+RETURN u.name;
+```
+
+**Limitation**: edit-distance (Levenshtein) and phonetic (Soundex/Metaphone)
+matching are not implemented in the engine. Compute them client-side, or index a
+precomputed phonetic key as a normal property and match on it exactly.
 
 ## Unicode and Normalization
 
 **Unicode Operations**:
 
+Text is stored as UTF-8 and the string functions operate on that encoding
+directly:
+
 ```gql
--- Get Unicode code point
+-- First character of a name (substring is 1-indexed)
 MATCH (u:User)
-RETURN ASCII(SUBSTRING(u.name, 1, 1)) AS first_char_code;
+RETURN substring(u.name, 1, 1) AS first_char;
 
--- Character from code point
-RETURN CHR(65) AS character;  -- Returns 'A'
-
--- Unicode normalization
+-- Length of a Unicode string
 MATCH (u:User)
-RETURN NORMALIZE(u.name, 'NFC') AS normalized_name;
+RETURN u.greeting, length(u.greeting) AS len;
+```
+
+Code-point conversion helpers (`ASCII()`, `CHR()`) are **not** implemented — do
+that conversion in the client.
+
+**Unicode normalization**: Geode has no `NORMALIZE(x, 'NFC')` function — Unicode
+normal forms are not exposed to GQL. Normalize to NFC (or NFKC) in the client
+before writing, and store the normalized value as the property you match on. For
+case-insensitive comparison the engine does provide `toLower()`/`toUpper()` and
+the `icontains()` operator:
+
+```gql
+-- Case-insensitive comparison against an already-NFC-normalized property
+MATCH (u:User)
+WHERE toLower(u.name) = toLower($search_term)
+RETURN u;
 ```
 
 **Locale-Specific Operations**:
 
-```gql
--- Locale-aware uppercase
-MATCH (u:User)
-RETURN UPPER(u.name COLLATE 'tr_TR') AS turkish_upper;
+Geode does not implement the `COLLATE` clause; comparison and case conversion are
+locale-independent. `toUpper()`/`toLower()` apply the default Unicode mapping, so
+locale-specific rules (for example Turkish dotless-i) must be applied client-side
+and stored as a separate precomputed property if you need to match on them:
 
--- Locale-specific comparison
+```gql
+-- Match on a client-computed, locale-folded key stored alongside the name
 MATCH (u:User)
-WHERE u.name = 'İstanbul' COLLATE 'tr_TR'
+WHERE u.name_folded_tr = $folded_search_term
 RETURN u;
 ```
 
