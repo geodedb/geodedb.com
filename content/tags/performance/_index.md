@@ -236,7 +236,7 @@ WITH (metric = 'cosine');
 
 -- Fast similarity search
 MATCH (p:Product)
-WITH p, vector_similarity(p.embedding, $query_vector, 'cosine') AS similarity
+WITH p, similarity(p.embedding, $query_vector, 'cosine') AS similarity
 WHERE similarity > 0.7
 RETURN p.name, similarity
 ORDER BY similarity DESC

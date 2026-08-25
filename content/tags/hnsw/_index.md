@@ -143,20 +143,23 @@ Query similar vectors:
 ```gql
 -- Find 10 most similar documents to a query embedding
 MATCH (d:Document)
-WHERE vector_similarity(d.embedding, $query_embedding) > 0.7
-RETURN d.title, d.id, vector_similarity(d.embedding, $query_embedding) AS similarity
+WHERE similarity(d.embedding, $query_embedding) > 0.7
+RETURN d.title, d.id, similarity(d.embedding, $query_embedding) AS similarity
 ORDER BY similarity DESC
 LIMIT 10;
 
--- Or use dedicated function
-CALL vector.search({
-  index: 'document_embeddings',
-  query: $query_embedding,
-  k: 10
-})
-YIELD node, similarity
-RETURN node.title, similarity;
+-- Or use the k-nearest-neighbour function, which returns the ids of the k
+-- closest elements for a vector property
+WITH vector_knn('embedding', $query_embedding, 10, 'cosine') AS ids
+MATCH (d:Document)
+WHERE id(d) IN ids
+RETURN d.title, similarity(d.embedding, $query_embedding) AS similarity
+ORDER BY similarity DESC;
 ```
+
+There is no `CALL vector.search(...)` procedure: vector search is expressed with
+the vector functions (`similarity()`, `distance()`, `vector_knn()`) inside a
+normal `MATCH`.
 
 ### Combining Vector and Graph Queries
 
@@ -166,9 +169,9 @@ The real power: integrate vector search with graph traversal:
 -- Find similar products purchased by friends
 MATCH (me:User {id: $userId})-[:FRIEND]->(friend:User)
      -[:PURCHASED]->(product:Product)
-WHERE vector_similarity(product.embedding, $query_embedding) > 0.8
+WHERE similarity(product.embedding, $query_embedding) > 0.8
 RETURN DISTINCT product.name,
-       vector_similarity(product.embedding, $query_embedding) AS similarity,
+       similarity(product.embedding, $query_embedding) AS similarity,
        COUNT(DISTINCT friend) AS friend_count
 ORDER BY similarity DESC, friend_count DESC
 LIMIT 10;
@@ -177,8 +180,8 @@ LIMIT 10;
 MATCH (doc:Document)
 WHERE doc.category = 'technical'
   AND doc.publish_date > date('2024-01-01')
-  AND vector_similarity(doc.embedding, $query_embedding) > 0.75
-RETURN doc.title, doc.author, vector_similarity(doc.embedding, $query_embedding) AS score
+  AND similarity(doc.embedding, $query_embedding) > 0.75
+RETURN doc.title, doc.author, similarity(doc.embedding, $query_embedding) AS score
 ORDER BY score DESC
 LIMIT 20;
 ```
@@ -196,13 +199,11 @@ WHERE d.content CONTAINS 'database'
 RETURN d.title;
 
 -- Semantic search: understands meaning
-CALL vector.search({
-  index: 'document_embeddings',
-  query: $query_embedding,  -- Embedding of "systems for storing data"
-  k: 10
-})
-YIELD node
-RETURN node.title;
+-- $query_embedding is the embedding of "systems for storing data"
+WITH vector_knn('embedding', $query_embedding, 10, 'cosine') AS ids
+MATCH (d:Document)
+WHERE id(d) IN ids
+RETURN d.title;
 -- Returns documents about databases, even without keyword "database"
 ```
 
@@ -213,14 +214,12 @@ Discover similar items:
 ```gql
 -- Content-based recommendations
 MATCH (item:Product {id: $productId})
-CALL vector.search({
-  index: 'product_embeddings',
-  query: item.embedding,
-  k: 50
-})
-YIELD node AS similar_product, similarity
+MATCH (similar_product:Product)
 WHERE similar_product.id <> $productId
   AND similar_product.in_stock = true
+WITH similar_product,
+     similarity(similar_product.embedding, item.embedding) AS similarity
+WHERE similarity > 0.7
 RETURN similar_product.name, similarity
 ORDER BY similarity DESC
 LIMIT 10;
@@ -232,13 +231,11 @@ Find relevant context for LLM prompts:
 
 ```gql
 -- Retrieve relevant context for RAG
-CALL vector.search({
-  index: 'knowledge_base',
-  query: $question_embedding,
-  k: 5
-})
-YIELD node AS doc, similarity
-RETURN doc.content AS context, similarity
+WITH vector_knn('embedding', $question_embedding, 5, 'cosine') AS ids
+MATCH (doc:Document)
+WHERE id(doc) IN ids
+RETURN doc.content AS context,
+       similarity(doc.embedding, $question_embedding) AS similarity
 ORDER BY similarity DESC;
 ```
 
@@ -249,17 +246,13 @@ Pass the returned context to your LLM to ground responses in your knowledge base
 Identify outliers in embedding space:
 
 ```gql
--- Find anomalous user behavior
+-- Find anomalous user behavior: users whose behaviour embedding is far from
+-- every other user's is an outlier
 MATCH (u:User)
-WITH u, u.behavior_embedding AS embedding
-CALL vector.search({
-  index: 'user_behavior',
-  query: embedding,
-  k: 10
-})
-YIELD node, similarity
-WITH u, AVG(similarity) AS avg_similarity
-WHERE avg_similarity < 0.5  -- Low similarity to nearest neighbors = anomaly
+MATCH (other:User)
+WHERE id(other) <> id(u)
+WITH u, avg(similarity(u.behavior_embedding, other.behavior_embedding)) AS avg_similarity
+WHERE avg_similarity < 0.5  -- Low similarity to the population = anomaly
 RETURN u.id, u.name, avg_similarity
 ORDER BY avg_similarity ASC;
 ```
@@ -271,8 +264,8 @@ Find visually similar images:
 ```gql
 -- Image similarity using CLIP embeddings
 MATCH (img:Image)
-WHERE vector_similarity(img.clip_embedding, $query_image_embedding) > 0.85
-RETURN img.url, img.caption, vector_similarity(img.clip_embedding, $query_image_embedding) AS similarity
+WHERE similarity(img.clip_embedding, $query_image_embedding) > 0.85
+RETURN img.url, img.caption, similarity(img.clip_embedding, $query_image_embedding) AS similarity
 ORDER BY similarity DESC
 LIMIT 20;
 ```
@@ -348,26 +341,32 @@ WITH (metric = 'cosine');
 MATCH (d:Document)
 WHERE d.category = 'science'
   AND d.year > 2020
-  AND vector_similarity(d.embedding, $query) > 0.8
+  AND similarity(d.embedding, $query) > 0.8
 RETURN d;
 
--- Less efficient: Vector search then filter
-CALL vector.search({...})
-YIELD node
-WHERE node.category = 'science'  -- Post-filter
-RETURN node;
+-- Less efficient: score every document, then post-filter
+MATCH (d:Document)
+WITH d, similarity(d.embedding, $query) AS score
+WHERE d.category = 'science'  -- Post-filter
+RETURN d, score;
 ```
 
 **Size `k` for the accuracy you need**:
 
 ```gql
 -- High-recall search: retrieve more candidates, then re-rank
-CALL vector.search({index: '...', query: $q, k: 100})
-YIELD node, similarity;
+WITH vector_knn('embedding', $q, 100, 'cosine') AS ids
+MATCH (d:Document)
+WHERE id(d) IN ids
+RETURN d, similarity(d.embedding, $q) AS score
+ORDER BY score DESC
+LIMIT 10;
 
 -- Fast search (may miss some results)
-CALL vector.search({index: '...', query: $q, k: 10})
-YIELD node, similarity;
+WITH vector_knn('embedding', $q, 10, 'cosine') AS ids
+MATCH (d:Document)
+WHERE id(d) IN ids
+RETURN d;
 ```
 
 ## Performance Characteristics
@@ -405,20 +404,23 @@ Typical performance (10k vectors, 10-NN):
 
 ### Index Statistics
 
+There is no `vector.index.*` procedure namespace. Index metadata is exposed
+through the standard introspection procedure:
+
 ```gql
--- Check index statistics
-CALL vector.index.stats('document_embeddings')
-YIELD vectors, memory_mb, avg_connections, max_layer
-RETURN vectors, memory_mb, avg_connections, max_layer;
+-- List indexes (name, type, label, properties)
+CALL db.indexes();
 ```
 
 ### Query Performance
 
 ```gql
--- Profile vector query
-PROFILE CALL vector.search({index: '...', query: $q, k: 10})
-YIELD node, similarity
-RETURN node, similarity;
+-- Profile a vector query
+PROFILE
+WITH vector_knn('embedding', $q, 10, 'cosine') AS ids
+MATCH (d:Document)
+WHERE id(d) IN ids
+RETURN d, similarity(d.embedding, $q) AS similarity;
 ```
 
 ### Common Issues
@@ -487,40 +489,36 @@ Dynamically adjust search effort with `k`:
 
 ```gql
 -- High-stakes query: retrieve a deep candidate set and re-rank
-CALL vector.search({
-    index: 'critical_docs',
-    query: $query,
-    k: 100
-})
-YIELD node, similarity;
+WITH vector_knn('embedding', $query, 100, 'cosine') AS ids
+MATCH (d:Document)
+WHERE id(d) IN ids
+RETURN d, similarity(d.embedding, $query) AS similarity
+ORDER BY similarity DESC
+LIMIT 10;
 
 -- Batch processing: optimize throughput
-CALL vector.search({
-    index: 'product_catalog',
-    query: $query,
-    k: 10
-})
-YIELD node, similarity;
+WITH vector_knn('embedding', $query, 10, 'cosine') AS ids
+MATCH (p:Product)
+WHERE id(p) IN ids
+RETURN p;
 ```
 
 ### Early Termination
 
-Stop search when confidence is high:
+The HNSW search-effort parameter (`ef_search`) is not exposed. Widen the
+candidate set with `k` instead, and stop as soon as the top score is good
+enough:
 
 ```python
 async def adaptive_vector_search(client, query_emb, min_confidence=0.95):
-    for ef in [32, 64, 128, 256, 512]:
+    for k in [10, 32, 64, 128, 256]:
         results, _ = await client.query("""
-            CALL vector.search({
-                index: 'embeddings',
-                query: $query,
-                k: 10,
-                ef: $ef
-            })
-            YIELD node, similarity
-            RETURN node, similarity
+            WITH vector_knn('embedding', $query, $k, 'cosine') AS ids
+            MATCH (d:Document)
+            WHERE id(d) IN ids
+            RETURN d, similarity(d.embedding, $query) AS similarity
             ORDER BY similarity DESC
-        """, {"query": query_emb, "ef": ef})
+        """, {"query": query_emb, "k": k})
 
         top_score = results.rows[0]['similarity']
         if top_score >= min_confidence:
@@ -563,8 +561,10 @@ WITH stats.inserts_since_rebuild AS inserts,
 WITH inserts * 1.0 / total AS insert_ratio
 WHERE insert_ratio > 0.1  // 10% growth
 
--- Trigger rebuild
-CALL vector.index.rebuild('embeddings_idx');
+-- There is no index-rebuild procedure: drop and recreate the index instead
+DROP INDEX embeddings_idx;
+CREATE VECTOR INDEX embeddings_idx FOR (n:Node) ON (n.embedding)
+WITH (metric = 'cosine');
 ```
 
 ## Distance Metrics Deep Dive
@@ -585,17 +585,19 @@ Range: [-1, 1]
 
 **Optimization**: Pre-normalize vectors to unit length, then use dot product:
 
+Geode has no vector-normalization function, so normalize in the client before
+writing the property and before binding the query vector:
+
 ```gql
--- Pre-normalize at insertion
-MATCH (n:Node)
-SET n.embedding = vector.normalize(n.embedding);
+-- Vectors are stored already normalized (unit length)
+MATCH (n:Node {id: $id})
+SET n.embedding = $normalized_embedding;
 
 -- Use dot product (equivalent to cosine for normalized vectors)
-CALL vector.search({
-    index: 'normalized_embeddings',
-    query: vector.normalize($query),
-    metric: 'dot_product'  // Faster than cosine
-});
+MATCH (n:Node)
+RETURN n.id, vector_dot(n.embedding, $normalized_query) AS score
+ORDER BY score DESC
+LIMIT 10;
 ```
 
 ### Euclidean Distance (L2)
@@ -643,25 +645,26 @@ WITH (metric = 'cosine');
 CREATE VECTOR INDEX user_embeddings FOR (u:User) ON (u.behavior_embedding)
 WITH (metric = 'euclidean');
 
--- Query appropriate index
-CALL vector.search({index: 'text_embeddings', query: $text_query})
-YIELD node;
+-- Query the property backed by the appropriate index
+WITH vector_knn('text_embedding', $text_query, 10, 'cosine') AS ids
+MATCH (d:Document)
+WHERE id(d) IN ids
+RETURN d;
 ```
 
 ### Backup and Recovery
 
+Vector indexes have no dedicated export/import/verify procedures — they are
+covered by the regular database backup and are rebuilt from the stored vectors:
+
 ```gql
--- Export index state
-CALL vector.index.export('embeddings_idx', '/backup/embeddings_idx_20250124.bin');
+-- Inspect the indexes that exist
+CALL db.indexes();
 
--- Restore from backup
-CALL vector.index.import('embeddings_idx', '/backup/embeddings_idx_20250124.bin');
-
--- Verify index integrity
-CALL vector.index.verify('embeddings_idx')
-YIELD vectors, corrupted_entries, avg_degree
-WHERE corrupted_entries = 0
-RETURN 'Index healthy' AS status;
+-- Recreate an index after restoring data
+DROP INDEX embeddings_idx;
+CREATE VECTOR INDEX embeddings_idx FOR (n:Node) ON (n.embedding)
+WITH (metric = 'cosine');
 ```
 
 ## Benchmarking and Performance
@@ -675,13 +678,10 @@ async def measure_recall(client, test_queries, ground_truth, k=10):
     for query_emb, true_neighbors in zip(test_queries, ground_truth):
         # HNSW approximate search
         results, _ = await client.query("""
-            CALL vector.search({
-                index: 'test_index',
-                query: $query,
-                k: $k
-            })
-            YIELD node
-            RETURN node.id AS id
+            WITH vector_knn('embedding', $query, $k, 'cosine') AS ids
+            MATCH (n:TestVector)
+            WHERE id(n) IN ids
+            RETURN n.id AS id
         """, {"query": query_emb, "k": k})
 
         retrieved = {row['id'] for row in results.rows}

@@ -120,7 +120,7 @@ Find the most similar items to a query vector:
 // Find 10 most similar products
 MATCH (p:Product)
 WHERE p.embedding IS NOT NULL
-WITH p, vector.similarity(p.embedding, $query_embedding, 'cosine') AS score
+WITH p, similarity(p.embedding, $query_embedding, 'cosine') AS score
 ORDER BY score DESC
 LIMIT 10
 RETURN p.product_id, p.name, score;
@@ -128,7 +128,7 @@ RETURN p.product_id, p.name, score;
 // Find similar documents with threshold
 MATCH (d:Document)
 WHERE d.text_embedding IS NOT NULL
-WITH d, vector.similarity(d.text_embedding, $query_vector, 'cosine') AS similarity
+WITH d, similarity(d.text_embedding, $query_vector, 'cosine') AS similarity
 WHERE similarity > 0.8  // Only return highly similar documents
 ORDER BY similarity DESC
 LIMIT 20
@@ -143,7 +143,7 @@ Combine vector similarity with graph traversal:
 // Find similar products in the same category
 MATCH (p:Product)-[:IN_CATEGORY]->(c:Category {name: 'Electronics'})
 WHERE p.embedding IS NOT NULL
-WITH p, vector.similarity(p.embedding, $query_embedding, 'cosine') AS score
+WITH p, similarity(p.embedding, $query_embedding, 'cosine') AS score
 WHERE score > 0.7
 ORDER BY score DESC
 LIMIT 10
@@ -153,7 +153,7 @@ RETURN p.product_id, p.name, score;
 MATCH (d:Document)-[:HAS_TAG]->(t:Tag)
 WHERE d.text_embedding IS NOT NULL
   AND t.name IN ['machine-learning', 'databases', 'performance']
-WITH d, vector.similarity(d.text_embedding, $query_vector, 'cosine') AS similarity
+WITH d, similarity(d.text_embedding, $query_vector, 'cosine') AS similarity
 ORDER BY similarity DESC
 LIMIT 15
 RETURN d.doc_id, d.title, COLLECT(t.name) AS tags, similarity;
@@ -230,7 +230,7 @@ WITH u, AVG(bought.embedding) AS avg_embedding  // Aggregate user preferences
 MATCH (candidate:Product)
 WHERE NOT (u)-[:PURCHASED]->(candidate)
   AND candidate.embedding IS NOT NULL
-WITH candidate, vector.similarity(candidate.embedding, avg_embedding, 'cosine') AS score
+WITH candidate, similarity(candidate.embedding, avg_embedding, 'cosine') AS score
 WHERE score > 0.75
 ORDER BY score DESC
 LIMIT 20
@@ -246,7 +246,7 @@ Enable natural language document retrieval:
 WITH $query_text AS query
 MATCH (d:Document)
 WHERE d.text_embedding IS NOT NULL
-WITH d, vector.similarity(d.text_embedding, $query_embedding, 'cosine') AS relevance
+WITH d, similarity(d.text_embedding, $query_embedding, 'cosine') AS relevance
 WHERE relevance > 0.6
 ORDER BY relevance DESC, d.view_count DESC
 LIMIT 25
@@ -264,7 +264,7 @@ WHERE p1.embedding IS NOT NULL
 MATCH (p2:Product)
 WHERE p2.embedding IS NOT NULL
   AND p1.product_id < p2.product_id  // Avoid comparing same pair twice
-WITH p1, p2, vector.similarity(p1.embedding, p2.embedding, 'cosine') AS similarity
+WITH p1, p2, similarity(p1.embedding, p2.embedding, 'cosine') AS similarity
 WHERE similarity > 0.95  // Very high similarity threshold
 RETURN p1.product_id, p1.name,
        p2.product_id, p2.name,
@@ -282,13 +282,13 @@ precision and latency with the result set size and pre-filtering:
 ```gql
 // High-precision search: retrieve a deeper candidate set, then re-rank
 MATCH (p:Product)
-WITH p, vector.similarity(p.embedding, $query_embedding, 'cosine') AS score
+WITH p, similarity(p.embedding, $query_embedding, 'cosine') AS score
 ORDER BY score DESC
 LIMIT 100;
 
 // Fast search (faster, slightly lower recall)
 MATCH (p:Product)
-WITH p, vector.similarity(p.embedding, $query_embedding, 'cosine') AS score
+WITH p, similarity(p.embedding, $query_embedding, 'cosine') AS score
 ORDER BY score DESC
 LIMIT 10;
 
@@ -326,7 +326,7 @@ MATCH (p:Product)
 WHERE p.price < 1000  // Filter by price first
   AND p.in_stock = true
   AND p.embedding IS NOT NULL
-WITH p, vector.similarity(p.embedding, $query_embedding, 'cosine') AS score
+WITH p, similarity(p.embedding, $query_embedding, 'cosine') AS score
 WHERE score > 0.7
 ORDER BY score DESC
 LIMIT 10
@@ -369,8 +369,8 @@ SET doc.bert_embedding = $bert_vector,  // [CLS] token embedding
 
 -- Query with semantic similarity
 MATCH (d:Document)
-WHERE vector.similarity(d.bert_embedding, $query_embedding, 'cosine') > 0.75
-RETURN d.title, d.content, vector.similarity(d.bert_embedding, $query_embedding) AS score
+WHERE similarity(d.bert_embedding, $query_embedding, 'cosine') > 0.75
+RETURN d.title, d.content, similarity(d.bert_embedding, $query_embedding) AS score
 ORDER BY score DESC;
 ```
 
@@ -379,17 +379,19 @@ ORDER BY score DESC;
 Combine text, image, and other modalities:
 
 ```gql
--- Store CLIP embeddings (text + image)
+-- Store CLIP embeddings (text + image).
+-- Geode has no vector concatenation function: build the combined vector in the
+-- client and bind it as a parameter alongside the modality-specific ones.
 MATCH (product:Product {product_id: $product_id})
 SET product.text_embedding = $text_embedding,
     product.image_embedding = $image_embedding,
-    product.combined_embedding = vector.concatenate($text_embedding, $image_embedding);
+    product.combined_embedding = $combined_embedding;
 
 -- Multi-modal search
 MATCH (p:Product)
 WITH p,
-     vector.similarity(p.text_embedding, $text_query_emb, 'cosine') AS text_sim,
-     vector.similarity(p.image_embedding, $image_query_emb, 'cosine') AS image_sim
+     similarity(p.text_embedding, $text_query_emb, 'cosine') AS text_sim,
+     similarity(p.image_embedding, $image_query_emb, 'cosine') AS image_sim
 WITH p, 0.6 * text_sim + 0.4 * image_sim AS combined_score
 WHERE combined_score > 0.7
 RETURN p.name, p.description, combined_score
@@ -411,9 +413,9 @@ SET n.node2vec_embedding = $embedding;
 MATCH (target:Node {node_id: $target_id})
 MATCH (candidate:Node)
 WHERE candidate <> target
-  AND vector.similarity(candidate.node2vec_embedding, target.node2vec_embedding, 'cosine') > 0.8
+  AND similarity(candidate.node2vec_embedding, target.node2vec_embedding, 'cosine') > 0.8
 RETURN candidate.node_id,
-       vector.similarity(candidate.node2vec_embedding, target.node2vec_embedding) AS structural_similarity
+       similarity(candidate.node2vec_embedding, target.node2vec_embedding) AS structural_similarity
 ORDER BY structural_similarity DESC
 LIMIT 20;
 ```
@@ -430,7 +432,7 @@ MATCH (a:Entity {entity_id: $entity_a})
 MATCH (b:Entity {entity_id: $entity_b})
 WHERE NOT EXISTS((a)-[:RELATED]-(b))
 WITH a, b,
-     vector.similarity(a.gnn_embedding, b.gnn_embedding, 'cosine') AS link_probability
+     similarity(a.gnn_embedding, b.gnn_embedding, 'cosine') AS link_probability
 WHERE link_probability > 0.85
 RETURN b.entity_id, link_probability
 ORDER BY link_probability DESC;

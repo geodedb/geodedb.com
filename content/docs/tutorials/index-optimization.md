@@ -309,9 +309,9 @@ Find products similar to a query vector:
 
 \`\`\`gql
 MATCH (p:Product)
-WHERE vector_similarity(p.embedding, [0.15, 0.35, 0.45, 0.25, 0.75, 0.45, 0.55, 0.65], 'cosine') > 0.8
+WHERE similarity(p.embedding, [0.15, 0.35, 0.45, 0.25, 0.75, 0.45, 0.55, 0.65], 'cosine') > 0.8
 RETURN p.name, p.description
-ORDER BY vector_similarity(p.embedding, [0.15, 0.35, 0.45, 0.25, 0.75, 0.45, 0.55, 0.65], 'cosine') DESC
+ORDER BY similarity(p.embedding, [0.15, 0.35, 0.45, 0.25, 0.75, 0.45, 0.55, 0.65], 'cosine') DESC
 LIMIT 5
 \`\`\`
 
@@ -794,8 +794,8 @@ ORDER BY distance_m
 MATCH (p:Product {id: 101})
 MATCH (similar:Product)
 WHERE similar.id <> p.id
-  AND vector_similarity(p.embedding, similar.embedding, 'cosine') > 0.7
-RETURN similar.name, vector_similarity(p.embedding, similar.embedding, 'cosine') AS similarity
+  AND similarity(p.embedding, similar.embedding, 'cosine') > 0.7
+RETURN similar.name, similarity(p.embedding, similar.embedding, 'cosine') AS similarity
 ORDER BY similarity DESC
 LIMIT 10
 \`\`\`
@@ -816,8 +816,8 @@ WITH (metric = 'cosine')
 MATCH (p:Product {id: 101})
 MATCH (similar:Product)
 WHERE similar.id <> p.id
-  AND vector_similarity(p.embedding, similar.embedding, 'cosine') > 0.7
-RETURN similar.name, vector_similarity(p.embedding, similar.embedding, 'cosine') AS similarity
+  AND similarity(p.embedding, similar.embedding, 'cosine') > 0.7
+RETURN similar.name, similarity(p.embedding, similar.embedding, 'cosine') AS similarity
 ORDER BY similarity DESC
 LIMIT 10
 \`\`\`
@@ -831,7 +831,7 @@ LIMIT 10
 | Equality lookup | B-tree | \`email = 'alice@example.com'\` |
 | Range query | B-tree | \`price BETWEEN 100 AND 200\` |
 | Text search | Full-text | \`fulltext_search(description, 'wireless')\` |
-| Vector similarity | HNSW | \`vector_similarity(embedding, query_vector)\` |
+| Vector similarity | HNSW | \`similarity(embedding, query_vector)\` |
 | Geographic range | Spatial | \`distance(location, point) < 10000\` |
 | Prefix matching | B-tree | \`name STARTS WITH 'Alice'\` |
 

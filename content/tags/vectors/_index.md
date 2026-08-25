@@ -45,7 +45,7 @@ CREATE (:Document {
 -- Find similar documents using cosine similarity
 MATCH (d:Document)
 WHERE d.id <> $query_doc_id
-WITH d, cosine_similarity(d.embedding, $query_embedding) as similarity
+WITH d, similarity(d.embedding, $query_embedding) as similarity
 WHERE similarity > 0.75
 RETURN d.title, d.content, similarity
 ORDER BY similarity DESC
@@ -63,7 +63,7 @@ WITH avg(item.embedding) as user_preference_vector
 MATCH (candidate:Product)
 WHERE NOT (user)-[:LIKED|:PURCHASED]->(candidate)
 WITH candidate,
-     cosine_similarity(candidate.embedding, user_preference_vector) as content_sim,
+     similarity(candidate.embedding, user_preference_vector) as content_sim,
      size((candidate)<-[:LIKED]-(:User)-[:LIKED]->(item)) as collab_score
 RETURN candidate.name,
        content_sim,
@@ -86,7 +86,7 @@ CREATE (:FAQ {
 
 -- Find best matching FAQ
 MATCH (faq:FAQ)
-WITH faq, cosine_similarity(faq.question_embedding, $user_question_embedding) as score
+WITH faq, similarity(faq.question_embedding, $user_question_embedding) as score
 WHERE score > 0.7
 RETURN faq.question, faq.answer, score
 ORDER BY score DESC
@@ -197,7 +197,7 @@ Measures angle between vectors (range: -1 to 1):
 ```gql
 -- Find similar products
 MATCH (p:Product)
-WITH p, cosine_similarity(p.embedding, $query_embedding) as similarity
+WITH p, similarity(p.embedding, $query_embedding) as similarity
 WHERE similarity > 0.8
 RETURN p.name, similarity
 ORDER BY similarity DESC
@@ -215,7 +215,7 @@ Measures geometric distance between vectors:
 
 ```gql
 MATCH (p:Product)
-WITH p, euclidean_distance(p.embedding, $query_embedding) as distance
+WITH p, euclidean(p.embedding, $query_embedding) as distance
 WHERE distance < 10.0
 RETURN p.name, distance
 ORDER BY distance ASC
@@ -233,7 +233,7 @@ Computes inner product of vectors:
 
 ```gql
 MATCH (p:Product)
-WITH p, dot_product(p.embedding, $query_embedding) as score
+WITH p, vector_dot(p.embedding, $query_embedding) as score
 WHERE score > 0.5
 RETURN p.name, score
 ORDER BY score DESC
@@ -258,7 +258,7 @@ Find similar content through relationship paths:
 MATCH (start:Paper {id: $paper_id})-[:CITES*1..3]->(related:Paper)
 WITH related,
      length(path) as citation_distance,
-     cosine_similarity(related.embedding, start.embedding) as semantic_similarity
+     similarity(related.embedding, start.embedding) as semantic_similarity
 WHERE semantic_similarity > 0.6
 RETURN related.title,
        citation_distance,
@@ -277,7 +277,7 @@ Use graph structure to filter similarity candidates:
 MATCH (user:User {id: $user_id})-[:FRIENDS_WITH*1..2]->(connection:User)
 WHERE connection <> user
 WITH connection,
-     cosine_similarity(connection.interest_embedding, user.interest_embedding) as similarity
+     similarity(connection.interest_embedding, user.interest_embedding) as similarity
 WHERE similarity > 0.7
   AND NOT (user)-[:FRIENDS_WITH]->(connection)
 RETURN connection.name,
@@ -296,7 +296,7 @@ Identify clusters based on semantic similarity:
 MATCH (u1:User)-[:INTERESTED_IN]->(topic:Topic)
 MATCH (u2:User)-[:INTERESTED_IN]->(topic)
 WHERE u1.id < u2.id
-WITH u1, u2, cosine_similarity(u1.profile_embedding, u2.profile_embedding) as similarity
+WITH u1, u2, similarity(u1.profile_embedding, u2.profile_embedding) as similarity
 WHERE similarity > 0.75
 CREATE (u1)-[:SIMILAR_TO {score: similarity}]->(u2)
 CREATE (u2)-[:SIMILAR_TO {score: similarity}]->(u1)
@@ -344,7 +344,7 @@ Optimize vector queries for performance:
 -- Use index hints for vector search
 MATCH (p:Product)
 USING INDEX product_embedding_idx
-WITH p, cosine_similarity(p.embedding, $query_embedding) as similarity
+WITH p, similarity(p.embedding, $query_embedding) as similarity
 WHERE similarity > 0.8
 RETURN p.name, similarity
 ORDER BY similarity DESC
@@ -469,7 +469,7 @@ CREATE (:CodeSnippet {
 -- Search by natural language query
 MATCH (snippet:CodeSnippet)
 WHERE snippet.language = $language
-WITH snippet, cosine_similarity(snippet.embedding, $query_embedding) as relevance
+WITH snippet, similarity(snippet.embedding, $query_embedding) as relevance
 WHERE relevance > 0.7
 RETURN snippet.code, snippet.description, relevance
 ORDER BY relevance DESC
@@ -493,8 +493,8 @@ CREATE (:Product {
 -- Search using text or image query
 MATCH (p:Product)
 WITH p,
-     cosine_similarity(p.text_embedding, $text_query_embedding) as text_sim,
-     cosine_similarity(p.image_embedding, $image_query_embedding) as image_sim
+     similarity(p.text_embedding, $text_query_embedding) as text_sim,
+     similarity(p.image_embedding, $image_query_embedding) as image_sim
 WITH p,
      CASE WHEN $query_type = 'text' THEN text_sim
           WHEN $query_type = 'image' THEN image_sim
@@ -523,7 +523,7 @@ CREATE (turn:ConversationTurn {
 MATCH (turn:ConversationTurn)
 WHERE turn.user_id = $user_id
   AND turn.timestamp > current_timestamp() - duration('PT1H')
-WITH turn, cosine_similarity(turn.embedding, $current_query_embedding) as relevance
+WITH turn, similarity(turn.embedding, $current_query_embedding) as relevance
 WHERE relevance > 0.6
 RETURN turn.message, turn.response, relevance
 ORDER BY relevance DESC, turn.timestamp DESC

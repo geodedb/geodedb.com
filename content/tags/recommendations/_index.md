@@ -154,7 +154,7 @@ WITH AVG([i IN COLLECT(item) | i.embedding]) AS user_profile_vector
 MATCH (candidate:Item)
 WHERE NOT EXISTS { (user)-[:LIKED]->(candidate) }
 WITH candidate,
-     COSINE_SIMILARITY(user_profile_vector, candidate.embedding) AS similarity
+     similarity(user_profile_vector, candidate.embedding) AS similarity
 WHERE similarity > 0.7
 RETURN candidate.id,
        candidate.title,

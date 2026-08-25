@@ -69,7 +69,7 @@ CREATE INDEX article_content_idx ON Article(content) USING fulltext;
 | Range query | B-tree | `WHERE p.age > 30 AND p.age < 50` |
 | Sorting | B-tree | `ORDER BY p.name` |
 | Geographic | R-tree | `WHERE distanceKm(loc, point) < 10` |
-| Vector similarity | HNSW | `WHERE cosineSimilarity(v1, v2) > 0.8` |
+| Vector similarity | HNSW | `WHERE similarity(v1, v2) > 0.8` |
 | Text search | Full-text | `WHERE content CONTAINS 'graph database'` |
 | IP prefix | Patricia Trie | `WHERE ip_contains(subnet, ip)` |
 

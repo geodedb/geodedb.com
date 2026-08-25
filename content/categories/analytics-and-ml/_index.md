@@ -103,7 +103,7 @@ async with client.connection() as conn:
 
     results = await conn.execute("""
         MATCH (a:Article)
-        WITH a, vector_similarity(a.embedding, $query_vector) AS similarity
+        WITH a, similarity(a.embedding, $query_vector) AS similarity
         WHERE similarity > 0.75
         RETURN a.title, a.content, similarity
         ORDER BY similarity DESC
@@ -112,6 +112,7 @@ async with client.connection() as conn:
 ```
 
 Vector search enables:
+
 - **Semantic search**: Find conceptually similar content
 - **Recommendations**: Suggest items based on embedding similarity
 - **Anomaly detection**: Identify outliers in vector space
@@ -172,7 +173,7 @@ MATCH (doc:Document)
 WHERE text_search(doc.content, $keywords)
 WITH doc,
   bm25_score(doc.content, $keywords) AS text_score,
-  vector_similarity(doc.embedding, $query_vector) AS semantic_score
+  similarity(doc.embedding, $query_vector) AS semantic_score
 WITH doc,
   text_score,
   semantic_score,
@@ -231,20 +232,14 @@ Combine graph relationships with vector similarity:
 
 ```gql
 // Content-based recommendations using embeddings and graph features
-MATCH (user:User {id: $user_id})-[:LIKED]->(item:Item)
-WITH COLLECT(item.embedding) AS liked_embeddings,
-     COLLECT(item.category) AS preferred_categories
-
-// Create user preference vector (centroid)
-WITH reduce(sum = [0.0] * 384, emb IN liked_embeddings |
-       vector_add(sum, emb)) AS user_vector,
-     preferred_categories
-
+// Geode has no vector arithmetic (no centroid/average of vectors), so the
+// user profile is expressed as the mean similarity to each liked item.
+MATCH (user:User {id: $user_id})-[:LIKED]->(liked:Item)
 MATCH (candidate:Item)
-WHERE candidate.category IN preferred_categories
+WHERE candidate.category = liked.category
   AND NOT (user)-[:LIKED|DISLIKED]->(candidate)
 WITH candidate,
-     vector_similarity(user_vector, candidate.embedding) AS content_similarity
+     avg(similarity(liked.embedding, candidate.embedding)) AS content_similarity
 WHERE content_similarity > 0.7
 RETURN candidate.title, candidate.category, content_similarity
 ORDER BY content_similarity DESC

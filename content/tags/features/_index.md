@@ -627,7 +627,7 @@ async def semantic_search(client, query_text, limit=10):
     # Vector similarity search
     results, _ = await client.query("""
         MATCH (d:Document)
-        WITH d, vector_similarity(d.embedding, $query_embedding, 'cosine') as similarity
+        WITH d, similarity(d.embedding, $query_embedding, 'cosine') as similarity
         WHERE similarity > 0.7
         RETURN d.id, d.title, d.content, similarity
         ORDER BY similarity DESC

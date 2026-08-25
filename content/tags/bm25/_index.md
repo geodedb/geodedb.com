@@ -80,6 +80,7 @@ Where:
 Common terms (like "the", "and") have low IDF and contribute little to relevance. Rare terms have high IDF and strongly indicate relevance.
 
 Examples:
+
 - "the" appears in 1M of 1M docs → IDF ≈ 0
 - "database" appears in 10K of 1M docs → IDF ≈ 4.6
 - "geode" appears in 100 of 1M docs → IDF ≈ 9.2
@@ -104,11 +105,13 @@ A document twice as long as average receives a moderate penalty.
 BM25 has two main parameters:
 
 **k1 (term frequency saturation)**:
+
 - Low (0.5-1.0): Aggressive saturation, repeated terms matter less
 - Medium (1.2-1.5): Balanced (typical default: 1.2)
 - High (2.0-3.0): Weak saturation, repeated terms matter more
 
 **b (length normalization)**:
+
 - Low (0.0-0.5): Weak length penalty
 - Medium (0.75): Balanced (typical default)
 - High (0.9-1.0): Strong length penalty
@@ -132,6 +135,7 @@ OPTIONS {
 ```
 
 Options:
+
 - **analyzer**: Text processing (standard, english, multilingual, custom)
 - **k1**: Term frequency saturation parameter
 - **b**: Length normalization parameter
@@ -283,10 +287,10 @@ Combine keyword and semantic search:
 -- Hybrid search: BM25 + HNSW
 MATCH (doc:Document)
 WHERE text_search(doc.content, $keyword_query)
-  AND vector_similarity(doc.embedding, $query_embedding) > 0.7
+  AND similarity(doc.embedding, $query_embedding) > 0.7
 WITH doc,
      text_score(doc) AS bm25_score,
-     vector_similarity(doc.embedding, $query_embedding) AS vector_score
+     similarity(doc.embedding, $query_embedding) AS vector_score
 RETURN doc.title,
        bm25_score,
        vector_score,
@@ -302,6 +306,7 @@ This hybrid approach leverages both keyword matching (BM25) and semantic underst
 ### Index Configuration
 
 **Choose the right analyzer**:
+
 ```gql
 -- English text with stemming
 CREATE TEXT INDEX docs_en FOR (d:Document) ON (d.content)
@@ -317,6 +322,7 @@ OPTIONS {analyzer: 'keyword'};  -- No stemming, preserve exact terms
 ```
 
 **Configure stopwords**:
+
 ```gql
 CREATE TEXT INDEX docs FOR (d:Document) ON (d.content)
 OPTIONS {
@@ -327,6 +333,7 @@ OPTIONS {
 ### Query Optimization
 
 **Use specific terms**:
+
 ```gql
 -- Poor: Too generic
 WHERE text_search(d.content, 'data')
@@ -336,6 +343,7 @@ WHERE text_search(d.content, 'graph database ACID transactions')
 ```
 
 **Combine with filters**:
+
 ```gql
 -- Efficient: Filter before expensive text search
 MATCH (d:Document)
@@ -347,6 +355,7 @@ ORDER BY score DESC;
 ```
 
 **Tune parameters for your data**:
+
 ```gql
 -- Short documents (tweets, titles): Reduce length penalty
 CREATE TEXT INDEX tweets FOR (t:Tweet) ON (t.content)
@@ -360,6 +369,7 @@ OPTIONS {k1: 1.2, b: 0.9};  -- Strong length normalization
 ### Relevance Tuning
 
 **Field weighting**:
+
 ```gql
 -- Weight title matches higher than content matches
 MATCH (d:Document)
@@ -372,6 +382,7 @@ ORDER BY score DESC;
 ```
 
 **Query-time boosting**:
+
 ```gql
 -- Boost recent documents
 MATCH (d:Document)
@@ -463,6 +474,7 @@ Where δ = typically 1.0
 ```
 
 **Advantages**:
+
 - Never penalizes term presence
 - Better performance on verbose queries
 - More robust to long documents
@@ -680,7 +692,7 @@ CALL {
     DROP INDEX IF EXISTS test_index;
     CREATE TEXT INDEX test_index FOR (d:Document) ON (d.content)
     OPTIONS {k1: k1, b: b};
-    
+
     // Run evaluation queries
     CALL evaluate_queries() YIELD avg_ndcg
     RETURN k1, b, avg_ndcg

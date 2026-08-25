@@ -502,10 +502,10 @@ RETURN 2 IN {1, 2, 3} AS contains;                -- true
 
 ```gql
 -- Constructor
-RETURN '[0.1, 0.2, 0.3, 0.4]'::vector_f32 AS v;
+RETURN vectorf32('[0.1, 0.2, 0.3, 0.4]') AS v;
 
 -- From array
-RETURN vector_f32([0.1, 0.2, 0.3, 0.4]) AS v;
+RETURN vectorf32([0.1, 0.2, 0.3, 0.4]) AS v;
 
 -- Distance functions (lower = more similar)
 RETURN vector_l2(v1, v2) AS euclidean;
@@ -534,8 +534,8 @@ CREATE INDEX doc_embedding_idx ON :Document(embedding) USING VECTOR
 **Storage:** 4 bytes per dimension
 
 ```gql
-RETURN '[1, 2, 3, 4]'::vector_i32 AS v;
-RETURN vector_i32([1, 2, 3, 4]) AS v;
+RETURN vectori32('[1, 2, 3, 4]') AS v;
+RETURN vectori32([1, 2, 3, 4]) AS v;
 ```
 
 ---

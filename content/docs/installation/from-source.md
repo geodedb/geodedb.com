@@ -29,11 +29,13 @@ This guide covers building Geode from source using the Zig compiler.
 ### System Requirements
 
 **Minimum**:
+
 - CPU: 2 cores
 - RAM: 4GB
 - Disk: 2GB free space
 
 **Recommended**:
+
 - CPU: 4+ cores
 - RAM: 8GB+
 - Disk: 10GB+ free space
@@ -88,6 +90,7 @@ zig build test
 ### Build Configurations
 
 **Debug Build**:
+
 ```bash
 zig build
 # Binary: ./zig-out/bin/geode
@@ -95,6 +98,7 @@ zig build
 ```
 
 **Release Build (Recommended)**:
+
 ```bash
 zig build -Doptimize=ReleaseFast
 # Binary: ./zig-out/bin/geode
@@ -102,6 +106,7 @@ zig build -Doptimize=ReleaseFast
 ```
 
 **Small Binary Build**:
+
 ```bash
 zig build -Doptimize=ReleaseSmall
 # Binary: ./zig-out/bin/geode
@@ -109,6 +114,7 @@ zig build -Doptimize=ReleaseSmall
 ```
 
 **Safe Release Build**:
+
 ```bash
 zig build -Doptimize=ReleaseSafe
 # Binary: ./zig-out/bin/geode
@@ -121,7 +127,6 @@ zig build -Doptimize=ReleaseSafe
 # Enable specific features
 zig build -Denable-tde=true          # Transparent Data Encryption
 zig build -Denable-fle=true          # Field-Level Encryption
-zig build -Denable-gpu=true          # GPU acceleration (Vulkan/CUDA)
 
 # Disable features
 zig build -Denable-telemetry=false   # Disable telemetry
@@ -430,6 +435,7 @@ zig build docs
 ### Build Failures
 
 **Zig version mismatch**:
+
 ```bash
 # Check Zig version
 zig version
@@ -439,6 +445,7 @@ zig version
 ```
 
 **Missing dependencies**:
+
 ```bash
 # Update submodules
 git submodule update --init --recursive
@@ -449,6 +456,7 @@ make build
 ```
 
 **Out of memory during build**:
+
 ```bash
 # Use single-threaded build
 zig build -j1
@@ -463,6 +471,7 @@ sudo swapon /swapfile
 ### Runtime Issues
 
 **Port already in use**:
+
 ```bash
 # Find process using port 3141
 lsof -i :3141
@@ -475,6 +484,7 @@ geode serve --listen 0.0.0.0:3142
 ```
 
 **Permission denied**:
+
 ```bash
 # Check data directory permissions
 ls -la /var/lib/geode
@@ -485,6 +495,7 @@ sudo chmod -R 755 /var/lib/geode
 ```
 
 **TLS certificate errors**:
+
 ```bash
 # Verify certificate
 openssl x509 -in /etc/geode/certs/server-cert.pem -text -noout

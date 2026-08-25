@@ -30,6 +30,7 @@ The Geode guides cover installation, configuration, data modeling, query develop
 ### Installing Geode
 
 **Using Docker** (recommended for development):
+
 ```bash
 # Pull latest image
 docker pull codepros/geode:latest
@@ -47,6 +48,7 @@ docker exec geode geode ping
 ```
 
 **Building from Source** (Zig 0.1.0+):
+
 ```bash
 # Install Zig
 curl -L https://ziglang.org/download/0.1.0/zig-linux-x86_64-0.1.0.tar.xz | tar xJ
@@ -64,6 +66,7 @@ make build
 ### Configuring Geode
 
 **Basic Configuration** (`geode.toml`):
+
 ```toml
 [server]
 listen = "0.0.0.0:3141"
@@ -88,6 +91,7 @@ parallel_workers = 8
 ```
 
 **Start with configuration**:
+
 ```bash
 geode serve --config /etc/geode/geode.toml
 ```
@@ -115,6 +119,7 @@ tls_key = "/etc/letsencrypt/live/geode.example.com/privkey.pem"
 ### Designing Your First Schema
 
 **Step 1: Identify Entities**
+
 ```gql
 -- In a social network, entities are:
 -- Users, Posts, Comments, Groups
@@ -135,6 +140,7 @@ CREATE (post:Post {
 ```
 
 **Step 2: Define Relationships**
+
 ```gql
 -- Users post content
 MATCH (u:User {id: 'user_001'}), (p:Post {id: 'post_001'})
@@ -151,6 +157,7 @@ SET p.likes = p.likes + 1;
 ```
 
 **Step 3: Add Indexes**
+
 ```gql
 -- Unique constraints
 CREATE CONSTRAINT unique_user_id ON :User(id);
@@ -165,6 +172,7 @@ CREATE INDEX post_timestamp ON :Post(timestamp);
 ### Migrating from SQL to Graph
 
 **SQL Schema**:
+
 ```sql
 CREATE TABLE users (
     id INT PRIMARY KEY,
@@ -181,6 +189,7 @@ CREATE TABLE friendships (
 ```
 
 **Equivalent Graph Model**:
+
 ```gql
 -- Users as nodes
 CREATE (alice:User {
@@ -202,6 +211,7 @@ CREATE (bob)-[:FRIENDS_WITH {since: date('2024-01-15')}]->(alice);
 ```
 
 **Advantages**:
+
 - No junction table needed
 - Bidirectional queries without self-joins
 - Relationship properties directly on edges
@@ -212,6 +222,7 @@ CREATE (bob)-[:FRIENDS_WITH {since: date('2024-01-15')}]->(alice);
 ### Writing Efficient Queries
 
 **Pattern Matching Basics**:
+
 ```gql
 -- Simple pattern
 MATCH (p:Person {name: 'Alice'})
@@ -228,6 +239,7 @@ RETURN DISTINCT connection.name;
 ```
 
 **Using Indexes Effectively**:
+
 ```gql
 -- Bad: Full scan without index
 MATCH (p:Person)
@@ -246,6 +258,7 @@ EXPLAIN MATCH (p:Person {email: 'alice@example.com'}) RETURN p;
 ```
 
 **Optimizing Aggregations**:
+
 ```gql
 -- Efficient: Push filtering before aggregation
 MATCH (c:Company)<-[:WORKS_AT]-(e:Employee)
@@ -263,6 +276,7 @@ RETURN c.name, employees;
 ### Implementing Common Patterns
 
 **Pagination**:
+
 ```gql
 -- Skip and limit for pagination
 MATCH (p:Post)
@@ -273,6 +287,7 @@ LIMIT 10;  -- Page 3 (items 21-30)
 ```
 
 **Aggregation with Grouping**:
+
 ```gql
 -- Count employees by department
 MATCH (e:Employee)
@@ -286,6 +301,7 @@ ORDER BY avg_salary DESC;
 ```
 
 **Conditional Logic**:
+
 ```gql
 -- CASE expressions
 MATCH (e:Employee)
@@ -333,7 +349,7 @@ CREATE FULLTEXT INDEX article_content ON :Article(title, content);
 
 -- Vector index for embeddings
 CREATE VECTOR INDEX doc_embeddings ON :Document(embedding)
-WITH (dimension: 384, metric: 'cosine');
+WITH (metric = 'cosine');
 
 -- List all indexes
 SHOW INDEXES;
@@ -368,6 +384,7 @@ geode user create analyst --password 'UserPass456'
 ```
 
 **Connect with authentication**:
+
 ```python
 from geode_client import Client
 
@@ -404,6 +421,7 @@ MATCH (e:Employee) RETURN e;
 ### Configuring Encryption
 
 **TLS in Transit**:
+
 ```toml
 [security]
 tls_cert = "/etc/geode/certs/server.crt"
@@ -412,6 +430,7 @@ tls_client_auth = false  # Set true for mutual TLS
 ```
 
 **Encryption at Rest**:
+
 ```toml
 [security]
 encryption_at_rest = true
@@ -423,6 +442,7 @@ encryption_key_file = "/etc/geode/keys/master.key"
 ### Docker Deployment
 
 **Docker Compose** (`docker-compose.yml`):
+
 ```yaml
 version: '3.8'
 
@@ -445,6 +465,7 @@ volumes:
 ```
 
 **Deploy**:
+
 ```bash
 docker-compose up -d
 docker-compose logs -f geode
@@ -453,6 +474,7 @@ docker-compose logs -f geode
 ### Kubernetes Deployment
 
 **StatefulSet** (`geode-statefulset.yaml`):
+
 ```yaml
 apiVersion: apps/v1
 kind: StatefulSet
@@ -498,6 +520,7 @@ spec:
 ```
 
 **Service** (`geode-service.yaml`):
+
 ```yaml
 apiVersion: v1
 kind: Service
@@ -513,6 +536,7 @@ spec:
 ```
 
 **Deploy**:
+
 ```bash
 kubectl apply -f geode-statefulset.yaml
 kubectl apply -f geode-service.yaml
@@ -524,6 +548,7 @@ kubectl get pods -l app=geode
 ### Backup and Restore
 
 **Create Backup**:
+
 ```bash
 # Stop writes (optional, for consistency)
 geode maintenance lock
@@ -542,6 +567,7 @@ aws s3 cp geode-backup-$(date +%Y%m%d).tar.gz \
 ```
 
 **Restore from Backup**:
+
 ```bash
 # Stop Geode
 systemctl stop geode
@@ -557,6 +583,7 @@ systemctl start geode
 ### Monitoring Setup
 
 **Prometheus Integration**:
+
 ```toml
 # geode.toml
 [telemetry]
@@ -565,6 +592,7 @@ prometheus_port = 9090
 ```
 
 **Prometheus Configuration** (`prometheus.yml`):
+
 ```yaml
 scrape_configs:
   - job_name: 'geode'
@@ -573,6 +601,7 @@ scrape_configs:
 ```
 
 **Key Metrics to Monitor**:
+
 - `geode_query_duration_seconds` - Query latency
 - `geode_active_connections` - Connection count
 - `geode_cache_hit_ratio` - Cache effectiveness
@@ -582,6 +611,7 @@ scrape_configs:
 ### Performance Tuning
 
 **Memory Configuration**:
+
 ```toml
 [storage]
 cache_size = "8GB"  # Increase for larger datasets
@@ -593,6 +623,7 @@ connection_pool_size = 2000  # More concurrent connections
 ```
 
 **Query Optimization**:
+
 ```bash
 # Enable query logging
 [logging]
@@ -698,6 +729,7 @@ async def follow_user(user_id: str, target_id: str):
 ### Common Issues
 
 **Connection Refused**:
+
 ```bash
 # Check if server is running
 geode ping
@@ -710,6 +742,7 @@ sudo ufw allow 3141/tcp
 ```
 
 **Slow Queries**:
+
 ```gql
 -- Use PROFILE to identify bottlenecks
 PROFILE
@@ -721,6 +754,7 @@ CREATE INDEX person_name ON :Person(name);
 ```
 
 **Out of Memory**:
+
 ```toml
 # Increase cache size
 [storage]

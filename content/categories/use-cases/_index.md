@@ -188,7 +188,7 @@ MATCH (me:User {id: $userId})-[:PURCHASED]->(product:Product)
 WHERE NOT EXISTS {MATCH (me)-[:PURCHASED]->(similar)}
 WITH similar,
      COUNT(DISTINCT category) AS shared_categories,
-     vector.cosine_similarity(product.embedding, similar.embedding) AS similarity
+     similarity(product.embedding, similar.embedding) AS similarity
 RETURN similar.name,
        shared_categories,
        similarity,
@@ -222,7 +222,7 @@ async def hybrid_recommendations(user_id: int, limit: int = 10):
             MATCH (candidate:Product)
             WHERE NOT EXISTS {MATCH (me)-[:LIKED]->(candidate)}
             RETURN candidate.id AS id,
-                   vector.cosine_similarity(user_profile, candidate.embedding) AS content_score
+                   similarity(user_profile, candidate.embedding) AS content_score
         """, {"userId": user_id})
 
         # Combine scores

@@ -100,7 +100,7 @@ result, _ = await client.query("""
     MATCH (candidate:Product)
     WHERE candidate.id <> $id
     RETURN candidate.name,
-           vector.cosine_similarity(target.embedding, candidate.embedding) AS similarity
+           similarity(target.embedding, candidate.embedding) AS similarity
     ORDER BY similarity DESC
     LIMIT 5
 """, {"id": 123})

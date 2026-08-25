@@ -254,7 +254,7 @@ MATCH (u:User {user_id: $user_id})
 MATCH (i:Item {item_id: $item_id})
 WHERE NOT (u)-[:RATED]->(i)
 WITH u, i,
-     vector.dot_product(u.latent_factors, i.latent_factors) AS predicted_rating
+     vector_dot(u.latent_factors, i.latent_factors) AS predicted_rating
 RETURN i.item_id, i.title, predicted_rating
 ORDER BY predicted_rating DESC
 LIMIT 10;
@@ -475,22 +475,26 @@ RETURN algorithm,
 ### Similarity Metrics
 
 **Cosine Similarity**: Measures angle between rating vectors (range: -1 to 1)
+
 ```
 sim(u, v) = (r_u · r_v) / (||r_u|| × ||r_v||)
           = Σ(r_ui × r_vi) / sqrt(Σr_ui²) × sqrt(Σr_vi²)
 ```
 
 **Pearson Correlation**: Accounts for rating scale differences (range: -1 to 1)
+
 ```
 sim(u, v) = Σ((r_ui - r̄_u) × (r_vi - r̄_v)) / (σ_u × σ_v)
 ```
 
 **Jaccard Similarity**: For binary implicit feedback (range: 0 to 1)
+
 ```
 sim(A, B) = |A ∩ B| / |A ∪ B|
 ```
 
 **Adjusted Cosine**: Normalizes for user rating bias
+
 ```
 sim(i, j) = Σ_u((r_ui - r̄_u) × (r_uj - r̄_u)) / sqrt(Σ(r_ui - r̄_u)²) × sqrt(Σ(r_uj - r̄_u)²)
 ```
@@ -498,16 +502,19 @@ sim(i, j) = Σ_u((r_ui - r̄_u) × (r_uj - r̄_u)) / sqrt(Σ(r_ui - r̄_u)²) ×
 ### Rating Prediction
 
 **User-Based Prediction**:
+
 ```
 pred(u, i) = r̄_u + (Σ_v∈N(u) sim(u,v) × (r_vi - r̄_v)) / Σ_v∈N(u) |sim(u,v)|
 ```
 
 **Item-Based Prediction**:
+
 ```
 pred(u, i) = (Σ_j∈R(u) sim(i,j) × r_uj) / Σ_j∈R(u) |sim(i,j)|
 ```
 
 Where:
+
 - N(u) = k-nearest neighbors of user u
 - R(u) = items rated by user u
 - r̄_u = average rating by user u
@@ -606,7 +613,7 @@ MATCH (u:User {user_id: $user_id})
 MATCH (candidate:Item)
 WHERE NOT EXISTS((u)-[:RATED|PURCHASED]->(candidate))
 WITH u, candidate,
-     vector.similarity(u.user_embedding, candidate.item_embedding, 'cosine') AS neural_score
+     similarity(u.user_embedding, candidate.item_embedding, 'cosine') AS neural_score
 WHERE neural_score > 0.7
 RETURN candidate.item_id,
        candidate.title,

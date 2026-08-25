@@ -291,18 +291,19 @@ RETURN length(f.data) AS bytes;
 ```gql
 -- Create vector (F32)
 CREATE (:Document {
-  embedding: '[0.1, 0.2, 0.3, 0.4]'::vector_f32
+  embedding: vectorf32('[0.1, 0.2, 0.3, 0.4]')
 });
 
--- Vector with explicit dimension
+-- Dimensionality is inferred from the supplied values; bind long vectors as a
+-- parameter instead of writing them out
 CREATE (:Image {
-  embedding: vector_f32(512)  -- 512-dimensional vector
+  embedding: vectorf32($embedding_512)  -- 512-dimensional vector
 });
 
 -- Distance queries (with HNSW index)
 MATCH (d:Document)
-WHERE vector_l2(d.embedding, '[0.15, 0.25, 0.35, 0.45]'::vector_f32) < 0.5
-RETURN d.id, vector_l2(d.embedding, '[0.15, 0.25, 0.35, 0.45]'::vector_f32) AS distance
+WHERE vector_l2(d.embedding, vectorf32('[0.15, 0.25, 0.35, 0.45]')) < 0.5
+RETURN d.id, vector_l2(d.embedding, vectorf32('[0.15, 0.25, 0.35, 0.45]')) AS distance
 ORDER BY distance
 LIMIT 10;
 ```
@@ -422,8 +423,8 @@ interval('P7D')
 '\\x48656c6c6f'::bytea
 
 -- Vector
-'[0.1, 0.2, 0.3]'::vector_f32
-'[1, 2, 3]'::vector_i32
+vectorf32('[0.1, 0.2, 0.3]')
+vectori32('[1, 2, 3]')
 
 -- Geographic
 latlon(40.7128, -74.0060)
@@ -540,7 +541,7 @@ CREATE (:Product {
   price: decimal('999.99'),
   stock: 50,
   specs: '{"cpu": "i7", "ram": 16, "storage": 512}'::jsonb,
-  embedding: '[0.1, 0.2, ..., 0.512]'::vector_f32  -- for recommendations
+  embedding: vectorf32('[0.1, 0.2, ..., 0.512]')  -- for recommendations
 });
 
 -- Orders with temporal data

@@ -36,8 +36,8 @@ CREATE (:Document {
 
 // Find similar documents using vector search
 MATCH (d:Document)
-WHERE vector_similarity(d.embedding, $query_vector) > 0.8
-RETURN d.title, vector_similarity(d.embedding, $query_vector) AS score
+WHERE similarity(d.embedding, $query_vector) > 0.8
+RETURN d.title, similarity(d.embedding, $query_vector) AS score
 ORDER BY score DESC
 LIMIT 10
 ```
@@ -127,6 +127,7 @@ CDC streams are delivered via QUIC with at-least-once delivery guarantees. Event
 Geode's distributed mode provides horizontal scalability through sharding and replication, enabling deployments that handle billions of nodes and thousands of concurrent queries.
 
 Key distributed features include:
+
 - Automatic data partitioning across shards
 - Configurable replication factors for fault tolerance
 - Distributed transaction coordination with two-phase commit
@@ -315,6 +316,7 @@ RETURN DISTINCT f.name
 ### Feature Selection
 
 Not all applications need all advanced features. Consider:
+
 - **Vector search**: Use for semantic similarity, recommendations, and AI/ML integration
 - **Full-text search**: Use for content discovery and search interfaces
 - **RLS**: Use for multi-tenant SaaS applications and fine-grained security
@@ -324,6 +326,7 @@ Not all applications need all advanced features. Consider:
 ### Performance Considerations
 
 Advanced features have performance implications:
+
 - HNSW indexes consume significant memory (O(N) with index size)
 - RLS policies add overhead to every query (typically 5-10%)
 - CDC streams require WAL retention (disk space)
@@ -334,6 +337,7 @@ Benchmark your specific workload and enable features incrementally.
 ### Security Hardening
 
 When using advanced security features:
+
 - Combine TDE + FLE for defense in depth
 - Use RLS policies instead of application-level filtering
 - Rotate encryption keys regularly
@@ -352,7 +356,7 @@ MATCH (d:Document)
 WHERE text_search(d.content, $query_text)
 WITH d,
   bm25_score(d.content, $query_text) AS text_score,
-  vector_similarity(d.embedding, $query_vector) AS vector_score
+  similarity(d.embedding, $query_vector) AS vector_score
 RETURN d.title,
   (0.7 * text_score + 0.3 * vector_score) AS combined_score
 ORDER BY combined_score DESC

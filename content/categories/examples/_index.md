@@ -41,6 +41,7 @@ RETURN p.name, p.age;
 ```
 
 **Output**:
+
 ```
 | name  | age |
 |-------|-----|
@@ -80,6 +81,7 @@ DELETE p;
 ### Client Library Examples
 
 **Go Example**:
+
 ```go
 package main
 
@@ -126,6 +128,7 @@ func main() {
 ```
 
 **Python Example**:
+
 ```python
 import asyncio
 from geode_client import Client
@@ -151,6 +154,7 @@ asyncio.run(main())
 ```
 
 **Rust Example**:
+
 ```rust
 use geode_client::{Client, Value};
 use std::collections::HashMap;
@@ -352,12 +356,12 @@ CREATE (doc2:Document {
 
 -- Create vector index
 CREATE VECTOR INDEX doc_embeddings ON :Document(embedding)
-WITH (dimension: 384, metric: 'cosine');
+WITH (metric = 'cosine');
 
 -- Semantic search
 MATCH (doc:Document)
-WHERE vector_similarity(doc.embedding, $query_embedding) > 0.8
-RETURN doc.title, doc.content, vector_similarity(doc.embedding, $query_embedding) as score
+WHERE similarity(doc.embedding, $query_embedding) > 0.8
+RETURN doc.title, doc.content, similarity(doc.embedding, $query_embedding) as score
 ORDER BY score DESC
 LIMIT 10;
 ```

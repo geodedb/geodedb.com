@@ -61,9 +61,9 @@ Geode extends GQL with vector search functions that integrate naturally with pat
 
 ```gql
 MATCH (p:Product)
-WHERE vector_similarity(p.embedding, $query_vector, 'cosine') > 0.8
+WHERE similarity(p.embedding, $query_vector, 'cosine') > 0.8
 RETURN p.name, p.description
-ORDER BY vector_similarity(p.embedding, $query_vector, 'cosine') DESC
+ORDER BY similarity(p.embedding, $query_vector, 'cosine') DESC
 LIMIT 10;
 ```
 
@@ -74,7 +74,7 @@ Geode's unique advantage is combining graph topology with vector similarity:
 ```gql
 -- Find similar products in the same category
 MATCH (category:Category {name: 'Electronics'})-[:CONTAINS]->(p:Product)
-WITH p, vector_similarity(p.embedding, $query_vector, 'cosine') AS similarity
+WITH p, similarity(p.embedding, $query_vector, 'cosine') AS similarity
 WHERE similarity > 0.75
 RETURN p.name, similarity
 ORDER BY similarity DESC
@@ -88,7 +88,7 @@ WITH collect(past.embedding) AS user_history
 MATCH (candidate:Product)
 WHERE NOT (user)-[:PURCHASED]->(candidate)
 WITH candidate, avg([emb IN user_history |
-  vector_similarity(candidate.embedding, emb, 'cosine')]) AS avg_similarity
+  similarity(candidate.embedding, emb, 'cosine')]) AS avg_similarity
 WHERE avg_similarity > 0.7
 RETURN candidate.name, avg_similarity
 ORDER BY avg_similarity DESC
@@ -131,7 +131,7 @@ async def semantic_search(query_text):
 
         result, _ = await conn.query("""
             MATCH (d:Document)
-            WITH d, vector_similarity(d.embedding, $query_emb, 'cosine') AS score
+            WITH d, similarity(d.embedding, $query_emb, 'cosine') AS score
             WHERE score > 0.6
             RETURN d.title, d.content, score
             ORDER BY score DESC
@@ -152,7 +152,7 @@ MATCH (user:User {id: $user_id})-[:PREFERS]->(brand:Brand)
 MATCH (brand)-[:MANUFACTURES]->(product:Product)
 MATCH (cart_item:Product {id: $cart_item_id})
 WITH product, cart_item,
-     vector_similarity(product.embedding, cart_item.embedding, 'cosine') AS similarity
+     similarity(product.embedding, cart_item.embedding, 'cosine') AS similarity
 WHERE similarity > 0.7 AND product.id <> cart_item.id
 RETURN product.name, product.price, similarity
 ORDER BY similarity DESC
@@ -172,7 +172,7 @@ async def find_similar_images(image_path, limit=10):
     async with client.connection() as conn:
         result, _ = await conn.query("""
             MATCH (img:Image)
-            WITH img, vector_similarity(img.embedding, $query_emb, 'euclidean') AS distance
+            WITH img, distance(img.embedding, $query_emb, 'euclidean') AS distance
             WHERE distance < 0.5
             RETURN img.url, img.tags, distance
             ORDER BY distance ASC
@@ -246,13 +246,13 @@ async def index_documents_batch(documents, batch_size=100):
 
 ```gql
 -- Too restrictive: May return no results
-WHERE vector_similarity(n.emb, $query, 'cosine') > 0.95
+WHERE similarity(n.emb, $query, 'cosine') > 0.95
 
 -- Too permissive: Returns irrelevant results
-WHERE vector_similarity(n.emb, $query, 'cosine') > 0.3
+WHERE similarity(n.emb, $query, 'cosine') > 0.3
 
 -- Just right: Adjust based on your data
-WHERE vector_similarity(n.emb, $query, 'cosine') > 0.7
+WHERE similarity(n.emb, $query, 'cosine') > 0.7
 ```
 
 **Limit result sets**:
@@ -260,7 +260,7 @@ WHERE vector_similarity(n.emb, $query, 'cosine') > 0.7
 ```gql
 -- HNSW is optimized for top-k queries
 MATCH (d:Document)
-WITH d, vector_similarity(d.embedding, $query, 'cosine') AS score
+WITH d, similarity(d.embedding, $query, 'cosine') AS score
 ORDER BY score DESC
 LIMIT 20  -- HNSW explores only as needed
 ```
@@ -306,7 +306,7 @@ the accuracy/latency trade-off with the result set size instead:
 
 ```gql
 MATCH (d:Document)
-WITH d, vector_similarity(d.embedding, $query, 'cosine') AS score
+WITH d, similarity(d.embedding, $query, 'cosine') AS score
 ORDER BY score DESC
 LIMIT 10;
 ```
@@ -406,10 +406,10 @@ Combine vector similarity with keyword matching:
 -- Hybrid search: HNSW + BM25
 MATCH (d:Document)
 WHERE text_search(d.content, $keyword_query)
-  AND vector_similarity(d.embedding, $vector_query, 'cosine') > 0.6
+  AND similarity(d.embedding, $vector_query, 'cosine') > 0.6
 WITH d,
      text_score(d, $keyword_query) AS bm25_score,
-     vector_similarity(d.embedding, $vector_query) AS vector_score
+     similarity(d.embedding, $vector_query) AS vector_score
 RETURN d.doc_id,
        d.title,
        bm25_score,
@@ -427,8 +427,8 @@ Search across multiple embedding spaces:
 -- Search using both content and title embeddings
 MATCH (d:Document)
 WITH d,
-     vector_similarity(d.content_embedding, $content_query_emb, 'cosine') AS content_sim,
-     vector_similarity(d.title_embedding, $title_query_emb, 'cosine') AS title_sim
+     similarity(d.content_embedding, $content_query_emb, 'cosine') AS content_sim,
+     similarity(d.title_embedding, $title_query_emb, 'cosine') AS title_sim
 WITH d,
      0.7 * content_sim + 0.3 * title_sim AS combined_similarity
 WHERE combined_similarity > 0.75
@@ -447,36 +447,37 @@ WHERE d.category = 'technical'
   AND d.publish_date > date('2024-01-01')
   AND d.language = 'en'
 WITH d
-WHERE vector_similarity(d.embedding, $query, 'cosine') > 0.7
+WHERE similarity(d.embedding, $query, 'cosine') > 0.7
 RETURN d
-ORDER BY vector_similarity(d.embedding, $query) DESC
+ORDER BY similarity(d.embedding, $query) DESC
 LIMIT 10;
 
--- Less efficient: Vector search then filter
-CALL vector.search({index: 'docs', query: $query, k: 1000})
-YIELD node
-WHERE node.category = 'technical'  // Post-filter loses HNSW efficiency
-RETURN node
+-- Less efficient: retrieve a large candidate set, then filter
+WITH vector_knn('embedding', $query, 1000, 'cosine') AS ids
+MATCH (d:Document)
+WHERE id(d) IN ids
+  AND d.category = 'technical'  // Post-filter loses HNSW efficiency
+RETURN d
 LIMIT 10;
 ```
+
+`vector_knn(property, query_vector, k, metric)` (alias `knn`) returns the ids of
+the `k` nearest elements for a vector property. There is no `CALL vector.search`
+procedure — vector search is always expressed with the vector functions.
 
 ### Cascaded Search
 
 Fast approximate search followed by reranking:
 
 ```gql
--- Stage 1: Fast approximate retrieval (top 100)
-CALL vector.search({
-    index: 'products',
-    query: $query_embedding,
-    k: 100,
-    ef: 50  // Lower ef for speed
-})
-YIELD node AS candidate, similarity AS approx_score
+-- Stage 1: Fast approximate retrieval (top 100 candidate ids)
+WITH vector_knn('embedding', $query_embedding, 100, 'cosine') AS ids
+MATCH (candidate:Product)
+WHERE id(candidate) IN ids
 
--- Stage 2: Precise reranking (top 20)
+-- Stage 2: Precise reranking (top 20) on a higher-quality embedding
 WITH candidate,
-     vector.similarity(candidate.high_quality_embedding, $query_embedding, 'cosine') AS precise_score
+     similarity(candidate.high_quality_embedding, $query_embedding, 'cosine') AS precise_score
 ORDER BY precise_score DESC
 LIMIT 20
 RETURN candidate, precise_score;
@@ -496,13 +497,13 @@ plus the graph overhead (~40MB per million vectors at 768 dimensions).
 
 ```gql
 -- Adjust the retrieved candidate set based on query importance
-CALL vector.search({
-    index: 'embeddings',
-    query: $query,
-    k: CASE WHEN $user_tier = 'premium' THEN 100 ELSE 10 END
-})
-YIELD node, similarity
-RETURN node, similarity;
+WITH vector_knn('embedding', $query,
+                CASE WHEN $user_tier = 'premium' THEN 100 ELSE 10 END,
+                'cosine') AS ids
+MATCH (d:Document)
+WHERE id(d) IN ids
+RETURN d, similarity(d.embedding, $query) AS similarity
+ORDER BY similarity DESC;
 ```
 
 ## Quantization and Compression

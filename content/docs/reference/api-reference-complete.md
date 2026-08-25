@@ -164,6 +164,7 @@ RETURN count(n) AS total_people
 ```
 
 **Variations**:
+
 - `count(*)` - Count all rows (including nulls)
 - `count(DISTINCT n.age)` - Count unique values
 
@@ -712,13 +713,16 @@ ORDER BY relevance DESC
 LIMIT 10
 ```
 
-#### `cosine(v1: VECTOR, v2: VECTOR) -> FLOAT`
+#### `cosine(list1: LIST, list2: LIST) -> FLOAT`
 
-Cosine similarity (alias for similarity).
+Cosine similarity between two numeric **lists** (alias of
+`algo.similarity.cosine`). It is **not** a vector function: called with
+`VECTORF32` / `VECTORI32` values it returns `NULL`. Use `similarity()` or
+`vector_cosine()` for vector properties.
 
 ```gql
 MATCH (n:User)
-RETURN n.name, cosine(n.preferences, $user_profile) AS match_score
+RETURN n.name, cosine(n.preference_scores, $user_profile_list) AS match_score
 ORDER BY match_score DESC
 ```
 
@@ -1123,16 +1127,19 @@ RETURN p {.name, .age, friends: size((p)-[:KNOWS]->())}
 ## Next Steps
 
 **Explore More**:
+
 - [GQL Guide](/docs/gql/guide/) - Learn GQL syntax
 - [Query Performance](/docs/query/performance-tuning/) - Optimize queries
 - [Graph Algorithms](/docs/analytics/graph-algorithms/) - Advanced algorithms
 
 **Related Topics**:
+
 - [Data Types](/docs/data-types/) - Detailed type system
 - [Schema Design](/docs/guides/schema-design/) - Graph modeling
 - [Testing Strategies](/docs/guides/testing-strategies/) - Test your queries
 
 **Standards**:
+
 - ISO/IEC 39075:2024 GQL Standard
 - 100% compliance (see conformance profile)
 

@@ -230,8 +230,8 @@ CREATE INDEX doc_embedding_idx ON Document(embedding) USING vector;
 
 -- Similarity search (k-NN)
 MATCH (d:Document)
-WHERE vector_l2(d.embedding, '[0.1, 0.2, ..., 0.512]'::vector_f32) < 0.5
-RETURN d.title, vector_l2(d.embedding, '[0.1, 0.2, ..., 0.512]'::vector_f32) AS distance
+WHERE vector_l2(d.embedding, vectorf32('[0.1, 0.2, ..., 0.512]')) < 0.5
+RETURN d.title, vector_l2(d.embedding, vectorf32('[0.1, 0.2, ..., 0.512]')) AS distance
 ORDER BY distance
 LIMIT 10;
 ```

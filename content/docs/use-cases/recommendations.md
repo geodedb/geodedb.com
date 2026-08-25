@@ -305,28 +305,31 @@ CREATE INDEX item_embedding_idx ON Item(embedding) USING vector;
 ### Similarity-Based Recommendations
 
 ```gql
--- Find items similar to user's recent purchases
+-- Find items similar to the user's recent purchases.
+-- Geode has no vector-averaging function, so instead of building a single
+-- preference vector, score each candidate by its mean cosine distance to the
+-- recently purchased items.
 MATCH (me:User {id: $user_id})-[p:PURCHASED]->(item:Item)
 WHERE p.timestamp > timestamp() - interval('P30D')  -- Last 30 days
-WITH COLLECT(item.embedding) AS recent_embeddings
-
--- Compute average embedding (user preference vector)
-WITH [e IN recent_embeddings | e] AS embeddings
-CALL vector.average(embeddings) YIELD result AS user_embedding
-
--- Find similar items
 MATCH (recommended:Item)
 WHERE NOT EXISTS {
-  MATCH (me:User {id: $user_id})-[:PURCHASED]->(recommended)
+  MATCH (me)-[:PURCHASED]->(recommended)
 }
-  AND distance(recommended.embedding, user_embedding, 'cosine') < 0.5
+WITH
+  recommended,
+  avg(distance(recommended.embedding, item.embedding, 'cosine')) AS distance
+WHERE distance < 0.5
 RETURN
   recommended.name,
   recommended.category,
-  distance(recommended.embedding, user_embedding, 'cosine') AS distance
+  distance
 ORDER BY distance ASC  -- cosine distance: lower = more similar
 LIMIT 20;
 ```
+
+If you need a true centroid ("user preference vector"), compute it in the
+client from the embeddings returned by a `MATCH`, then pass it back as a query
+parameter (`$user_embedding`) built with `vectorf32(...)`.
 
 ## Hybrid Recommendation System
 

@@ -17,6 +17,7 @@ Complete documentation for containerized deployment of Geode graph database usin
 ## Overview
 
 Geode offers multiple Docker deployment options:
+
 - **Pre-built images** from [Docker Hub](https://hub.docker.com/r/geodedb/geode) (fastest)
 - **Development environment** with complete toolchain
 - **Production deployment** with multi-stage builds
@@ -40,6 +41,7 @@ docker exec geode geode query "RETURN 1 AS health" --server 127.0.0.1:3141
 ```
 
 **Expected output**:
+
 ```
 Column: health
 1
@@ -80,7 +82,7 @@ Geode images are available on [Docker Hub](https://hub.docker.com/r/geodedb/geod
 |-----------|------|------|----------|
 | `latest` | Debian Bookworm | ~250MB | General purpose (recommended) |
 | `alpine` | Alpine 3.19 | ~80MB | Minimal size, musl libc |
-| `gpu` | NVIDIA CUDA 12.6 | ~1.2GB | GPU acceleration support |
+| `gpu` | NVIDIA CUDA 12.6 | ~1.2GB | Experimental GPU compute kernels (queries still run on CPU) |
 | `prod` | Distroless | ~180MB | Production, minimal attack surface |
 
 ### Pull Commands
@@ -92,7 +94,7 @@ docker pull geodedb/geode:latest
 # Alpine (minimal size)
 docker pull geodedb/geode:alpine
 
-# GPU support (vector operations, graph algorithms)
+# GPU-capable image (experimental compute kernels)
 docker pull geodedb/geode:gpu
 
 # Production optimized (distroless base)
@@ -500,6 +502,7 @@ docker exec <container> openssl list -providers
 ```
 
 **Expected output**:
+
 ```
 OpenSSL 3.3.2 with FIPS provider
 Providers:
@@ -544,9 +547,15 @@ docker run --rm -v ./certs:/certs geodedb/geode:latest \
 openssl x509 -in ./certs/server.crt -text -noout | grep -A 2 "Validity"
 ```
 
-## GPU Acceleration
+## GPU-Capable Image
 
-For vector operations and graph algorithms with GPU acceleration:
+The `gpu` image is built against CUDA and Vulkan for the **experimental** GPU
+compute subsystem (PageRank, shortest-path and set-operation kernels used by the
+engine's benchmarks). Query execution — including vector search and the vector
+functions — still runs on the CPU, so this image does not by itself make queries
+faster. See
+[GPU-Capable Deployment](/docs/deployment/deployment-patterns/#gpu-capable-deployment)
+for details.
 
 ```bash
 # Pull GPU-enabled image
@@ -564,6 +573,7 @@ docker exec geode-gpu nvidia-smi
 ```
 
 **Docker Compose with GPU**:
+
 ```yaml
 services:
   geode-gpu:

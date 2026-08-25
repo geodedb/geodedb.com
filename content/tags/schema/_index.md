@@ -264,7 +264,7 @@ WITH (metric = 'cosine');
 // Similarity search
 MATCH (p:Product)
 WHERE p.embedding IS NOT NULL
-WITH p, vector.similarity(p.embedding, $query_embedding, 'cosine') AS score
+WITH p, similarity(p.embedding, $query_embedding, 'cosine') AS score
 WHERE score > 0.7
 ORDER BY score DESC
 LIMIT 10

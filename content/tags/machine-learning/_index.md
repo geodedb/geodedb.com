@@ -146,7 +146,7 @@ MATCH (candidate:Product)
 WHERE candidate <> target
   AND candidate.embedding IS NOT NULL
 WITH candidate,
-     COSINE_SIMILARITY(target.embedding, candidate.embedding) AS similarity
+     similarity(target.embedding, candidate.embedding) AS similarity
 WHERE similarity > 0.75
 RETURN candidate.id,
        candidate.name,

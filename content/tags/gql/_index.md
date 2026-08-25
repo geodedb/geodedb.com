@@ -177,6 +177,7 @@ LIMIT 20
 ### Query Optimization
 
 1. **Use indexes**: Create indexes on frequently queried properties
+
    ```gql
    CREATE INDEX person_name FOR (p:Person) ON (p.name)
    ```
@@ -502,11 +503,11 @@ Combine graph traversal with vector search:
 ```gql
 // Semantic search over graph structures
 MATCH (doc:Document)
-WHERE vector.cosineSimilarity(doc.embedding, $query_embedding) > 0.8
+WHERE similarity(doc.embedding, $query_embedding) > 0.8
 OPTIONAL MATCH (doc)-[:CITES]->(cited:Document)
 RETURN doc.title,
        doc.abstract,
-       vector.cosineSimilarity(doc.embedding, $query_embedding) AS similarity,
+       similarity(doc.embedding, $query_embedding) AS similarity,
        collect(cited.title) AS citations
 ORDER BY similarity DESC
 LIMIT 20;
@@ -515,10 +516,10 @@ LIMIT 20;
 MATCH (article:Article)
 WHERE article.content SEARCH $keywords
 WITH article, SCORE(article) AS text_score
-WHERE vector.cosineSimilarity(article.embedding, $query_vector) > 0.7
+WHERE similarity(article.embedding, $query_vector) > 0.7
 RETURN article.title,
        text_score,
-       vector.cosineSimilarity(article.embedding, $query_vector) AS semantic_score,
+       similarity(article.embedding, $query_vector) AS semantic_score,
        text_score * 0.4 + semantic_score * 0.6 AS combined_score
 ORDER BY combined_score DESC;
 ```
@@ -692,6 +693,7 @@ func isSerializationError(err error) bool {
 **Symptom**: Slow query execution
 
 **Diagnosis**:
+
 ```gql
 -- Use EXPLAIN to see query plan
 EXPLAIN
@@ -707,6 +709,7 @@ RETURN friend.name;
 ```
 
 **Solutions**:
+
 - Add indexes on frequently filtered properties
 - Rewrite variable-length patterns with LIMIT
 - Break complex queries into smaller pieces with WITH
@@ -717,6 +720,7 @@ RETURN friend.name;
 **Symptom**: Out of memory errors
 
 **Solutions**:
+
 ```gql
 -- Add LIMIT to bound results
 MATCH (n:Node)
@@ -741,6 +745,7 @@ RETURN n;
 **Symptom**: Transaction aborted due to conflicts
 
 **Solutions**:
+
 - Implement retry logic with exponential backoff
 - Access resources in consistent order
 - Keep transactions short

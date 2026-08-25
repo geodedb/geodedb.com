@@ -24,6 +24,7 @@ Complete reference documentation for Geode's query language, functions, operator
 Creates an index on node properties for improved query performance.
 
 **Syntax**:
+
 ```gql
 CREATE [UNIQUE] INDEX [IF NOT EXISTS] index_name
 ON label(property[, ...])
@@ -66,11 +67,13 @@ CREATE UNIQUE INDEX person_email_unique ON Person(email);
 Removes an existing index.
 
 **Syntax**:
+
 ```gql
 DROP INDEX [IF EXISTS] index_name
 ```
 
 **Example**:
+
 ```gql
 DROP INDEX IF EXISTS person_age_idx;
 ```
@@ -80,11 +83,13 @@ DROP INDEX IF EXISTS person_age_idx;
 Lists all indexes in the database.
 
 **Syntax**:
+
 ```gql
 SHOW INDEXES;
 ```
 
 **Returns**:
+
 - Index name
 - Label
 - Properties
@@ -103,26 +108,31 @@ SHOW INDEXES;
 ### Patterns
 
 **Any Length** (`*`):
+
 ```gql
 MATCH (a:Person)-[*]->(b:Company) RETURN b;
 ```
 
 **Exact Length** (`*n`):
+
 ```gql
 MATCH (a:Person)-[*2]->(b:Person) RETURN b;
 ```
 
 **Range** (`*min..max`):
+
 ```gql
 MATCH (a:Person)-[*1..3]->(b:Person) RETURN b;
 ```
 
 **Up To** (`*..max`):
+
 ```gql
 MATCH (a:Person)-[*..5]->(b:Person) RETURN b;
 ```
 
 **At Least** (`*min..`):
+
 ```gql
 MATCH (a:Person)-[*2..]->(b:Person) RETURN b;
 ```
@@ -130,27 +140,32 @@ MATCH (a:Person)-[*2..]->(b:Person) RETURN b;
 ### Path Functions
 
 **length(path)** - Returns path length:
+
 ```gql
 MATCH path = (a)-[*]->(b) RETURN length(path);
 ```
 
 **nodes(path)** - Returns all nodes in path:
+
 ```gql
 MATCH path = (a)-[*]->(b) RETURN nodes(path);
 ```
 
 **relationships(path)** - Returns all relationships in path:
+
 ```gql
 MATCH path = (a)-[*]->(b) RETURN relationships(path);
 ```
 
 **shortestPath()** - Finds shortest path:
+
 ```gql
 MATCH path = shortestPath((a:Person)-[*]->(b:Company))
 RETURN path;
 ```
 
 **allShortestPaths()** - Finds all shortest paths:
+
 ```gql
 MATCH path = allShortestPaths((a:Person)-[*]->(b:Company))
 RETURN path;
@@ -160,7 +175,8 @@ RETURN path;
 
 ### Vector Search Functions
 
-**similarity(vector1, vector2)** - Calculates similarity (0-1, higher is more similar):
+**similarity(vector1, vector2)** - Cosine similarity in [-1, 1] (higher is more similar):
+
 ```gql
 MATCH (d:Document)
 WHERE similarity(d.embedding, VectorF32('[0.1, 0.2, 0.3]')) > 0.8
@@ -168,60 +184,71 @@ RETURN d;
 ```
 
 **distance(vector1, vector2, metric)** - Calculates distance using specified metric:
+
 ```gql
 MATCH (d:Document)
 WHERE distance(d.embedding, VectorF32('[0.1, 0.2, 0.3]'), 'l2') < 0.5
 RETURN d;
 ```
 
-**Supported Metrics**:
-- `'l2'` - Euclidean distance
-- `'cosine'` - Cosine distance (1 - cosine similarity)
-- `'dot'` - Negative dot product
-- `'manhattan'` - L1 distance
-- `'hamming'` - Hamming distance (integer vectors)
-- `'jaccard'` - Jaccard distance (set similarity)
+**Supported Metrics** (for `distance()`; `similarity()` accepts `'cosine'` and
+`'dot'` only):
 
-**knn(property, query_vector, k)** - Returns k nearest neighbors:
+- `'l2'` / `'euclidean'` - Euclidean distance (default for `distance()`)
+- `'cosine'` - Cosine distance (1 - cosine similarity)
+- `'dot'` / `'dot_product'` - Negative dot product
+
+For L1 distance use `manhattan(v1, v2)`. There are no Hamming or Jaccard vector
+metrics.
+
+**vector_knn(property, query_vector, k, metric)** - Returns the ids of the `k`
+nearest nodes or edges by vector property (`knn()` is an alias). The first
+argument is the **property name as a string**, and the result is a list of ids:
+
 ```gql
+WITH vector_knn('embedding', VectorF32('[0.1, 0.2, 0.3]'), 10, 'cosine') AS ids
 MATCH (d:Document)
-WITH d, knn(d.embedding, VectorF32('[0.1, 0.2, 0.3]'), 10) AS neighbors
-RETURN neighbors;
+WHERE id(d) IN ids
+RETURN d.title;
 ```
 
-**cosineSimilarity(v1, v2)** - Cosine similarity [-1, 1]:
+**similarity(v1, v2 [, metric])** - Cosine similarity [-1, 1] by default:
+
 ```gql
 MATCH (d:Document)
-RETURN d.title, cosineSimilarity(d.embedding, VectorF32('[0.1, 0.2, 0.3]')) AS similarity
+RETURN d.title, similarity(d.embedding, VectorF32('[0.1, 0.2, 0.3]')) AS similarity
 ORDER BY similarity DESC;
 ```
 
-**dotProduct(v1, v2)** - Dot product:
+**vector_dot(v1, v2)** - Dot product:
+
 ```gql
-RETURN dotProduct(VectorF32('[1, 2, 3]'), VectorF32('[4, 5, 6]')) AS dot;
+RETURN vector_dot(VectorF32('[1, 2, 3]'), VectorF32('[4, 5, 6]')) AS dot;
 ```
 
-**norm(vector)** - L2 norm (magnitude):
+**vector_cosine(v1, v2)** - Cosine **similarity** (despite the name, it does not
+return a distance):
+
 ```gql
-RETURN norm(VectorF32('[3, 4]')) AS magnitude;  -- Returns 5.0
+RETURN vector_cosine(VectorF32('[1, 2, 3]'), VectorF32('[4, 5, 6]')) AS cos_sim;
 ```
 
-**normalize(vector)** - Unit vector normalization:
-```gql
-MATCH (d:Document)
-SET d.embedding = normalize(d.embedding);
-```
+There are no `norm()` / `normalize()` functions: compute the L2 norm as the
+distance to a zero vector (`vector_l2(v, vectorf32([0.0, 0.0]))`) and normalize
+vectors in the client before storing them.
 
 ## Spatial Operations
 
 ### Spatial Functions
 
 **LatLon(string)** - Creates geographic coordinate:
+
 ```gql
 CREATE (l:Location {coords: LatLon('40.7128,-74.0060'), name: 'NYC'});
 ```
 
 **distanceKm(point1, point2)** - Haversine distance in kilometers:
+
 ```gql
 MATCH (l:Location)
 WHERE distanceKm(l.coords, LatLon('40.0,-74.0')) < 100
@@ -229,12 +256,14 @@ RETURN l;
 ```
 
 **bearingTo(point1, point2)** - Initial bearing in degrees [0, 360):
+
 ```gql
 MATCH (a:Location), (b:Location)
 RETURN bearingTo(a.coords, b.coords) AS bearing;
 ```
 
 **within(geometry, boundary)** - Tests if geometry is within boundary:
+
 ```gql
 MATCH (l:Location)
 WHERE within(l.coords, polygon(...))
@@ -242,6 +271,7 @@ RETURN l;
 ```
 
 **bbox(min_x, min_y, max_x, max_y)** - Creates bounding box:
+
 ```gql
 MATCH (l:Location)
 WHERE intersects(l.area, bbox(40.0, -75.0, 41.0, -73.0))
@@ -253,6 +283,7 @@ RETURN l;
 ### Text Search Functions
 
 **CONTAINS** - Searches for text within property:
+
 ```gql
 MATCH (a:Article)
 WHERE a.content CONTAINS 'graph database'
@@ -260,6 +291,7 @@ RETURN a;
 ```
 
 **STARTS WITH** - Matches text at beginning:
+
 ```gql
 MATCH (p:Person)
 WHERE p.name STARTS WITH 'John'
@@ -267,6 +299,7 @@ RETURN p;
 ```
 
 **ENDS WITH** - Matches text at end:
+
 ```gql
 MATCH (e:Email)
 WHERE e.address ENDS WITH '@example.com'
@@ -274,6 +307,7 @@ RETURN e;
 ```
 
 **REGEX** - Matches using regular expressions:
+
 ```gql
 MATCH (p:Product)
 WHERE p.code =~ '^SKU-[0-9]{4}$'
@@ -281,6 +315,7 @@ RETURN p;
 ```
 
 **score()** - Returns relevance score for full-text results:
+
 ```gql
 MATCH (a:Article)
 WHERE a.content CONTAINS 'machine learning'
@@ -293,27 +328,32 @@ ORDER BY relevance DESC;
 ### Basic Aggregations
 
 **count()** - Count rows:
+
 ```gql
 MATCH (n:Person) RETURN count(*) AS total;
 MATCH (n:Person) RETURN count(n.email) AS with_email;
 ```
 
 **sum()** - Sum values:
+
 ```gql
 MATCH (o:Order) RETURN sum(o.total) AS revenue;
 ```
 
 **avg()** - Average value:
+
 ```gql
 MATCH (p:Person) RETURN avg(p.age) AS average_age;
 ```
 
 **min()** - Minimum value:
+
 ```gql
 MATCH (p:Product) RETURN min(p.price) AS cheapest;
 ```
 
 **max()** - Maximum value:
+
 ```gql
 MATCH (p:Product) RETURN max(p.price) AS most_expensive;
 ```
@@ -321,12 +361,14 @@ MATCH (p:Product) RETURN max(p.price) AS most_expensive;
 ### Collection Functions
 
 **collect()** - Collect values into array:
+
 ```gql
 MATCH (p:Person)-[:KNOWS]->(f)
 RETURN p.name, collect(f.name) AS friends;
 ```
 
 **collect(DISTINCT)** - Collect unique values:
+
 ```gql
 MATCH (p:Person)
 RETURN p.city, collect(DISTINCT p.country) AS countries;
@@ -337,6 +379,7 @@ RETURN p.city, collect(DISTINCT p.country) AS countries;
 ### BEGIN
 
 Starts a new transaction:
+
 ```gql
 BEGIN;
 ```
@@ -344,6 +387,7 @@ BEGIN;
 ### COMMIT
 
 Commits the current transaction:
+
 ```gql
 COMMIT;
 ```
@@ -351,6 +395,7 @@ COMMIT;
 ### ROLLBACK
 
 Rolls back the current transaction:
+
 ```gql
 ROLLBACK;
 ```
@@ -358,6 +403,7 @@ ROLLBACK;
 ### SAVEPOINT
 
 Creates a savepoint within a transaction:
+
 ```gql
 SAVEPOINT my_savepoint;
 ```
@@ -365,6 +411,7 @@ SAVEPOINT my_savepoint;
 ### ROLLBACK TO
 
 Rolls back to a specific savepoint:
+
 ```gql
 ROLLBACK TO my_savepoint;
 ```
@@ -374,21 +421,25 @@ ROLLBACK TO my_savepoint;
 ### Database Information
 
 **db.info()** - Returns database information:
+
 ```gql
 RETURN db.info();
 ```
 
 **db.stats()** - Returns database statistics:
+
 ```gql
 RETURN db.stats();
 ```
 
 **db.indexes()** - Returns index information:
+
 ```gql
 RETURN db.indexes();
 ```
 
 **db.constraints()** - Returns constraint information:
+
 ```gql
 RETURN db.constraints();
 ```
@@ -396,31 +447,37 @@ RETURN db.constraints();
 ### Temporal Functions
 
 **now()** - Current timestamp with microseconds:
+
 ```gql
 RETURN now() AS current_time;
 ```
 
 **current_date** - Today's date:
+
 ```gql
 RETURN current_date AS today;
 ```
 
 **current_time** - Current time:
+
 ```gql
 RETURN current_time AS now;
 ```
 
 **date_add(date, interval)** - Add interval to date:
+
 ```gql
 RETURN date_add(Date('2024-01-01'), Interval('P1M')) AS next_month;
 ```
 
 **date_sub(date, interval)** - Subtract interval:
+
 ```gql
 RETURN date_sub(now(), Interval('P7D')) AS week_ago;
 ```
 
 **date_part(part, datetime)** - Extract date/time part:
+
 ```gql
 RETURN date_part('year', now()) AS current_year;
 ```
@@ -428,21 +485,25 @@ RETURN date_part('year', now()) AS current_year;
 ### Type Conversion Functions
 
 **to_int(value)** - Convert to integer:
+
 ```gql
 RETURN to_int('42') AS num;
 ```
 
 **to_float(value)** - Convert to float:
+
 ```gql
 RETURN to_float('3.14') AS pi;
 ```
 
 **to_string(value)** - Convert to string:
+
 ```gql
 RETURN to_string(42) AS str;
 ```
 
 **to_boolean(value)** - Convert to boolean:
+
 ```gql
 RETURN to_boolean('true') AS bool;
 ```

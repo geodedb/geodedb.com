@@ -694,22 +694,23 @@ RETURN w.text, STEM(w.text) AS stemmed;
 MATCH (a:Product {id: 1}), (b:Product)
 WHERE b <> a
 RETURN b.name,
-       COSINE_SIMILARITY(a.embedding, b.embedding) AS similarity
+       similarity(a.embedding, b.embedding) AS similarity
 ORDER BY similarity DESC
 LIMIT 10;
 
--- Euclidean distance
+-- Euclidean distance (euclidean() is an alias of vector_l2())
 MATCH (a:Item), (b:Item)
 RETURN a.id, b.id,
-       EUCLIDEAN_DISTANCE(a.features, b.features) AS distance;
+       euclidean(a.features, b.features) AS distance;
 
 -- Dot product
 MATCH (v:Vector)
-RETURN DOT_PRODUCT(v.vec1, v.vec2) AS dot_prod;
+RETURN vector_dot(v.vec1, v.vec2) AS dot_prod;
 
--- Vector magnitude
+-- Vector magnitude: there is no built-in magnitude/norm function. The L2 norm
+-- is the distance to the zero vector of the same dimensionality.
 MATCH (v:Vector)
-RETURN MAGNITUDE(v.embedding) AS mag;
+RETURN vector_l2(v.embedding, vectorf32([0.0, 0.0, 0.0])) AS mag;
 ```
 
 ## Custom Function Development
@@ -809,38 +810,48 @@ RETURN p;
 ## Function Reference Summary
 
 ### Aggregation
+
 - COUNT, SUM, AVG, MIN, MAX, COLLECT, STRING_AGG
 - STDDEV, VARIANCE, PERCENTILE_CONT
 
 ### String
+
 - UPPER, LOWER, LENGTH, SUBSTRING, TRIM, CONCAT, REPLACE, SPLIT
 - FULLTEXT_SEARCH, FUZZY_MATCH, SOUNDEX
 
 ### Math
+
 - ABS, CEIL, FLOOR, ROUND, SIGN, POWER, SQRT, EXP, LOG
 - SIN, COS, TAN, RAND
 
 ### Temporal
+
 - CURRENT_DATE, CURRENT_TIME, CURRENT_TIMESTAMP, NOW
 - DATE, DATETIME, DURATION, DATE_TRUNC
 
 ### List
+
 - SIZE, HEAD, LAST, TAIL, REVERSE, RANGE, REDUCE
 
 ### Type Conversion
+
 - TOSTRING, TOINTEGER, TOFLOAT, TOBOOLEAN
 
 ### Conditional
+
 - COALESCE, CASE, NULLIF
 
 ### Graph
+
 - SHORTEST_PATH, ALL_SHORTEST_PATHS, NODES, RELATIONSHIPS
 - PageRank, Betweenness, Louvain
 
 ### Geospatial
+
 - geospatial.distance, point
 
 ### Vector
+
 - COSINE_SIMILARITY, EUCLIDEAN_DISTANCE, DOT_PRODUCT
 
 ## Related Topics

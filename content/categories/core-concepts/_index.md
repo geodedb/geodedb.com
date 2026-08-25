@@ -26,6 +26,7 @@ This category explores these foundational concepts in depth, explaining not just
 ### Nodes
 
 Nodes represent entities in your domain. Each node can have:
+
 - Zero or more labels (types)
 - Properties (key-value pairs)
 - Relationships to other nodes
@@ -48,6 +49,7 @@ CREATE (:Product {
 ```
 
 **Key characteristics**:
+
 - Nodes are the fundamental unit of data storage
 - Labels enable categorization and indexing
 - Properties store actual data
@@ -56,6 +58,7 @@ CREATE (:Product {
 ### Relationships
 
 Relationships connect nodes and model the graph structure. Each relationship has:
+
 - A single type (semantic meaning)
 - Direction (from source to target)
 - Properties (attributes of the relationship)
@@ -78,6 +81,7 @@ CREATE (bob)-[:FRIEND_OF]->(alice)  -- Bidirectional requires two relationships
 ```
 
 **Key characteristics**:
+
 - Relationships always have a type and direction
 - Traversing relationships is O(1) per relationship
 - Relationship properties enable rich modeling
@@ -104,6 +108,7 @@ CREATE (:Example {
 ```
 
 **Property types**:
+
 - Scalar: strings, integers, floats, booleans, dates, datetimes
 - Complex: lists, maps
 - Special: NULL, vector embeddings
@@ -131,6 +136,7 @@ CREATE INDEX employee_id_idx ON :Employee(employee_id)
 ```
 
 **Label best practices**:
+
 - Use labels for major categories
 - Multiple labels for multi-dimensional classification
 - Create indexes on labeled node properties
@@ -141,6 +147,7 @@ CREATE INDEX employee_id_idx ON :Employee(employee_id)
 ### ISO/IEC 39075:2024 Standard
 
 Geode follows the ISO/IEC 39075:2024 compliance, providing:
+
 - **Pattern matching**: Declarative graph traversal
 - **Read/write operations**: CREATE, MATCH, SET, DELETE
 - **Aggregations**: COUNT, SUM, AVG, MIN, MAX
@@ -267,6 +274,7 @@ async with client.connection() as tx:
 Geode supports multiple isolation levels:
 
 **Snapshot Isolation** (default):
+
 - Each transaction sees a consistent snapshot
 - No dirty reads, non-repeatable reads, or phantom reads
 - Write conflicts detected at commit time
@@ -281,11 +289,13 @@ COMMIT
 ```
 
 **Read Committed**:
+
 - Each statement sees committed data
 - Faster than snapshot isolation
 - May see changes from concurrent transactions
 
 **Serializable**:
+
 - Strongest isolation
 - Equivalent to serial execution
 - Highest consistency, lowest concurrency
@@ -360,7 +370,7 @@ CREATE VECTOR INDEX doc_embedding_idx ON :Document(embedding)
 
 -- Semantic search
 MATCH (d:Document)
-WITH d, vector_similarity(d.embedding, $query_vector) AS similarity
+WITH d, similarity(d.embedding, $query_vector) AS similarity
 WHERE similarity > 0.75
 RETURN d.title, similarity
 ORDER BY similarity DESC
@@ -451,6 +461,7 @@ RETURN d.content
 ```
 
 RLS policies are:
+
 - **Mandatory**: Cannot be bypassed by application code
 - **Transparent**: Automatically applied to queries
 - **Flexible**: Support complex conditions

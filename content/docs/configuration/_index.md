@@ -86,16 +86,19 @@ server:
 ```
 
 Command line:
+
 ```bash
 geode serve --listen 0.0.0.0:3141
 ```
 
 Environment variable:
+
 ```bash
 export GEODE_LISTEN='0.0.0.0:3141'
 ```
 
 **Format**: `host:port`
+
 - `0.0.0.0` - Listen on all interfaces
 - `127.0.0.1` - Listen on localhost only
 - Port `3141` - Default QUIC port
@@ -110,6 +113,7 @@ server:
 ```
 
 **Parameters**:
+
 - `max_connections` - Maximum concurrent connections (default: 10000)
 - `connection_timeout` - Timeout for establishing connection (default: 30s)
 - `idle_timeout` - Timeout for idle connections (default: 5m)
@@ -122,16 +126,19 @@ server:
 ```
 
 Command line:
+
 ```bash
 geode serve --data-dir /var/lib/geode
 ```
 
 Environment variable:
+
 ```bash
 export GEODE_DATA_DIR='/var/lib/geode'
 ```
 
 **Requirements**:
+
 - Must be writable by Geode process
 - Should be on fast storage (SSD recommended)
 - Adequate space for database growth
@@ -150,11 +157,13 @@ tls:
 ```
 
 Command line:
+
 ```bash
 geode serve --tls-cert /etc/geode/cert.pem --tls-key /etc/geode/key.pem
 ```
 
 **Parameters**:
+
 - `cert` - Path to TLS certificate
 - `key` - Path to TLS private key
 - `auto_generate` - Generate self-signed cert if none provided (development only)
@@ -181,17 +190,20 @@ storage:
 ```
 
 Environment variables:
+
 ```bash
 export GEODE_PAGE_SIZE=8192
 export GEODE_PAGE_CACHE_SIZE=1073741824  # 1GB in bytes
 ```
 
 **Parameters**:
+
 - `page_size` - Page size in bytes (default: 8192, must be power of 2)
 - `page_cache_size` - Page cache size (default: 1GB)
   - Formats: `1GB`, `512MB`, `2048KB`, bytes as integer
 
 **Recommendations**:
+
 - Read-heavy workload: 50-75% of RAM
 - Write-heavy workload: 25-40% of RAM
 - Mixed workload: 40-50% of RAM
@@ -207,6 +219,7 @@ storage:
 ```
 
 **Parameters**:
+
 - `wal_dir` - WAL directory (default: `<data_dir>/wal`)
 - `wal_sync_interval` - Sync frequency (default: 100ms)
   - Lower = more durable, higher latency
@@ -215,6 +228,7 @@ storage:
 - `wal_compression` - Enable WAL compression (default: true)
 
 **Best Practices**:
+
 - Place WAL on separate fast SSD
 - Increase buffer size for write-heavy workloads
 - Adjust sync interval based on durability requirements
@@ -236,11 +250,13 @@ optimizer:
 ```
 
 Environment variable:
+
 ```bash
 export GEODE_TRACE_OPTIMIZER=1
 ```
 
 **Parameters**:
+
 - `enabled` - Enable cost-based optimizer (default: true)
 - `small_n_threshold` - Use brute-force below this size (default: 100)
 - `trace` - Enable optimizer tracing for debugging (default: false)
@@ -257,6 +273,7 @@ optimizer:
 ```
 
 **Parameters**:
+
 - `auto_update` - Automatically update statistics (default: true)
 - `update_interval` - How often to update (default: 1h)
 - `sample_size` - Sample size for statistics (default: 10000)
@@ -276,18 +293,21 @@ logging:
 ```
 
 Environment variables:
+
 ```bash
 export GEODE_LOG_LEVEL=info
 export GEODE_LOG_FORMAT=json
 ```
 
 **Log Levels**:
+
 - `debug` - Verbose debugging information
 - `info` - General informational messages
 - `warn` - Warning messages
 - `error` - Error messages only
 
 **Log Formats**:
+
 - `json` - Structured JSON logs (recommended for production)
 - `text` - Human-readable text logs (better for development)
 
@@ -315,11 +335,13 @@ security:
 ```
 
 Environment variable:
+
 ```bash
 export GEODE_DISK_KEY_HEX='0123456789abcdef...'  # 64 hex chars
 ```
 
 **Key Providers**:
+
 - `env` - Read key from environment variable
 - `vault` - Retrieve from HashiCorp Vault
 - `file` - Read from encrypted file
@@ -341,6 +363,7 @@ security:
 ```
 
 **Parameters**:
+
 - `include_queries` - Log all queries (default: true)
 - `include_connections` - Log connection events (default: true)
 - `include_auth` - Log authentication attempts (default: true)
@@ -387,6 +410,7 @@ federation:
 ```
 
 **Parameters**:
+
 - `enabled` - Enable federation (default: false)
 - `coordinator` - Act as coordinator node (default: false)
 - `shards` - List of shard configurations
@@ -425,6 +449,7 @@ backup:
 ```
 
 Environment variables:
+
 ```bash
 export AWS_ACCESS_KEY_ID='your-key'
 export AWS_SECRET_ACCESS_KEY='your-secret'
@@ -458,6 +483,7 @@ monitoring:
 ```
 
 **Exposed Metrics**:
+
 - Query performance (duration, count, errors)
 - Storage metrics (pages, cache hits, WAL segments)
 - Connection metrics (active, idle, total)
@@ -498,13 +524,11 @@ cdc:
 
 ### GPU Acceleration
 
-```yaml
-gpu:
-  enabled: false
-  backend: 'vulkan'  # or 'cuda'
-  device_id: 0
-  memory_limit: '2GB'
-```
+The GPU compute subsystem is experimental and has no configuration surface:
+there is no `gpu` configuration section, environment variable, or session
+setting. Device availability is probed at runtime (CUDA driver on Linux) and
+every affected code path falls back to the CPU when no device is present. See
+[GPU-Capable Deployment](/docs/deployment/deployment-patterns/#gpu-capable-deployment).
 
 ### Real-Time Analytics
 
@@ -606,10 +630,6 @@ storage:
 optimizer:
   enabled: true
   small_n_threshold: 1000
-
-gpu:
-  enabled: true
-  backend: 'vulkan'
 ```
 
 ## Environment Variables Reference

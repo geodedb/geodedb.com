@@ -328,6 +328,7 @@ pub const HnswNode = struct {
 ```
 
 Current statistics:
+
 - **1,735 CANARY markers** tracking 2,190+ requirements
 - **81.4% TESTED status** - Implementation verified by tests
 - **6.0% BENCHED status** - Performance validated by benchmarks
@@ -416,7 +417,7 @@ pub fn main() !void {
 
 - **Zig Version**: 0.1.0 or later
 - **Supported Platforms**: Linux (x86_64, aarch64), macOS (x86_64, aarch64), Windows (x86_64)
-- **Build Dependencies**: C compiler (for libc linkage), Vulkan SDK (optional, for GPU acceleration)
+- **Build Dependencies**: C compiler (for libc linkage), Vulkan loader and headers (linked unconditionally for the experimental GPU compute kernels)
 
 ---
 

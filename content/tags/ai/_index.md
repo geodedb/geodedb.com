@@ -97,7 +97,7 @@ Find semantically similar items:
 ```gql
 -- Semantic document search
 MATCH (d:Document)
-WITH d, vector_similarity(d.embedding, $query_embedding, 'cosine') AS score
+WITH d, similarity(d.embedding, $query_embedding, 'cosine') AS score
 WHERE score > 0.7
 RETURN d.doc_id, d.title, score
 ORDER BY score DESC
@@ -106,8 +106,8 @@ LIMIT 10;
 -- Find similar products combining text and image
 MATCH (p:Product)
 WITH p,
-     vector_similarity(p.text_embedding, $text_query, 'cosine') AS text_score,
-     vector_similarity(p.image_embedding, $image_query, 'cosine') AS image_score
+     similarity(p.text_embedding, $text_query, 'cosine') AS text_score,
+     similarity(p.image_embedding, $image_query, 'cosine') AS image_score
 WITH p, 0.6 * text_score + 0.4 * image_score AS combined_score
 WHERE combined_score > 0.65
 RETURN p.name, p.product_id, combined_score
@@ -140,7 +140,7 @@ async def rag_query(question: str) -> str:
         result, _ = await conn.query("""
             MATCH (chunk:DocumentChunk)
             WITH chunk,
-                 vector_similarity(chunk.embedding, $query_emb, 'cosine') AS relevance
+                 similarity(chunk.embedding, $query_emb, 'cosine') AS relevance
             WHERE relevance > 0.7
             ORDER BY relevance DESC
             LIMIT 5
@@ -180,9 +180,9 @@ Leverage graph relationships for better context:
 ```gql
 -- Retrieve chunks with related entities
 MATCH (chunk:DocumentChunk)
-WHERE vector_similarity(chunk.embedding, $query_emb, 'cosine') > 0.7
+WHERE similarity(chunk.embedding, $query_emb, 'cosine') > 0.7
 WITH chunk
-ORDER BY vector_similarity(chunk.embedding, $query_emb, 'cosine') DESC
+ORDER BY similarity(chunk.embedding, $query_emb, 'cosine') DESC
 LIMIT 5
 
 -- Expand context via graph relationships
@@ -202,7 +202,7 @@ Answer complex questions requiring reasoning across multiple documents:
 ```gql
 -- Question: "What companies did the CEO of TechCorp previously work for?"
 MATCH (chunk:DocumentChunk)
-WHERE vector_similarity(chunk.embedding, $query_emb, 'cosine') > 0.6
+WHERE similarity(chunk.embedding, $query_emb, 'cosine') > 0.6
 
 -- Extract entity relationships
 MATCH (chunk)-[:MENTIONS]->(person:Person)-[:CEO_OF]->(company:Company {name: 'TechCorp'})
@@ -255,7 +255,7 @@ WITH user,
 MATCH (candidate:Product)
 WHERE NOT (user)-[:PURCHASED]->(candidate)
 WITH candidate,
-     vector_similarity(candidate.embedding, preference_vector, 'cosine') AS similarity
+     similarity(candidate.embedding, preference_vector, 'cosine') AS similarity
 WHERE similarity > 0.75
 
 RETURN candidate.product_id, candidate.name, similarity
@@ -280,7 +280,7 @@ WITH user, rec, count(DISTINCT similar) AS collab_score
 -- Get content-based score
 MATCH (user)-[:PURCHASED]->(bought:Product)
 WITH user, rec, collab_score,
-     avg(vector_similarity(rec.embedding, bought.embedding, 'cosine')) AS content_score
+     avg(similarity(rec.embedding, bought.embedding, 'cosine')) AS content_score
 
 -- Combine scores
 WITH rec,
@@ -326,7 +326,7 @@ CREATE (company)-[:DEVELOPS]->(:Product {name: 'Claude', type: 'LLM'});
 ```gql
 -- Entity resolution with embeddings
 MATCH (e:Entity)
-WHERE vector_similarity(e.embedding, $query_embedding, 'cosine') > 0.85
+WHERE similarity(e.embedding, $query_embedding, 'cosine') > 0.85
 RETURN e.name, labels(e) AS types, e.description;
 
 -- Multi-hop knowledge queries
@@ -431,9 +431,9 @@ async def handle_tool_call(tool_name: str, args: dict):
             query_emb = await generate_embedding(args['query'])
             result, _ = await conn.query("""
                 MATCH (e:Entity)
-                WHERE vector_similarity(e.embedding, $emb, 'cosine') > 0.7
+                WHERE similarity(e.embedding, $emb, 'cosine') > 0.7
                 RETURN e.name, e.type, e.description
-                ORDER BY vector_similarity(e.embedding, $emb, 'cosine') DESC
+                ORDER BY similarity(e.embedding, $emb, 'cosine') DESC
                 LIMIT 10
             """, {"emb": query_emb})
             return result.rows
@@ -490,7 +490,7 @@ SET n.gnn_embedding = $gnn_vector,
 MATCH (a:Entity), (b:Entity)
 WHERE a <> b AND NOT (a)-[:RELATED]-(b)
 WITH a, b,
-     vector_similarity(a.gnn_embedding, b.gnn_embedding, 'cosine') AS link_score
+     similarity(a.gnn_embedding, b.gnn_embedding, 'cosine') AS link_score
 WHERE link_score > 0.8
 RETURN a.name, b.name, link_score
 ORDER BY link_score DESC

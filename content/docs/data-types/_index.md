@@ -128,9 +128,9 @@ High-dimensional vector support for machine learning:
 ```gql
 -- Vector similarity search
 MATCH (doc:Document)
-WHERE cosineSimilarity(doc.embedding, VectorF32('[0.1, 0.2, 0.3]')) > 0.8
+WHERE similarity(doc.embedding, VectorF32('[0.1, 0.2, 0.3]')) > 0.8
 RETURN doc.title, doc.content
-ORDER BY cosineSimilarity(doc.embedding, VectorF32('[0.1, 0.2, 0.3]')) DESC
+ORDER BY similarity(doc.embedding, VectorF32('[0.1, 0.2, 0.3]')) DESC
 LIMIT 10
 ```
 
@@ -240,6 +240,7 @@ Automatic conversions follow standard promotion rules:
 ### NULL Propagation
 
 Operations with NULL input return NULL, except:
+
 - `IS NULL` and `IS NOT NULL`
 - `COALESCE()`
 

@@ -21,7 +21,7 @@ Geode supports multiple deployment architectures:
 - **Single-Node Deployment** - Simple setup for development, testing, or low-traffic production
 - **Distributed Deployment** - Multi-node clusters with sharding and federation for high availability
 - **Cloud Deployment** - Container orchestration with Kubernetes or Docker Swarm
-- **GPU-Accelerated Deployment** - Hardware acceleration for vector operations and graph analytics
+- **GPU-Capable Deployment** - CUDA/Vulkan-enabled container image for the experimental GPU compute subsystem
 - **Infrastructure Stack** - Complete observability with monitoring, logging, and backup systems
 
 This guide covers production-ready deployment patterns with best practices for security, performance, and reliability.
@@ -75,7 +75,9 @@ docker-compose ps
 docker-compose logs -f geode
 ```
 
-**GPU-Accelerated Deployment**:
+**GPU-Capable Deployment** (experimental — see
+[GPU-Capable Deployment](#gpu-capable-deployment) for what is and is not
+accelerated today):
 
 ```bash
 # Install NVIDIA Container Toolkit
@@ -902,58 +904,52 @@ S3_BUCKET: geode-backups
 S3_REGION: nyc3
 ```
 
-## GPU-Accelerated Deployment
+## GPU-Capable Deployment
 
-### GPU Architecture
+### What Is and Is Not GPU-Accelerated
 
-```
-┌────────────────────────────────────────────┐
-│           Geode Container                  │
-│                                            │
-│  ┌──────────────────────────────────────┐  │
-│  │  Query Engine                        │  │
-│  │  ├─ Parser                           │  │
-│  │  ├─ Planner                          │  │
-│  │  └─ Executor                         │  │
-│  └────────────┬─────────────────────────┘  │
-│               │                            │
-│  ┌────────────▼─────────────────────────┐  │
-│  │  GPU Acceleration Layer              │  │
-│  │  ├─ Vector Operations (HNSW)         │  │
-│  │  ├─ Graph Analytics (PageRank)       │  │
-│  │  └─ ML Embeddings (Node2Vec)         │  │
-│  └────────────┬─────────────────────────┘  │
-│               │                            │
-│  ┌────────────▼─────────────────────────┐  │
-│  │  NVIDIA Runtime (CUDA/Vulkan)        │  │
-│  └────────────┬─────────────────────────┘  │
-└───────────────┼──────────────────────────┘
-                │
-    ┌───────────▼───────────┐
-    │   NVIDIA GPU          │
-    │   (Tesla/A100/RTX)    │
-    └───────────────────────┘
-```
+Geode ships an **experimental** GPU compute subsystem: Vulkan compute shaders
+(`pagerank`, `shortest_path`, `setops`, `vector_add`) plus a dynamically loaded
+CUDA driver used for device enumeration. Today it is exercised by the engine's
+own benchmarks and a planner cost heuristic; it is **not** wired into query
+execution.
+
+Concretely, at the current release:
+
+- There is **no GPU-accelerated vector index**. HNSW index build and search,
+  and every vector function (`similarity`, `distance`, `vector_l2`,
+  `vector_cosine`, `vector_dot`, `vector_knn`), run on the CPU.
+- There is **no** `gpu_acceleration` session setting, **no** `gpu_enabled`
+  index option, and **no** `gpu_enabled` procedure parameter. Queries using
+  them will be rejected.
+- GPU use is not configured by environment variables. Device availability is
+  probed at runtime by dlopen-ing the CUDA driver on Linux; when no device is
+  present every code path falls back to the CPU implementation.
+
+The GPU image is therefore useful for evaluating the compute kernels and for
+pre-provisioning GPU nodes, not for speeding up production queries. Treat the
+section below as an experimental deployment, and benchmark against the standard
+image before committing to GPU hardware.
 
 ### GPU Configuration
 
-**Docker Compose with GPU**:
+The engine repository ships `Dockerfile.gpu` (CUDA + Vulkan build) and
+`docker-compose.gpu.yml`, which layers a `geode-gpu` service and an NVIDIA DCGM
+exporter on top of the base stack:
 
 ```yaml
-# docker-compose.gpu.yml
-version: '3.9'
-
+# docker-compose.gpu.yml (excerpt from the engine repository)
 services:
   geode-gpu:
-    image: geode:latest-gpu
-    container_name: geode-gpu
-    runtime: nvidia
+    build:
+      context: .
+      dockerfile: Dockerfile.gpu
+    image: geode:gpu
+    container_name: geode-db-gpu
     environment:
       - NVIDIA_VISIBLE_DEVICES=all
       - NVIDIA_DRIVER_CAPABILITIES=compute,utility
-      - GEODE_GPU_ENABLED=true
-      - GEODE_GPU_DEVICE=0
-      - GEODE_GPU_MEMORY_FRACTION=0.8
+      - CUDA_VISIBLE_DEVICES=0
     deploy:
       resources:
         reservations:
@@ -962,17 +958,22 @@ services:
               count: 1
               capabilities: [gpu]
 
-  dcgm-exporter:
-    image: nvcr.io/nvidia/k8s/dcgm-exporter:3.1.3-3.1.4-ubuntu22.04
-    container_name: dcgm-exporter
-    runtime: nvidia
-    environment:
-      - NVIDIA_VISIBLE_DEVICES=all
+  nvidia-exporter:
+    image: nvidia/dcgm-exporter:3.3.0-3.2.0-ubuntu22.04
+    container_name: geode-nvidia-exporter
     ports:
-      - "9400:9400"
-    cap_add:
-      - SYS_ADMIN
+      - "127.0.0.1:9400:9400"
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
 ```
+
+`NVIDIA_VISIBLE_DEVICES` / `CUDA_VISIBLE_DEVICES` are consumed by the NVIDIA
+container runtime and the CUDA driver, not by Geode itself.
 
 **Kubernetes GPU Deployment**:
 
@@ -989,47 +990,36 @@ spec:
     spec:
       containers:
       - name: geode
-        image: geode:latest-gpu
+        image: geode:gpu
         resources:
           limits:
             nvidia.com/gpu: 1  # Request 1 GPU per pod
-        env:
-        - name: GEODE_GPU_ENABLED
-          value: "true"
       nodeSelector:
         accelerator: nvidia-tesla-v100  # Target GPU nodes
 ```
 
-### GPU Optimization
+### Query Tuning on GPU Nodes
 
-**Vector Search with GPU**:
+Because queries execute on the CPU, tune vector workloads exactly as you would
+on a standard node — create the index for the metric you query with, and let
+the index serve the ranking:
 
 ```gql
--- Enable GPU acceleration for vector operations
-SET SESSION gpu_acceleration = true;
-
--- Create HNSW index with GPU support
-CREATE INDEX user_embeddings_gpu ON Person(embedding)
-  USING HNSW
+-- Create the vector index for the metric you will query with
+CREATE VECTOR INDEX user_embeddings ON Person(embedding)
   WITH (metric = 'euclidean');
 
--- GPU-accelerated vector search
+-- Nearest neighbours by Euclidean distance (lower = closer)
 MATCH (user:Person)
-WHERE vector_distance(user.embedding, $query_embedding) < 0.5
+WHERE distance(user.embedding, $query_embedding, 'euclidean') < 0.5
 RETURN user.name, user.embedding
-ORDER BY vector_distance(user.embedding, $query_embedding) ASC
+ORDER BY distance(user.embedding, $query_embedding, 'euclidean') ASC
 LIMIT 100;
 ```
 
-**Graph Analytics with GPU**:
-
 ```gql
--- GPU-accelerated PageRank
-CALL graph.pageRank($graph_name, {
-  iterations: 20,
-  dampingFactor: 0.85,
-  gpu_enabled: true
-}) YIELD nodeId, score
+-- PageRank runs on the CPU; the procedure takes no tuning parameters today
+CALL algo.pagerank.stream() YIELD nodeId, score
 RETURN nodeId, score
 ORDER BY score DESC
 LIMIT 10;
@@ -1056,7 +1046,7 @@ DCGM_FI_DEV_POWER_USAGE
 **Grafana Dashboard**:
 
 - GPU utilization over time
-- Memory allocation per query
+- Device memory usage (reported by DCGM, not attributed per query)
 - Temperature and throttling events
 - Power consumption trends
 
