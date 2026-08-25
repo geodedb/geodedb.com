@@ -200,7 +200,7 @@ MATCH (u:User)
 RETURN
     UPPER(u.name) AS name_upper,
     COALESCE(u.nickname, u.name) AS display_name,
-    DURATION.between(u.created_at, datetime()) AS account_age;
+    (datetime( - u.created_at)) AS account_age;
 ```
 
 ### Intelligent Auto-Completion

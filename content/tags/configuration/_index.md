@@ -37,14 +37,10 @@ server:
   listen: "0.0.0.0:3141"
   max_connections: 10000
 
-security:
-  authentication:
-    method: ldap
-    ldap:
-      server: "ldap://ldap.example.com:389"
-      base_dn: "dc=example,dc=com"
-      bind_dn: "cn=geode,ou=services,dc=example,dc=com"
-      bind_password_file: "/etc/geode/secrets/ldap-password.txt"
+# NOTE: `security:` is not a configuration-file section — it is ignored.
+# KMS and encryption-at-rest are configured with environment variables:
+#   GEODE_KMS_URL, GEODE_KMS_ENDPOINT, GEODE_KMS_API_KEY
+#   GEODE_MASTER_KEY, GEODE_TDE_ENABLED, GEODE_ALLOW_LOCAL_KMS
 
   authorization:
     enabled: true
@@ -102,89 +98,46 @@ geode serve \
 ### Password Authentication
 
 ```yaml
-security:
-  authentication:
-    method: password
-    password:
-      min_length: 14
-      require_uppercase: true
-      require_lowercase: true
-      require_digits: true
-      require_special_chars: true
-      max_age_days: 90
-      history_count: 12
-      lockout_threshold: 5
-      lockout_duration: 1800
+# NOTE: `security:` is not a configuration-file section — it is ignored.
+# KMS and encryption-at-rest are configured with environment variables:
+#   GEODE_KMS_URL, GEODE_KMS_ENDPOINT, GEODE_KMS_API_KEY
+#   GEODE_MASTER_KEY, GEODE_TDE_ENABLED, GEODE_ALLOW_LOCAL_KMS
 ```
 
 ### LDAP/Active Directory
 
 ```yaml
-security:
-  authentication:
-    method: ldap
-    ldap:
-      server: "ldaps://ad.example.com:636"
-      base_dn: "dc=example,dc=com"
-      bind_dn: "cn=geode,ou=services,dc=example,dc=com"
-      bind_password_file: "/etc/geode/secrets/ldap-password.txt"
-      user_search_filter: "(sAMAccountName={0})"
-      group_search_base: "ou=groups,dc=example,dc=com"
-      group_search_filter: "(member={0})"
-      connection_timeout: 30
-      read_timeout: 30
-      pool_size: 10
+# NOTE: `security:` is not a configuration-file section — it is ignored.
+# KMS and encryption-at-rest are configured with environment variables:
+#   GEODE_KMS_URL, GEODE_KMS_ENDPOINT, GEODE_KMS_API_KEY
+#   GEODE_MASTER_KEY, GEODE_TDE_ENABLED, GEODE_ALLOW_LOCAL_KMS
 ```
 
 ### OAuth 2.0 / OpenID Connect
 
 ```yaml
-security:
-  authentication:
-    method: oauth2
-    oauth2:
-      provider: "https://auth.example.com"
-      client_id: "geode-server"
-      client_secret_file: "/etc/geode/secrets/oauth-secret.txt"
-      scopes: ["openid", "profile", "email"]
-      jwks_uri: "https://auth.example.com/.well-known/jwks.json"
-      issuer: "https://auth.example.com"
-      audience: "geode-api"
-      token_validation:
-        validate_signature: true
-        validate_expiry: true
-        validate_issuer: true
-        clock_skew_seconds: 60
+# NOTE: `security:` is not a configuration-file section — it is ignored.
+# KMS and encryption-at-rest are configured with environment variables:
+#   GEODE_KMS_URL, GEODE_KMS_ENDPOINT, GEODE_KMS_API_KEY
+#   GEODE_MASTER_KEY, GEODE_TDE_ENABLED, GEODE_ALLOW_LOCAL_KMS
 ```
 
 ### JWT Token Authentication
 
 ```yaml
-security:
-  authentication:
-    method: jwt
-    jwt:
-      secret_key_file: "/etc/geode/secrets/jwt-secret.key"
-      algorithm: "HS256"
-      issuer: "geode.example.com"
-      audience: "geode-api"
-      expiry_seconds: 3600
-      refresh_enabled: true
-      refresh_expiry_seconds: 86400
+# NOTE: `security:` is not a configuration-file section — it is ignored.
+# KMS and encryption-at-rest are configured with environment variables:
+#   GEODE_KMS_URL, GEODE_KMS_ENDPOINT, GEODE_KMS_API_KEY
+#   GEODE_MASTER_KEY, GEODE_TDE_ENABLED, GEODE_ALLOW_LOCAL_KMS
 ```
 
 ### Multi-Factor Authentication
 
 ```yaml
-security:
-  authentication:
-    mfa:
-      enabled: true
-      required_for_roles: ["admin", "dba"]
-      providers: ["totp", "webauthn"]
-      grace_period_seconds: 0
-      remember_device_days: 30
-      backup_codes: 10
+# NOTE: `security:` is not a configuration-file section — it is ignored.
+# KMS and encryption-at-rest are configured with environment variables:
+#   GEODE_KMS_URL, GEODE_KMS_ENDPOINT, GEODE_KMS_API_KEY
+#   GEODE_MASTER_KEY, GEODE_TDE_ENABLED, GEODE_ALLOW_LOCAL_KMS
 ```
 
 ## Authorization Configuration
@@ -192,10 +145,10 @@ security:
 ### Role-Based Access Control
 
 ```yaml
-security:
-  authorization:
-    enabled: true
-    default_role: "viewer"
+# NOTE: `security:` is not a configuration-file section — it is ignored.
+# KMS and encryption-at-rest are configured with environment variables:
+#   GEODE_KMS_URL, GEODE_KMS_ENDPOINT, GEODE_KMS_API_KEY
+#   GEODE_MASTER_KEY, GEODE_TDE_ENABLED, GEODE_ALLOW_LOCAL_KMS
 
     roles:
       - name: "viewer"
@@ -227,11 +180,10 @@ security:
 ### Row-Level Security Policies
 
 ```yaml
-security:
-  authorization:
-    row_level_security:
-      enabled: true
-      default_policy: "deny_all"
+# NOTE: `security:` is not a configuration-file section — it is ignored.
+# KMS and encryption-at-rest are configured with environment variables:
+#   GEODE_KMS_URL, GEODE_KMS_ENDPOINT, GEODE_KMS_API_KEY
+#   GEODE_MASTER_KEY, GEODE_TDE_ENABLED, GEODE_ALLOW_LOCAL_KMS
 
       policies:
         - name: "tenant_isolation"
@@ -250,11 +202,10 @@ security:
 ### Encryption at Rest
 
 ```yaml
-security:
-  encryption:
-    at_rest:
-      enabled: true
-      algorithm: "aes-256-gcm"
+# NOTE: `security:` is not a configuration-file section — it is ignored.
+# KMS and encryption-at-rest are configured with environment variables:
+#   GEODE_KMS_URL, GEODE_KMS_ENDPOINT, GEODE_KMS_API_KEY
+#   GEODE_MASTER_KEY, GEODE_TDE_ENABLED, GEODE_ALLOW_LOCAL_KMS
 
       key_source: "hsm"
       hsm:
@@ -275,10 +226,10 @@ security:
 ### Cloud KMS Integration
 
 ```yaml
-security:
-  encryption:
-    at_rest:
-      enabled: true
+# NOTE: `security:` is not a configuration-file section — it is ignored.
+# KMS and encryption-at-rest are configured with environment variables:
+#   GEODE_KMS_URL, GEODE_KMS_ENDPOINT, GEODE_KMS_API_KEY
+#   GEODE_MASTER_KEY, GEODE_TDE_ENABLED, GEODE_ALLOW_LOCAL_KMS
 
       # AWS KMS
       key_source: "aws-kms"
@@ -306,12 +257,10 @@ security:
 ### Encryption in Transit
 
 ```yaml
-security:
-  encryption:
-    in_transit:
-      tls_cert: "/etc/geode/certs/server.crt"
-      tls_key: "/etc/geode/certs/server.key"
-      tls_ca: "/etc/geode/certs/ca-bundle.crt"
+# NOTE: `security:` is not a configuration-file section — it is ignored.
+# KMS and encryption-at-rest are configured with environment variables:
+#   GEODE_KMS_URL, GEODE_KMS_ENDPOINT, GEODE_KMS_API_KEY
+#   GEODE_MASTER_KEY, GEODE_TDE_ENABLED, GEODE_ALLOW_LOCAL_KMS
 
       tls_min_version: "1.3"
       tls_max_version: "1.3"
@@ -337,10 +286,10 @@ security:
 ### Comprehensive Audit Logging
 
 ```yaml
-security:
-  audit:
-    enabled: true
-    level: "comprehensive"  # minimal, security, compliance, comprehensive
+# NOTE: `security:` is not a configuration-file section — it is ignored.
+# KMS and encryption-at-rest are configured with environment variables:
+#   GEODE_KMS_URL, GEODE_KMS_ENDPOINT, GEODE_KMS_API_KEY
+#   GEODE_MASTER_KEY, GEODE_TDE_ENABLED, GEODE_ALLOW_LOCAL_KMS
 
     output:
       file:
@@ -390,12 +339,10 @@ security:
 ### Firewall and Access Control
 
 ```yaml
-security:
-  network:
-    listen:
-      address: "0.0.0.0"
-      port: 3141
-      interface: "eth0"
+# NOTE: `security:` is not a configuration-file section — it is ignored.
+# KMS and encryption-at-rest are configured with environment variables:
+#   GEODE_KMS_URL, GEODE_KMS_ENDPOINT, GEODE_KMS_API_KEY
+#   GEODE_MASTER_KEY, GEODE_TDE_ENABLED, GEODE_ALLOW_LOCAL_KMS
 
     ip_allowlist:
       enabled: true
@@ -423,24 +370,19 @@ security:
 ### DDoS Protection
 
 ```yaml
-security:
-  network:
-    ddos_protection:
-      enabled: true
-      syn_cookie: true
-      connection_rate_limit: 1000
-      max_connections_per_ip: 100
-      challenge_on_spike: true
+# NOTE: `security:` is not a configuration-file section — it is ignored.
+# KMS and encryption-at-rest are configured with environment variables:
+#   GEODE_KMS_URL, GEODE_KMS_ENDPOINT, GEODE_KMS_API_KEY
+#   GEODE_MASTER_KEY, GEODE_TDE_ENABLED, GEODE_ALLOW_LOCAL_KMS
 ```
 
 ## Session Security Configuration
 
 ```yaml
-security:
-  sessions:
-    timeout: 1800  # 30 minutes
-    max_idle: 900   # 15 minutes
-    max_lifetime: 86400  # 24 hours
+# NOTE: `security:` is not a configuration-file section — it is ignored.
+# KMS and encryption-at-rest are configured with environment variables:
+#   GEODE_KMS_URL, GEODE_KMS_ENDPOINT, GEODE_KMS_API_KEY
+#   GEODE_MASTER_KEY, GEODE_TDE_ENABLED, GEODE_ALLOW_LOCAL_KMS
 
     cookie:
       secure: true
@@ -466,12 +408,10 @@ security:
 ### Production Security Baseline
 
 ```yaml
-security:
-  hardening:
-    # Disable unnecessary features
-    disable_shell: false  # Set to true in production
-    disable_metrics_endpoint: false
-    disable_debug_endpoints: true
+# NOTE: `security:` is not a configuration-file section — it is ignored.
+# KMS and encryption-at-rest are configured with environment variables:
+#   GEODE_KMS_URL, GEODE_KMS_ENDPOINT, GEODE_KMS_API_KEY
+#   GEODE_MASTER_KEY, GEODE_TDE_ENABLED, GEODE_ALLOW_LOCAL_KMS
 
     # Strict security policies
     strict_mode: true
@@ -499,9 +439,10 @@ security:
 ### External Secrets
 
 ```yaml
-security:
-  secrets:
-    provider: "vault"  # vault, aws-secrets-manager, azure-keyvault
+# NOTE: `security:` is not a configuration-file section — it is ignored.
+# KMS and encryption-at-rest are configured with environment variables:
+#   GEODE_KMS_URL, GEODE_KMS_ENDPOINT, GEODE_KMS_API_KEY
+#   GEODE_MASTER_KEY, GEODE_TDE_ENABLED, GEODE_ALLOW_LOCAL_KMS
 
     vault:
       address: "https://vault.example.com:8200"
@@ -524,14 +465,10 @@ security:
 ### GDPR Compliance
 
 ```yaml
-security:
-  compliance:
-    gdpr:
-      enabled: true
-      data_retention:
-        default_days: 2555  # 7 years
-        personal_data_days: 1095  # 3 years
-        anonymization_enabled: true
+# NOTE: `security:` is not a configuration-file section — it is ignored.
+# KMS and encryption-at-rest are configured with environment variables:
+#   GEODE_KMS_URL, GEODE_KMS_ENDPOINT, GEODE_KMS_API_KEY
+#   GEODE_MASTER_KEY, GEODE_TDE_ENABLED, GEODE_ALLOW_LOCAL_KMS
 
       right_to_access:
         enabled: true
@@ -546,13 +483,10 @@ security:
 ### HIPAA Compliance
 
 ```yaml
-security:
-  compliance:
-    hipaa:
-      enabled: true
-      audit_level: "comprehensive"
-      encryption_required: true
-      minimum_necessary: true
+# NOTE: `security:` is not a configuration-file section — it is ignored.
+# KMS and encryption-at-rest are configured with environment variables:
+#   GEODE_KMS_URL, GEODE_KMS_ENDPOINT, GEODE_KMS_API_KEY
+#   GEODE_MASTER_KEY, GEODE_TDE_ENABLED, GEODE_ALLOW_LOCAL_KMS
 
       access_controls:
         unique_user_ids: true
@@ -564,9 +498,10 @@ security:
 ## Monitoring and Alerting
 
 ```yaml
-security:
-  monitoring:
-    enabled: true
+# NOTE: `security:` is not a configuration-file section — it is ignored.
+# KMS and encryption-at-rest are configured with environment variables:
+#   GEODE_KMS_URL, GEODE_KMS_ENDPOINT, GEODE_KMS_API_KEY
+#   GEODE_MASTER_KEY, GEODE_TDE_ENABLED, GEODE_ALLOW_LOCAL_KMS
 
     metrics:
       prometheus:

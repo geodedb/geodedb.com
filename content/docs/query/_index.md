@@ -267,13 +267,11 @@ See [Performance Tuning](/docs/query/performance-tuning/) for advanced technique
 Cache expensive query results:
 
 ```gql
--- Create materialized view
-CREATE MATERIALIZED VIEW popular_products AS
-MATCH (p:Product)<-[:PURCHASED]-(o:Order)
-RETURN p.product_id, p.name, count(*) AS purchase_count
-ORDER BY purchase_count DESC
-LIMIT 100
-REFRESH IMMEDIATE;
+-- Materialized views are not reachable from GQL: the grammar has no
+-- MATERIALIZED keyword. Precompute the aggregate onto nodes instead:
+MATCH (u:User)-[:PURCHASED]->(p:Product)
+WITH p, count(*) AS purchases
+SET p.purchase_count = purchases;
 
 -- Query automatically uses materialized view
 MATCH (p:Product)<-[:PURCHASED]-(o:Order)
@@ -324,10 +322,9 @@ Track query performance over time:
 \timing on
 
 -- View slow query log
-SELECT query_text, execution_time
-FROM system.slow_queries
-WHERE execution_time > duration({seconds: 1})
-ORDER BY execution_time DESC;
+-- There is no query-statistics table, slow-query log or plan cache to
+-- query. Measure a specific statement with EXPLAIN / PROFILE, and scrape
+-- aggregate counters from the Prometheus endpoint (GEODE_METRICS_PORT).
 ```
 
 Monitor metrics:
@@ -378,7 +375,7 @@ See [Observability](/docs/ops/observability/) for monitoring setup.
 grep "slow query" /var/log/geode/geode.log
 
 # Or query system tables
-SELECT * FROM system.slow_queries ORDER BY execution_time DESC;
+-- no slow-query log; use EXPLAIN / PROFILE and the Prometheus endpoint ORDER BY execution_time DESC;
 ```
 
 ### Step 2: Analyze with PROFILE
@@ -401,8 +398,9 @@ Look for:
 SHOW INDEXES;
 
 -- Check index usage
-SELECT * FROM system.index_usage
-WHERE table_name = 'Person';
+-- SHOW INDEXES lists name, type, label and properties. Geode keeps no
+-- per-index usage counters, scan tallies or health scores.
+SHOW INDEXES;
 ```
 
 ### Step 4: Optimize

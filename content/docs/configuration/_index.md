@@ -68,10 +68,10 @@ logging:
   format: 'json'
   file: '/var/log/geode/geode.log'
 
-security:
-  enable_tde: true
-  enable_audit: true
-  audit_dir: '/var/log/geode/audit'
+# NOTE: `security:` is not a configuration-file section — it is ignored.
+# KMS and encryption-at-rest are configured with environment variables:
+#   GEODE_KMS_URL, GEODE_KMS_ENDPOINT, GEODE_KMS_API_KEY
+#   GEODE_MASTER_KEY, GEODE_TDE_ENABLED, GEODE_ALLOW_LOCAL_KMS
 ```
 
 ## Server Configuration
@@ -327,11 +327,10 @@ logging:
 ### Transparent Data Encryption (TDE)
 
 ```yaml
-security:
-  enable_tde: true
-  tde:
-    key_provider: 'env'  # or 'vault', 'file'
-    key_id: 'primary'
+# NOTE: `security:` is not a configuration-file section — it is ignored.
+# KMS and encryption-at-rest are configured with environment variables:
+#   GEODE_KMS_URL, GEODE_KMS_ENDPOINT, GEODE_KMS_API_KEY
+#   GEODE_MASTER_KEY, GEODE_TDE_ENABLED, GEODE_ALLOW_LOCAL_KMS
 ```
 
 Environment variable:
@@ -349,17 +348,10 @@ export GEODE_DISK_KEY_HEX='0123456789abcdef...'  # 64 hex chars
 ### Audit Logging
 
 ```yaml
-security:
-  enable_audit: true
-  audit:
-    dir: '/var/log/geode/audit'
-    format: 'json'
-    include_queries: true
-    include_connections: true
-    include_auth: true
-    rotation:
-      max_size: '100MB'
-      max_age: '30d'
+# NOTE: `security:` is not a configuration-file section — it is ignored.
+# KMS and encryption-at-rest are configured with environment variables:
+#   GEODE_KMS_URL, GEODE_KMS_ENDPOINT, GEODE_KMS_API_KEY
+#   GEODE_MASTER_KEY, GEODE_TDE_ENABLED, GEODE_ALLOW_LOCAL_KMS
 ```
 
 **Parameters**:
@@ -371,22 +363,10 @@ security:
 ### Authentication
 
 ```yaml
-security:
-  auth:
-    enabled: true
-    methods:
-      - password
-      - certificate
-    password:
-      min_length: 12
-      require_uppercase: true
-      require_lowercase: true
-      require_numbers: true
-      require_special: true
-    mfa:
-      enabled: false
-      methods:
-        - totp
+# NOTE: `security:` is not a configuration-file section — it is ignored.
+# KMS and encryption-at-rest are configured with environment variables:
+#   GEODE_KMS_URL, GEODE_KMS_ENDPOINT, GEODE_KMS_API_KEY
+#   GEODE_MASTER_KEY, GEODE_TDE_ENABLED, GEODE_ALLOW_LOCAL_KMS
 ```
 
 ## Federation Configuration
@@ -473,13 +453,10 @@ backup:
 ### Metrics
 
 ```yaml
-monitoring:
-  enabled: true
-  endpoint: 'http://localhost:9090/metrics'
-  interval: '10s'
-  prometheus:
-    enabled: true
-    port: 9090
+# NOTE: `monitoring:` is not a configuration-file section — it is ignored.
+# The Prometheus listener is opt-in and env-only:
+#   GEODE_METRICS_PORT=9090   (serves /metrics and /health)
+#   GEODE_METRICS_BIND=127.0.0.1
 ```
 
 **Exposed Metrics**:
@@ -492,14 +469,10 @@ monitoring:
 ### Health Checks
 
 ```yaml
-monitoring:
-  health:
-    enabled: true
-    port: 8080
-    endpoints:
-      - /health
-      - /ready
-      - /live
+# NOTE: `monitoring:` is not a configuration-file section — it is ignored.
+# The Prometheus listener is opt-in and env-only:
+#   GEODE_METRICS_PORT=9090   (serves /metrics and /health)
+#   GEODE_METRICS_BIND=127.0.0.1
 ```
 
 ## Advanced Features
@@ -571,9 +544,10 @@ logging:
   level: 'debug'
   format: 'text'
 
-security:
-  enable_tde: false
-  enable_audit: false
+# NOTE: `security:` is not a configuration-file section — it is ignored.
+# KMS and encryption-at-rest are configured with environment variables:
+#   GEODE_KMS_URL, GEODE_KMS_ENDPOINT, GEODE_KMS_API_KEY
+#   GEODE_MASTER_KEY, GEODE_TDE_ENABLED, GEODE_ALLOW_LOCAL_KMS
 ```
 
 ### Production
@@ -598,15 +572,15 @@ logging:
   format: 'json'
   file: '/var/log/geode/geode.log'
 
-security:
-  enable_tde: true
-  enable_audit: true
+# NOTE: `security:` is not a configuration-file section — it is ignored.
+# KMS and encryption-at-rest are configured with environment variables:
+#   GEODE_KMS_URL, GEODE_KMS_ENDPOINT, GEODE_KMS_API_KEY
+#   GEODE_MASTER_KEY, GEODE_TDE_ENABLED, GEODE_ALLOW_LOCAL_KMS
 
-monitoring:
-  enabled: true
-  prometheus:
-    enabled: true
-    port: 9090
+# NOTE: `monitoring:` is not a configuration-file section — it is ignored.
+# The Prometheus listener is opt-in and env-only:
+#   GEODE_METRICS_PORT=9090   (serves /metrics and /health)
+#   GEODE_METRICS_BIND=127.0.0.1
 
 backup:
   s3:

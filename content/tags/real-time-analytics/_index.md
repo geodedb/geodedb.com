@@ -40,14 +40,14 @@ Compute metrics over sliding time windows:
 ```gql
 // Events in last 5 minutes
 MATCH (e:Event)
-WHERE e.timestamp > datetime().minusMinutes(5)
+WHERE e.timestamp > datetime() - duration('PT5M')
 RETURN COUNT(e) AS recent_events,
        COUNT(DISTINCT e.user_id) AS active_users;
 
 // Rolling hourly metrics for last 24 hours
 MATCH (e:Event)
-WHERE e.timestamp > datetime().minusHours(24)
-WITH date.truncate('hour', e.timestamp) AS hour,
+WHERE e.timestamp > datetime() - duration('PT24H')
+WITH $bucket_start /* no date_trunc(): bucket at write time or compare an explicit range */ AS hour,
      COUNT(e) AS event_count,
      COUNT(DISTINCT e.user_id) AS unique_users
 ORDER BY hour DESC
@@ -55,8 +55,8 @@ RETURN hour, event_count, unique_users;
 
 // Minute-by-minute breakdown for real-time monitoring
 MATCH (t:Transaction)
-WHERE t.timestamp > datetime().minusMinutes(15)
-WITH date.truncate('minute', t.timestamp) AS minute,
+WHERE t.timestamp > datetime() - duration('PT15M')
+WITH $bucket_start /* no date_trunc(): bucket at write time or compare an explicit range */ AS minute,
      COUNT(t) AS tx_count,
      SUM(t.amount) AS total_amount,
      AVG(t.amount) AS avg_amount
@@ -71,20 +71,20 @@ Track running totals and cumulative metrics:
 ```gql
 // Daily cumulative revenue
 MATCH (t:Transaction)
-WHERE t.timestamp > datetime().minusDays(30)
-WITH date.truncate('day', t.timestamp) AS day,
+WHERE t.timestamp > datetime() - duration('P30D')
+WITH $bucket_start /* no date_trunc(): bucket at write time or compare an explicit range */ AS day,
      SUM(t.amount) AS daily_revenue
 ORDER BY day ASC
 WITH day, daily_revenue,
-     SUM(daily_revenue) OVER (ORDER BY day) AS cumulative_revenue
+     SUM(daily_revenue) AS cumulative_revenue
 RETURN day, daily_revenue, cumulative_revenue;
 
 // Running user count over time
 MATCH (u:User)
-WITH date.truncate('day', u.created_at) AS day, COUNT(u) AS new_users
+WITH $bucket_start /* no date_trunc(): bucket at write time or compare an explicit range */ AS day, COUNT(u) AS new_users
 ORDER BY day ASC
 WITH day, new_users,
-     SUM(new_users) OVER (ORDER BY day) AS total_users
+     SUM(new_users) AS total_users
 RETURN day, new_users, total_users;
 ```
 
@@ -97,14 +97,14 @@ Real-time KPI tracking for dashboards:
 ```gql
 // Real-time business metrics
 MATCH (t:Transaction)
-WHERE t.timestamp > datetime().minusHours(1)
+WHERE t.timestamp > datetime() - duration('PT1H')
 WITH COUNT(t) AS last_hour_tx,
      SUM(t.amount) AS last_hour_revenue,
      AVG(t.amount) AS avg_transaction_value,
      COUNT(DISTINCT t.user_id) AS active_buyers
 
 MATCH (u:User)
-WHERE u.created_at > datetime().minusHours(1)
+WHERE u.created_at > datetime() - duration('PT1H')
 WITH last_hour_tx, last_hour_revenue, avg_transaction_value, active_buyers,
      COUNT(u) AS new_users
 
@@ -130,7 +130,7 @@ Track trending items and top performers:
 ```gql
 // Trending products (last hour)
 MATCH (p:Product)<-[purchase:PURCHASED]-()
-WHERE purchase.timestamp > datetime().minusHours(1)
+WHERE purchase.timestamp > datetime() - duration('PT1H')
 WITH p,
      COUNT(purchase) AS purchase_count,
      SUM(purchase.amount) AS revenue,
@@ -145,7 +145,7 @@ RETURN p.product_id,
 
 // Most active users (last 24 hours)
 MATCH (u:User)-[activity:PERFORMED|PURCHASED|VIEWED]->()
-WHERE activity.timestamp > datetime().minusHours(24)
+WHERE activity.timestamp > datetime() - duration('PT24H')
 WITH u,
      COUNT(activity) AS activity_count,
      SIZE([a IN COLLECT(activity) WHERE type(a) = 'PURCHASED']) AS purchases,
@@ -168,9 +168,9 @@ Detect accelerating or declining trends:
 ```gql
 // Compare current week to previous week
 MATCH (e:Event)
-WHERE e.timestamp > datetime().minusDays(14)
+WHERE e.timestamp > datetime() - duration('P14D')
 WITH CASE
-       WHEN e.timestamp > datetime().minusDays(7) THEN 'current_week'
+       WHEN e.timestamp > datetime() - duration('P7D') THEN 'current_week'
        ELSE 'previous_week'
      END AS period,
      COUNT(e) AS event_count
@@ -183,12 +183,12 @@ RETURN current,
 // Hourly growth compared to same hour yesterday
 WITH datetime().hour AS current_hour
 MATCH (e_today:Event)
-WHERE e_today.timestamp > datetime().minusHours(1)
+WHERE e_today.timestamp > datetime() - duration('PT1H')
 WITH current_hour, COUNT(e_today) AS today_count
 
 MATCH (e_yesterday:Event)
-WHERE e_yesterday.timestamp > datetime().minusHours(25)
-  AND e_yesterday.timestamp < datetime().minusHours(24)
+WHERE e_yesterday.timestamp > datetime() - duration('PT25H')
+  AND e_yesterday.timestamp < datetime() - duration('PT24H')
   AND e_yesterday.timestamp.hour = current_hour
 WITH today_count, COUNT(e_yesterday) AS yesterday_count
 RETURN today_count,
@@ -203,11 +203,11 @@ Identify unusual spikes or drops:
 ```gql
 // Detect transaction volume anomalies
 MATCH (t:Transaction)
-WHERE t.timestamp > datetime().minusHours(24)
-WITH date.truncate('hour', t.timestamp) AS hour,
+WHERE t.timestamp > datetime() - duration('PT24H')
+WITH $bucket_start /* no date_trunc(): bucket at write time or compare an explicit range */ AS hour,
      COUNT(t) AS hourly_count
 WITH AVG(hourly_count) AS avg_count,
-     STDDEV(hourly_count) AS stddev_count,
+     collect(hourly_count) /* stddev/variance parse but are never computed; reduce client-side */ AS stddev_count,
      COLLECT({hour: hour, count: hourly_count}) AS hourly_data
 UNWIND hourly_data AS data
 WITH data.hour AS hour,
@@ -234,18 +234,11 @@ ORDER BY ABS(z_score) DESC;
 Maintain real-time summary tables:
 
 ```gql
-// Create materialized view for user statistics
-CREATE MATERIALIZED VIEW user_activity_stats AS
-SELECT u.user_id,
-       COUNT(DISTINCT e) AS total_events,
-       COUNT(DISTINCT p) AS total_purchases,
-       SUM(p.amount) AS lifetime_value,
-       MAX(e.timestamp) AS last_activity,
-       MIN(e.timestamp) AS first_activity
-FROM (u:User)
-LEFT JOIN (u)-[e:PERFORMED]->()
-LEFT JOIN (u)-[p:PURCHASED]->()
-GROUP BY u.user_id;
+-- Materialized views are not reachable from GQL: the grammar has no
+-- MATERIALIZED keyword. Precompute the aggregate onto nodes instead:
+MATCH (u:User)-[:PURCHASED]->(p:Product)
+WITH p, count(*) AS purchases
+SET p.purchase_count = purchases;
 
 // Query materialized view (fast, pre-computed)
 MATCH (stats:user_activity_stats {user_id: $user_id})
@@ -267,18 +260,11 @@ Real-time category performance metrics:
 
 ```gql
 // Materialized category statistics
-CREATE MATERIALIZED VIEW category_metrics AS
-SELECT c.category_id,
-       c.name AS category_name,
-       COUNT(DISTINCT p) AS product_count,
-       COUNT(DISTINCT purchase) AS total_purchases,
-       SUM(purchase.amount) AS total_revenue,
-       AVG(purchase.amount) AS avg_sale_price
-FROM (c:Category)
-LEFT JOIN (c)<-[:IN_CATEGORY]-(p:Product)
-LEFT JOIN (p)<-[purchase:PURCHASED]-()
-WHERE purchase.timestamp > datetime().minusDays(7)
-GROUP BY c.category_id, c.name;
+-- Materialized views are not reachable from GQL: the grammar has no
+-- MATERIALIZED keyword. Precompute the aggregate onto nodes instead:
+MATCH (u:User)-[:PURCHASED]->(p:Product)
+WITH p, count(*) AS purchases
+SET p.purchase_count = purchases;
 
 // Fast category performance queries
 MATCH (cm:category_metrics)
@@ -300,19 +286,19 @@ Analyze user sessions in real-time:
 ```gql
 // Current active sessions
 MATCH (u:User)-[:PERFORMED]->(e:Event)
-WHERE e.timestamp > datetime().minusMinutes(30)
+WHERE e.timestamp > datetime() - duration('PT30M')
 WITH u, MAX(e.timestamp) AS last_activity
-WHERE duration.between(last_activity, datetime()).minutes < 5  // Active in last 5 min
+WHERE (datetime( - last_activity)).minutes < 5  // Active in last 5 min
 RETURN COUNT(DISTINCT u) AS active_users_now;
 
 // Session duration distribution
 MATCH (u:User)-[:PERFORMED]->(e:Event)
-WHERE e.timestamp > datetime().minusHours(24)
+WHERE e.timestamp > datetime() - duration('PT24H')
 WITH u,
      MIN(e.timestamp) AS session_start,
      MAX(e.timestamp) AS session_end,
      COUNT(e) AS event_count
-WITH duration.between(session_start, session_end).minutes AS session_duration_min
+WITH (session_end - session_start).minutes AS session_duration_min
 WITH CASE
        WHEN session_duration_min < 1 THEN '0-1 min'
        WHEN session_duration_min < 5 THEN '1-5 min'
@@ -332,16 +318,16 @@ Track real-time conversion rates:
 ```gql
 // E-commerce funnel (last hour)
 MATCH (view:Event {event_type: 'page_view'})
-WHERE view.timestamp > datetime().minusHours(1)
+WHERE view.timestamp > datetime() - duration('PT1H')
   AND view.page_type = 'product'
 WITH COUNT(DISTINCT view.user_id) AS viewed_users
 
 MATCH (cart:Event {event_type: 'add_to_cart'})
-WHERE cart.timestamp > datetime().minusHours(1)
+WHERE cart.timestamp > datetime() - duration('PT1H')
 WITH viewed_users, COUNT(DISTINCT cart.user_id) AS cart_users
 
 MATCH (purchase:Transaction)
-WHERE purchase.timestamp > datetime().minusHours(1)
+WHERE purchase.timestamp > datetime() - duration('PT1H')
 WITH viewed_users, cart_users, COUNT(DISTINCT purchase.user_id) AS purchased_users
 
 RETURN {
@@ -372,7 +358,7 @@ Real-time metrics by region:
 ```gql
 // Sales by region (last 24 hours)
 MATCH (t:Transaction)-[:FROM_USER]->(u:User)
-WHERE t.timestamp > datetime().minusHours(24)
+WHERE t.timestamp > datetime() - duration('PT24H')
 WITH u.country AS country,
      COUNT(t) AS transaction_count,
      SUM(t.amount) AS revenue,
@@ -387,7 +373,7 @@ RETURN country,
 
 // Active users by city (current hour)
 MATCH (u:User)-[:PERFORMED]->(e:Event)
-WHERE e.timestamp > datetime().minusHours(1)
+WHERE e.timestamp > datetime() - duration('PT1H')
 WITH u.city AS city,
      COUNT(DISTINCT u) AS active_users,
      COUNT(e) AS total_events
@@ -405,8 +391,8 @@ Real-time cohort retention metrics:
 ```gql
 // Weekly cohort retention
 MATCH (u:User)
-WHERE u.created_at > datetime().minusDays(90)
-WITH date.truncate('week', u.created_at) AS cohort_week, u
+WHERE u.created_at > datetime() - duration('P90D')
+WITH $bucket_start /* no date_trunc(): bucket at write time or compare an explicit range */ AS cohort_week, u
 WITH cohort_week, COLLECT(u) AS cohort_users
 
 // Check activity in each subsequent week
@@ -414,11 +400,11 @@ MATCH (cu:User)-[:PERFORMED]->(e:Event)
 WHERE cu IN cohort_users
 WITH cohort_week,
      SIZE(cohort_users) AS cohort_size,
-     date.truncate('week', e.timestamp) AS activity_week,
+     $bucket_start /* no date_trunc(): bucket at write time or compare an explicit range */ AS activity_week,
      COUNT(DISTINCT cu) AS active_users
 WITH cohort_week,
      cohort_size,
-     duration.between(cohort_week, activity_week).weeks AS weeks_since_join,
+     (activity_week - cohort_week).weeks AS weeks_since_join,
      active_users
 WHERE weeks_since_join >= 0
 RETURN cohort_week,
@@ -441,7 +427,7 @@ CREATE CACHED QUERY dashboard_summary
 REFRESH EVERY 30 SECONDS
 AS
 MATCH (t:Transaction)
-WHERE t.timestamp > datetime().minusHours(24)
+WHERE t.timestamp > datetime() - duration('PT24H')
 RETURN COUNT(t) AS tx_24h,
        SUM(t.amount) AS revenue_24h,
        AVG(t.amount) AS avg_tx_value;
@@ -457,7 +443,7 @@ Use sampling for faster approximate results:
 ```gql
 // Sample 10% of data for faster estimates
 MATCH (e:Event)
-WHERE e.timestamp > datetime().minusDays(30)
+WHERE e.timestamp > datetime() - duration('P30D')
   AND rand() < 0.1  // 10% sample
 WITH COUNT(e) AS sampled_count,
      COUNT(DISTINCT e.user_id) AS sampled_users

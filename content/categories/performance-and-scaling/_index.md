@@ -48,12 +48,14 @@ CREATE INDEX transaction_timestamp_idx ON TRANSACTION(timestamp);
 ```
 
 **When to index**:
+
 - Properties used in `WHERE` clauses
 - Properties used for `ORDER BY`
 - Properties used in equality comparisons
 - Frequently traversed relationship types
 
 **When not to index**:
+
 - Properties with very low cardinality (e.g., boolean flags)
 - Properties rarely queried
 - Write-heavy workloads where index maintenance overhead outweighs read benefits
@@ -71,6 +73,7 @@ ORDER BY p.price DESC
 ```
 
 The execution plan shows:
+
 - Which indexes were considered and chosen
 - Estimated cardinalities at each step
 - Scan types (index seek vs. full scan)
@@ -178,6 +181,7 @@ async with client.connection() as client:
 ```
 
 Benefits:
+
 - Query parsing and planning occur once
 - Parameter values can be efficiently bound
 - Network roundtrips reduced in some protocols
@@ -201,12 +205,14 @@ LIMIT 10
 ```
 
 Profile output includes:
+
 - **Execution time**: Actual wall-clock time per operator
 - **Rows processed**: Actual cardinalities vs. estimates
 - **Cache hits**: Index and data cache effectiveness
 - **Memory usage**: Peak memory per operator
 
 Compare estimated vs. actual cardinalities. Large discrepancies indicate:
+
 - Missing or outdated statistics
 - Complex predicates the planner can't estimate
 - Correlated data patterns
@@ -225,7 +231,7 @@ metrics, _ = await client.query("""
         rows_read,
         rows_written,
         cache_hit_ratio
-    FROM system.query_log
+    -- no query log; use EXPLAIN / PROFILE and the Prometheus endpoint
     WHERE execution_time_ms > 1000
     ORDER BY execution_time_ms DESC
     LIMIT 20
@@ -233,6 +239,7 @@ metrics, _ = await client.query("""
 ```
 
 Critical metrics:
+
 - **Query latency**: p50, p95, p99 percentiles
 - **Throughput**: Queries per second
 - **Cache hit rates**: Index cache, data cache, query plan cache
@@ -286,6 +293,7 @@ result, err := pool.Query(ctx, "MATCH (n:Node) RETURN count(n)")
 ```
 
 **Pool sizing guidelines**:
+
 - MinSize: Keep connections warm for low-latency response
 - MaxSize: Match available server connection capacity
 - Idle timeout: Balance resource utilization vs. connection overhead
@@ -311,6 +319,7 @@ async def concurrent_queries():
 ```
 
 Concurrency limits:
+
 - **Read queries**: Limited only by system resources (CPU, memory)
 - **Write queries**: SSI isolation may cause conflicts in high-contention scenarios
 - **Transactions**: Use optimistic concurrency; retry on conflicts
@@ -338,13 +347,10 @@ Geode uses multiple caches for performance:
 Monitor cache effectiveness:
 
 ```gql
-SELECT
-    cache_name,
-    size_bytes,
-    entry_count,
-    hit_rate,
-    eviction_count
-FROM system.cache_statistics
+-- Yields node_count, edge_count, label_count, format_version, page_size,
+-- wal_lsn, last_checkpoint_lsn, free_pages_* , *_consistent,
+-- label_index_entries and total_errors for the graph.
+CALL geode.storage.stats();
 ```
 
 Adjust sizes based on hit rates. Target 90%+ hit rate for index cache, 70%+ for data cache.

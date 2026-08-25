@@ -132,8 +132,7 @@ WHERE u.id = $user_id
   AND p.created > current_timestamp() - INTERVAL '24' HOUR
 RETURN p.id, p.content, p.created, f.name
 ORDER BY p.created DESC
-LIMIT 100
-OPTION (consistency = 'eventual', max_staleness = '5s');
+LIMIT 100;
 ```
 
 ### Causal Consistency
@@ -194,8 +193,7 @@ COMMIT;
 -- All readers will see parent before reply
 MATCH (parent:Comment)<-[:REPLY_TO]-(reply:Comment)
 WHERE parent.id = $parent_id
-RETURN parent, reply
-OPTION (consistency = 'causal');
+RETURN parent, reply;
 ```
 
 ### Tunable Consistency
@@ -231,19 +229,16 @@ consistency:
 
 ```gql
 -- Critical write with strong guarantees
-CREATE (order:Order {id: $order_id, status: 'pending'})
-OPTION (consistency_level = 'critical');
+CREATE (order:Order {id: $order_id, status: 'pending'});
 
 -- Standard read for display
 MATCH (order:Order {id: $order_id})
-RETURN order
-OPTION (consistency_level = 'standard');
+RETURN order;
 
 -- Relaxed read for analytics
 MATCH (order:Order)
 WHERE order.created > current_timestamp() - INTERVAL '1' DAY
-RETURN COUNT(*) as daily_orders
-OPTION (consistency_level = 'relaxed');
+RETURN COUNT(*) as daily_orders;
 ```
 
 ## Session Guarantees
@@ -265,13 +260,11 @@ consistency:
 
 ```gql
 -- Write operation
-CREATE (u:User {id: $user_id, name: $name})
-OPTION (session_id = $session_id);
+CREATE (u:User {id: $user_id, name: $name});
 
 -- Immediate read sees the write
 MATCH (u:User {id: $user_id})
-RETURN u.name
-OPTION (session_id = $session_id);
+RETURN u.name;
 -- Always returns the created user
 ```
 
@@ -475,9 +468,10 @@ consistency:
 Track consistency-related metrics:
 
 ```yaml
-monitoring:
-  consistency_metrics:
-    enabled: true
+# NOTE: `monitoring:` is not a configuration-file section — it is ignored.
+# The Prometheus listener is opt-in and env-only:
+#   GEODE_METRICS_PORT=9090   (serves /metrics and /health)
+#   GEODE_METRICS_BIND=127.0.0.1
 
     # Metrics to collect
     metrics:

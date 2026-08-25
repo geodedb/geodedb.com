@@ -27,6 +27,7 @@ Cryptographic key management is fundamental to Geode's security architecture. Pr
 Geode requires TLS 1.3 for all connections. Managing TLS certificates properly is essential for secure deployments.
 
 **Generating certificates**:
+
 ```bash
 # Generate CA (for internal PKI)
 openssl genrsa -out ca-key.pem 4096
@@ -42,6 +43,7 @@ openssl x509 -req -days 365 -in server.csr -CA ca-cert.pem \
 ```
 
 **Server configuration**:
+
 ```bash
 geode serve --listen 0.0.0.0:3141 \
     --tls-cert=/etc/geode/certs/server-cert.pem \
@@ -53,6 +55,7 @@ geode serve --listen 0.0.0.0:3141 \
 **Data encryption keys (DEK)**: Geode uses AES-256-GCM for transparent data encryption. Keys can be provided directly or through a Key Management Service.
 
 **Direct key configuration**:
+
 ```bash
 # Generate encryption key
 openssl rand -hex 32 > /etc/geode/keys/data-encryption.key
@@ -65,6 +68,7 @@ geode serve --listen 0.0.0.0:3141 \
 ```
 
 **KMS integration**:
+
 ```bash
 # AWS KMS
 geode serve --listen 0.0.0.0:3141 \
@@ -85,6 +89,7 @@ geode serve --listen 0.0.0.0:3141 \
 Regular key rotation limits exposure from potential key compromise.
 
 **Certificate rotation**:
+
 1. Generate new certificate before expiration
 2. Deploy new certificate alongside existing
 3. Update server configuration
@@ -92,9 +97,12 @@ Regular key rotation limits exposure from potential key compromise.
 5. Remove old certificate after transition period
 
 **Encryption key rotation**:
+
 ```bash
 # Rotate data encryption key (requires re-encryption)
-geode admin key-rotate \
+# There is no `geode admin` subcommand. Geode's CLI is: serve, shell, query,
+# lsp, backup, restore, migrate, auth, login, logout, user, role, tenant,
+# policy, grant, revoke, completion, mcp.
     --old-key-file=/etc/geode/keys/data-encryption-old.key \
     --new-key-file=/etc/geode/keys/data-encryption-new.key
 ```
@@ -102,17 +110,20 @@ geode admin key-rotate \
 ## Best Practices
 
 **Secure key storage**:
+
 - Never store keys in version control
 - Use file system permissions (600 or stricter)
 - Consider hardware security modules (HSM) for high-security deployments
 - Use secrets management systems (Vault, AWS Secrets Manager)
 
 **Key backup**:
+
 - Maintain secure backups of encryption keys
 - Store backups separately from encrypted data
 - Test key recovery procedures regularly
 
 **Access control**:
+
 - Limit key access to necessary personnel only
 - Use separate keys for different environments
 - Audit key access and usage

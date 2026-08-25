@@ -201,16 +201,19 @@ async with replica.connection() as conn:
 ### Load Balancing Strategies
 
 **Round Robin**:
+
 ```gql
 SET SESSION READ PREFERENCE round_robin;
 ```
 
 **Least Connections**:
+
 ```gql
 SET SESSION READ PREFERENCE least_connections;
 ```
 
 **Geographic Proximity**:
+
 ```gql
 SET SESSION READ PREFERENCE nearest;
 ```
@@ -245,8 +248,10 @@ Online schema changes without downtime:
 
 ```gql
 -- Add property with online migration
-ALTER GRAPH ADD PROPERTY User.verified BOOLEAN DEFAULT false
-  WITH MIGRATION STRATEGY online;
+-- Geode has no ALTER LABEL / ALTER GRAPH / property DEFAULT DDL. Labels and
+-- properties are schema-free: write the new property with SET, supplying the
+-- default yourself.
+MATCH (u:User) WHERE u.verified IS NULL SET u.verified = false;
 
 -- Rebuild index without locking
 CREATE INDEX ON :User(email) WITH MODE online;
@@ -379,7 +384,7 @@ global_deployment:
       nodes: 2
       role: read_replica
       replication_mode: async
-  
+
   routing:
     strategy: geographic_proximity
     failover_policy: automatic
@@ -498,12 +503,12 @@ class BulkheadPool:
     def __init__(self, max_concurrent=100):
         self.read_semaphore = Semaphore(max_concurrent // 2)
         self.write_semaphore = Semaphore(max_concurrent // 2)
-    
+
     async def execute_read(self, query):
         async with self.read_semaphore:
             result, _ = await client.query(query)
             return result
-    
+
     async def execute_write(self, query):
         async with self.write_semaphore:
             await client.execute(query)
@@ -537,19 +542,18 @@ class HealthCheck:
 async def comprehensive_health_check(client):
     """Perform comprehensive health check"""
     checks = {}
-    
+
     # Database connectivity
     try:
         await client.execute("MATCH (n) RETURN n LIMIT 1")
         checks['database'] = {'status': 'pass', 'latency_ms': 5}
     except Exception as e:
         checks['database'] = {'status': 'fail', 'error': str(e)}
-    
+
     # Replication lag
     try:
         lag, _ = await client.query("""
-            SELECT MAX(replication_lag_ms) as max_lag
-            FROM system.replication_status
+            SHOW CLUSTER STATUS
         """)
         lag_ms = lag.rows[0]['max_lag'] if lag.rows else 0
         checks['replication'] = {
@@ -558,14 +562,14 @@ async def comprehensive_health_check(client):
         }
     except Exception as e:
         checks['replication'] = {'status': 'fail', 'error': str(e)}
-    
+
     # Disk space
     disk_usage = await get_disk_usage()
     checks['disk'] = {
         'status': 'pass' if disk_usage < 80 else 'warn',
         'usage_percent': disk_usage
     }
-    
+
     # Overall status
     if any(c['status'] == 'fail' for c in checks.values()):
         status = HealthStatus.UNHEALTHY
@@ -573,7 +577,7 @@ async def comprehensive_health_check(client):
         status = HealthStatus.DEGRADED
     else:
         status = HealthStatus.HEALTHY
-    
+
     return HealthCheck(status, checks, datetime.now())
 ```
 
@@ -593,16 +597,15 @@ node_health = Gauge('geode_node_health', 'Node health status', ['node'])
 async def update_ha_metrics(client):
     # Replication lag
     replicas, _ = await client.query("""
-        SELECT node_id, replication_lag_ms
-        FROM system.replication_status
+        SHOW CLUSTER STATUS
     """)
     for replica in replicas.rows:
         replication_lag.labels(node=replica['node_id']).set(
             replica['replication_lag_ms'] / 1000.0
         )
-    
+
     # Node health
-    nodes, _ = await client.query("SELECT * FROM system.cluster_nodes")
+    nodes, _ = await client.query("SHOW CLUSTER STATUS")
     for node in nodes.rows:
         node_health.labels(node=node['node_id']).set(
             1 if node['status'] == 'healthy' else 0
@@ -666,35 +669,35 @@ Ensure backups are restorable:
 ```python
 async def verify_backup(backup_path):
     """Verify backup integrity and restorability"""
-    
+
     # 1. Check backup files exist
     backup_files = list_backup_files(backup_path)
     assert len(backup_files) > 0, "No backup files found"
-    
+
     # 2. Verify checksums
     for file in backup_files:
         expected_checksum = read_checksum_file(f"{file}.sha256")
         actual_checksum = compute_sha256(file)
         assert expected_checksum == actual_checksum, f"Checksum mismatch: {file}"
-    
+
     # 3. Test restore to temporary location
     temp_db = create_temp_database()
     await restore_backup(backup_path, temp_db)
-    
+
     # 4. Verify data integrity
     client = Client(temp_db)
     async with client.connection() as client:
         # Check node count
         result, _ = await client.query("MATCH (n) RETURN COUNT(n) as count")
         assert result.rows[0]['count'] > 0, "No nodes in restored database"
-        
+
         # Check sample data
         user, _ = await client.query("MATCH (u:User) RETURN u LIMIT 1")
         assert len(user) > 0, "No users in restored database"
-    
+
     # 5. Cleanup
     cleanup_temp_database(temp_db)
-    
+
     print(f"Backup verification successful: {backup_path}")
 ```
 
@@ -709,7 +712,7 @@ class SmartLoadBalancer:
     def __init__(self, replicas):
         self.replicas = replicas
         self.stats = {r: {'latency': 0, 'errors': 0} for r in replicas}
-    
+
     def select_replica(self):
         """Select replica based on latency and error rate"""
         scores = {}
@@ -718,23 +721,23 @@ class SmartLoadBalancer:
             latency_score = 1.0 / (stats['latency'] + 1)
             error_penalty = 0.5 ** stats['errors']
             scores[replica] = latency_score * error_penalty
-        
+
         return max(scores, key=scores.get)
-    
+
     async def execute_on_best_replica(self, query):
         replica = self.select_replica()
-        
+
         start = time.time()
         try:
             result = await self.execute_on(replica, query)
             latency = time.time() - start
-            
+
             # Update stats with exponential moving average
             self.stats[replica]['latency'] = (
                 0.7 * self.stats[replica]['latency'] + 0.3 * latency
             )
             self.stats[replica]['errors'] = max(0, self.stats[replica]['errors'] - 1)
-            
+
             return result
         except Exception as e:
             self.stats[replica]['errors'] += 1

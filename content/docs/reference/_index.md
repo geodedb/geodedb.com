@@ -77,7 +77,7 @@ trim(str), ltrim(str), rtrim(str)
 **Temporal Functions**:
 
 ```gql
-now(), timestamp()
+datetime(), timestamp()
 date('2024-01-01')
 duration({days: 7})
 ```
@@ -395,10 +395,10 @@ query:
   max_concurrent_queries: 1000
   query_timeout: 30s
 
-security:
-  tde:
-    enabled: true
-    key_hex: '<32-byte-hex-key>'
+# NOTE: `security:` is not a configuration-file section — it is ignored.
+# KMS and encryption-at-rest are configured with environment variables:
+#   GEODE_KMS_URL, GEODE_KMS_ENDPOINT, GEODE_KMS_API_KEY
+#   GEODE_MASTER_KEY, GEODE_TDE_ENABLED, GEODE_ALLOW_LOCAL_KMS
 
 logging:
   level: 'info'

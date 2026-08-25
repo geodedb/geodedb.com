@@ -124,7 +124,7 @@ RETURN p.name, p.specs.storage.capacity;
 ```gql
 -- Extract value using JSON path
 MATCH (doc:Document)
-RETURN JSON_EXTRACT(doc.data, '$.results[0].value') AS first_value;
+RETURN json_get(doc.data, '$.results[0].value') AS first_value;
 
 -- Check if path exists
 MATCH (u:User)
@@ -241,7 +241,7 @@ RETURN u.name;
 
 ```gql
 -- Create full-text index on JSON string values
-CREATE FULLTEXT INDEX doc_content ON :Document(data.content);
+CREATE INDEX doc_content ON :Document(data.content) USING fulltext;
 
 -- Search within JSON properties
 MATCH (doc:Document)
@@ -318,7 +318,7 @@ RETURN u;
 
 -- Less efficient: Full scan
 MATCH (u:User)
-WHERE JSON_EXTRACT(u.preferences, '$.theme') = 'dark'
+WHERE json_get(u.preferences, '$.theme') = 'dark'
 RETURN u;
 ```
 

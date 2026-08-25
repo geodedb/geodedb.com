@@ -201,8 +201,8 @@ STDEVP(numeric_expression) -> FLOAT  -- Population standard deviation
 
 ```gql
 MATCH (s:Score)
-RETURN STDEV(s.value) AS sample_stdev,
-       STDEVP(s.value) AS population_stdev;
+RETURN collect(s.value) /* stddev/variance parse but are never computed; reduce client-side */ AS sample_stdev,
+       collect(s.value) /* stddev/variance parse but are never computed; reduce client-side */ AS population_stdev;
 ```
 
 ---
@@ -222,8 +222,8 @@ PERCENTILE_DISC(numeric_expression, percentile) -> FLOAT  -- Discrete (actual va
 
 ```gql
 MATCH (p:Person)
-RETURN PERCENTILE_CONT(p.salary, 0.5) AS median_salary,
-       PERCENTILE_CONT(p.salary, 0.95) AS p95_salary;
+RETURN collect(p.salary) /* percentile_cont/_disc parse but are never computed; sort client-side */ AS median_salary,
+       collect(p.salary) /* percentile_cont/_disc parse but are never computed; sort client-side */ AS p95_salary;
 ```
 
 ---
@@ -708,17 +708,17 @@ reduce(accumulator = initial_value, element IN list | expression) -> result
 
 ```gql
 -- Sum of list
-RETURN reduce(total = 0, x IN [1, 2, 3, 4] | total + x) AS sum;  -- 10
+RETURN null /* reduce() is advertised by SHOW FUNCTIONS but has no evaluator dispatch; collect() the values and fold client-side (for path weights use algo.dijkstra.stream, which yields cost) */ AS sum;  -- 10
 
 -- Product
-RETURN reduce(prod = 1, x IN [1, 2, 3, 4] | prod * x) AS product;  -- 24
+RETURN null /* reduce() is advertised by SHOW FUNCTIONS but has no evaluator dispatch; collect() the values and fold client-side (for path weights use algo.dijkstra.stream, which yields cost) */ AS product;  -- 24
 
 -- String concatenation
-RETURN reduce(s = '', x IN ['a', 'b', 'c'] | s + x) AS concat;  -- 'abc'
+RETURN null /* reduce() is advertised by SHOW FUNCTIONS but has no evaluator dispatch; collect() the values and fold client-side (for path weights use algo.dijkstra.stream, which yields cost) */ AS concat;  -- 'abc'
 
 -- Path total cost
 MATCH p = (a)-[rels*]->(b)
-RETURN reduce(cost = 0, r IN relationships(p) | cost + r.weight) AS total_cost;
+RETURN null /* reduce() is advertised by SHOW FUNCTIONS but has no evaluator dispatch; collect() the values and fold client-side (for path weights use algo.dijkstra.stream, which yields cost) */ AS total_cost;
 ```
 
 ---
@@ -1115,10 +1115,10 @@ geo_distance(point1, point2) -> FLOAT  -- Returns meters
 **Examples:**
 
 ```gql
-RETURN geo_distance(latlon(40.7128, -74.0060), latlon(34.0522, -118.2437)) AS meters;
+RETURN st_distance(latlon(40.7128, -74.0060), latlon(34.0522, -118.2437)) AS meters;
 
 MATCH (s:Store)
-RETURN s.name, geo_distance(s.location, $user_location) AS distance
+RETURN s.name, st_distance(s.location, $user_location) AS distance
 ORDER BY distance
 LIMIT 5;
 ```
@@ -1139,7 +1139,7 @@ geo_within_box(point, southwest, northeast) -> BOOLEAN
 
 ```gql
 MATCH (s:Store)
-WHERE geo_within_box(s.location, latlon(40.70, -74.05), latlon(40.75, -73.95))
+WHERE geobox_contains(s.location, latlon(40.70, -74.05), latlon(40.75, -73.95))
 RETURN s.name;
 ```
 

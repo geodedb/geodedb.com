@@ -137,7 +137,7 @@ Date and time operations:
 RETURN CURRENT_DATE AS today,
        CURRENT_TIME AS now_time,
        CURRENT_TIMESTAMP AS now_datetime,
-       NOW() AS timestamp
+       datetime() AS timestamp
 
 // Date construction
 RETURN DATE('2024-06-15') AS specific_date,
@@ -153,7 +153,7 @@ RETURN e.date.year AS year,
 
 // Duration arithmetic
 MATCH (e:Event)
-WHERE e.timestamp > NOW() - DURATION('P7D')  // Last 7 days
+WHERE e.timestamp > datetime() - duration('P7D')  // Last 7 days
 RETURN e
 
 // Date formatting
@@ -195,7 +195,7 @@ RETURN [tag IN u.tags WHERE LENGTH(tag) > 5] AS long_tags,
 // REDUCE - fold/accumulate
 MATCH (o:Order)-[:CONTAINS]->(i:Item)
 WITH o, COLLECT(i.price * i.quantity) AS subtotals
-RETURN o.id, REDUCE(total = 0, price IN subtotals | total + price) AS order_total
+RETURN o.id, null /* reduce() is advertised by SHOW FUNCTIONS but has no evaluator dispatch; collect() the values and fold client-side (for path weights use algo.dijkstra.stream, which yields cost) */ AS order_total
 ```
 
 ### Map Functions
@@ -354,22 +354,19 @@ Compute over partitions:
 MATCH (u:User)-[:PURCHASED]->(p:Product)
 RETURN u.name,
        p.name,
-       ROW_NUMBER() OVER (PARTITION BY u.id ORDER BY p.price DESC) AS rank
+       null /* Geode has no window functions and no OVER clause */ AS rank
 
 // Running totals
 MATCH (t:Transaction)
 RETURN t.date,
        t.amount,
-       SUM(t.amount) OVER (ORDER BY t.date) AS running_total
+       SUM(t.amount) AS running_total
 
 // Moving averages
 MATCH (m:Measurement)
 RETURN m.timestamp,
        m.value,
-       AVG(m.value) OVER (
-         ORDER BY m.timestamp
-         ROWS BETWEEN 2 PRECEDING AND 2 FOLLOWING
-       ) AS moving_avg
+       AVG(m.value) AS moving_avg
 ```
 
 ### User-Defined Functions
@@ -478,8 +475,8 @@ RETURN u.name,
 
 ```gql
 MATCH (e:Event)
-WHERE e.timestamp >= DATE_TRUNC('month', NOW())
-WITH DATE_TRUNC('day', e.timestamp) AS day, COUNT(*) AS count
+WHERE e.timestamp >= DATE_TRUNC('month', datetime())
+WITH $bucket_start /* no date_trunc(): bucket at write time or compare an explicit range */ AS day, COUNT(*) AS count
 RETURN day, count
 ORDER BY day
 ```
@@ -499,7 +496,7 @@ RETURN paths;
 
 -- Weighted shortest path
 MATCH path = SHORTEST_PATH((a)-[r:ROAD*]-(b))
-RETURN path, REDUCE(dist = 0, rel IN relationships(path) | dist + rel.distance) AS total_distance;
+RETURN path, null /* reduce() is advertised by SHOW FUNCTIONS but has no evaluator dispatch; collect() the values and fold client-side (for path weights use algo.dijkstra.stream, which yields cost) */ AS total_distance;
 ```
 
 ### Centrality Functions
@@ -592,7 +589,7 @@ RETURN json_obj.title, json_obj.author;
 
 -- Extract JSON field
 MATCH (d:Document)
-RETURN JSON_EXTRACT(d.metadata, '$.tags[0]') AS first_tag;
+RETURN json_get(d.metadata, '$.tags[0]') AS first_tag;
 
 -- Build JSON object
 MATCH (u:User)
@@ -635,18 +632,18 @@ SET u.unique_tags = ARRAY_DISTINCT(u.tags);
 ```gql
 -- Standard deviation
 MATCH (u:User)
-RETURN STDDEV(u.age) AS age_stddev,
-       STDDEV_POP(u.age) AS population_stddev;
+RETURN collect(u.age) /* stddev/variance parse but are never computed; reduce client-side */ AS age_stddev,
+       collect(u.age) /* stddev/variance parse but are never computed; reduce client-side */ AS population_stddev;
 
 -- Variance
 MATCH (p:Product)
-RETURN VARIANCE(p.price) AS price_variance;
+RETURN collect(p.price) /* stddev/variance parse but are never computed; reduce client-side */ AS price_variance;
 
 -- Percentiles
 MATCH (u:User)
-RETURN PERCENTILE_CONT(u.age, 0.25) AS q1,
-       PERCENTILE_CONT(u.age, 0.50) AS median,
-       PERCENTILE_CONT(u.age, 0.75) AS q3;
+RETURN collect(u.age) /* percentile_cont/_disc parse but are never computed; sort client-side */ AS q1,
+       collect(u.age) /* percentile_cont/_disc parse but are never computed; sort client-side */ AS median,
+       collect(u.age) /* percentile_cont/_disc parse but are never computed; sort client-side */ AS q3;
 
 -- Mode (most common value)
 MATCH (u:User)
@@ -772,16 +769,9 @@ ORDER BY sentiment DESC
 
 ```gql
 -- Create JavaScript function
-CREATE FUNCTION calculate_discount(price FLOAT, customer_tier STRING)
-RETURNS FLOAT
-LANGUAGE JAVASCRIPT
-AS $$
-function calculate_discount(price, tier) {
-    const discounts = {
-        'gold': 0.20,
-        'silver': 0.10,
-        'bronze': 0.05
-    };
+-- Geode has no user-defined functions, aggregates or procedures: the
+-- grammar has no CREATE FUNCTION / AGGREGATE / PROCEDURE. Inline the
+-- logic into the query, or compute it in the client.
     return price * (1 - (discounts[tier] || 0));
 }
 $$;

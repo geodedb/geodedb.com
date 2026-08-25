@@ -399,7 +399,10 @@ async def setup_rls(auth):
         operation="SELECT",
         permissive=True,
         roles=[1, 2],
-        using_expression="owner_id = current_user_id()",
+        # Expression-RLS grammar: row.<field>, principal.attribute.<key>,
+        # the bare keyword current_user (no parentheses), string/integer
+        # literals, = <> != < <= > >=, AND/OR/NOT and parentheses.
+        using_expression="row.owner_id = current_user",
         enabled=True,
         audit_level="READ"
     )

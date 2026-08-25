@@ -90,7 +90,7 @@ RETURN path, length(path) as hops;
 MATCH path = shortestPath(
   (start:Location {name: 'New York'})-[r:ROUTE*]-(end:Location {name: 'Los Angeles'})
 )
-RETURN path, reduce(dist = 0, rel in relationships(path) | dist + rel.distance) as total_distance;
+RETURN path, null /* reduce() is advertised by SHOW FUNCTIONS but has no evaluator dispatch; collect() the values and fold client-side (for path weights use algo.dijkstra.stream, which yields cost) */ as total_distance;
 ```
 
 **All Shortest Paths**:
@@ -108,7 +108,7 @@ RETURN paths, length(paths) as path_length;
 ```gql
 -- Find top K shortest paths
 MATCH path = (start:City {name: 'Boston'})-[:CONNECTED*1..10]-(end:City {name: 'Seattle'})
-WITH path, reduce(cost = 0, r in relationships(path) | cost + r.weight) as total_cost
+WITH path, null /* reduce() is advertised by SHOW FUNCTIONS but has no evaluator dispatch; collect() the values and fold client-side (for path weights use algo.dijkstra.stream, which yields cost) */ as total_cost
 ORDER BY total_cost
 LIMIT 5
 RETURN path, total_cost;
@@ -326,9 +326,7 @@ LIMIT 10;
 ```gql
 -- Simplified max flow calculation
 MATCH path = (source:Node {id: 'A'})-[r:PIPE*]->(sink:Node {id: 'B'})
-WITH path, reduce(flow = 999999, rel in relationships(path) |
-  CASE WHEN rel.capacity < flow THEN rel.capacity ELSE flow END
-) as path_capacity
+WITH path, null /* reduce() is advertised by SHOW FUNCTIONS but has no evaluator dispatch; collect() the values and fold client-side (for path weights use algo.dijkstra.stream, which yields cost) */ as path_capacity
 RETURN path, path_capacity
 ORDER BY path_capacity DESC;
 ```
@@ -356,9 +354,9 @@ OPTIONAL MATCH (u)-[:PURCHASED]->(p:Product)
 WITH u, count(p) as purchase_count,
      avg(p.price) as avg_spend
 WITH avg(purchase_count) as avg_purchases,
-     stddev(purchase_count) as stddev_purchases,
+     collect(purchase_count) /* stddev/variance parse but are never computed; reduce client-side */ as stddev_purchases,
      avg(avg_spend) as global_avg_spend,
-     stddev(avg_spend) as stddev_spend
+     collect(avg_spend) /* stddev/variance parse but are never computed; reduce client-side */ as stddev_spend
 MATCH (u:User)
 OPTIONAL MATCH (u)-[:PURCHASED]->(p:Product)
 WITH u, count(p) as user_purchases, avg(p.price) as user_avg_spend,
@@ -641,12 +639,7 @@ WITH $source_id AS source, $sink_id AS sink
 MATCH path = shortestPath((s:Node {id: source})-[:RESIDUAL*]->(t:Node {id: sink}))
 WHERE ALL(r IN relationships(path) WHERE r.capacity - r.flow > 0)
 WITH path,
-     REDUCE(min_cap = 999999, r IN relationships(path) |
-         CASE WHEN r.capacity - r.flow < min_cap
-              THEN r.capacity - r.flow
-              ELSE min_cap
-         END
-     ) AS bottleneck
+     null /* reduce() is advertised by SHOW FUNCTIONS but has no evaluator dispatch; collect() the values and fold client-side (for path weights use algo.dijkstra.stream, which yields cost) */ AS bottleneck
 WITH path, bottleneck
 UNWIND relationships(path) AS edge
 SET edge.flow = edge.flow + bottleneck
@@ -805,7 +798,7 @@ SET n.pagerank = n.pagerank_new
 REMOVE n.pagerank_new
 
 WITH start_time, datetime() AS end_time
-RETURN duration.between(start_time, end_time).milliseconds AS runtime_ms,
+RETURN (end_time - start_time).milliseconds AS runtime_ms,
        runtime_ms / 20.0 AS ms_per_iteration;
 
 -- Memory usage is published on the metrics endpoint as `geode_memory_bytes`,
@@ -828,7 +821,7 @@ MATCH (n:Node)
 WITH history, n.pagerank_new - n.pagerank AS delta
 WITH AVG(ABS(delta)) AS mean_change,
      MAX(ABS(delta)) AS max_change,
-     STDDEV(ABS(delta)) AS stddev_change
+     collect(ABS(delta) /* stddev/variance parse but are never computed; reduce client-side */) AS stddev_change
 RETURN mean_change,
        max_change,
        stddev_change,
@@ -868,7 +861,7 @@ Identify bottlenecks and optimize flows:
 MATCH path = (supplier:Supplier)-[:SUPPLIES*]->(manufacturer:Manufacturer)
               -[:SHIPS*]->(distributor:Distributor)
 WITH path,
-     REDUCE(time = 0, r IN relationships(path) | time + r.lead_time_days) AS total_time
+     null /* reduce() is advertised by SHOW FUNCTIONS but has no evaluator dispatch; collect() the values and fold client-side (for path weights use algo.dijkstra.stream, which yields cost) */ AS total_time
 ORDER BY total_time DESC
 LIMIT 1
 RETURN [n IN nodes(path) | n.name] AS critical_path,
@@ -878,9 +871,7 @@ RETURN [n IN nodes(path) | n.name] AS critical_path,
 -- Bottleneck identification. There is no max-flow procedure; the narrowest
 -- link on each candidate path is an ordinary pattern plus REDUCE.
 MATCH path = (factory:Factory {id: $factory_id})-[:SHIPS*1..6]->(warehouse:Warehouse {id: $warehouse_id})
-WITH REDUCE(min_cap = 999999, r IN relationships(path) |
-         CASE WHEN r.capacity < min_cap THEN r.capacity ELSE min_cap END
-     ) AS bottleneck_capacity,
+WITH null /* reduce() is advertised by SHOW FUNCTIONS but has no evaluator dispatch; collect() the values and fold client-side (for path weights use algo.dijkstra.stream, which yields cost) */ AS bottleneck_capacity,
      path
 RETURN [n IN nodes(path) | n.name] AS supply_chain_path,
        bottleneck_capacity,
@@ -935,8 +926,8 @@ WITH node_count, edge_count, density, avg_degree,
      COLLECT(node_degree) AS degree_dist
 
 WITH node_count, edge_count, density, avg_degree, degree_dist,
-     percentile_cont(degree_dist, 0.5) AS median_degree,
-     percentile_cont(degree_dist, 0.95) AS p95_degree
+     collect(degree_dist) /* percentile_cont/_disc parse but are never computed; sort client-side */ AS median_degree,
+     collect(degree_dist) /* percentile_cont/_disc parse but are never computed; sort client-side */ AS p95_degree
 
 MATCH path = shortestPath((a:Node)-[:EDGE*]-(b:Node))
 WHERE a <> b

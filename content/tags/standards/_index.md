@@ -92,6 +92,7 @@ make test-gql-compliance
 Geode provides full ACID (Atomicity, Consistency, Isolation, Durability) transaction support:
 
 **Atomicity**:
+
 - All operations in a transaction commit or rollback as a unit
 - No partial updates visible to other transactions
 - Savepoint support for partial rollback
@@ -107,6 +108,7 @@ COMMIT;  -- Both updates succeed or both fail
 ```
 
 **Consistency**:
+
 - Constraints enforced transactionally
 - Referential integrity maintained
 - Schema validation applied
@@ -123,6 +125,7 @@ ROLLBACK;
 ```
 
 **Isolation**:
+
 - Snapshot isolation (default)
 - Serializable isolation available
 - No dirty reads, non-repeatable reads, or phantom reads
@@ -137,6 +140,7 @@ COMMIT;
 ```
 
 **Durability**:
+
 - Write-ahead logging (WAL)
 - Fsync before commit acknowledgment
 - Crash recovery with transaction replay
@@ -146,6 +150,7 @@ COMMIT;
 While Geode implements GQL (not SQL), it maintains conceptual compatibility with SQL:2023 where appropriate:
 
 **Shared Concepts**:
+
 - SELECT/MATCH semantics
 - WHERE clause filtering
 - GROUP BY aggregations
@@ -154,6 +159,7 @@ While Geode implements GQL (not SQL), it maintains conceptual compatibility with
 - Subquery expressions
 
 **Differences from SQL**:
+
 - Graph patterns instead of table joins
 - Path expressions instead of foreign keys
 - Label-based typing instead of table schemas
@@ -162,24 +168,28 @@ While Geode implements GQL (not SQL), it maintains conceptual compatibility with
 ## Security Standards
 
 **TLS 1.3**:
+
 - All connections require TLS 1.3
 - No downgrade to earlier TLS versions
 - Perfect forward secrecy (PFS)
 - Strong cipher suites only
 
 **Authentication Standards**:
+
 - SCRAM-SHA-256 (default)
 - PKI certificate-based authentication
 - OAuth 2.0 / OpenID Connect integration
 - LDAP/Active Directory support
 
 **Encryption Standards**:
+
 - AES-256-GCM for data at rest
 - ChaCha20-Poly1305 for transport
 - Argon2id for password hashing
 - PBKDF2 for key derivation
 
 **Compliance Certifications**:
+
 - SOC 2 Type II (planned)
 - ISO 27001 (planned)
 - GDPR compliant data handling
@@ -188,18 +198,21 @@ While Geode implements GQL (not SQL), it maintains conceptual compatibility with
 ## Protocol Standards
 
 **QUIC Protocol (RFC 9000)**:
+
 - HTTP/3 compatible transport
 - Multiplexed streams
 - Connection migration support
 - Built-in encryption (TLS 1.3)
 
 **JSON (RFC 8259)**:
+
 - Standard JSON encoding for wire protocol
 - UTF-8 character encoding
 - Numeric precision preservation
 - Null value handling
 
 **URI/URL Standards (RFC 3986)**:
+
 - Standard connection strings
 - Query parameter encoding
 - Fragment identifier support
@@ -211,6 +224,7 @@ quic://username:password@host:3141?param=value
 ## Data Type Standards
 
 **ISO 8601 Date/Time**:
+
 ```gql
 -- Standard date formats
 INSERT (e:Event {
@@ -222,11 +236,13 @@ INSERT (e:Event {
 ```
 
 **IEEE 754 Floating Point**:
+
 - Double-precision (64-bit) floats
 - Proper infinity and NaN handling
 - Consistent rounding behavior
 
 **Unicode UTF-8**:
+
 - Full Unicode 15.0 support
 - Normalization forms (NFC, NFD, NFKC, NFKD)
 - Locale-aware collation
@@ -234,15 +250,17 @@ INSERT (e:Event {
 ## Observability Standards
 
 **OpenTelemetry**:
+
 - Distributed tracing support
 - Metrics export
 - Structured logging
 - Context propagation
 
 **Prometheus Metrics**:
+
 ```bash
 # Standard metrics endpoint
-curl http://localhost:3141/metrics
+curl http://localhost:9090/metrics
 
 # Sample metrics
 geode_queries_total{status="success"} 12345
@@ -251,6 +269,7 @@ geode_connections_active 45
 ```
 
 **Structured Logging (JSON)**:
+
 ```json
 {
   "timestamp": "2024-01-24T10:30:00Z",
@@ -265,12 +284,14 @@ geode_connections_active 45
 ## API Standards
 
 **RESTful HTTP API**:
+
 - Standard HTTP methods (GET, POST, PUT, DELETE)
 - Proper HTTP status codes
 - Content negotiation
 - CORS support
 
 **GraphQL API** (planned):
+
 - GraphQL schema
 - Introspection support
 - Subscription support
@@ -278,11 +299,13 @@ geode_connections_active 45
 ## Documentation Standards
 
 **OpenAPI/Swagger**:
+
 - API documentation in OpenAPI 3.1 format
 - Interactive API explorer
 - Client code generation support
 
 **Markdown Documentation**:
+
 - CommonMark specification
 - GitHub-flavored markdown
 - Semantic HTML5 output
@@ -290,12 +313,14 @@ geode_connections_active 45
 ## Testing Standards
 
 **Test Coverage**:
+
 - 97.4% code coverage (1644/1688 tests)
 - Statement coverage
 - Branch coverage
 - Integration test coverage
 
 **Test Categories**:
+
 - Unit tests (isolated component testing)
 - Integration tests (cross-component validation)
 - Compliance tests (ISO/IEC 39075:2024)
@@ -313,6 +338,7 @@ Geode uses CANARY markers for governance tracking:
 ```
 
 **Current Governance Statistics**:
+
 - 1,735 CANARY markers tracking 2,190+ requirements
 - 100% traceability from requirements to implementation
 - Automated validation of evidence linkage
@@ -320,12 +346,14 @@ Geode uses CANARY markers for governance tracking:
 ## Interoperability Standards
 
 **Data Exchange Formats**:
+
 - GraphML (XML-based graph format)
 - JSON-LD (Linked Data)
 - RDF triples (via export)
 - CSV (nodes and relationships)
 
 **Client Libraries**:
+
 - Go: database/sql driver interface
 - Python: PEP 249 DB-API 2.0 compatible
 - Rust: Standard async traits
@@ -334,12 +362,14 @@ Geode uses CANARY markers for governance tracking:
 ## Version Compatibility Standards
 
 **Semantic Versioning**:
+
 - MAJOR.MINOR.PATCH versioning
 - Backward compatibility within major versions
 - Clear deprecation policies
 - Migration guides for breaking changes
 
 **Protocol Versioning**:
+
 - Protocol version negotiation
 - Backward-compatible protocol changes
 - Feature detection and capability negotiation
@@ -356,6 +386,7 @@ Geode uses CANARY markers for governance tracking:
 ## Compliance Verification
 
 **Self-Assessment**:
+
 ```bash
 # Run compliance verification
 geode compliance check
@@ -365,6 +396,7 @@ geode compliance report --output compliance.html
 ```
 
 **Third-Party Audits**:
+
 - Annual ISO compliance audits
 - Security penetration testing
 - Performance benchmarking

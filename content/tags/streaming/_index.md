@@ -78,7 +78,7 @@ async def publish_user_action(client, user_id, action):
             "duration_ms": 1500
         }
     }
-    
+
     await client.publish_event("user_activities", event)
 ```
 
@@ -92,7 +92,7 @@ async def process_user_activities(client):
     async with client.subscribe_stream("user_activities") as stream:
         async for event in stream:
             print(f"User {event['user_id']} performed {event['action_type']}")
-            
+
             # React to specific actions
             if event['action_type'] == 'purchase':
                 await handle_purchase(event)
@@ -188,6 +188,7 @@ EMIT CHANGES;
 ```
 
 Tumbling windows:
+
 - Fixed size (e.g., 5 minutes)
 - No overlap between windows
 - Each event belongs to exactly one window
@@ -207,6 +208,7 @@ EMIT CHANGES;
 ```
 
 Hopping windows:
+
 - Fixed size with configurable advance
 - Windows overlap
 - Each event may appear in multiple windows
@@ -222,13 +224,14 @@ SELECT
     SESSION_WINDOW(15 MINUTES) AS session,
     user_id,
     COUNT(*) AS actions_in_session,
-    COLLECT_LIST(action_type) AS actions
+    collect(action_type) AS actions
 FROM user_activities
 GROUP BY user_id
 EMIT CHANGES;
 ```
 
 Session windows:
+
 - Variable size based on activity
 - Gap threshold defines session boundary
 - Useful for user behavior analysis
@@ -245,14 +248,14 @@ async def stateless_processor(event):
     # Validate event
     if not validate_event(event):
         return
-    
+
     # Transform event
     transformed = {
         "id": event['id'],
         "timestamp": event['timestamp'],
         "value": event['value'] * 1.5  # Apply transformation
     }
-    
+
     # Publish to output stream
     await publish(transformed)
 ```
@@ -265,22 +268,22 @@ Maintain state across events:
 class StatefulProcessor:
     def __init__(self):
         self.state = {}
-    
+
     async def process(self, event):
         """Process event with state"""
         user_id = event['user_id']
-        
+
         # Retrieve user state
         if user_id not in self.state:
             self.state[user_id] = {
                 "total_purchases": 0,
                 "total_spent": 0
             }
-        
+
         # Update state
         self.state[user_id]["total_purchases"] += 1
         self.state[user_id]["total_spent"] += event['amount']
-        
+
         # Check for milestone
         if self.state[user_id]["total_spent"] > 10000:
             await notify_vip_status(user_id)
@@ -295,7 +298,7 @@ Detect patterns across multiple events:
 CREATE STREAM suspicious_activity AS
 SELECT
     user_id,
-    COLLECT_LIST(action_type) AS pattern
+    collect(action_type) AS pattern
 FROM user_activities
 MATCH_RECOGNIZE (
     PARTITION BY user_id
@@ -336,7 +339,7 @@ VALUES (
     'deposit',
     500.00,
     1500.00,
-    NOW()
+    datetime()
 );
 ```
 
@@ -348,19 +351,19 @@ Rebuild state from events:
 async def rebuild_account_state(account_id):
     """Rebuild account state from events"""
     balance = 0
-    
+
     # Replay all events
     events = await client.query(
         "SELECT * FROM account_transactions WHERE account_id = $1 ORDER BY event_time",
         [account_id]
     )
-    
+
     for event in events:
         if event['event_type'] == 'deposit':
             balance += event['amount']
         elif event['event_type'] == 'withdrawal':
             balance -= event['amount']
-    
+
     return balance
 ```
 
@@ -381,11 +384,11 @@ CREATE TABLE account_snapshots (
 INSERT INTO account_snapshots
 SELECT
     account_id,
-    SUM(CASE 
+    SUM(CASE
         WHEN event_type = 'deposit' THEN amount
         WHEN event_type = 'withdrawal' THEN -amount
     END) AS balance,
-    NOW() AS snapshot_time,
+    datetime() AS snapshot_time,
     MAX(event_id) AS last_event_id
 FROM account_transactions
 GROUP BY account_id;
@@ -406,7 +409,7 @@ async def publish_to_kafka(geode_event):
         bootstrap_servers=['localhost:9092'],
         value_serializer=lambda v: json.dumps(v).encode('utf-8')
     )
-    
+
     producer.send('user-activities', geode_event)
     producer.flush()
 
@@ -417,7 +420,7 @@ async def consume_from_kafka():
         bootstrap_servers=['localhost:9092'],
         value_deserializer=lambda m: json.loads(m.decode('utf-8'))
     )
-    
+
     for message in consumer:
         await geode_client.publish_event('user_activities', message.value)
 ```
@@ -432,7 +435,7 @@ import pulsar
 async def pulsar_to_geode():
     client = pulsar.Client('pulsar://localhost:6650')
     consumer = client.subscribe('user-events', 'geode-subscription')
-    
+
     while True:
         msg = consumer.receive()
         try:
@@ -453,11 +456,11 @@ Improve throughput with batching:
 async def batch_processor(stream_name, batch_size=100):
     """Process events in batches"""
     batch = []
-    
+
     async with client.subscribe_stream(stream_name) as stream:
         async for event in stream:
             batch.append(event)
-            
+
             if len(batch) >= batch_size:
                 await process_batch(batch)
                 batch = []
@@ -479,13 +482,13 @@ async def parallel_consumer(stream_name, num_workers=4):
         ) as stream:
             async for event in stream:
                 await process_event(event, worker_id)
-    
+
     # Start workers for each partition
     tasks = [
         worker(i, i)
         for i in range(num_workers)
     ]
-    
+
     await asyncio.gather(*tasks)
 ```
 
@@ -497,18 +500,18 @@ Handle slow consumers:
 async def backpressure_handler(stream_name):
     """Handle backpressure gracefully"""
     buffer = asyncio.Queue(maxsize=1000)
-    
+
     async def producer():
         async with client.subscribe_stream(stream_name) as stream:
             async for event in stream:
                 await buffer.put(event)
-    
+
     async def consumer():
         while True:
             event = await buffer.get()
             await process_event(event)
             buffer.task_done()
-    
+
     await asyncio.gather(producer(), consumer())
 ```
 
@@ -519,14 +522,8 @@ async def backpressure_handler(stream_name):
 Track stream health:
 
 ```gql
-SELECT
-    stream_name,
-    events_per_second,
-    bytes_per_second,
-    consumer_lag,
-    oldest_event_age
-FROM SYSTEM.streams
-WHERE consumer_lag > 10000;
+-- There is no stream catalog to query; CDC subscriptions are managed
+-- by the client (SubscribeCDC), not by a GQL table.
 ```
 
 ### Consumer Monitoring
@@ -534,14 +531,7 @@ WHERE consumer_lag > 10000;
 Monitor consumer performance:
 
 ```gql
-SELECT
-    consumer_id,
-    stream_name,
-    throughput,
-    error_rate,
-    last_heartbeat
-FROM SYSTEM.stream_consumers
-WHERE error_rate > 0.01;
+-- There is no CDC consumer catalog queryable from GQL.
 ```
 
 ## Best Practices

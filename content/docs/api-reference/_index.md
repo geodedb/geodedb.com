@@ -251,7 +251,7 @@ CREATE (l:Location {coords: LatLon('40.7128,-74.0060'), name: 'NYC'});
 
 ```gql
 MATCH (l:Location)
-WHERE distanceKm(l.coords, LatLon('40.0,-74.0')) < 100
+WHERE st_distance(l.coords, LatLon('40.0,-74.0')) < 100
 RETURN l;
 ```
 
@@ -266,7 +266,7 @@ RETURN bearingTo(a.coords, b.coords) AS bearing;
 
 ```gql
 MATCH (l:Location)
-WHERE within(l.coords, polygon(...))
+WHERE within(l.coords, geometryfromtext(...))
 RETURN l;
 ```
 
@@ -449,7 +449,7 @@ RETURN db.constraints();
 **now()** - Current timestamp with microseconds:
 
 ```gql
-RETURN now() AS current_time;
+RETURN datetime() AS current_time;
 ```
 
 **current_date** - Today's date:
@@ -467,19 +467,19 @@ RETURN current_time AS now;
 **date_add(date, interval)** - Add interval to date:
 
 ```gql
-RETURN date_add(Date('2024-01-01'), Interval('P1M')) AS next_month;
+RETURN (Date('2024-01-01') + duration('P1D')) /* no date_add(); add a duration */) AS next_month;
 ```
 
 **date_sub(date, interval)** - Subtract interval:
 
 ```gql
-RETURN date_sub(now(), Interval('P7D')) AS week_ago;
+RETURN date_sub(datetime(), Interval('P7D')) AS week_ago;
 ```
 
 **date_part(part, datetime)** - Extract date/time part:
 
 ```gql
-RETURN date_part('year', now()) AS current_year;
+RETURN datetime(.year) AS current_year;
 ```
 
 ### Type Conversion Functions
@@ -487,25 +487,25 @@ RETURN date_part('year', now()) AS current_year;
 **to_int(value)** - Convert to integer:
 
 ```gql
-RETURN to_int('42') AS num;
+RETURN toInteger('42') AS num;
 ```
 
 **to_float(value)** - Convert to float:
 
 ```gql
-RETURN to_float('3.14') AS pi;
+RETURN toFloat('3.14') AS pi;
 ```
 
 **to_string(value)** - Convert to string:
 
 ```gql
-RETURN to_string(42) AS str;
+RETURN toString(42) AS str;
 ```
 
 **to_boolean(value)** - Convert to boolean:
 
 ```gql
-RETURN to_boolean('true') AS bool;
+RETURN toBoolean('true') AS bool;
 ```
 
 ## Type Constructors

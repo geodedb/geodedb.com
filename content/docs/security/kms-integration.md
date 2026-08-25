@@ -39,6 +39,7 @@ Master Key (in KMS - HSM-backed)
 ```
 
 **Benefits**:
+
 - Master keys never leave KMS
 - DEKs encrypted at rest (wrapped)
 - Fast local encryption with DEKs
@@ -69,7 +70,7 @@ export GEODE_KMS_PROVIDER="vault"
 export GEODE_VAULT_KEY_PATH="geode/encryption"
 
 # 3. Start Geode with Vault-backed TDE
-./geode serve --enable-tde --kms-provider vault
+./geode serve --kms-provider vault
 ```
 
 ### Using AWS KMS
@@ -85,7 +86,7 @@ export GEODE_KMS_PROVIDER="aws"
 export GEODE_AWS_KMS_KEY_ID="arn:aws:kms:us-east-1:123456789012:key/..."
 
 # 3. Start Geode
-./geode serve --enable-tde --kms-provider aws
+./geode serve --kms-provider aws
 ```
 
 ## HashiCorp Vault Integration
@@ -138,22 +139,16 @@ vault token create -policy=geode-tde -ttl=8760h
 #### 3. Configure Geode
 
 Create `geode.yaml`:
+
 ```yaml
-security:
-  tde:
-    enabled: true
-    kms:
-      provider: vault
-      vault:
-        address: "https://vault.company.com:8200"
-        token: "${VAULT_TOKEN}"
-        key_path: "geode/keys/master-key"
-        namespace: "geode"  # Optional
-        tls_verify: true
-        ca_cert: "/etc/geode/vault-ca.pem"  # Optional
+# NOTE: `security:` is not a configuration-file section — it is ignored.
+# KMS and encryption-at-rest are configured with environment variables:
+#   GEODE_KMS_URL, GEODE_KMS_ENDPOINT, GEODE_KMS_API_KEY
+#   GEODE_MASTER_KEY, GEODE_TDE_ENABLED, GEODE_ALLOW_LOCAL_KMS
 ```
 
 Start Geode:
+
 ```bash
 export VAULT_TOKEN="hvs.CAESI..."
 ./geode serve --config geode.yaml
@@ -190,17 +185,10 @@ geode key rewrap --kms-provider vault
 ### High Availability
 
 ```yaml
-security:
-  tde:
-    kms:
-      vault:
-        address: "https://vault-cluster.company.com:8200"
-        max_retries: 3
-        timeout: 30s
-        standby_addresses:
-          - "https://vault-1.company.com:8200"
-          - "https://vault-2.company.com:8200"
-          - "https://vault-3.company.com:8200"
+# NOTE: `security:` is not a configuration-file section — it is ignored.
+# KMS and encryption-at-rest are configured with environment variables:
+#   GEODE_KMS_URL, GEODE_KMS_ENDPOINT, GEODE_KMS_API_KEY
+#   GEODE_MASTER_KEY, GEODE_TDE_ENABLED, GEODE_ALLOW_LOCAL_KMS
 ```
 
 ## AWS KMS Integration
@@ -258,31 +246,19 @@ aws kms create-alias \
 #### 3. Configure Geode
 
 ```yaml
-security:
-  tde:
-    enabled: true
-    kms:
-      provider: aws
-      aws:
-        region: "us-east-1"
-        key_id: "arn:aws:kms:us-east-1:123456789012:key/..."
-        # Or use alias:
-        # key_id: "alias/geode-tde"
-        encryption_context:
-          Application: "Geode"
-          Environment: "production"
+# NOTE: `security:` is not a configuration-file section — it is ignored.
+# KMS and encryption-at-rest are configured with environment variables:
+#   GEODE_KMS_URL, GEODE_KMS_ENDPOINT, GEODE_KMS_API_KEY
+#   GEODE_MASTER_KEY, GEODE_TDE_ENABLED, GEODE_ALLOW_LOCAL_KMS
 ```
 
 ### Multi-Region Deployment
 
 ```yaml
-security:
-  tde:
-    kms:
-      aws:
-        # Primary region
-        region: "us-east-1"
-        key_id: "arn:aws:kms:us-east-1:123456789012:key/..."
+# NOTE: `security:` is not a configuration-file section — it is ignored.
+# KMS and encryption-at-rest are configured with environment variables:
+#   GEODE_KMS_URL, GEODE_KMS_ENDPOINT, GEODE_KMS_API_KEY
+#   GEODE_MASTER_KEY, GEODE_TDE_ENABLED, GEODE_ALLOW_LOCAL_KMS
 
         # Replicas for DR
         replica_keys:
@@ -293,17 +269,14 @@ security:
 ### Cost Optimization
 
 ```yaml
-security:
-  tde:
-    kms:
-      aws:
-        # Cache DEK for 1 hour
-        data_key_cache_seconds: 3600
-        # Use 256-bit keys
-        data_key_spec: "AES_256"
+# NOTE: `security:` is not a configuration-file section — it is ignored.
+# KMS and encryption-at-rest are configured with environment variables:
+#   GEODE_KMS_URL, GEODE_KMS_ENDPOINT, GEODE_KMS_API_KEY
+#   GEODE_MASTER_KEY, GEODE_TDE_ENABLED, GEODE_ALLOW_LOCAL_KMS
 ```
 
 **Estimated costs** (AWS pricing):
+
 - Key storage: $1/month per key
 - API requests: $0.03 per 10,000 requests
 - With 1-hour cache: ~$5/month for 1M operations/day
@@ -348,17 +321,10 @@ az keyvault set-policy \
 #### 3. Configure Geode
 
 ```yaml
-security:
-  tde:
-    kms:
-      provider: azure
-      azure:
-        vault_url: "https://geode-kms.vault.azure.net/"
-        key_name: "geode-master-key"
-        tenant_id: "..."
-        client_id: "..."  # Managed identity
-        # Or use client secret:
-        # client_secret: "${AZURE_CLIENT_SECRET}"
+# NOTE: `security:` is not a configuration-file section — it is ignored.
+# KMS and encryption-at-rest are configured with environment variables:
+#   GEODE_KMS_URL, GEODE_KMS_ENDPOINT, GEODE_KMS_API_KEY
+#   GEODE_MASTER_KEY, GEODE_TDE_ENABLED, GEODE_ALLOW_LOCAL_KMS
 ```
 
 ## GCP Cloud KMS Integration
@@ -394,16 +360,10 @@ gcloud kms keys add-iam-policy-binding geode-master-key \
 #### 3. Configure Geode
 
 ```yaml
-security:
-  tde:
-    kms:
-      provider: gcp
-      gcp:
-        project_id: "my-project"
-        location: "us-east1"
-        keyring: "geode-keyring"
-        key_name: "geode-master-key"
-        credentials_file: "/etc/geode/gcp-credentials.json"
+# NOTE: `security:` is not a configuration-file section — it is ignored.
+# KMS and encryption-at-rest are configured with environment variables:
+#   GEODE_KMS_URL, GEODE_KMS_ENDPOINT, GEODE_KMS_API_KEY
+#   GEODE_MASTER_KEY, GEODE_TDE_ENABLED, GEODE_ALLOW_LOCAL_KMS
 ```
 
 ## Key Rotation
@@ -413,14 +373,10 @@ security:
 Configure automatic rotation policies:
 
 ```yaml
-security:
-  tde:
-    rotation:
-      enabled: true
-      schedule: "0 0 * * 0"  # Weekly on Sunday
-      min_age: "90d"
-      max_age: "365d"
-      rewrap_on_rotate: true
+# NOTE: `security:` is not a configuration-file section — it is ignored.
+# KMS and encryption-at-rest are configured with environment variables:
+#   GEODE_KMS_URL, GEODE_KMS_ENDPOINT, GEODE_KMS_API_KEY
+#   GEODE_MASTER_KEY, GEODE_TDE_ENABLED, GEODE_ALLOW_LOCAL_KMS
 ```
 
 ### Manual Rotation
@@ -437,6 +393,7 @@ geode key status
 ```
 
 **Output**:
+
 ```
 Master Key Status:
   Current Version: v3
@@ -472,17 +429,14 @@ Data Encryption Keys:
 ### Caching Strategy
 
 ```yaml
-security:
-  tde:
-    kms:
-      cache:
-        enabled: true
-        ttl: 3600  # 1 hour
-        max_size: 1000  # DEKs
-        eviction: "lru"
+# NOTE: `security:` is not a configuration-file section — it is ignored.
+# KMS and encryption-at-rest are configured with environment variables:
+#   GEODE_KMS_URL, GEODE_KMS_ENDPOINT, GEODE_KMS_API_KEY
+#   GEODE_MASTER_KEY, GEODE_TDE_ENABLED, GEODE_ALLOW_LOCAL_KMS
 ```
 
 **Cache behavior**:
+
 - DEKs cached after unwrap
 - Automatic refresh before expiry
 - LRU eviction under memory pressure
@@ -491,14 +445,10 @@ security:
 ### Connection Pooling
 
 ```yaml
-security:
-  tde:
-    kms:
-      vault:
-        connection_pool:
-          max_connections: 10
-          idle_timeout: 300s
-          connection_timeout: 30s
+# NOTE: `security:` is not a configuration-file section — it is ignored.
+# KMS and encryption-at-rest are configured with environment variables:
+#   GEODE_KMS_URL, GEODE_KMS_ENDPOINT, GEODE_KMS_API_KEY
+#   GEODE_MASTER_KEY, GEODE_TDE_ENABLED, GEODE_ALLOW_LOCAL_KMS
 ```
 
 ## Security Best Practices
@@ -514,32 +464,30 @@ security:
 ### Network Security
 
 ```yaml
-security:
-  tde:
-    kms:
-      vault:
-        tls_verify: true
-        ca_cert: "/etc/geode/ca.pem"
-        client_cert: "/etc/geode/client.pem"  # mTLS
-        client_key: "/etc/geode/client-key.pem"
-        min_tls_version: "1.3"
+# NOTE: `security:` is not a configuration-file section — it is ignored.
+# KMS and encryption-at-rest are configured with environment variables:
+#   GEODE_KMS_URL, GEODE_KMS_ENDPOINT, GEODE_KMS_API_KEY
+#   GEODE_MASTER_KEY, GEODE_TDE_ENABLED, GEODE_ALLOW_LOCAL_KMS
 ```
 
 ### Authentication
 
 **Vault**:
+
 - Use short-lived tokens (8-24 hours)
 - Rotate tokens regularly
 - Use Vault agents for token renewal
 - Avoid hardcoding tokens
 
 **AWS**:
+
 - Use IAM roles (not access keys)
 - Enable MFA for key operations
 - Use condition keys in policies
 - Audit key usage with CloudTrail
 
 **Azure**:
+
 - Use managed identities
 - Enable Key Vault firewall
 - Require VNet integration
@@ -548,18 +496,14 @@ security:
 ### Audit & Compliance
 
 ```yaml
-security:
-  tde:
-    audit:
-      enabled: true
-      log_key_operations: true
-      log_rotation_events: true
-      log_rewrap_operations: true
-      output: "/var/log/geode/kms-audit.log"
-      format: "json"
+# NOTE: `security:` is not a configuration-file section — it is ignored.
+# KMS and encryption-at-rest are configured with environment variables:
+#   GEODE_KMS_URL, GEODE_KMS_ENDPOINT, GEODE_KMS_API_KEY
+#   GEODE_MASTER_KEY, GEODE_TDE_ENABLED, GEODE_ALLOW_LOCAL_KMS
 ```
 
 **Audit log example**:
+
 ```json
 {
   "timestamp": "2026-01-24T10:30:00Z",
@@ -610,17 +554,10 @@ geode query "RETURN 1" --verify-encryption
 ### Multi-Region Failover
 
 ```yaml
-security:
-  tde:
-    kms:
-      failover:
-        enabled: true
-        primary: "vault-us-east.company.com"
-        replicas:
-          - "vault-us-west.company.com"
-          - "vault-eu-west.company.com"
-        health_check_interval: 30s
-        failover_timeout: 10s
+# NOTE: `security:` is not a configuration-file section — it is ignored.
+# KMS and encryption-at-rest are configured with environment variables:
+#   GEODE_KMS_URL, GEODE_KMS_ENDPOINT, GEODE_KMS_API_KEY
+#   GEODE_MASTER_KEY, GEODE_TDE_ENABLED, GEODE_ALLOW_LOCAL_KMS
 ```
 
 ## Troubleshooting
@@ -628,11 +565,13 @@ security:
 ### Issue: KMS Connection Failures
 
 **Error**:
+
 ```
 Error: Failed to connect to KMS provider: connection timeout
 ```
 
 **Diagnosis**:
+
 ```bash
 # Test network connectivity
 curl -v https://vault.company.com:8200/v1/sys/health
@@ -645,6 +584,7 @@ tail -f /var/log/geode/kms.log
 ```
 
 **Solutions**:
+
 1. Verify network access (firewall, VPN)
 2. Check KMS service health
 3. Validate credentials/tokens
@@ -653,16 +593,19 @@ tail -f /var/log/geode/kms.log
 ### Issue: DEK Unwrap Failures
 
 **Error**:
+
 ```
 Error: Failed to unwrap data encryption key: invalid ciphertext
 ```
 
 **Causes**:
+
 - Corrupted wrapped DEK
 - Wrong master key version
 - KMS key deleted
 
 **Solutions**:
+
 ```bash
 # Check key status
 geode key status --verbose
@@ -679,6 +622,7 @@ geode key rewrap --force --dek-id <id>
 **Symptom**: Slow database startup or high operation latency
 
 **Diagnosis**:
+
 ```bash
 # Profile KMS operations
 geode profile kms --duration 60s
@@ -688,6 +632,7 @@ geode stats kms-cache
 ```
 
 **Solutions**:
+
 1. Increase DEK cache TTL
 2. Use connection pooling
 3. Deploy regional KMS replicas
@@ -708,13 +653,10 @@ geode stats kms-cache
 ### Audit Requirements
 
 ```yaml
-security:
-  tde:
-    audit:
-      # PCI-DSS requirements
-      log_all_key_access: true
-      log_failed_operations: true
-      log_rotation_events: true
+# NOTE: `security:` is not a configuration-file section — it is ignored.
+# KMS and encryption-at-rest are configured with environment variables:
+#   GEODE_KMS_URL, GEODE_KMS_ENDPOINT, GEODE_KMS_API_KEY
+#   GEODE_MASTER_KEY, GEODE_TDE_ENABLED, GEODE_ALLOW_LOCAL_KMS
 
       # SOX requirements
       tamper_proof_logs: true

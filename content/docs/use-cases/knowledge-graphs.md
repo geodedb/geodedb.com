@@ -289,9 +289,11 @@ CREATE INDEX entity_name_ft_idx ON Entity(name) USING fulltext;
 
 -- Search with ranking
 MATCH (e:Entity)
-WHERE fulltext_match(e.name, "physics nobel prize")
+CALL geode.fts.search('entity_name', 'physics nobel prize')
+YIELD node, score
+MATCH (e:Entity) WHERE id(e) = node
 RETURN e.name, e.type,
-       bm25_score(e.name, "physics nobel prize") AS relevance
+       score AS relevance
 ORDER BY relevance DESC
 LIMIT 10;
 ```
@@ -301,7 +303,9 @@ LIMIT 10;
 ```gql
 -- Find entities in context
 MATCH (e:Entity)-[r]-(related:Entity)
-WHERE fulltext_match(e.name, "curie")
+CALL geode.fts.search('entity_name', 'curie')
+YIELD node, score
+MATCH (e:Entity) WHERE id(e) = node
 RETURN e.name, e.type,
        collect({
          relationship: type(r),

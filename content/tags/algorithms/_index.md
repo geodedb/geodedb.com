@@ -70,7 +70,7 @@ RETURN path
 // Weighted shortest path with relationship properties
 MATCH path = SHORTEST (a:City {name: 'NYC'})-[r:ROAD*]-(b:City {name: 'SF'})
 WHERE ALL(rel IN r WHERE rel.distance IS NOT NULL)
-RETURN path, REDUCE(total = 0, rel IN r | total + rel.distance) AS total_distance
+RETURN path, null /* reduce() is advertised by SHOW FUNCTIONS but has no evaluator dispatch; collect() the values and fold client-side (for path weights use algo.dijkstra.stream, which yields cost) */ AS total_distance
 ```
 
 #### All Paths
@@ -93,7 +93,7 @@ Implement heuristic pathfinding with property-based weighting:
 MATCH path = (start:Location)-[r:CONNECTED*]-(goal:Location)
 WHERE start.name = 'Start' AND goal.name = 'Goal'
 WITH path,
-     REDUCE(cost = 0, rel IN r | cost + rel.weight) AS total_cost,
+     null /* reduce() is advertised by SHOW FUNCTIONS but has no evaluator dispatch; collect() the values and fold client-side (for path weights use algo.dijkstra.stream, which yields cost) */ AS total_cost,
      LENGTH(path) AS hops
 ORDER BY total_cost + hops * 10  // A* heuristic: cost + estimated remaining
 LIMIT 1
@@ -443,7 +443,7 @@ LIMIT 20
 // Detect suspicious transaction rings
 MATCH path = (a:Account)-[:TRANSFERRED*3..6]->(a)
 WHERE ALL(r IN relationships(path) WHERE r.amount > 10000)
-WITH path, REDUCE(total = 0, r IN relationships(path) | total + r.amount) AS ring_total
+WITH path, null /* reduce() is advertised by SHOW FUNCTIONS but has no evaluator dispatch; collect() the values and fold client-side (for path weights use algo.dijkstra.stream, which yields cost) */ AS ring_total
 WHERE ring_total > 100000
 RETURN path, ring_total
 ORDER BY ring_total DESC
@@ -567,14 +567,14 @@ MATCH path = (start:Airport {code: 'SFO'})-[:FLIGHT*]-(end:Airport {code: 'JFK'}
 WHERE ALL(node IN nodes(path) WHERE node:Airport OR node:Hub)
   AND NONE(rel IN relationships(path) WHERE rel.canceled = true)
 RETURN path,
-       REDUCE(cost = 0, rel IN relationships(path) | cost + rel.price) AS total_cost
+       null /* reduce() is advertised by SHOW FUNCTIONS but has no evaluator dispatch; collect() the values and fold client-side (for path weights use algo.dijkstra.stream, which yields cost) */ AS total_cost
 ORDER BY total_cost
 LIMIT 1
 
 -- Time-constrained paths
 MATCH path = (start:Station)-[:ROUTE*]->(end:Station)
 WHERE start.name = 'Downtown' AND end.name = 'Airport'
-  AND REDUCE(time = 0, rel IN relationships(path) | time + rel.travel_minutes) <= 60
+  AND null /* reduce() is advertised by SHOW FUNCTIONS but has no evaluator dispatch; collect() the values and fold client-side (for path weights use algo.dijkstra.stream, which yields cost) */ <= 60
 RETURN path
 ORDER BY length(path)
 LIMIT 1
@@ -641,9 +641,7 @@ MATCH (source:Person)
 MATCH (target:Person)
 WHERE source.id <> target.id
 WITH source,
-     REDUCE(total = 0, path IN
-            COLLECT(shortestPath((source)-[*]-(target))) |
-            total + length(path)) AS sum_distances,
+     null /* reduce() is advertised by SHOW FUNCTIONS but has no evaluator dispatch; collect() the values and fold client-side (for path weights use algo.dijkstra.stream, which yields cost) */ AS sum_distances,
      COUNT(target) AS target_count
 WITH source,
      (target_count - 1) / sum_distances AS closeness

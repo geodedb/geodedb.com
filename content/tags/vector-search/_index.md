@@ -40,8 +40,8 @@ Geode implements vector search as native graph capabilities through several comp
 HNSW indexes are stored alongside graph data, allowing seamless integration of vector search with graph traversals. Properties containing vector data can be indexed using:
 
 ```gql
-CREATE VECTOR INDEX product_embeddings
-ON Product(embedding)
+CREATE INDEX product_embeddings
+ON Product(embedding) USING vector
 WITH (metric = 'cosine');
 ```
 
@@ -285,8 +285,8 @@ LIMIT 20  -- HNSW explores only as needed
 
 ```gql
 -- Create index first
-CREATE VECTOR INDEX CONCURRENTLY product_embeddings
-ON Product(embedding)
+CREATE INDEX CONCURRENTLY product_embeddings
+ON Product(embedding) USING vector
 WITH (metric = 'cosine');
 
 -- Insert nodes normally; index updates incrementally
@@ -375,7 +375,7 @@ SHOW INDEXES WHERE name = 'product_embeddings';
 ```gql
 -- If the index becomes corrupted or the metric needs changing
 DROP INDEX product_embeddings;
-CREATE VECTOR INDEX product_embeddings ON Product(embedding)
+CREATE INDEX product_embeddings ON Product(embedding) USING vector
 WITH (metric = 'cosine');
 ```
 
@@ -404,11 +404,14 @@ Combine vector similarity with keyword matching:
 
 ```gql
 -- Hybrid search: HNSW + BM25
-MATCH (d:Document)
-WHERE text_search(d.content, $keyword_query)
+-- NOTE: geode.fts.search takes string literals only; a $parameter
+-- is rejected. Interpolate the term client-side before sending.
+CALL geode.fts.search('document_content', '<search terms>')
+YIELD node, score
+MATCH (d:Document) WHERE id(d) = node
   AND similarity(d.embedding, $vector_query, 'cosine') > 0.6
 WITH d,
-     text_score(d, $keyword_query) AS bm25_score,
+     score AS bm25_score,
      similarity(d.embedding, $vector_query) AS vector_score
 RETURN d.doc_id,
        d.title,

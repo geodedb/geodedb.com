@@ -666,7 +666,9 @@ SHOW INDEXES;
 CREATE INDEX user_city_age_idx ON User(city, age) USING btree;
 
 -- Update statistics for accurate query planning
-ANALYZE User;
+-- Geode has no ANALYZE / VACUUM / REINDEX. Statistics are maintained by
+-- the engine, freed pages are reused automatically, and an index is
+-- rebuilt by dropping and recreating it.
 ```
 
 ## Benchmark Best Practices

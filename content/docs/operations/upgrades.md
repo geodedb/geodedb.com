@@ -138,7 +138,7 @@ echo "=== In-Place Upgrade to $NEW_VERSION ==="
 
 # 1. Pre-flight checks
 echo "Running pre-flight checks..."
-geode admin status
+geode query "SHOW CLUSTER STATUS"
 geode backup --dest s3://bucket/backups --list | head -5
 
 # 2. Create backup
@@ -192,7 +192,7 @@ sleep 10
 
 # 10. Verify health
 echo "Verifying server health..."
-geode admin status
+geode query "SHOW CLUSTER STATUS"
 geode query "RETURN 1 AS health_check"
 
 # 11. Run smoke tests
@@ -226,7 +226,7 @@ sudo systemctl start geode
 
 # 5. Verify
 geode --version
-geode admin status
+geode query "SHOW CLUSTER STATUS"
 
 echo "=== Rollback Complete ==="
 ```
@@ -268,10 +268,10 @@ for NODE in "${NODES[@]}"; do
 
     # 1. Check node is healthy
     echo "Checking node health..."
-    ssh "$NODE" "geode admin status"
+    ssh "$NODE" "geode query "SHOW CLUSTER STATUS"
 
     # 2. Check cluster has quorum without this node
-    HEALTHY_NODES=$(ssh "${NODES[0]}" "geode admin cluster-status --format json" | \
+    HEALTHY_NODES=$(ssh "${NODES[0]}" "geode query "SHOW CLUSTER STATUS"| \
         jq '[.nodes[] | select(.status == "healthy")] | length')
 
     if [ "$HEALTHY_NODES" -lt 2 ]; then
@@ -281,7 +281,7 @@ for NODE in "${NODES[@]}"; do
 
     # 3. Drain connections from node
     echo "Draining connections..."
-    ssh "$NODE" "geode admin drain --timeout 60s"
+    ssh "$NODE" "geode query "SHOW CLUSTER STATUS""
 
     # 4. Stop node
     echo "Stopping node..."
@@ -302,7 +302,7 @@ for NODE in "${NODES[@]}"; do
     # 8. Wait for node to rejoin cluster
     echo "Waiting for node to rejoin..."
     for i in {1..30}; do
-        STATUS=$(ssh "$NODE" "geode admin status --format json 2>/dev/null" | \
+        STATUS=$(ssh "$NODE" "geode query "SHOW CLUSTER STATUS"| \
             jq -r '.status' 2>/dev/null || echo "starting")
         if [ "$STATUS" == "healthy" ]; then
             break
@@ -314,11 +314,11 @@ for NODE in "${NODES[@]}"; do
     # 9. Verify node is healthy
     echo "Verifying node health..."
     ssh "$NODE" "geode --version"
-    ssh "$NODE" "geode admin status"
+    ssh "$NODE" "geode query "SHOW CLUSTER STATUS"
 
     # 10. Verify cluster health
     echo "Verifying cluster health..."
-    ssh "${NODES[0]}" "geode admin cluster-status"
+    ssh "${NODES[0]}" "geode query "SHOW CLUSTER STATUS"
 
     echo "=== $NODE upgraded successfully ==="
 
@@ -408,7 +408,9 @@ echo "=== Phase 2: Sync Data ==="
 
 # Set up replication from blue to green
 echo "Setting up replication..."
-geode admin replicate \
+# There is no `geode admin` subcommand. Geode's CLI is: serve, shell, query,
+# lsp, backup, restore, migrate, auth, login, logout, user, role, tenant,
+# policy, grant, revoke, completion, mcp.
   --source "$BLUE_CLUSTER" \
   --target "$GREEN_CLUSTER" \
   --mode async
@@ -416,7 +418,7 @@ geode admin replicate \
 # Wait for sync
 echo "Waiting for initial sync..."
 while true; do
-    LAG=$(geode admin replication-lag --target "$GREEN_CLUSTER")
+    LAG=$(geode query "SHOW CLUSTER STATUS""$GREEN_CLUSTER")
     echo "Replication lag: $LAG"
     [ "$LAG" -lt 10 ] && break
     sleep 10
@@ -583,11 +585,10 @@ server:
   listen: '0.0.0.0:3141'
   # auth_enabled removed, now always true
 
-security:
-  authentication:
-    enabled: true  # Explicit enable
-    default_user: ${GEODE_ADMIN_USERNAME}
-    default_password: ${GEODE_DEFAULT_PASSWORD}
+# NOTE: `security:` is not a configuration-file section — it is ignored.
+# KMS and encryption-at-rest are configured with environment variables:
+#   GEODE_KMS_URL, GEODE_KMS_ENDPOINT, GEODE_KMS_API_KEY
+#   GEODE_MASTER_KEY, GEODE_TDE_ENABLED, GEODE_ALLOW_LOCAL_KMS
 
 tls:
   auto_generate: false  # Must provide certs
@@ -614,7 +615,7 @@ echo "   Version: $ACTUAL_VERSION"
 
 # 2. Health check
 echo "2. Checking server health..."
-geode admin status
+geode query "SHOW CLUSTER STATUS"
 
 # 3. Query test
 echo "3. Running query test..."
@@ -693,7 +694,9 @@ journalctl -u geode -n 100
 
 ```bash
 # If data format changed between versions
-geode admin migrate-data --from-version 0.17.x
+# There is no `geode admin` subcommand. Geode's CLI is: serve, shell, query,
+# lsp, backup, restore, migrate, auth, login, logout, user, role, tenant,
+# policy, grant, revoke, completion, mcp.
 
 # If migration fails, restore from backup
 geode restore --source s3://bucket/backups --backup-id <pre-upgrade-id>
@@ -706,7 +709,7 @@ geode restore --source s3://bucket/backups --backup-id <pre-upgrade-id>
 geode query "EXPLAIN MATCH (n) RETURN n LIMIT 100"
 
 # Check index status
-geode admin index-status
+geode query "SHOW INDEXES"
 
 # Review new configuration options
 geode config diff --from 0.17.x --to 0.18.x

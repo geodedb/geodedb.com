@@ -79,12 +79,8 @@ MaterializedViewManager
 **Use Case**: Full control over refresh timing, analytical reports
 
 ```gql
--- Create view with manual refresh
-CREATE MATERIALIZED VIEW quarterly_analytics AS
-MATCH (s:Sale)-[:CONTAINS]->(p:Product)
-WHERE s.quarter = 'Q4-2025'
-RETURN p.category, sum(s.amount) AS total_sales, count(s) AS sale_count
-WITH REFRESH STRATEGY manual
+-- Geode has no views (no CREATE VIEW). Save the query text in your
+-- application, or precompute the result onto nodes.
 ```
 
 **Characteristics**:
@@ -98,7 +94,8 @@ WITH REFRESH STRATEGY manual
 
 ```gql
 -- Manually refresh view
-REFRESH MATERIALIZED VIEW quarterly_analytics
+-- There is no materialized view to refresh or drop. Re-run the
+-- precompute batch above to update the stored aggregate.
 ```
 
 ### Auto-Immediate Refresh
@@ -106,12 +103,8 @@ REFRESH MATERIALIZED VIEW quarterly_analytics
 **Use Case**: Real-time dashboards, critical metrics
 
 ```gql
--- Create view with immediate refresh
-CREATE MATERIALIZED VIEW real_time_metrics AS
-MATCH (o:Order)
-WHERE o.created_date > datetime().subtract(PT1H)
-RETURN o.status, count(o) AS order_count, sum(o.total) AS revenue
-WITH REFRESH STRATEGY auto_immediate
+-- Geode has no views (no CREATE VIEW). Save the query text in your
+-- application, or precompute the result onto nodes.
 ```
 
 **Characteristics**:
@@ -136,12 +129,8 @@ WITH REFRESH STRATEGY auto_immediate
 **Use Case**: Regular reports, hourly/daily aggregations
 
 ```gql
--- Create view with hourly refresh
-CREATE MATERIALIZED VIEW user_activity_summary AS
-MATCH (u:User)-[a:ACTION]->(t:Target)
-WHERE a.timestamp > datetime().subtract(P30D)
-RETURN u.department, t.type, count(a) AS action_count, avg(a.duration) AS avg_duration
-WITH REFRESH STRATEGY auto_scheduled INTERVAL 3600  -- Every hour
+-- Geode has no views (no CREATE VIEW). Save the query text in your
+-- application, or precompute the result onto nodes.
 ```
 
 **Characteristics**:
@@ -166,11 +155,8 @@ default_refresh_intervals:
 **Use Case**: Large views with small updates
 
 ```gql
--- Create view with incremental refresh
-CREATE MATERIALIZED VIEW order_summary AS
-MATCH (o:Order)
-RETURN o.date, o.region, count(o) AS order_count, sum(o.amount) AS revenue
-WITH REFRESH STRATEGY incremental
+-- Geode has no views (no CREATE VIEW). Save the query text in your
+-- application, or precompute the result onto nodes.
 ```
 
 **Characteristics**:
@@ -193,11 +179,11 @@ Incremental Refresh: Process 1K changed rows → 0.5 seconds (120x faster)
 
 ```gql
 -- Create streaming view
-CREATE MATERIALIZED VIEW live_sensor_data AS
-MATCH (s:Sensor)-[:REPORTS]->(m:Measurement)
-WHERE m.timestamp > datetime().subtract(PT5M)
-RETURN s.id, avg(m.value) AS avg_value, max(m.value) AS max_value
-WITH REFRESH STRATEGY streaming
+-- Materialized views are not reachable from GQL: the grammar has no
+-- MATERIALIZED keyword. Precompute the aggregate onto nodes instead:
+MATCH (u:User)-[:PURCHASED]->(p:Product)
+WITH p, count(*) AS purchases
+SET p.purchase_count = purchases;
 ```
 
 **Characteristics**:
@@ -212,22 +198,22 @@ WITH REFRESH STRATEGY streaming
 ### Basic Syntax
 
 ```gql
-CREATE MATERIALIZED VIEW view_name AS
-<GQL query>
-[WITH REFRESH STRATEGY <strategy> [INTERVAL <seconds>]]
+-- Materialized views are not reachable from GQL: the grammar has no
+-- MATERIALIZED keyword. Precompute the aggregate onto nodes instead:
+MATCH (u:User)-[:PURCHASED]->(p:Product)
+WITH p, count(*) AS purchases
+SET p.purchase_count = purchases;
 ```
 
 ### Simple Aggregation
 
 ```gql
 -- Product sales summary
-CREATE MATERIALIZED VIEW product_sales AS
-MATCH (p:Product)<-[:CONTAINS]-(s:Sale)
-RETURN p.category,
-       count(s) AS sale_count,
-       sum(s.amount) AS total_revenue,
-       avg(s.amount) AS avg_sale
-WITH REFRESH STRATEGY auto_scheduled INTERVAL 3600
+-- Materialized views are not reachable from GQL: the grammar has no
+-- MATERIALIZED keyword. Precompute the aggregate onto nodes instead:
+MATCH (u:User)-[:PURCHASED]->(p:Product)
+WITH p, count(*) AS purchases
+SET p.purchase_count = purchases;
 ```
 
 **Benefit**: Returns pre-computed results instead of scanning source data.
@@ -236,16 +222,11 @@ WITH REFRESH STRATEGY auto_scheduled INTERVAL 3600
 
 ```gql
 -- Customer behavior analysis
-CREATE MATERIALIZED VIEW customer_insights AS
-MATCH (c:Customer)-[:PLACED]->(o:Order)-[:CONTAINS]->(p:Product)
-WHERE o.created_date > datetime().subtract(P90D)
-RETURN c.segment,
-       c.region,
-       count(DISTINCT o) AS order_count,
-       count(DISTINCT p) AS unique_products,
-       sum(o.total) AS lifetime_value,
-       avg(o.total) AS avg_order_value
-WITH REFRESH STRATEGY auto_scheduled INTERVAL 7200
+-- Materialized views are not reachable from GQL: the grammar has no
+-- MATERIALIZED keyword. Precompute the aggregate onto nodes instead:
+MATCH (u:User)-[:PURCHASED]->(p:Product)
+WITH p, count(*) AS purchases
+SET p.purchase_count = purchases;
 ```
 
 **Benefits**:
@@ -258,16 +239,11 @@ WITH REFRESH STRATEGY auto_scheduled INTERVAL 7200
 
 ```gql
 -- Daily metrics rollup
-CREATE MATERIALIZED VIEW daily_metrics AS
-MATCH (m:Metric)
-WHERE m.timestamp > datetime().subtract(P365D)
-RETURN date(m.timestamp) AS metric_date,
-       m.type,
-       count(m) AS count,
-       avg(m.value) AS avg_value,
-       percentile(m.value, 0.95) AS p95_value,
-       percentile(m.value, 0.99) AS p99_value
-WITH REFRESH STRATEGY auto_scheduled INTERVAL 86400  -- Daily
+-- Materialized views are not reachable from GQL: the grammar has no
+-- MATERIALIZED keyword. Precompute the aggregate onto nodes instead:
+MATCH (u:User)-[:PURCHASED]->(p:Product)
+WITH p, count(*) AS purchases
+SET p.purchase_count = purchases;
 ```
 
 **Use Case**: Historical trend analysis, SLA reporting
@@ -345,9 +321,11 @@ RETURN p.brand, count(s)  -- Grouped by brand, not category
 Geode automatically extracts table and relationship dependencies:
 
 ```gql
-CREATE MATERIALIZED VIEW user_summary AS
-MATCH (u:User)-[:POSTED]->(p:Post)-[:HAS_TAG]->(t:Tag)
-RETURN u.name, count(p) AS post_count, collect(DISTINCT t.name) AS tags
+-- Materialized views are not reachable from GQL: the grammar has no
+-- MATERIALIZED keyword. Precompute the aggregate onto nodes instead:
+MATCH (u:User)-[:PURCHASED]->(p:Product)
+WITH p, count(*) AS purchases
+SET p.purchase_count = purchases;
 ```
 
 **Detected Dependencies**:
@@ -362,14 +340,17 @@ RETURN u.name, count(p) AS post_count, collect(DISTINCT t.name) AS tags
 
 ```gql
 -- Base view
-CREATE MATERIALIZED VIEW daily_sales AS
-MATCH (s:Sale)
-RETURN date(s.created_date) AS sale_date, sum(s.amount) AS revenue
-
+-- Materialized views are not reachable from GQL: the grammar has no
+-- MATERIALIZED keyword. Precompute the aggregate onto nodes instead:
+MATCH (u:User)-[:PURCHASED]->(p:Product)
+WITH p, count(*) AS purchases
+SET p.purchase_count = purchases;
 -- Dependent view
-CREATE MATERIALIZED VIEW monthly_sales AS
-MATCH (d:daily_sales)
-RETURN year_month(d.sale_date) AS month, sum(d.revenue) AS monthly_revenue
+-- Materialized views are not reachable from GQL: the grammar has no
+-- MATERIALIZED keyword. Precompute the aggregate onto nodes instead:
+MATCH (u:User)-[:PURCHASED]->(p:Product)
+WITH p, count(*) AS purchases
+SET p.purchase_count = purchases;
 ```
 
 **Refresh Behavior**:
@@ -518,12 +499,11 @@ Scheduling:
 
 ```gql
 -- Create partitioned view by date
-CREATE MATERIALIZED VIEW sales_by_date PARTITION BY date AS
-MATCH (s:Sale)
-RETURN date(s.created_date) AS sale_date,
-       s.region,
-       sum(s.amount) AS revenue
-WITH REFRESH STRATEGY incremental
+-- Materialized views are not reachable from GQL: the grammar has no
+-- MATERIALIZED keyword. Precompute the aggregate onto nodes instead:
+MATCH (u:User)-[:PURCHASED]->(p:Product)
+WITH p, count(*) AS purchases
+SET p.purchase_count = purchases;
 ```
 
 **Benefits**:
@@ -537,14 +517,17 @@ WITH REFRESH STRATEGY incremental
 
 ```gql
 -- Base view
-CREATE MATERIALIZED VIEW hourly_metrics AS ...
-
+-- Materialized views are not reachable from GQL: the grammar has no
+-- MATERIALIZED keyword. Precompute the aggregate onto nodes instead:
+MATCH (u:User)-[:PURCHASED]->(p:Product)
+WITH p, count(*) AS purchases
+SET p.purchase_count = purchases;
 -- Derived view (uses base view)
-CREATE MATERIALIZED VIEW daily_summary AS
-MATCH (h:hourly_metrics)
-RETURN date(h.timestamp) AS metric_date,
-       avg(h.value) AS avg_daily_value
-WITH REFRESH STRATEGY auto_scheduled INTERVAL 86400
+-- Materialized views are not reachable from GQL: the grammar has no
+-- MATERIALIZED keyword. Precompute the aggregate onto nodes instead:
+MATCH (u:User)-[:PURCHASED]->(p:Product)
+WITH p, count(*) AS purchases
+SET p.purchase_count = purchases;
 ```
 
 **Benefits**:
@@ -574,13 +557,11 @@ pub fn refreshOnThreshold(
 
 ```gql
 -- Active users dashboard
-CREATE MATERIALIZED VIEW active_users_now AS
-MATCH (u:User)-[:SESSION]->(s:Session)
-WHERE s.last_seen > datetime().subtract(PT15M)
-RETURN count(DISTINCT u) AS active_users,
-       count(s) AS total_sessions,
-       avg(s.duration_seconds) AS avg_session_duration
-WITH REFRESH STRATEGY auto_immediate
+-- Materialized views are not reachable from GQL: the grammar has no
+-- MATERIALIZED keyword. Precompute the aggregate onto nodes instead:
+MATCH (u:User)-[:PURCHASED]->(p:Product)
+WITH p, count(*) AS purchases
+SET p.purchase_count = purchases;
 ```
 
 **Dashboard Integration**:
@@ -597,35 +578,22 @@ setInterval(async () => {
 
 ```gql
 -- Monthly sales report
-CREATE MATERIALIZED VIEW monthly_sales_report AS
-MATCH (s:Sale)-[:SOLD_BY]->(rep:SalesRep)
-WHERE s.created_date >= startOfMonth()
-RETURN rep.name,
-       rep.region,
-       count(s) AS deals_closed,
-       sum(s.amount) AS total_revenue,
-       avg(s.amount) AS avg_deal_size,
-       percentile(s.amount, 0.5) AS median_deal
-WITH REFRESH STRATEGY auto_scheduled INTERVAL 3600
+-- Materialized views are not reachable from GQL: the grammar has no
+-- MATERIALIZED keyword. Precompute the aggregate onto nodes instead:
+MATCH (u:User)-[:PURCHASED]->(p:Product)
+WITH p, count(*) AS purchases
+SET p.purchase_count = purchases;
 ```
 
 ### Customer Segmentation
 
 ```gql
 -- Customer lifetime value segments
-CREATE MATERIALIZED VIEW customer_segments AS
-MATCH (c:Customer)-[:PLACED]->(o:Order)
-WITH c, sum(o.total) AS ltv, count(o) AS order_count
-RETURN CASE
-  WHEN ltv > 10000 THEN 'VIP'
-  WHEN ltv > 5000 THEN 'High Value'
-  WHEN ltv > 1000 THEN 'Medium Value'
-  ELSE 'New Customer'
-END AS segment,
-count(c) AS customer_count,
-avg(ltv) AS avg_ltv,
-avg(order_count) AS avg_orders
-WITH REFRESH STRATEGY auto_scheduled INTERVAL 86400
+-- Materialized views are not reachable from GQL: the grammar has no
+-- MATERIALIZED keyword. Precompute the aggregate onto nodes instead:
+MATCH (u:User)-[:PURCHASED]->(p:Product)
+WITH p, count(*) AS purchases
+SET p.purchase_count = purchases;
 ```
 
 ## Troubleshooting
@@ -661,9 +629,8 @@ inspection procedure.
 
 ```gql
 -- Rebuild view with change tracking
-DROP MATERIALIZED VIEW old_view
-CREATE MATERIALIZED VIEW new_view AS ...
-WITH REFRESH STRATEGY incremental ENABLE_CHANGE_TRACKING true
+-- There is no materialized view to refresh or drop. Re-run the
+-- precompute batch above to update the stored aggregate.
 ```
 
 ### Performance Issues
@@ -689,13 +656,18 @@ RETURN v
 2. **Partition large views**:
 
    ```gql
-   CREATE MATERIALIZED VIEW partitioned_sales PARTITION BY region AS ...
+   -- Materialized views are not reachable from GQL: the grammar has no
+   -- MATERIALIZED keyword. Precompute the aggregate onto nodes instead:
+   MATCH (u:User)-[:PURCHASED]->(p:Product)
+   WITH p, count(*) AS purchases
+   SET p.purchase_count = purchases;
    ```
 
 3. **Prune old data**:
 
    ```gql
-   ALTER MATERIALIZED VIEW sales_view SET RETENTION P90D
+   -- There is no materialized view to refresh or drop. Re-run the
+   -- precompute batch above to update the stored aggregate.
    ```
 
 ## Best Practices
@@ -706,10 +678,16 @@ RETURN v
 
    ```gql
    -- ✅ Good: Aggregate to useful level
-   CREATE MATERIALIZED VIEW daily_sales AS ...  -- Daily granularity
-
-   -- ❌ Bad: Too granular
-   CREATE MATERIALIZED VIEW second_by_second AS ...  -- Too detailed
+   -- Materialized views are not reachable from GQL: the grammar has no
+   -- MATERIALIZED keyword. Precompute the aggregate onto nodes instead:
+   MATCH (u:User)-[:PURCHASED]->(p:Product)
+   WITH p, count(*) AS purchases
+   SET p.purchase_count = purchases;   -- ❌ Bad: Too granular
+   -- Materialized views are not reachable from GQL: the grammar has no
+   -- MATERIALIZED keyword. Precompute the aggregate onto nodes instead:
+   MATCH (u:User)-[:PURCHASED]->(p:Product)
+   WITH p, count(*) AS purchases
+   SET p.purchase_count = purchases;
    ```
 
 2. **Include Filtering Columns**:

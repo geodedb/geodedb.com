@@ -39,6 +39,7 @@ This guide covers advanced GQL query patterns that enable sophisticated graph da
 The VALUES clause constructs a table of literal values that can be used as input for subsequent query clauses. Think of it as an inline table constructor.
 
 **Basic Syntax**:
+
 ```gql
 VALUES (expression AS alias [, ...])
 [, (expression AS alias [, ...])]
@@ -57,6 +58,7 @@ VALUES (1 AS x, 'Alice' AS name)
 ```
 
 **Multiple Rows**:
+
 ```gql
 VALUES
   (1 AS id, 'Alice' AS name),
@@ -89,6 +91,7 @@ RETURN n.name, search_id
 ```
 
 **Multiple Search Terms**:
+
 ```gql
 VALUES
   (1 AS user_id),
@@ -101,6 +104,7 @@ RETURN u.name, u.email, user_id
 ### VALUES in WHERE Clauses
 
 **Threshold-Based Filtering**:
+
 ```gql
 VALUES (10 AS min_price, 100 AS max_price)
 MATCH (p:Product)
@@ -110,6 +114,7 @@ ORDER BY p.price
 ```
 
 **Date Range Queries**:
+
 ```gql
 VALUES (
   datetime('2026-01-01') AS start_date,
@@ -127,7 +132,7 @@ RETURN count(o) AS order_count
 VALUES (
   1 + 1 AS computed_id,
   'test' + '_suffix' AS label,
-  datetime().subtract(P7D) AS week_ago
+  datetime()./* no subtract(); use the - operator */ (P7D) AS week_ago
 )
 MATCH (n:Node)
 WHERE n.count = computed_id
@@ -160,6 +165,7 @@ RETURN u.name, id
 ### IN Clause Alternative
 
 **VALUES Pattern** (recommended for complex queries):
+
 ```gql
 VALUES
   ('Alice' AS name),
@@ -170,6 +176,7 @@ RETURN u.email
 ```
 
 **IN Clause Pattern** (simpler for lists):
+
 ```gql
 MATCH (u:User)
 WHERE u.name IN ['Alice', 'Bob', 'Carol']
@@ -177,6 +184,7 @@ RETURN u.email
 ```
 
 **When to Use Each**:
+
 - **VALUES**: Complex expressions, multiple columns, need cartesian product
 - **IN**: Simple list membership, single column
 
@@ -185,6 +193,7 @@ RETURN u.email
 ### Multi-Hop Path Patterns
 
 **Variable-Length Relationships**:
+
 ```gql
 -- Find all paths up to 3 hops
 MATCH p = (start:Person {name: 'Alice'})-[:KNOWS*1..3]->(end:Person)
@@ -193,6 +202,7 @@ ORDER BY hops
 ```
 
 **Shortest Path**:
+
 ```gql
 -- Find shortest path between two people
 MATCH p = shortestPath(
@@ -205,6 +215,7 @@ RETURN [node IN nodes(p) | node.name] AS path_names,
 ### Multiple Pattern Clauses
 
 **Independent Patterns** (cartesian product):
+
 ```gql
 MATCH (a:Person {name: 'Alice'})
 MATCH (b:Person {name: 'Bob'})
@@ -214,6 +225,7 @@ RETURN a.email, b.email
 ```
 
 **Dependent Patterns** (chained):
+
 ```gql
 MATCH (a:Person {name: 'Alice'})
 MATCH (a)-[:KNOWS]->(friend)
@@ -223,6 +235,7 @@ RETURN a.name, collect(friend.name) AS friends
 ### Optional Patterns
 
 **OPTIONAL MATCH**:
+
 ```gql
 MATCH (u:User)
 OPTIONAL MATCH (u)-[:HAS_ORDER]->(o:Order)
@@ -232,6 +245,7 @@ RETURN u.name, count(o) AS order_count
 ```
 
 **Multiple OPTIONAL**:
+
 ```gql
 MATCH (u:User)
 OPTIONAL MATCH (u)-[:PLACED]->(o:Order)
@@ -246,10 +260,11 @@ RETURN u.name,
 ### WITH Clause for Pipeline Stages
 
 **Basic Pipeline**:
+
 ```gql
 -- Stage 1: Filter users
 MATCH (u:User)
-WHERE u.created_date > datetime().subtract(P30D)
+WHERE u.created_date > datetime()./* no subtract(); use the - operator */ (P30D)
 WITH u
 
 -- Stage 2: Get their orders
@@ -262,6 +277,7 @@ RETURN u.name, order_count
 ```
 
 **Aggregation Pipeline**:
+
 ```gql
 MATCH (p:Product)<-[:CONTAINS]-(o:Order)
 WITH p, count(o) AS sale_count, sum(o.quantity) AS total_sold
@@ -275,6 +291,7 @@ RETURN p.name, sale_count, total_sold
 ### Subquery Patterns
 
 **Correlated Subqueries** (future GQL feature):
+
 ```gql
 -- Future: Subquery in WHERE
 MATCH (u:User)
@@ -286,6 +303,7 @@ RETURN u.name
 ```
 
 **Current Workaround** (WITH clause):
+
 ```gql
 MATCH (u:User)
 OPTIONAL MATCH (u)-[:PLACED]->(o:Order)
@@ -300,6 +318,7 @@ RETURN u.name
 ### Boolean Logic Composition
 
 **AND/OR Combinations**:
+
 ```gql
 MATCH (p:Product)
 WHERE (p.category = 'Electronics' AND p.price < 500)
@@ -308,6 +327,7 @@ RETURN p.name, p.category, p.price
 ```
 
 **NOT Patterns**:
+
 ```gql
 -- Find users without orders
 MATCH (u:User)
@@ -320,6 +340,7 @@ RETURN u.name
 ### Range Queries
 
 **Numeric Ranges**:
+
 ```gql
 MATCH (p:Product)
 WHERE p.price BETWEEN 50 AND 150
@@ -327,6 +348,7 @@ RETURN p.name, p.price
 ```
 
 **Date Ranges**:
+
 ```gql
 MATCH (e:Event)
 WHERE e.date >= datetime('2026-01-01')
@@ -377,6 +399,7 @@ RETURN u.name,
 ### Index-Friendly Patterns
 
 **Use Indexed Properties**:
+
 ```gql
 -- ✅ Good: Uses index on User.email
 MATCH (u:User {email: 'alice@example.com'})
@@ -389,6 +412,7 @@ RETURN u
 ```
 
 **Label + Property Pattern**:
+
 ```gql
 -- ✅ Optimal: Label filter + indexed property
 MATCH (u:User)
@@ -401,6 +425,7 @@ RETURN u
 ### Early Filtering
 
 **Filter Before Expansion**:
+
 ```gql
 -- ✅ Good: Filter first, then expand
 MATCH (u:User)
@@ -432,6 +457,7 @@ LIMIT 10
 ### NULL Handling
 
 **COALESCE for Defaults**:
+
 ```gql
 MATCH (u:User)
 RETURN u.name,
@@ -440,6 +466,7 @@ RETURN u.name,
 ```
 
 **Null-Safe Navigation**:
+
 ```gql
 MATCH (u:User)
 OPTIONAL MATCH (u)-[:HAS_ADDRESS]->(a:Address)
@@ -450,6 +477,7 @@ RETURN u.name,
 ### CASE Expressions
 
 **Conditional Logic**:
+
 ```gql
 MATCH (u:User)
 RETURN u.name,
@@ -500,7 +528,7 @@ LIMIT 10
 
 ```gql
 -- Find suspicious patterns
-VALUES (datetime().subtract(PT1H) AS recent_time)
+VALUES (datetime()./* no subtract(); use the - operator */ (PT1H) AS recent_time)
 MATCH (u:User)-[:PLACED]->(o:Order)
 WHERE o.created_date > recent_time
 WITH u, count(o) AS recent_orders, sum(o.total) AS recent_spend
@@ -518,6 +546,7 @@ ORDER BY recent_spend DESC
 ### Query Readability
 
 1. **Use Meaningful Aliases**:
+
    ```gql
    -- ✅ Good
    MATCH (customer:User)-[:PLACED]->(order:Order)
@@ -527,17 +556,19 @@ ORDER BY recent_spend DESC
    ```
 
 2. **Break Complex Queries into Stages**:
+
    ```gql
    -- ✅ Good: Clear stages with WITH
    MATCH (u:User)
    WITH u, u.created_date AS join_date
-   WHERE join_date > datetime().subtract(P30D)
+   WHERE join_date > datetime()./* no subtract(); use the - operator */ (P30D)
    WITH u
    MATCH (u)-[:PLACED]->(o:Order)
    RETURN u.name, count(o)
    ```
 
 3. **Comment Complex Logic**:
+
    ```gql
    -- Find high-value customers from last quarter
    MATCH (u:User)-[:PLACED]->(o:Order)
@@ -550,6 +581,7 @@ ORDER BY recent_spend DESC
 ### Performance
 
 1. **Use EXPLAIN to Validate**:
+
    ```gql
    EXPLAIN MATCH (u:User {email: 'alice@example.com'})
    RETURN u
@@ -557,6 +589,7 @@ ORDER BY recent_spend DESC
    ```
 
 2. **Avoid Cartesian Products**:
+
    ```gql
    -- ❌ Bad: Unintended cartesian
    MATCH (u:User)
@@ -569,6 +602,7 @@ ORDER BY recent_spend DESC
    ```
 
 3. **Limit Result Sets**:
+
    ```gql
    -- Always use LIMIT for large result sets
    MATCH (n)
@@ -583,6 +617,7 @@ ORDER BY recent_spend DESC
 **Issue**: VALUES bindings not visible in MATCH
 
 **Solution**: Verify VALUES comes before MATCH in query order
+
 ```gql
 -- ✅ Correct order
 VALUES (1 AS x)
@@ -598,6 +633,7 @@ VALUES (1 AS x)  -- Too late!
 **Issue**: Unexpected cartesian product
 
 **Solution**: Add explicit relationship patterns
+
 ```gql
 -- Instead of:
 MATCH (a:Person), (b:Person)
@@ -611,6 +647,7 @@ MATCH (a:Person)-[:KNOWS]-(b:Person)
 **Issue**: Poor performance with complex patterns
 
 **Solution**: Use PROFILE to identify bottlenecks
+
 ```gql
 PROFILE MATCH (a)-[:REL1]->(b)-[:REL2]->(c)
 WHERE a.prop = 'value'
@@ -634,16 +671,19 @@ RETURN c
 ## Next Steps
 
 **For New Users**:
+
 - [GQL Guide](/docs/gql/guide/) - Basic query syntax
 - [Query Optimization](/docs/query/performance-tuning/) - Performance tuning
 - [Data Model](/docs/model/data-model-and-types/) - Graph fundamentals
 
 **For Advanced Users**:
+
 - [Full-Text Search](/docs/query/full-text-search/) - Text search patterns
 - [Materialized Views](/docs/query/materialized-views/) - Pre-computed queries
 - [Real-Time Analytics](/docs/analytics/real-time-analytics/) - Streaming patterns
 
 **For Developers**:
+
 - [Testing](/docs/guides/testing-strategies/) - Query testing
 - [API Reference](/docs/reference/api-reference-complete/) - Complete GQL reference
 - [Client Libraries](/docs/client-libraries/go-client/) - Client integration

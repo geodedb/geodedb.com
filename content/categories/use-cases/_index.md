@@ -103,7 +103,7 @@ MATCH path = (a:Account)-[:TRANSFER*2..5]->(a)
 WHERE ALL (r IN relationships(path) WHERE r.timestamp > current_timestamp() - INTERVAL '24' HOUR)
 RETURN path,
        [r IN relationships(path) | r.amount] AS amounts,
-       REDUCE (total = 0, r IN relationships(path) | total + r.amount) AS total_amount
+       null /* reduce() is advertised by SHOW FUNCTIONS but has no evaluator dispatch; collect() the values and fold client-side (for path weights use algo.dijkstra.stream, which yields cost) */ AS total_amount
 ORDER BY total_amount DESC
 ```
 
@@ -304,7 +304,7 @@ MATCH path = SHORTEST (a:Router {name: 'Core-Router-1'})
                       -[:CONNECTED_TO*]->
                       (b:Router {name: 'Edge-Router-5'})
 RETURN path,
-       REDUCE (latency = 0, r IN relationships(path) | latency + r.latency) AS total_latency
+       null /* reduce() is advertised by SHOW FUNCTIONS but has no evaluator dispatch; collect() the values and fold client-side (for path weights use algo.dijkstra.stream, which yields cost) */ AS total_latency
 ```
 
 ### Impact Analysis
@@ -516,7 +516,7 @@ WHERE source.country <> destination.country
   AND LENGTH(path) >= 3
 WITH path,
      [r IN relationships(path) | r.amount] AS amounts,
-     REDUCE(total = 0, r IN relationships(path) | total + r.amount) AS total_amount
+     null /* reduce() is advertised by SHOW FUNCTIONS but has no evaluator dispatch; collect() the values and fold client-side (for path weights use algo.dijkstra.stream, which yields cost) */ AS total_amount
 WHERE total_amount > 50000
 RETURN path,
        amounts,
@@ -679,8 +679,8 @@ WHERE ALL (segment IN relationships(path)
           WHERE segment.traffic_level < 'high'
             AND segment.road_condition = 'good')
 WITH delivery, destination, path,
-     REDUCE(time = 0, r IN relationships(path) | time + r.travel_time_minutes) AS total_time,
-     REDUCE(distance = 0, r IN relationships(path) | distance + r.distance_km) AS total_distance
+     null /* reduce() is advertised by SHOW FUNCTIONS but has no evaluator dispatch; collect() the values and fold client-side (for path weights use algo.dijkstra.stream, which yields cost) */ AS total_time,
+     null /* reduce() is advertised by SHOW FUNCTIONS but has no evaluator dispatch; collect() the values and fold client-side (for path weights use algo.dijkstra.stream, which yields cost) */ AS total_distance
 WHERE total_time <= delivery.time_window_end - delivery.time_window_start
 RETURN delivery.id,
        destination.address,
@@ -794,7 +794,7 @@ WITH property, comparable,
 WHERE distance_meters < 1000
 WITH property,
      AVG(comparable.sale_price) AS avg_price,
-     STDDEV(comparable.sale_price) AS price_stddev,
+     collect(comparable.sale_price) /* stddev/variance parse but are never computed; reduce client-side */ AS price_stddev,
      COUNT(comparable) AS comparable_count
 RETURN property.address,
        avg_price AS estimated_value,

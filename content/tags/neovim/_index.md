@@ -398,7 +398,7 @@ LIMIT 10;
 
 -- Labels in type color
 CREATE (p:Product:Featured {
-    id: randomUUID(),
+    id: uuid_v4(),
     name: 'Premium Widget',
     price: 99.99
 });

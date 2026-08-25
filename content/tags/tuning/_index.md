@@ -181,6 +181,7 @@ Initial Pool Size = 2 × CPU Cores
 ```
 
 Monitor pool utilization and adjust:
+
 - If all connections frequently busy: increase pool size
 - If many connections idle: decrease pool size
 - If connection wait time high: increase pool size
@@ -346,6 +347,7 @@ LIMIT 10;
 ```
 
 For queries involving hubs, consider:
+
 1. Sampling relationships rather than traversing all
 2. Pre-computing aggregate values
 3. Filtering to exclude hub nodes when appropriate
@@ -509,6 +511,7 @@ Prioritize bottlenecks by impact: optimize the slowest operations first.
 ### Phase 3: Hypothesize Improvements
 
 Based on profiling, form specific tuning hypotheses:
+
 - "Increasing connection pool size will reduce wait time"
 - "Adding index on Person.email will improve lookup performance"
 - "Limiting traversal depth will reduce execution time"
@@ -554,7 +557,7 @@ Certain patterns recur across tuning efforts.
 
 Typically, 20% of queries consume 80% of resources. Profile to identify these high-impact queries and optimize them first.
 
-### Index Everything? No.
+### Index Everything? No
 
 While indexes speed reads, they slow writes and consume storage. Index only properties used in WHERE clauses, JOIN conditions, and ORDER BY clauses.
 

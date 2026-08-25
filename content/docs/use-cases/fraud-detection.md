@@ -84,18 +84,18 @@ USE PaymentNetwork;
 ```gql
 -- Create accounts
 CREATE
-  (:Account {id: gen_random_uuid(), holder_name: "Alice Smith", email: "[email protected]", created_at: timestamp(), risk_score: 0.1}),
-  (:Account {id: gen_random_uuid(), holder_name: "Bob Jones", email: "[email protected]", created_at: timestamp(), risk_score: 0.2}),
-  (:Account {id: gen_random_uuid(), holder_name: "Charlie Wilson", email: "[email protected]", created_at: timestamp(), risk_score: 0.8});
+  (:Account {id: uuid_v4(), holder_name: "Alice Smith", email: "[email protected]", created_at: timestamp(), risk_score: 0.1}),
+  (:Account {id: uuid_v4(), holder_name: "Bob Jones", email: "[email protected]", created_at: timestamp(), risk_score: 0.2}),
+  (:Account {id: uuid_v4(), holder_name: "Charlie Wilson", email: "[email protected]", created_at: timestamp(), risk_score: 0.8});
 
 -- Create transactions
 MATCH (alice:Account {holder_name: "Alice Smith"}), (bob:Account {holder_name: "Bob Jones"})
-CREATE (tx:Transaction {id: gen_random_uuid(), amount: decimal('1000.00'), timestamp: timestamp(), status: 'completed', merchant_category: 'retail'})
+CREATE (tx:Transaction {id: uuid_v4(), amount: decimal('1000.00'), timestamp: timestamp(), status: 'completed', merchant_category: 'retail'})
 CREATE (alice)-[:SENT {timestamp: timestamp()}]->(tx)-[:RECEIVED_BY]->(bob);
 
 -- Shared device (suspicious)
 MATCH (alice:Account {holder_name: "Alice Smith"}), (charlie:Account {holder_name: "Charlie Wilson"})
-CREATE (dev:Device {id: gen_random_uuid(), fingerprint: "abc123", ip_addr: '192.168.1.100'::ipaddr})
+CREATE (dev:Device {id: uuid_v4(), fingerprint: "abc123", ip_addr: '192.168.1.100'::ipaddr})
 CREATE (alice)-[:USED_DEVICE {first_used: timestamp()}]->(dev)
 CREATE (charlie)-[:USED_DEVICE {first_used: timestamp()}]->(dev);
 ```
@@ -132,7 +132,7 @@ ORDER BY tx_count DESC;
 
 -- Large transaction anomaly (>3 standard deviations)
 MATCH (a:Account)-[:SENT]->(tx:Transaction)
-WITH AVG(tx.amount) AS avg_amount, STDDEV(tx.amount) AS stddev_amount
+WITH AVG(tx.amount) AS avg_amount, collect(tx.amount) /* stddev/variance parse but are never computed; reduce client-side */ AS stddev_amount
 MATCH (a:Account)-[:SENT]->(tx:Transaction)
 WHERE tx.amount > avg_amount + (3 * stddev_amount)
 RETURN a.holder_name, tx.amount, avg_amount, stddev_amount;
@@ -292,18 +292,13 @@ Financial institutions need tenant isolation:
 
 ```gql
 -- Create RLS policy: users only see their organization's data
-CREATE POLICY org_isolation ON Account
-FOR SELECT
-USING (organization_id = current_user_org_id());
+-- Not expressible as a Geode policy predicate (only `=` against a string
+-- literal compiles); precompute the decision into a property instead:
+CALL geode.rls.add_attribute_policy('app', 'Account', 'access_tag', 'access_tag');
 
-CREATE POLICY org_isolation_tx ON Transaction
-FOR SELECT
-USING (
-  EXISTS (
-    MATCH (a:Account)-[:SENT|RECEIVED_BY]->(tx:Transaction)
-    WHERE tx.id = this.id AND a.organization_id = current_user_org_id()
-  )
-);
+-- Not expressible as a Geode policy predicate (only `=` against a string
+-- literal compiles); precompute the decision into a property instead:
+CALL geode.rls.add_attribute_policy('app', 'Transaction', 'access_tag', 'access_tag');
 ```
 
 **Benefit**: Analysts at Bank A cannot see Bank B's data, even with direct database access.
@@ -315,14 +310,10 @@ From `AUDIT_LOGGING.md`:
 Track all fraud investigations for regulatory compliance:
 
 ```yaml
-security:
-  audit:
-    enabled: true
-    log_path: "/var/log/geode/fraud-audit.jsonl"
-    syslog:
-      enabled: true
-      address: "siem.example.com:514"
-      format: "CEF"
+# NOTE: `security:` is not a configuration-file section — it is ignored.
+# KMS and encryption-at-rest are configured with environment variables:
+#   GEODE_KMS_URL, GEODE_KMS_ENDPOINT, GEODE_KMS_API_KEY
+#   GEODE_MASTER_KEY, GEODE_TDE_ENABLED, GEODE_ALLOW_LOCAL_KMS
 ```
 
 **Audit log entry**:

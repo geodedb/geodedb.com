@@ -177,8 +177,9 @@ SHOW ROLES FOR alice;
 SHOW MEMBERS OF ROLE data_analyst;
 
 -- Show role membership details
-SELECT * FROM system.role_members
-WHERE role_name = 'data_analyst';
+-- Role membership is reported per user by
+-- CALL geode.auth.user_show('<user>') / SHOW PERMISSIONS.
+SHOW ROLES;
 ```
 
 ## Role Hierarchies
@@ -378,13 +379,13 @@ CREATE ROLE tenant_acme_user INHERITS tenant_base;
 CREATE ROLE tenant_acme_viewer INHERITS tenant_base;
 
 -- Apply tenant isolation via RLS
-CREATE POLICY tenant_isolation ON :*
-  FOR ALL
-  USING (tenant_id = current_user_property('tenant_id'));
+-- Not expressible as a Geode policy predicate (only `=` against a string
+-- literal compiles); precompute the decision into a property instead:
+CALL geode.rls.add_attribute_policy('app', 'Label', 'access_tag', 'access_tag');
 
--- Grant based on tenant role
-GRANT ALL ON GRAPH tenant_data TO tenant_acme_admin
-  WHERE current_user_property('tenant_id') = 'acme';
+-- Grant on a graph. GRANT takes no WHERE clause: the privilege is
+-- READ | WRITE | SCHEMA | ALL, optionally scoped ON GRAPH <name>.
+GRANT ALL ON GRAPH tenant_data TO tenant_acme_admin;
 ```
 
 ## Role-Based Workflows
@@ -447,10 +448,9 @@ ALTER ROLE GRANT admin TO consultant
   VALID UNTIL '2026-03-15';
 
 -- View expiring role assignments
-SELECT member, role_name, valid_until
-FROM system.role_members
-WHERE valid_until < current_timestamp() + INTERVAL '7 days'
-ORDER BY valid_until;
+-- Role membership is reported per user by
+-- CALL geode.auth.user_show('<user>') / SHOW PERMISSIONS.
+SHOW ROLES;
 ```
 
 ### Emergency Access Procedures
@@ -462,7 +462,7 @@ GRANT ADMIN ON DATABASE TO emergency_admin;
 
 -- Emergency procedure: grant temporary access
 GRANT ROLE emergency_admin TO on_call_engineer
-  VALID UNTIL current_timestamp() + INTERVAL '4 hours'
+  VALID UNTIL current_timestamp() + duration('PT4H')
   REASON 'Production incident INC-12345';
 
 -- Automatic audit logging captures all emergency access
@@ -474,48 +474,29 @@ GRANT ROLE emergency_admin TO on_call_engineer
 
 ```gql
 -- Find all users with admin access
-SELECT rm.member, r.role_name
-FROM system.role_members rm
-JOIN system.roles r ON rm.role_name = r.role_name
-WHERE r.role_name = 'admin'
-   OR r.role_name IN (SELECT child_role FROM system.role_hierarchy WHERE parent_role = 'admin');
+-- Role membership is reported per user by
+-- CALL geode.auth.user_show('<user>') / SHOW PERMISSIONS.
+SHOW ROLES;
 
 -- Find unused roles (no members)
-SELECT r.role_name
-FROM system.roles r
-LEFT JOIN system.role_members rm ON r.role_name = rm.role_name
-WHERE rm.member IS NULL
-  AND r.role_name NOT IN ('public');
+SHOW ROLES;
 
 -- Find over-privileged users (multiple high-privilege roles)
-SELECT member, COUNT(*) as admin_role_count
-FROM system.role_members
-WHERE role_name IN ('admin', 'dba', 'security_admin')
-GROUP BY member
-HAVING COUNT(*) > 1;
+-- Role membership is reported per user by
+-- CALL geode.auth.user_show('<user>') / SHOW PERMISSIONS.
+SHOW ROLES;
 ```
 
 ### Role Usage Audit
 
 ```gql
 -- Track which roles are actively used
-SELECT
-  rm.role_name,
-  COUNT(DISTINCT rm.member) as member_count,
-  MAX(al.last_activity) as last_used
-FROM system.role_members rm
-LEFT JOIN system.activity_log al ON rm.member = al.username
-GROUP BY rm.role_name
-ORDER BY last_used DESC;
+-- Role membership is reported per user by
+-- CALL geode.auth.user_show('<user>') / SHOW PERMISSIONS.
+SHOW ROLES;
 
 -- Identify permissions never used
-SELECT p.role_name, p.privilege, p.object_name
-FROM system.privileges p
-LEFT JOIN system.access_log al
-  ON p.object_name = al.object_name
-  AND al.username IN (SELECT member FROM system.role_members WHERE role_name = p.role_name)
-WHERE al.last_access IS NULL
-  OR al.last_access < current_timestamp() - INTERVAL '90 days';
+SHOW GRANTS;
 ```
 
 ## RBAC Best Practices
@@ -566,7 +547,7 @@ CREATE ROLE api_order_writer;
 ```bash
 # Schedule quarterly access reviews
 # Generate role report
-geode admin roles report --format=csv --output=role_report.csv
+geode query "SHOW ROLES"
 
 # Review for:
 # - Unused roles
@@ -601,9 +582,7 @@ SHOW ROLES FOR alice;
 SHOW EFFECTIVE GRANTS FOR alice;
 
 -- Check for deny rules
-SELECT * FROM system.privileges
-WHERE grantee IN (SELECT role_name FROM system.role_members WHERE member = 'alice')
-  AND is_deny = true;
+SHOW GRANTS;
 
 -- Check role hierarchy
 SHOW ROLE HIERARCHY FOR alice;
@@ -616,14 +595,12 @@ SHOW ROLE HIERARCHY FOR alice;
 SHOW ROLES LIKE 'analyst%';
 
 -- Check if role is assignable
-SELECT role_name, is_assignable, valid_until
-FROM system.roles
-WHERE role_name = 'analyst';
+SHOW ROLES;
 
 -- Check admin option
-SELECT member, role_name, with_admin_option
-FROM system.role_members
-WHERE member = 'alice';
+-- Role membership is reported per user by
+-- CALL geode.auth.user_show('<user>') / SHOW PERMISSIONS.
+SHOW ROLES;
 ```
 
 ## Server Configuration

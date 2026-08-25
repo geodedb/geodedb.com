@@ -64,6 +64,7 @@ scalability:
 ```
 
 **Metrics**:
+
 - Queries per second (QPS)
 - Transactions per second (TPS)
 - Concurrent connections
@@ -101,6 +102,7 @@ scalability:
 ```
 
 **Metrics**:
+
 - Total storage capacity
 - Data distribution balance
 - Storage utilization per node
@@ -128,6 +130,7 @@ scalability:
 ```
 
 **Metrics**:
+
 - CPU utilization
 - Memory utilization
 - Query complexity (operators, traversals)
@@ -167,12 +170,14 @@ architecture:
 ```
 
 **Advantages**:
+
 - Linear scalability
 - No single point of contention
 - Independent failure domains
 - Cost-effective with commodity hardware
 
 **Challenges**:
+
 - Cross-partition queries require coordination
 - Data rebalancing on node addition/removal
 - Distributed transaction complexity
@@ -207,12 +212,14 @@ architecture:
 ```
 
 **Advantages**:
+
 - Independent compute and storage scaling
 - Stateless compute nodes (easy to add/remove)
 - Elastic scaling based on workload
 - Cost optimization (scale what you need)
 
 **Challenges**:
+
 - Network bandwidth becomes critical
 - Higher latency for storage access
 - Cache management complexity
@@ -257,12 +264,14 @@ architecture:
 ```
 
 **Advantages**:
+
 - Workload isolation
 - Optimized resource allocation per tier
 - Independent tier scaling
 - Specialized hardware per workload
 
 **Challenges**:
+
 - Operational complexity
 - Increased latency (multiple hops)
 - Cost of additional infrastructure
@@ -563,12 +572,10 @@ caching:
 Track metrics that indicate scaling needs:
 
 ```yaml
-monitoring:
-  scalability_metrics:
-    # Resource utilization
-    - name: "node_cpu_utilization"
-      threshold_warning: 70
-      threshold_critical: 85
+# NOTE: `monitoring:` is not a configuration-file section — it is ignored.
+# The Prometheus listener is opt-in and env-only:
+#   GEODE_METRICS_PORT=9090   (serves /metrics and /health)
+#   GEODE_METRICS_BIND=127.0.0.1
 
     - name: "node_memory_utilization"
       threshold_warning: 75

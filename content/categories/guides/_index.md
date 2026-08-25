@@ -345,10 +345,10 @@ CREATE INDEX person_location ON :Person(city, state);
 CREATE CONSTRAINT unique_user_id ON :User(id);
 
 -- Full-text index
-CREATE FULLTEXT INDEX article_content ON :Article(title, content);
+CREATE INDEX article_content ON :Article(title, content) USING fulltext;
 
 -- Vector index for embeddings
-CREATE VECTOR INDEX doc_embeddings ON :Document(embedding)
+CREATE INDEX doc_embeddings ON :Document(embedding) USING vector
 WITH (metric = 'cosine');
 
 -- List all indexes
@@ -399,15 +399,13 @@ client = Client(
 
 ```gql
 -- Create policy: users can only see their own department
-CREATE POLICY department_access ON :Employee
-  USING (department = current_user_department());
+-- Employee.department must equal the caller's 'department' principal attribute
+CALL geode.rls.add_attribute_policy('app', 'Employee', 'department', 'department');
 
 -- Create policy: managers see their reports
-CREATE POLICY manager_access ON :Employee
-  USING (
-    id = current_user_id() OR
-    EXISTS ((current_user)-[:MANAGES*]->(this))
-  );
+-- Not expressible as a Geode policy predicate (only `=` against a string
+-- literal compiles); precompute the decision into a property instead:
+CALL geode.rls.add_attribute_policy('app', 'Label', 'access_tag', 'access_tag');
 
 -- Enable policies
 ENABLE POLICY department_access ON :Employee;

@@ -397,9 +397,8 @@ Configure Row-Level Security policies for fine-grained access control:
 ALTER TABLE Person ENABLE ROW LEVEL SECURITY;
 
 -- Create access policies
-CREATE POLICY user_access ON Person
-FOR SELECT
-USING (owner_id = current_user_id());
+-- Person.owner_id must equal the caller's 'user_id' principal attribute
+CALL geode.rls.add_attribute_policy('app', 'Person', 'owner_id', 'user_id');
 ```
 
 ## Client Setup

@@ -35,16 +35,9 @@ Triggers respond to DML operations:
 
 ```gql
 -- After insert trigger
-CREATE TRIGGER audit_new_users
-AFTER INSERT ON Person
-FOR EACH ROW
-EXECUTE GQL
-  INSERT (a:AuditLog {
-    action: 'user_created',
-    user_id: NEW.id,
-    timestamp: NOW(),
-    details: NEW.properties
-  });
+-- Geode has no trigger system (no CREATE TRIGGER). React to changes with
+-- a CDC subscription on the client, or write the derived value in the same
+-- transaction as the change.
 ```
 
 ### Before Update Trigger
@@ -53,19 +46,14 @@ Validate or modify data before update:
 
 ```gql
 -- Prevent negative balance
-CREATE TRIGGER check_balance
-BEFORE UPDATE ON Account
-FOR EACH ROW
-WHEN (NEW.balance < 0)
-EXECUTE GQL
-  SIGNAL 'Insufficient funds';
+-- Geode has no trigger system (no CREATE TRIGGER). React to changes with
+-- a CDC subscription on the client, or write the derived value in the same
+-- transaction as the change.
 
 -- Auto-update modification time
-CREATE TRIGGER update_modified_time
-BEFORE UPDATE ON Person
-FOR EACH ROW
-EXECUTE GQL
-  SET NEW.modified_at = NOW();
+-- Geode has no trigger system (no CREATE TRIGGER). React to changes with
+-- a CDC subscription on the client, or write the derived value in the same
+-- transaction as the change.
 ```
 
 ### After Delete Trigger
@@ -74,23 +62,14 @@ Cascade operations after deletion:
 
 ```gql
 -- Archive deleted users
-CREATE TRIGGER archive_deleted_users
-AFTER DELETE ON Person
-FOR EACH ROW
-EXECUTE GQL
-  INSERT (a:ArchivedPerson {
-    original_id: OLD.id,
-    data: OLD.properties,
-    deleted_at: NOW(),
-    deleted_by: CURRENT_USER()
-  });
+-- Geode has no trigger system (no CREATE TRIGGER). React to changes with
+-- a CDC subscription on the client, or write the derived value in the same
+-- transaction as the change.
 
 -- Clean up orphaned data
-CREATE TRIGGER cleanup_user_data
-AFTER DELETE ON Person
-FOR EACH ROW
-EXECUTE GQL
-  DELETE FROM Post WHERE author_id = OLD.id;
+-- Geode has no trigger system (no CREATE TRIGGER). React to changes with
+-- a CDC subscription on the client, or write the derived value in the same
+-- transaction as the change.
   DELETE FROM Comment WHERE author_id = OLD.id;
 ```
 
@@ -128,28 +107,19 @@ Enforce business rules:
 
 ```gql
 -- Age validation
-CREATE TRIGGER validate_age
-BEFORE INSERT OR UPDATE ON Person
-FOR EACH ROW
-WHEN (NEW.age < 0 OR NEW.age > 150)
-EXECUTE GQL
-  SIGNAL 'Invalid age value';
+-- Geode has no trigger system (no CREATE TRIGGER). React to changes with
+-- a CDC subscription on the client, or write the derived value in the same
+-- transaction as the change.
 
 -- Email uniqueness
-CREATE TRIGGER ensure_unique_email
-BEFORE INSERT ON Person
-FOR EACH ROW
-WHEN EXISTS (SELECT 1 FROM Person WHERE email = NEW.email)
-EXECUTE GQL
-  SIGNAL 'Email already in use';
+-- Geode has no trigger system (no CREATE TRIGGER). React to changes with
+-- a CDC subscription on the client, or write the derived value in the same
+-- transaction as the change.
 
 -- Required fields
-CREATE TRIGGER check_required_fields
-BEFORE INSERT ON Person
-FOR EACH ROW
-WHEN (NEW.name IS NULL OR NEW.email IS NULL)
-EXECUTE GQL
-  SIGNAL 'Required fields missing';
+-- Geode has no trigger system (no CREATE TRIGGER). React to changes with
+-- a CDC subscription on the client, or write the derived value in the same
+-- transaction as the change.
 ```
 
 ### Computed Properties
@@ -158,29 +128,19 @@ Auto-calculate derived values:
 
 ```gql
 -- Full name from first and last
-CREATE TRIGGER compute_full_name
-BEFORE INSERT OR UPDATE ON Person
-FOR EACH ROW
-EXECUTE GQL
-  SET NEW.full_name = NEW.first_name || ' ' || NEW.last_name;
+-- Geode has no trigger system (no CREATE TRIGGER). React to changes with
+-- a CDC subscription on the client, or write the derived value in the same
+-- transaction as the change.
 
 -- Age from birthdate
-CREATE TRIGGER compute_age
-BEFORE INSERT OR UPDATE ON Person
-FOR EACH ROW
-EXECUTE GQL
-  SET NEW.age = YEAR(NOW()) - YEAR(NEW.birthdate);
+-- Geode has no trigger system (no CREATE TRIGGER). React to changes with
+-- a CDC subscription on the client, or write the derived value in the same
+-- transaction as the change.
 
 -- Order total
-CREATE TRIGGER compute_order_total
-BEFORE INSERT OR UPDATE ON Order
-FOR EACH ROW
-EXECUTE GQL
-  SET NEW.total = (
-    SELECT SUM(quantity * price)
-    FROM OrderItem
-    WHERE order_id = NEW.id
-  );
+-- Geode has no trigger system (no CREATE TRIGGER). React to changes with
+-- a CDC subscription on the client, or write the derived value in the same
+-- transaction as the change.
 ```
 
 ### Audit Logging
@@ -189,24 +149,9 @@ Track all data changes:
 
 ```gql
 -- Comprehensive audit trail
-CREATE TRIGGER audit_all_changes
-AFTER INSERT OR UPDATE OR DELETE ON Person
-FOR EACH ROW
-EXECUTE GQL
-  INSERT (log:AuditLog {
-    table_name: 'Person',
-    operation: CASE
-      WHEN INSERTING THEN 'INSERT'
-      WHEN UPDATING THEN 'UPDATE'
-      WHEN DELETING THEN 'DELETE'
-    END,
-    record_id: COALESCE(NEW.id, OLD.id),
-    old_value: OLD.properties,
-    new_value: NEW.properties,
-    changed_by: CURRENT_USER(),
-    changed_at: NOW(),
-    ip_address: CURRENT_IP()
-  });
+-- Geode has no trigger system (no CREATE TRIGGER). React to changes with
+-- a CDC subscription on the client, or write the derived value in the same
+-- transaction as the change.
 ```
 
 ## Advanced Patterns
@@ -217,27 +162,14 @@ Execute only when conditions met:
 
 ```gql
 -- Only trigger for significant changes
-CREATE TRIGGER notify_major_update
-AFTER UPDATE ON Account
-FOR EACH ROW
-WHEN (ABS(NEW.balance - OLD.balance) > 10000)
-EXECUTE GQL
-  INSERT (n:Notification {
-    type: 'large_transaction',
-    account_id: NEW.id,
-    old_balance: OLD.balance,
-    new_balance: NEW.balance,
-    difference: NEW.balance - OLD.balance,
-    timestamp: NOW()
-  });
+-- Geode has no trigger system (no CREATE TRIGGER). React to changes with
+-- a CDC subscription on the client, or write the derived value in the same
+-- transaction as the change.
 
 -- Status-based triggers
-CREATE TRIGGER handle_order_completion
-AFTER UPDATE ON Order
-FOR EACH ROW
-WHEN (OLD.status != 'completed' AND NEW.status = 'completed')
-EXECUTE GQL
-  INSERT (e:Event {type: 'order_completed', order_id: NEW.id});
+-- Geode has no trigger system (no CREATE TRIGGER). React to changes with
+-- a CDC subscription on the client, or write the derived value in the same
+-- transaction as the change.
   UPDATE Customer SET total_orders = total_orders + 1
     WHERE id = NEW.customer_id;
 ```
@@ -248,21 +180,16 @@ Affect multiple tables:
 
 ```gql
 -- Cascade inventory update
-CREATE TRIGGER update_inventory
-AFTER INSERT ON OrderItem
-FOR EACH ROW
-EXECUTE GQL
-  UPDATE Product
-  SET stock_quantity = stock_quantity - NEW.quantity,
-      last_ordered = NOW()
-  WHERE id = NEW.product_id;
-  
+-- Geode has no trigger system (no CREATE TRIGGER). React to changes with
+-- a CDC subscription on the client, or write the derived value in the same
+-- transaction as the change.
+
   INSERT (h:InventoryHistory {
     product_id: NEW.product_id,
     change: -NEW.quantity,
     reason: 'order_placed',
     order_id: NEW.order_id,
-    timestamp: NOW()
+    timestamp: datetime()
   });
 ```
 
@@ -275,13 +202,9 @@ Triggers that may trigger themselves:
 SET max_trigger_recursion = 10;
 
 -- Hierarchical update
-CREATE TRIGGER propagate_category_update
-AFTER UPDATE ON Category
-FOR EACH ROW
-EXECUTE GQL
-  UPDATE Category
-  SET parent_updated_at = NEW.updated_at
-  WHERE parent_id = NEW.id;
+-- Geode has no trigger system (no CREATE TRIGGER). React to changes with
+-- a CDC subscription on the client, or write the derived value in the same
+-- transaction as the change.
 ```
 
 ## Trigger Management
@@ -322,13 +245,12 @@ Query trigger metadata:
 
 ```gql
 -- List all triggers
-SELECT trigger_name, table_name, event, timing, enabled
-FROM SYSTEM.triggers;
-
--- Get trigger definition
-SELECT trigger_name, definition
-FROM SYSTEM.triggers
-WHERE trigger_name = 'audit_new_users';
+-- Geode has no trigger system (no CREATE TRIGGER). React to changes with
+-- a CDC subscription on the client, or write the derived value in the same
+-- transaction as the change.-- Get trigger definition
+-- Geode has no trigger system (no CREATE TRIGGER). React to changes with
+-- a CDC subscription on the client, or write the derived value in the same
+-- transaction as the change.
 ```
 
 ## Performance Considerations
@@ -339,13 +261,9 @@ Minimize impact on write performance:
 
 ```gql
 -- Batch audit logging instead of per-row
-CREATE TRIGGER batch_audit
-AFTER INSERT ON Person
-FOR EACH STATEMENT
-EXECUTE GQL
-  INSERT INTO audit_log
-  SELECT 'INSERT', NEW.id, NEW.properties, NOW()
-  FROM NEW;
+-- Geode has no trigger system (no CREATE TRIGGER). React to changes with
+-- a CDC subscription on the client, or write the derived value in the same
+-- transaction as the change.
 ```
 
 ### Async Triggers
@@ -354,16 +272,9 @@ Defer non-critical work:
 
 ```gql
 -- Queue for async processing
-CREATE TRIGGER queue_email
-AFTER INSERT ON Person
-FOR EACH ROW
-EXECUTE GQL
-  INSERT INTO email_queue (
-    type: 'welcome',
-    recipient: NEW.email,
-    data: NEW.properties,
-    queued_at: NOW()
-  );
+-- Geode has no trigger system (no CREATE TRIGGER). React to changes with
+-- a CDC subscription on the client, or write the derived value in the same
+-- transaction as the change.
 ```
 
 ### Trigger Ordering
@@ -372,20 +283,19 @@ Control execution order:
 
 ```gql
 -- Explicit ordering
-CREATE TRIGGER validate_first
-BEFORE INSERT ON Person
-ORDER 1
-EXECUTE GQL ...;
+-- Geode has no trigger system (no CREATE TRIGGER). React to changes with
+-- a CDC subscription on the client, or write the derived value in the same
+-- transaction as the change.
 
-CREATE TRIGGER audit_second
-BEFORE INSERT ON Person
-ORDER 2
-EXECUTE GQL ...;
+-- Geode has no trigger system (no CREATE TRIGGER). React to changes with
+-- a CDC subscription on the client, or write the derived value in the same
+-- transaction as the change.
 ```
 
 ## Best Practices
 
 ### Trigger Design
+
 - Keep triggers simple and focused
 - Avoid complex business logic
 - Document trigger purpose
@@ -393,12 +303,14 @@ EXECUTE GQL ...;
 - Monitor performance impact
 
 ### Error Handling
+
 - Use SIGNAL for validation errors
 - Provide meaningful error messages
 - Log errors for debugging
 - Consider compensation logic
 
 ### Security
+
 - Validate all inputs
 - Check permissions
 - Prevent SQL injection
@@ -419,20 +331,14 @@ Automatically add tenant context to all data:
 
 ```gql
 -- Inject tenant_id on all creates
-CREATE TRIGGER enforce_tenancy
-BEFORE INSERT ON Person, Company, Product
-FOR EACH ROW
-EXECUTE GQL
-  SET NEW.tenant_id = CURRENT_TENANT_ID(),
-      NEW.created_by = CURRENT_USER();
+-- Geode has no trigger system (no CREATE TRIGGER). React to changes with
+-- a CDC subscription on the client, or write the derived value in the same
+-- transaction as the change.
 
 -- Prevent cross-tenant access
-CREATE TRIGGER validate_tenant_access
-BEFORE UPDATE OR DELETE ON Person, Company, Product
-FOR EACH ROW
-WHEN (OLD.tenant_id != CURRENT_TENANT_ID())
-EXECUTE GQL
-  SIGNAL 'Access denied: cross-tenant operation not allowed';
+-- Geode has no trigger system (no CREATE TRIGGER). React to changes with
+-- a CDC subscription on the client, or write the derived value in the same
+-- transaction as the change.
 ```
 
 ### Data Retention Policy
@@ -441,18 +347,9 @@ Automatically archive or delete old data:
 
 ```gql
 -- Archive records older than 7 years
-CREATE TRIGGER enforce_retention_policy
-AFTER UPDATE ON Event
-FOR EACH ROW
-WHEN (NEW.timestamp < datetime().minusYears(7))
-EXECUTE GQL
-  -- Move to archive
-  CREATE (a:ArchivedEvent {
-    original_id: NEW.id,
-    data: NEW.properties,
-    archived_at: datetime()
-  })
-  IN GRAPH archive_db;
+-- Geode has no trigger system (no CREATE TRIGGER). React to changes with
+-- a CDC subscription on the client, or write the derived value in the same
+-- transaction as the change.
 
   -- Delete from active
   DELETE NEW;
@@ -462,7 +359,7 @@ CREATE SCHEDULED TRIGGER retention_cleanup
 EVERY '1 day'
 EXECUTE GQL
   MATCH (e:Event)
-  WHERE e.timestamp < datetime().minusYears(7)
+  WHERE e.timestamp < datetime() - duration('P7Y')
   WITH e LIMIT 1000
   DELETE e;
 ```
@@ -473,32 +370,14 @@ Maintain symmetric relationships:
 
 ```gql
 -- When A friends B, also create B friends A
-CREATE TRIGGER bidirectional_friendship
-AFTER INSERT ON [:FRIEND]
-FOR EACH RELATIONSHIP
-WHEN NOT EXISTS {
-  MATCH (target)-[:FRIEND]->(source)
-  WHERE source = startNode(NEW)
-    AND target = endNode(NEW)
-}
-EXECUTE GQL
-  MATCH (a), (b)
-  WHERE id(a) = id(startNode(NEW))
-    AND id(b) = id(endNode(NEW))
-  CREATE (b)-[:FRIEND {
-    created_at: NEW.created_at,
-    bidirectional: true
-  }]->(a);
+-- Geode has no trigger system (no CREATE TRIGGER). React to changes with
+-- a CDC subscription on the client, or write the derived value in the same
+-- transaction as the change.
 
 -- When A unfriends B, also remove B friends A
-CREATE TRIGGER bidirectional_unfriend
-AFTER DELETE ON [:FRIEND]
-FOR EACH RELATIONSHIP
-EXECUTE GQL
-  MATCH (target)-[r:FRIEND]->(source)
-  WHERE source = startNode(OLD)
-    AND target = endNode(OLD)
-  DELETE r;
+-- Geode has no trigger system (no CREATE TRIGGER). React to changes with
+-- a CDC subscription on the client, or write the derived value in the same
+-- transaction as the change.
 ```
 
 ### Denormalization Maintenance
@@ -507,33 +386,14 @@ Keep denormalized data in sync:
 
 ```gql
 -- Update user's post count when posts created/deleted
-CREATE TRIGGER maintain_post_count
-AFTER INSERT OR DELETE ON Post
-FOR EACH ROW
-EXECUTE GQL
-  MATCH (u:User {id: COALESCE(NEW.author_id, OLD.author_id)})
-  WITH u, CASE
-    WHEN INSERTING THEN 1
-    WHEN DELETING THEN -1
-  END AS delta
-  SET u.post_count = u.post_count + delta,
-      u.last_post_at = CASE
-        WHEN INSERTING THEN datetime()
-        ELSE u.last_post_at
-      END;
+-- Geode has no trigger system (no CREATE TRIGGER). React to changes with
+-- a CDC subscription on the client, or write the derived value in the same
+-- transaction as the change.
 
 -- Maintain aggregated statistics
-CREATE TRIGGER update_category_stats
-AFTER INSERT OR UPDATE OR DELETE ON Product
-FOR EACH ROW
-EXECUTE GQL
-  MATCH (c:Category {id: COALESCE(NEW.category_id, OLD.category_id)})
-  WITH c,
-       COUNT{(c)<-[:IN_CATEGORY]-(p:Product)} AS product_count,
-       AVG{(c)<-[:IN_CATEGORY]-(p:Product) | p.price} AS avg_price
-  SET c.product_count = product_count,
-      c.average_price = avg_price,
-      c.last_updated = datetime();
+-- Geode has no trigger system (no CREATE TRIGGER). React to changes with
+-- a CDC subscription on the client, or write the derived value in the same
+-- transaction as the change.
 ```
 
 ### Soft Delete Implementation
@@ -542,23 +402,13 @@ Mark records as deleted instead of removing them:
 
 ```gql
 -- Intercept deletes and convert to soft delete
-CREATE TRIGGER soft_delete_user
-INSTEAD OF DELETE ON Person
-FOR EACH ROW
-EXECUTE GQL
-  MATCH (p:Person)
-  WHERE id(p) = id(OLD)
-  SET p.deleted_at = datetime(),
-      p.deleted_by = CURRENT_USER(),
-      p.status = 'deleted'
-  REMOVE p:Active
-  SET p:Deleted;
+-- Geode has no trigger system (no CREATE TRIGGER). React to changes with
+-- a CDC subscription on the client, or write the derived value in the same
+-- transaction as the change.
 
 -- Hide soft-deleted records from normal queries
-CREATE VIEW ActivePersons AS
-  MATCH (p:Person)
-  WHERE p.deleted_at IS NULL
-  RETURN p;
+-- Geode has no views (no CREATE VIEW). Save the query text in your
+-- application, or precompute the result onto nodes.
 ```
 
 ## Hook Performance Optimization
@@ -569,18 +419,9 @@ Minimize trigger overhead:
 
 ```gql
 -- Only execute for significant changes
-CREATE TRIGGER notify_price_change
-AFTER UPDATE ON Product
-FOR EACH ROW
-WHEN (ABS(NEW.price - OLD.price) / OLD.price > 0.1)  -- >10% change
-EXECUTE GQL
-  CREATE (n:PriceChangeNotification {
-    product_id: NEW.id,
-    old_price: OLD.price,
-    new_price: NEW.price,
-    change_percent: (NEW.price - OLD.price) / OLD.price * 100,
-    timestamp: datetime()
-  });
+-- Geode has no trigger system (no CREATE TRIGGER). React to changes with
+-- a CDC subscription on the client, or write the derived value in the same
+-- transaction as the change.
 ```
 
 ### Batching Hook Actions
@@ -589,19 +430,9 @@ Process multiple rows efficiently:
 
 ```gql
 -- Per-statement trigger (not per-row)
-CREATE TRIGGER batch_audit_inserts
-AFTER INSERT ON User
-FOR EACH STATEMENT
-EXECUTE GQL
-  -- NEW represents all inserted rows
-  WITH NEW
-  UNWIND NEW AS user
-  CREATE (a:AuditLog {
-    action: 'user_created',
-    user_ids: [u IN NEW | u.id],
-    count: SIZE(NEW),
-    timestamp: datetime()
-  });
+-- Geode has no trigger system (no CREATE TRIGGER). React to changes with
+-- a CDC subscription on the client, or write the derived value in the same
+-- transaction as the change.
 ```
 
 ### Async Hook Execution
@@ -610,17 +441,9 @@ Defer non-critical work:
 
 ```gql
 -- Queue for async processing
-CREATE TRIGGER queue_welcome_email
-AFTER INSERT ON User
-FOR EACH ROW
-EXECUTE GQL
-  CREATE (job:AsyncJob {
-    type: 'send_welcome_email',
-    user_id: NEW.id,
-    user_email: NEW.email,
-    queued_at: datetime(),
-    status: 'pending'
-  });
+-- Geode has no trigger system (no CREATE TRIGGER). React to changes with
+-- a CDC subscription on the client, or write the derived value in the same
+-- transaction as the change.
 
 -- Background worker processes jobs
 -- (separate process, no blocking on insert)
@@ -722,13 +545,7 @@ SET trigger_logging = true;
 CREATE (:User {id: 789, name: 'Debug User'});
 
 -- View trigger log
-SELECT trigger_name,
-       execution_time_ms,
-       status,
-       error_message
-FROM SYSTEM.trigger_execution_log
-WHERE timestamp > datetime().minusMinutes(5)
-ORDER BY timestamp DESC;
+-- Geode has no trigger system and no execution log.
 ```
 
 ### Trigger Profiling
@@ -755,12 +572,9 @@ PROFILE TRIGGER audit_new_users;
 Apply triggers to historical data:
 
 ```gql
--- Create trigger
-CREATE TRIGGER compute_full_name
-BEFORE INSERT OR UPDATE ON Person
-FOR EACH ROW
-EXECUTE GQL
-  SET NEW.full_name = NEW.first_name || ' ' || NEW.last_name;
+-- Geode has no trigger system (no CREATE TRIGGER). React to changes with
+-- a CDC subscription on the client, or write the derived value in the same
+-- transaction as the change.
 
 -- Backfill existing data
 MATCH (p:Person)
@@ -779,19 +593,9 @@ Manage hook changes over time:
 DROP TRIGGER IF EXISTS audit_new_users_v1;
 
 -- Create new version
-CREATE TRIGGER audit_new_users_v2
-AFTER INSERT ON Person
-FOR EACH ROW
-EXECUTE GQL
-  INSERT (a:AuditLog {
-    version: 2,  -- Track trigger version
-    action: 'user_created',
-    user_id: NEW.id,
-    timestamp: NOW(),
-    details: NEW.properties,
-    ip_address: CURRENT_IP(),  -- New field in v2
-    user_agent: CURRENT_USER_AGENT()  -- New field in v2
-  });
+-- Geode has no trigger system (no CREATE TRIGGER). React to changes with
+-- a CDC subscription on the client, or write the derived value in the same
+-- transaction as the change.
 ```
 
 ## Learn More

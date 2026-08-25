@@ -117,6 +117,7 @@ CREATE (u:User)-[:PURCHASED]->(o:Order {date: '2024-01'})-[:CONTAINS]->(p:Produc
 Geode supports both approaches:
 
 **Schema-First** (recommended for production):
+
 ```gql
 // Define node types with constraints
 CREATE CONSTRAINT ON (u:User) ASSERT u.id IS UNIQUE;
@@ -125,6 +126,7 @@ CREATE INDEX FOR (u:User) ON (u.name);
 ```
 
 **Schema-Less** (flexible for rapid prototyping):
+
 ```gql
 // Add properties dynamically
 CREATE (:DynamicNode {anything: 'goes', schema: 'evolves'})
@@ -133,6 +135,7 @@ CREATE (:DynamicNode {anything: 'goes', schema: 'evolves'})
 ### Normalization vs. Denormalization
 
 **Normalize for Consistency**:
+
 ```gql
 // Normalized: separate node for address
 CREATE (u:User {name: 'Alice'})
@@ -141,6 +144,7 @@ CREATE (u)-[:LIVES_AT]->(a)
 ```
 
 **Denormalize for Performance**:
+
 ```gql
 // Denormalized: embed address in user
 CREATE (:User {
@@ -224,9 +228,9 @@ Isolate data by tenant:
 CREATE (:User {tenant_id: 'acme', email: 'user@acme.com'})
 CREATE (:User {tenant_id: 'globex', email: 'user@globex.com'})
 
-// Enforce with Row-Level Security
-CREATE POLICY tenant_isolation ON User
-USING (tenant_id = current_setting('app.tenant_id'))
+// Enforce with Row-Level Security: User.tenant_id must equal the caller's
+// 'tenant' principal attribute
+CALL geode.rls.add_attribute_policy('app', 'User', 'tenant_id', 'tenant')
 ```
 
 ### Hierarchies and Trees
@@ -436,7 +440,7 @@ Common query patterns:
 -- User feed: posts from followed users
 MATCH (me:User {id: $my_id})-[:FOLLOWS]->(friend:User)
 MATCH (friend)-[:POSTED]->(post:Post)
-WHERE post.created_at > datetime().minusDays(7)
+WHERE post.created_at > datetime() - duration('P7D')
 RETURN post, friend.username
 ORDER BY post.created_at DESC
 LIMIT 50
@@ -452,7 +456,7 @@ RETURN suggestion, mutual_friends
 
 -- Trending posts: high engagement recently
 MATCH (p:Post)
-WHERE p.created_at > datetime().minusHours(24)
+WHERE p.created_at > datetime() - duration('PT24H')
 WITH p,
      COUNT{(p)<-[:LIKED]-()} AS likes,
      COUNT{(p)<-[:ON]-(c:Comment)} AS comments
@@ -681,7 +685,7 @@ CREATE (:Place {
 })
 
 -- Spatial index (for distance queries)
-CREATE SPATIAL INDEX FOR (p:Place) ON (p.latitude, p.longitude);
+CREATE INDEX FOR (p:Place) ON (p.latitude, p.longitude) USING spatial;
 
 -- Distance-based queries
 MATCH (p:Place)
@@ -738,15 +742,9 @@ CREATE (:User {
 })
 
 -- Trigger keeps count in sync
-CREATE TRIGGER maintain_post_count
-AFTER INSERT OR DELETE ON [:POSTED]
-FOR EACH RELATIONSHIP
-EXECUTE GQL
-  MATCH (u:User)
-  WHERE id(u) = id(startNode(COALESCE(NEW, OLD)))
-  SET u.post_count = u.post_count + CASE WHEN INSERTING THEN 1 ELSE -1 END
-
--- Fast query
+-- Geode has no trigger system (no CREATE TRIGGER). React to changes with
+-- a CDC subscription on the client, or write the derived value in the same
+-- transaction as the change.-- Fast query
 MATCH (u:User {id: $user_id})
 RETURN u.post_count
 ```
@@ -825,7 +823,10 @@ CREATE (:SchemaVersion {
 -- Migration scripts
 -- v1_to_v2.gql
 CREATE CONSTRAINT ON (u:User) ASSERT u.email IS UNIQUE;
-ALTER LABEL User ADD PROPERTY email_verified BOOLEAN DEFAULT false;
+-- Geode has no ALTER LABEL / ALTER GRAPH / property DEFAULT DDL. Labels and
+-- properties are schema-free: write the new property with SET, supplying the
+-- default yourself.
+MATCH (u:User) WHERE u.verified IS NULL SET u.verified = false;
 INSERT (:SchemaVersion {version: 2, applied_at: datetime(), description: 'Add email verification'})
 ```
 

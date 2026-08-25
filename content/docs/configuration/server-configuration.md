@@ -29,7 +29,26 @@ This guide provides complete reference documentation for configuring the Geode d
 2. **Environment variables** - Medium precedence
 3. **YAML configuration file** - Lowest precedence
 
+{{< callout type="warning" >}}
+**The configuration file is a flat, eight-key document.** `mergeFileConfig`
+(`src/server/cli_args.zig`) reads exactly these keys, all at the top level:
+
+`listen_quic`, `listen_grpc`, `cert_path`, `key_path`, `data_dir`, `log_level`,
+`idle_timeout`, `persist_interval`.
+
+There are **no nested sections**. `security:`, `storage:`, `cluster:`,
+`monitoring:`, `performance:`, `logging:` and `encryption:` blocks are silently
+ignored — an unknown key is not an error, so a file full of them looks like it
+worked while changing nothing. Everything outside those eight keys is set with a
+CLI flag or an environment variable.
+
+Searched automatically, in order: `.geode/config.{yaml,toml,json}` (project) then
+`~/.config/geode/config.*` (user). Any other path must be passed explicitly with
+`-c/--config`, which accepts YAML, TOML or JSON.
+{{< /callout >}}
+
 **Quick Links:**
+
 - [Command-Line Flags](#command-line-flags)
 - [Environment Variables](#environment-variables)
 - [YAML Configuration](#yaml-configuration-file)
@@ -48,23 +67,35 @@ geode serve [OPTIONS]
 
 | Flag | Type | Default | Description |
 |------|------|---------|-------------|
-| `--listen` | string | `0.0.0.0:3141` | QUIC listen address and port |
-| `--listen-quic` | string | `0.0.0.0:3141` | (Alias for `--listen`) QUIC bind address |
-| `--data-dir` | path | `./data` | Data directory for storage files |
-| `--tls-cert` | path | (required) | Path to TLS certificate file (PEM format) |
-| `--tls-key` | path | (required) | Path to TLS private key file (PEM format) |
-| `--log-level` | string | `info` | Log level: `error`, `warn`, `info`, `debug`, `trace` |
-| `--log-json` | flag | false | Output logs in JSON format |
-| `--log-file` | path | (stderr) | Log file path (default: stderr) |
-| `--enable-tde` | flag | false | Enable Transparent Data Encryption |
-| `--max-connections` | int | `10000` | Maximum concurrent connections |
-| `--page-cache-size` | int | `1024` | Page cache size in MB |
-| `--wal-dir` | path | `<data-dir>/wal` | Write-ahead log directory |
-| `--config` | path | - | Path to YAML configuration file |
+| `-c`, `--config` | path | - | Config file path (YAML, TOML or JSON) |
+| `--listen` | string | `0.0.0.0:3141` | QUIC/TLS listen address. Also `GEODE_PORT=<port>` |
+| `--listen-grpc` | string | - | gRPC listen address (e.g. `0.0.0.0:3142`) |
+| `--cert` | path | auto-generate | TLS certificate path |
+| `--key` | path | auto-generate | TLS private key path |
+| `--data_dir`, `--data-dir` | path | - | Data directory for storage and generated certs |
+| `--order-keys` | `expr` | - | Allow expressions in `ORDER BY` |
+| `--log-level` | string | `info` | `trace`, `debug`, `info`, `warn`, `error`, `critical` |
+| `--idle-timeout` | int (ms) | `300000` | QUIC idle timeout |
+| `--max-connections` | int | `10000` | Cap concurrent QUIC connections |
+| `--persist-interval` | int (ms) | `100` | Background persistence interval |
+| `--cluster-port` | int | - | Raft cluster listen port (needs `GEODE_CLUSTER_TOKEN`) |
+| `--peers` | string | - | Comma-separated cluster peers (cluster ports) |
+| `--no-auth` | flag | false | Disable authentication (not for production) |
+| `--insecure-allow-all` | flag | false | Bypass **all** authorization checks (never in production) |
+| `--strict-tenancy` | flag | false | Reject tenant-scoped ops with no tenant scope |
+
+{{< callout type="note" >}}
+This is the complete list. There is no `--tls-cert`/`--tls-key` (they are
+`--cert`/`--key`), no `--log-json`, `--log-file`, `--page-cache-size` or
+`--wal-dir` — the WAL lives inside `--data-dir`. `--enable-tde` and
+`--enable-fle` are accepted for compatibility but do nothing: both are always
+available.
+{{< /callout >}}
 
 ### Examples
 
 **Basic Server Start** (Development):
+
 ```bash
 # Generate self-signed certificate first
 openssl req -x509 -newkey rsa:4096 \
@@ -79,22 +110,22 @@ geode serve \
 ```
 
 **Production Server** with all options:
+
 ```bash
 geode serve \
     --listen 0.0.0.0:3141 \
     --data-dir /var/lib/geode/data \
-    --wal-dir /var/lib/geode/wal \
     --tls-cert /etc/geode/tls/server.crt \
     --tls-key /etc/geode/tls/server.key \
     --log-level info \
     --log-json \
-    --log-file /var/log/geode/server.log \
-    --enable-tde \
+    --log-level info \
     --max-connections 50000 \
     --page-cache-size 4096
 ```
 
 **Using Configuration File**:
+
 ```bash
 geode serve --config /etc/geode/config.yaml
 ```
@@ -256,23 +287,15 @@ cdc:
         enabled: true
         header: 'X-Idempotency-Key'
 
-security:
-  kms_provider: 'vault'       # env, vault, aws
-  vault:
-    address: 'https://vault.example.com:8200'
-    token: '${VAULT_TOKEN}'
-    mount_path: 'geode-keys'
-  aws_kms:
-    key_id: 'arn:aws:kms:us-east-1:123456789012:key/...'
-    region: 'us-east-1'
+# NOTE: `security:` is not a configuration-file section — it is ignored.
+# KMS and encryption-at-rest are configured with environment variables:
+#   GEODE_KMS_URL, GEODE_KMS_ENDPOINT, GEODE_KMS_API_KEY
+#   GEODE_MASTER_KEY, GEODE_TDE_ENABLED, GEODE_ALLOW_LOCAL_KMS
 
-monitoring:
-  metrics:
-    enabled: true
-    listen: '0.0.0.0:9090'    # Prometheus metrics endpoint
-  health:
-    enabled: true
-    listen: '0.0.0.0:8080'    # Health/readiness endpoints
+# NOTE: `monitoring:` is not a configuration-file section — it is ignored.
+# The Prometheus listener is opt-in and env-only:
+#   GEODE_METRICS_PORT=9090   (serves /metrics and /health)
+#   GEODE_METRICS_BIND=127.0.0.1
 ```
 
 ### Loading Configuration
@@ -297,6 +320,7 @@ geode serve \
 ### Development Configuration
 
 **File: `dev-config.yaml`**
+
 ```yaml
 server:
   listen: '127.0.0.1:3141'
@@ -320,6 +344,7 @@ optimizer:
 ```
 
 **Start Command**:
+
 ```bash
 geode serve --config dev-config.yaml
 ```
@@ -327,6 +352,7 @@ geode serve --config dev-config.yaml
 ### Staging Configuration
 
 **File: `/etc/geode/staging-config.yaml`**
+
 ```yaml
 server:
   listen: '0.0.0.0:3141'
@@ -355,18 +381,16 @@ backup:
     prefix: 'staging'
     retention_days: 7
 
-monitoring:
-  metrics:
-    enabled: true
-    listen: '0.0.0.0:9090'
-  health:
-    enabled: true
-    listen: '0.0.0.0:8080'
+# NOTE: `monitoring:` is not a configuration-file section — it is ignored.
+# The Prometheus listener is opt-in and env-only:
+#   GEODE_METRICS_PORT=9090   (serves /metrics and /health)
+#   GEODE_METRICS_BIND=127.0.0.1
 ```
 
 ### Production Configuration
 
 **File: `/etc/geode/prod-config.yaml`**
+
 ```yaml
 server:
   listen: '0.0.0.0:3141'
@@ -429,23 +453,19 @@ cdc:
       idempotency:
         enabled: true
 
-security:
-  kms_provider: 'vault'
-  vault:
-    address: 'https://vault.prod.internal:8200'
-    token: '${VAULT_TOKEN}'
-    mount_path: 'geode-prod-keys'
+# NOTE: `security:` is not a configuration-file section — it is ignored.
+# KMS and encryption-at-rest are configured with environment variables:
+#   GEODE_KMS_URL, GEODE_KMS_ENDPOINT, GEODE_KMS_API_KEY
+#   GEODE_MASTER_KEY, GEODE_TDE_ENABLED, GEODE_ALLOW_LOCAL_KMS
 
-monitoring:
-  metrics:
-    enabled: true
-    listen: '0.0.0.0:9090'
-  health:
-    enabled: true
-    listen: '0.0.0.0:8080'
+# NOTE: `monitoring:` is not a configuration-file section — it is ignored.
+# The Prometheus listener is opt-in and env-only:
+#   GEODE_METRICS_PORT=9090   (serves /metrics and /health)
+#   GEODE_METRICS_BIND=127.0.0.1
 ```
 
 **Production Start (systemd)**:
+
 ```bash
 # /etc/systemd/system/geode.service
 [Unit]
@@ -473,6 +493,7 @@ WantedBy=multi-user.target
 ### Docker Configuration
 
 **docker-compose.yml**:
+
 ```yaml
 version: '3.8'
 
@@ -507,6 +528,7 @@ volumes:
 ```
 
 **Start with override**:
+
 ```bash
 # Production (error logs only)
 docker-compose up -d
@@ -641,6 +663,7 @@ server:
 ```
 
 **System Limits**:
+
 ```bash
 # Increase file descriptor limit
 ulimit -n 65536
@@ -686,6 +709,7 @@ performance:
 ### Log Formats
 
 **Text Format** (human-readable):
+
 ```
 2026-01-23T10:30:45Z [INFO] Server started on 0.0.0.0:3141
 2026-01-23T10:30:46Z [DEBUG] Accepted connection from 192.168.1.100:54321
@@ -693,6 +717,7 @@ performance:
 ```
 
 **JSON Format** (machine-parsable):
+
 ```json
 {"timestamp":"2026-01-23T10:30:45Z","level":"INFO","message":"Server started on 0.0.0.0:3141"}
 {"timestamp":"2026-01-23T10:30:46Z","level":"DEBUG","message":"Accepted connection from 192.168.1.100:54321"}
@@ -733,6 +758,7 @@ storage:
 ```
 
 **Generate Encryption Key**:
+
 ```bash
 # Generate random 256-bit key
 openssl rand -hex 32 > /secure/location/tde-key.hex
@@ -748,22 +774,21 @@ export VAULT_TOKEN=$(vault login -token-only)
 ### KMS Integration
 
 **HashiCorp Vault**:
+
 ```yaml
-security:
-  kms_provider: 'vault'
-  vault:
-    address: 'https://vault.example.com:8200'
-    token: '${VAULT_TOKEN}'    # From environment
-    mount_path: 'geode-keys'
+# NOTE: `security:` is not a configuration-file section — it is ignored.
+# KMS and encryption-at-rest are configured with environment variables:
+#   GEODE_KMS_URL, GEODE_KMS_ENDPOINT, GEODE_KMS_API_KEY
+#   GEODE_MASTER_KEY, GEODE_TDE_ENABLED, GEODE_ALLOW_LOCAL_KMS
 ```
 
 **AWS KMS**:
+
 ```yaml
-security:
-  kms_provider: 'aws'
-  aws_kms:
-    key_id: 'arn:aws:kms:us-east-1:123456789012:key/...'
-    region: 'us-east-1'
+# NOTE: `security:` is not a configuration-file section — it is ignored.
+# KMS and encryption-at-rest are configured with environment variables:
+#   GEODE_KMS_URL, GEODE_KMS_ENDPOINT, GEODE_KMS_API_KEY
+#   GEODE_MASTER_KEY, GEODE_TDE_ENABLED, GEODE_ALLOW_LOCAL_KMS
 ```
 
 ---
@@ -773,13 +798,14 @@ security:
 ### Prometheus Metrics
 
 ```yaml
-monitoring:
-  metrics:
-    enabled: true
-    listen: '0.0.0.0:9090'
+# NOTE: `monitoring:` is not a configuration-file section — it is ignored.
+# The Prometheus listener is opt-in and env-only:
+#   GEODE_METRICS_PORT=9090   (serves /metrics and /health)
+#   GEODE_METRICS_BIND=127.0.0.1
 ```
 
 **Scrape Config** (`prometheus.yml`):
+
 ```yaml
 scrape_configs:
   - job_name: 'geode'
@@ -791,13 +817,14 @@ scrape_configs:
 ### Health Checks
 
 ```yaml
-monitoring:
-  health:
-    enabled: true
-    listen: '0.0.0.0:8080'
+# NOTE: `monitoring:` is not a configuration-file section — it is ignored.
+# The Prometheus listener is opt-in and env-only:
+#   GEODE_METRICS_PORT=9090   (serves /metrics and /health)
+#   GEODE_METRICS_BIND=127.0.0.1
 ```
 
 **Kubernetes Probes**:
+
 ```yaml
 livenessProbe:
   httpGet:
@@ -821,6 +848,7 @@ readinessProbe:
 ### Common Issues
 
 **Issue: Server won't start with config file**
+
 ```bash
 # Check config syntax
 geode serve --config /etc/geode/config.yaml --validate
@@ -832,6 +860,7 @@ geode serve \
 ```
 
 **Issue: Environment variables not working**
+
 ```bash
 # Verify environment is set
 env | grep GEODE
@@ -841,6 +870,7 @@ GEODE_LOG_LEVEL=debug geode serve
 ```
 
 **Issue: TLS certificate errors**
+
 ```bash
 # See TLS Certificate Setup section above
 # Verify certificate paths in config

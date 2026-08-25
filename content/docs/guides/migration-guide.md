@@ -149,8 +149,10 @@ tls:
   key: '/etc/letsencrypt/live/geode.example.com/privkey.pem'
   auto_generate: false  # New: secure-by-default
 
-security:
-  auth_enabled: true  # New: enabled-by-default (was optional)
+# NOTE: `security:` is not a configuration-file section — it is ignored.
+# KMS and encryption-at-rest are configured with environment variables:
+#   GEODE_KMS_URL, GEODE_KMS_ENDPOINT, GEODE_KMS_API_KEY
+#   GEODE_MASTER_KEY, GEODE_TDE_ENABLED, GEODE_ALLOW_LOCAL_KMS
 
 storage:
   page_size: 8192

@@ -29,6 +29,7 @@ Data integrity and consistency are fundamental to reliable database systems. Geo
 ## Data Integrity Fundamentals
 
 Data integrity ensures that data is:
+
 - **Accurate**: Data correctly represents real-world entities
 - **Valid**: Data conforms to defined rules and constraints
 - **Consistent**: Data is coherent across the database
@@ -36,6 +37,7 @@ Data integrity ensures that data is:
 - **Unique**: Duplicate data is prevented where necessary
 
 Geode enforces data integrity through multiple layers:
+
 1. **Transaction guarantees**: ACID properties ensure consistent state
 2. **Schema constraints**: Rules enforced at the database level
 3. **Validation rules**: Custom business logic validation
@@ -110,7 +112,7 @@ geode serve --wal-enabled=true \
   --wal-flush-interval=100ms
 
 # After crash, recover from WAL
-geode recover --wal-directory=/var/lib/geode/wal
+geode recoverectory=/var/lib/geode/wal
 ```
 
 ## Schema Constraints
@@ -247,14 +249,9 @@ Implement custom validation logic:
 
 ```gql
 -- Validate before insertion
-CREATE FUNCTION validate_user(props MAP)
-RETURNS BOOLEAN
-AS $$
-  RETURN props.email IS NOT NULL
-    AND props.email MATCHES '^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
-    AND props.age >= 18
-    AND props.agreed_to_terms = true
-$$;
+-- Geode has no user-defined functions, aggregates or procedures: the
+-- grammar has no CREATE FUNCTION / AGGREGATE / PROCEDURE. Inline the
+-- logic into the query, or compute it in the client.
 
 -- Use in constraint
 CREATE CONSTRAINT valid_user

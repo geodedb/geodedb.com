@@ -79,6 +79,7 @@ RETURN friend.name, friend.city
 ```
 
 **Challenge Questions**:
+
 1. Who lives in the same city as Alice?
 2. Who has the most friends?
 3. Find all friends-of-friends for Bob who aren't direct friends
@@ -104,6 +105,7 @@ MATCH (bob:Person {name: 'Bob'})-[:KNOWS]->(friend)-[:KNOWS]->(fof)
 WHERE NOT (bob)-[:KNOWS]->(fof) AND bob <> fof
 RETURN DISTINCT fof.name
 ```
+
 </details>
 
 ## Exercise 2: E-Commerce Recommendation Engine (45 minutes)
@@ -487,7 +489,7 @@ WHERE ALL(r IN relationships(path) WHERE r.amount > 1000)
   AND ALL(n IN nodes(path) WHERE SIZE([(n)-[:PAYMENT]->() | 1]) > 5)
 RETURN path,
        [r IN relationships(path) | r.amount] AS amounts,
-       REDUCE(total = 0, r IN relationships(path) | total + r.amount) AS total_amount;
+       null /* reduce() is advertised by SHOW FUNCTIONS but has no evaluator dispatch; collect() the values and fold client-side (for path weights use algo.dijkstra.stream, which yields cost) */ AS total_amount;
 
 -- Velocity check: Too many transactions in short time
 MATCH (a:Account)-[t:PAYMENT]->()
@@ -509,7 +511,7 @@ RETURN a.id,
        recipient.id,
        r1.amount,
        r2.amount,
-       DURATION.BETWEEN(r1.timestamp, r2.timestamp).minutes AS minutes_between;
+       (r2.timestamp - r1.timestamp).minutes AS minutes_between;
 ```
 
 ## Advanced Hands-On Projects
@@ -519,6 +521,7 @@ RETURN a.id,
 **Objective**: Create a complete recommendation engine with multiple algorithms.
 
 **Requirements**:
+
 1. Collaborative filtering based on user similarity
 2. Content-based recommendations using product attributes
 3. Hybrid approach combining both
@@ -566,6 +569,7 @@ class RecommendationEngine:
 **Objective**: Build analytics dashboard for social network insights.
 
 **Features**:
+
 1. User growth metrics (daily/weekly/monthly active users)
 2. Engagement metrics (posts, likes, comments per user)
 3. Network topology analysis (clusters, influencers)
@@ -577,7 +581,7 @@ class RecommendationEngine:
 ```gql
 -- Daily active users
 MATCH (u:User)-[:ACTION]->(a)
-WHERE a.timestamp >= DATE_TRUNC('day', CURRENT_TIMESTAMP)
+WHERE a.timestamp >= $bucket_start /* no date_trunc(): bucket at write time or compare an explicit range */
 RETURN DATE(a.timestamp) AS date,
        COUNT(DISTINCT u) AS daily_active_users;
 
@@ -606,8 +610,8 @@ RETURN original_poster.name,
        p.content,
        p.timestamp,
        share_count,
-       DURATION.BETWEEN(p.timestamp, CURRENT_TIMESTAMP).hours AS hours_since_posted,
-       share_count * 1.0 / DURATION.BETWEEN(p.timestamp, CURRENT_TIMESTAMP).hours AS virality_rate
+       (CURRENT_TIMESTAMP - p.timestamp).hours AS hours_since_posted,
+       share_count * 1.0 / (CURRENT_TIMESTAMP - p.timestamp).hours AS virality_rate
 ORDER BY virality_rate DESC;
 ```
 
@@ -616,6 +620,7 @@ ORDER BY virality_rate DESC;
 **Objective**: Build intelligent query engine over knowledge graph.
 
 **Features**:
+
 1. Natural language to GQL translation
 2. Entity recognition and linking
 3. Relationship extraction
@@ -664,6 +669,7 @@ class KnowledgeGraphQueryEngine:
 **Objective**: Build complete multi-tenant application with RLS.
 
 **Features**:
+
 1. Tenant isolation using RLS policies
 2. Per-tenant resource limits
 3. Shared schema with tenant-specific data
@@ -674,28 +680,18 @@ class KnowledgeGraphQueryEngine:
 
 ```gql
 -- Create RLS policy for tenant isolation
-CREATE POLICY tenant_isolation ON User
-FOR ALL
-USING (tenant_id = current_tenant_id());
+-- User.tenant_id must equal the caller's 'tenant' principal attribute
+CALL geode.rls.add_attribute_policy('app', 'User', 'tenant_id', 'tenant');
 
 -- Create policy for hierarchical access
-CREATE POLICY manager_access ON Employee
-FOR SELECT
-USING (
-    employee_id = current_user_id()
-    OR EXISTS {
-        MATCH (current:Employee {id: current_user_id()})-[:MANAGES*]->(emp:Employee)
-        WHERE emp.employee_id = Employee.employee_id
-    }
-);
+-- Not expressible as a Geode policy predicate (only `=` against a string
+-- literal compiles); precompute the decision into a property instead:
+CALL geode.rls.add_attribute_policy('app', 'Employee', 'access_tag', 'access_tag');
 
 -- Row-level encryption policy
-CREATE POLICY sensitive_data ON Customer
-FOR SELECT
-USING (
-    has_permission(current_user_id(), 'view_pii')
-    OR customer_id = current_user_id()
-);
+-- Not expressible as a Geode policy predicate (only `=` against a string
+-- literal compiles); precompute the decision into a property instead:
+CALL geode.rls.add_attribute_policy('app', 'Customer', 'access_tag', 'access_tag');
 ```
 
 ## Debugging Exercises
@@ -715,6 +711,7 @@ RETURN u.name, p.name;
 ```
 
 **Steps**:
+
 1. Run EXPLAIN to see execution plan
 2. Identify the problem (hint: Cartesian product)
 3. Rewrite to use proper pattern matching
@@ -737,6 +734,7 @@ The original creates a Cartesian product of ALL users × ALL products, then filt
 **Problem**: Two concurrent transactions are deadlocking.
 
 **Transaction 1**:
+
 ```gql
 BEGIN;
 MATCH (a:Account {id: 1}) SET a.balance = a.balance - 100;
@@ -746,6 +744,7 @@ COMMIT;
 ```
 
 **Transaction 2**:
+
 ```gql
 BEGIN;
 MATCH (b:Account {id: 2}) SET b.balance = b.balance - 50;
@@ -760,6 +759,7 @@ COMMIT;
 <summary>Solution</summary>
 
 Deadlock occurs because:
+
 - TX1 locks Account 1, then tries to lock Account 2
 - TX2 locks Account 2, then tries to lock Account 1
 
@@ -774,6 +774,7 @@ SET a.balance = a.balance - 100,
     b.balance = b.balance + 100;
 COMMIT;
 ```
+
 </details>
 
 ## Community Challenges

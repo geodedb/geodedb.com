@@ -32,6 +32,7 @@ Security in Geode isn't an afterthought or optional feature—it's built into th
 ### Transport Security
 
 **Mandatory TLS 1.3**
+
 - All connections require TLS 1.3 encryption
 - No plaintext fallback option
 - QUIC protocol with integrated encryption
@@ -41,6 +42,7 @@ Security in Geode isn't an afterthought or optional feature—it's built into th
 - Mutual TLS (mTLS) support for client authentication
 
 **Connection Security**
+
 - Connection migration with security preservation
 - 0-RTT resumption with replay protection
 - Certificate pinning for MITM prevention
@@ -51,6 +53,7 @@ Security in Geode isn't an afterthought or optional feature—it's built into th
 ### Authentication & Authorization
 
 **User Authentication**
+
 - Argon2id password hashing (memory-hard, GPU-resistant)
 - Configurable work factors for future-proofing
 - Username/password authentication
@@ -60,6 +63,7 @@ Security in Geode isn't an afterthought or optional feature—it's built into th
 - Multi-factor authentication (MFA) support
 
 **Authorization Model**
+
 - Role-Based Access Control (RBAC)
 - Graph-level permissions
 - Label-level access control
@@ -69,6 +73,7 @@ Security in Geode isn't an afterthought or optional feature—it's built into th
 - Administrative privilege separation
 
 **Row-Level Security (RLS)**
+
 - Fine-grained access control at data level
 - Policy-based filtering using GQL expressions
 - User and role-based policies
@@ -80,6 +85,7 @@ Security in Geode isn't an afterthought or optional feature—it's built into th
 ### Data-at-Rest Encryption
 
 **Transparent Data Encryption (TDE)**
+
 - Full database encryption with no schema changes
 - AES-256-GCM authenticated encryption
 - Key hierarchy: master key -> database key -> page keys
@@ -89,6 +95,7 @@ Security in Geode isn't an afterthought or optional feature—it's built into th
 - Backup encryption included automatically
 
 **Field-Level Encryption (FLE)**
+
 - Selective encryption of sensitive fields
 - Client-side or server-side encryption
 - Deterministic encryption for equality searches
@@ -98,6 +105,7 @@ Security in Geode isn't an afterthought or optional feature—it's built into th
 - Queryable encryption patterns
 
 **Key Management**
+
 - KMS integration for enterprise key management
 - Automatic key rotation schedules
 - Key versioning and rollback
@@ -109,6 +117,7 @@ Security in Geode isn't an afterthought or optional feature—it's built into th
 ### Audit Logging
 
 **Comprehensive Audit Trail**
+
 - All data access logged (SELECT, INSERT, UPDATE, DELETE)
 - Schema changes captured (CREATE, ALTER, DROP)
 - Authentication events (login, logout, failed attempts)
@@ -118,6 +127,7 @@ Security in Geode isn't an afterthought or optional feature—it's built into th
 - Query execution history
 
 **Audit Log Features**
+
 - Immutable append-only log
 - Tamper-evident with cryptographic hashing
 - Structured log format (JSON)
@@ -127,6 +137,7 @@ Security in Geode isn't an afterthought or optional feature—it's built into th
 - Async logging for minimal performance impact
 
 **Compliance Reporting**
+
 - Pre-built compliance reports (GDPR, SOC 2, HIPAA)
 - User access reports
 - Data modification reports
@@ -138,6 +149,7 @@ Security in Geode isn't an afterthought or optional feature—it's built into th
 ### Compliance Features
 
 **Regulatory Compliance**
+
 - GDPR (General Data Protection Regulation)
 - HIPAA (Health Insurance Portability and Accountability Act)
 - SOC 2 (System and Organization Controls)
@@ -146,6 +158,7 @@ Security in Geode isn't an afterthought or optional feature—it's built into th
 - ISO 27001 information security management
 
 **Data Privacy**
+
 - Right to erasure (data deletion)
 - Right to access (data export)
 - Data minimization support
@@ -165,33 +178,26 @@ async def setup_rls_policies():
     """Set up RLS policies for multi-tenant application."""
     client = geode_client.open_database('quic://localhost:3141')
     async with client.connection() as conn:
-        # Create policy: users can only see their own data
+        # Users can only see their own rows: Person.owner_id must equal the
+        # caller's 'user_id' principal attribute.
+        await conn.execute(
+            "CALL geode.rls.add_attribute_policy('app', 'Person', 'owner_id', 'user_id')"
+        )
+        await conn.execute(
+            "CALL geode.auth.user_set_attribute('alice', 'user_id', 'u-1001')"
+        )
+
+        # Team visibility cannot be expressed as a policy predicate: there is no
+        # traversal or subquery support. Precompute the decision into a property
+        # and let a single equality test it.
         await conn.execute("""
-            CREATE POLICY user_isolation ON Person
-            FOR SELECT
-            USING (owner_id = current_user_id())
+            MATCH (m:User)-[:MANAGES]->(:Team)<-[:MEMBER_OF]-(u:User)
+            MATCH (p:Person {owner_id: u.id})
+            SET p.visible_to = m.id
         """)
 
-        # Create policy: managers can see their team's data
-        await conn.execute("""
-            CREATE POLICY manager_access ON Person
-            FOR SELECT
-            USING (
-                owner_id = current_user_id()
-                OR EXISTS {
-                    MATCH (manager:User {id: current_user_id()})
-                         -[:MANAGES]->(team:Team)<-[:MEMBER_OF]-(user:User)
-                    WHERE user.id = owner_id
-                }
-            )
-        """)
-
-        # Create policy: admins see everything
-        await conn.execute("""
-            CREATE POLICY admin_access ON Person
-            FOR ALL
-            USING (current_user_role() = 'admin')
-        """)
+        # Admins: grant on the graph rather than filtering rows.
+        await conn.execute("GRANT ALL ON GRAPH app TO admin")
 
 # Query data with RLS enforcement
 async def get_customer_data(user_id: int):

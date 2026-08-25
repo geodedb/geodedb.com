@@ -90,16 +90,19 @@ Geode's row-level security system provides fine-grained access control at the no
 
 ```gql
 -- Create policy restricting access to user's own data
-CREATE POLICY user_isolation ON Person
-  USING (current_user_id = id);
+-- Not expressible as a Geode policy predicate (only `=` against a string
+-- literal compiles); precompute the decision into a property instead:
+CALL geode.rls.add_attribute_policy('app', 'Person', 'access_tag', 'access_tag');
 
 -- Create policy for role-based access
-CREATE POLICY manager_access ON Employee
-  USING (current_user_role IN ['manager', 'admin'] OR id = current_user_id);
+-- Not expressible as a Geode policy predicate (only `=` against a string
+-- literal compiles); precompute the decision into a property instead:
+CALL geode.rls.add_attribute_policy('app', 'Employee', 'access_tag', 'access_tag');
 
 -- Relationship-level security
-CREATE POLICY confidential_relationships ON FOLLOWS
-  USING (visibility = 'public' OR source_id = current_user_id);
+-- Not expressible as a Geode policy predicate (only `=` against a string
+-- literal compiles); precompute the decision into a property instead:
+CALL geode.rls.add_attribute_policy('app', 'Label', 'access_tag', 'access_tag');
 ```
 
 ### Policy Application
@@ -134,7 +137,7 @@ RETURN paths;
 
 -- K-shortest paths
 MATCH paths = K SHORTEST 5 (a:Airport {code: 'SFO'})-[:FLIGHT*]->(b:Airport {code: 'JFK'})
-RETURN paths, reduce(cost = 0, r IN relationships(paths) | cost + r.price) AS total_cost;
+RETURN paths, null /* reduce() is advertised by SHOW FUNCTIONS but has no evaluator dispatch; collect() the values and fold client-side (for path weights use algo.dijkstra.stream, which yields cost) */ AS total_cost;
 ```
 
 ### Centrality Measures
@@ -199,7 +202,7 @@ RETURN e.name, e.scheduled;
 MATCH (s:Sale)
 WHERE s.timestamp >= DATE '2024-01-01'
 RETURN
-  date_trunc('month', s.timestamp) AS month,
+  $bucket_start /* no date_trunc(): bucket at write time or compare an explicit range */ AS month,
   count(*) AS sales_count,
   sum(s.amount) AS total_revenue
 GROUP BY month
@@ -218,9 +221,9 @@ MATCH (p:Product)-[:SOLD]->(s:Sale)
 RETURN
   p.name,
   avg(s.price) AS mean_price,
-  stddev(s.price) AS price_stddev,
-  percentile(s.price, 0.50) AS median_price,
-  percentile(s.price, 0.95) AS p95_price;
+  collect(s.price) /* stddev/variance parse but are never computed; reduce client-side */ AS price_stddev,
+  collect(s.price) /* percentile_cont/_disc parse but are never computed; sort client-side */ AS median_price,
+  collect(s.price) /* percentile_cont/_disc parse but are never computed; sort client-side */ AS p95_price;
 ```
 
 ### Custom Aggregate Functions
@@ -264,11 +267,13 @@ The PROFILE output shows:
 CREATE INDEX person_city_age ON Person(city, age);
 
 -- Full-text search index
-CREATE FULLTEXT INDEX product_search ON Product(name, description);
+CREATE INDEX product_search ON Product(name, description) USING fulltext;
 
 -- Use full-text search
 MATCH (p:Product)
-WHERE fulltext_search(p, 'wireless headphones')
+CALL geode.fts.search('product_search', 'wireless headphones')
+YIELD node, score
+MATCH (p:Product) WHERE id(p) = node
 RETURN p.name, p.price;
 ```
 
@@ -371,16 +376,14 @@ RETURN p.name, o.order_id, o.total;
 ### Export and Materialized Views
 
 ```gql
--- Create materialized view for frequent queries
-CREATE MATERIALIZED VIEW popular_products AS
-  MATCH (p:Product)<-[:PURCHASED]-(u:User)
-  WHERE p.created >= CURRENT_DATE - DURATION 'P30D'
-  RETURN p.id, p.name, count(u) AS purchases
-  ORDER BY purchases DESC
-  LIMIT 100;
+-- Materialized views are not reachable from GQL: the grammar has no
+-- MATERIALIZED keyword. Precompute the aggregate onto nodes instead:
+MATCH (u:User)-[:PURCHASED]->(p:Product)
+WITH p, count(*) AS purchases
+SET p.purchase_count = purchases;
 
--- Refresh materialized view
-REFRESH MATERIALIZED VIEW popular_products;
+-- There is no materialized view to refresh or drop. Re-run the
+-- precompute batch above to update the stored aggregate.
 ```
 
 ## Comparison with Other Graph Databases
@@ -457,8 +460,9 @@ Use row-level security instead of application-level filtering:
 
 ```gql
 -- Centralized security in database
-CREATE POLICY tenant_isolation ON ALL
-  USING (tenant_id = current_tenant());
+-- Not expressible as a Geode policy predicate (only `=` against a string
+-- literal compiles); precompute the decision into a property instead:
+CALL geode.rls.add_attribute_policy('app', 'Label', 'access_tag', 'access_tag');
 ```
 
 ## Getting Started with Advanced Features
@@ -492,7 +496,9 @@ WHERE a.name = 'Alice' AND b.name = 'Bob'
 RETURN path;
 
 -- Test RLS
-CREATE POLICY test_policy ON Person USING (id = current_user_id);
+-- Not expressible as a Geode policy predicate (only `=` against a string
+-- literal compiles); precompute the decision into a property instead:
+CALL geode.rls.add_attribute_policy('app', 'Person', 'access_tag', 'access_tag');
 ```
 
 ### 4. Profile and Optimize

@@ -90,16 +90,16 @@ Multiple index types for different access patterns:
 CREATE INDEX FOR (p:Product) ON (p.price);
 
 // Hash index (equality lookups)
-CREATE HASH INDEX FOR (u:User) ON (u.id);
+CREATE INDEX FOR (u:User) ON (u.id) USING hash;
 
 // Text index (full-text search)
-CREATE TEXT INDEX FOR (p:Post) ON (p.content);
+CREATE INDEX FOR (p:Post) ON (p.content) USING fulltext;
 
 // Composite index (multi-column)
 CREATE INDEX FOR (u:User) ON (u.last_name, u.first_name);
 
 // HNSW vector index (similarity search)
-CREATE VECTOR INDEX FOR (d:Document) ON (d.embedding)
+CREATE INDEX FOR (d:Document) ON (d.embedding) USING vector
 WITH (metric = 'cosine');
 
 // BM25 index (ranking search)
@@ -130,11 +130,14 @@ Fine-grained access control at the data level:
 
 ```gql
 // Create RLS policy
-CREATE POLICY tenant_isolation ON User
-USING (tenant_id = current_setting('app.tenant_id'));
+-- User.tenant_id must equal the caller's 'tenant' principal attribute
+CALL geode.rls.add_attribute_policy('app', 'User', 'tenant_id', 'tenant');
 
 // Apply policy
-ALTER LABEL User ENABLE ROW LEVEL SECURITY;
+-- Geode has no ALTER LABEL / ALTER GRAPH / property DEFAULT DDL. Labels and
+-- properties are schema-free: write the new property with SET, supplying the
+-- default yourself.
+MATCH (u:User) WHERE u.verified IS NULL SET u.verified = false;
 
 // Set session context
 SET app.tenant_id = 'acme';
@@ -154,13 +157,13 @@ Data protection at rest and in transit:
 // Field-Level Encryption (FLE)
 CREATE (:User {
   name: 'Alice',
-  ssn: ENCRYPT('123-45-6789', 'user-key'),
-  email: ENCRYPT('alice@example.com', 'user-key')
+  ssn: '123-45-6789' /* field-level encryption is configured with CALL geode.fle.configurefield(...), not a scalar encrypt() */,
+  email: 'alice@example.com' /* field-level encryption is configured with CALL geode.fle.configurefield(...), not a scalar encrypt() */
 });
 
 // Decrypt on retrieval
 MATCH (u:User {name: 'Alice'})
-RETURN u.name, DECRYPT(u.ssn, 'user-key') AS ssn;
+RETURN u.name, u.ssn /* field-level encryption is configured with CALL geode.fle.configurefield(...), not a scalar decrypt() */ AS ssn;
 ```
 
 ### Authentication and Authorization
@@ -273,11 +276,9 @@ result3, _ = await stmt.execute({"id": 3})
 Reusable database logic:
 
 ```gql
-// Create procedure
-CREATE PROCEDURE transfer_funds(from_id INT, to_id INT, amount FLOAT)
-LANGUAGE GQL
-AS $$
-BEGIN TRANSACTION;
+-- Geode has no user-defined functions, aggregates or procedures: the
+-- grammar has no CREATE FUNCTION / AGGREGATE / PROCEDURE. Inline the
+-- logic into the query, or compute it in the client.
   MATCH (from:Account {id: $from_id}), (to:Account {id: $to_id})
   WHERE from.balance >= $amount
   SET from.balance = from.balance - $amount,
@@ -373,7 +374,10 @@ Track schema changes over time:
 // Create versioned schema change
 BEGIN SCHEMA MIGRATION 'v2.0.0';
   CREATE INDEX FOR (p:Product) ON (p.category);
-  ALTER LABEL User ADD PROPERTY created_at DATETIME DEFAULT NOW();
+  -- Geode has no ALTER LABEL / ALTER GRAPH / property DEFAULT DDL. Labels and
+  -- properties are schema-free: write the new property with SET, supplying the
+  -- default yourself.
+  MATCH (u:User) WHERE u.verified IS NULL SET u.verified = false;
 COMMIT SCHEMA MIGRATION;
 
 // View migration history
@@ -428,8 +432,9 @@ USE GRAPH tenant_acme;
 MATCH (u:User) RETURN u;  // Only sees Acme data
 
 // RLS-based multi-tenancy
-CREATE POLICY tenant_filter ON *
-USING (tenant_id = current_setting('app.tenant_id'));
+-- Not expressible as a Geode policy predicate (only `=` against a string
+-- literal compiles); precompute the decision into a property instead:
+CALL geode.rls.add_attribute_policy('app', 'Label', 'access_tag', 'access_tag');
 ```
 
 ## Client Libraries
@@ -585,9 +590,9 @@ Advanced text search capabilities:
 
 ```gql
 -- Create full-text index
-CREATE TEXT INDEX FOR (p:Post) ON (p.title, p.content);
-CREATE TEXT INDEX FOR (a:Article) ON (a.body)
-OPTIONS {language: 'english', stemming: true};
+CREATE INDEX FOR (p:Post) ON (p.title, p.content) USING fulltext;
+CREATE INDEX FOR (a:Article) ON (a.body)
+OPTIONS {language: 'english', stemming: true} USING fulltext;
 
 -- Basic text search
 MATCH (p:Post)
@@ -706,10 +711,9 @@ CREATE CONSTRAINT ON (u:User)
 ASSERT u.email =~ '^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$';
 
 -- Custom validation functions
-CREATE FUNCTION validate_credit_card(card_number STRING) RETURNS BOOLEAN
-AS $$
-    -- Luhn algorithm implementation
-    RETURN luhn_check(card_number);
+-- Geode has no user-defined functions, aggregates or procedures: the
+-- grammar has no CREATE FUNCTION / AGGREGATE / PROCEDURE. Inline the
+-- logic into the query, or compute it in the client.
 $$;
 
 CREATE CONSTRAINT ON (p:Payment)
@@ -722,7 +726,7 @@ Location-based queries:
 
 ```gql
 -- Create spatial index
-CREATE SPATIAL INDEX FOR (l:Location) ON (l.coordinates);
+CREATE INDEX FOR (l:Location) ON (l.coordinates) USING spatial;
 
 -- Point creation
 CREATE (store:Store {
@@ -740,7 +744,7 @@ ORDER BY dist_meters
 -- Polygon containment
 MATCH (p:Place)
 WHERE contains(
-    polygon([
+    geometryfromtext([
         point({latitude: 37.8, longitude: -122.5}),
         point({latitude: 37.8, longitude: -122.3}),
         point({latitude: 37.7, longitude: -122.3}),

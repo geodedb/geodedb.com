@@ -57,7 +57,7 @@ MATCH paths = ALL SHORTEST (a:City {name: 'San Francisco'})
   (b:City {name: 'New York'})
 RETURN paths,
   [r IN relationships(paths) | r.airline] AS airlines,
-  reduce(cost = 0, r IN relationships(paths) | cost + r.price) AS total_cost;
+  null /* reduce() is advertised by SHOW FUNCTIONS but has no evaluator dispatch; collect() the values and fold client-side (for path weights use algo.dijkstra.stream, which yields cost) */ AS total_cost;
 ```
 
 #### K-Shortest Paths
@@ -71,7 +71,7 @@ MATCH paths = K SHORTEST 3
   -[:ROUTE*]->
   (end:Location {id: 'customer_42'})
 RETURN paths,
-  reduce(dist = 0, r IN relationships(paths) | dist + r.distance) AS total_distance
+  null /* reduce() is advertised by SHOW FUNCTIONS but has no evaluator dispatch; collect() the values and fold client-side (for path weights use algo.dijkstra.stream, which yields cost) */ AS total_distance
 ORDER BY total_distance;
 ```
 
@@ -275,11 +275,11 @@ RETURN
   p.subcategory,
   count(*) AS product_count,
   avg(p.price) AS mean_price,
-  stddev(p.price) AS price_stddev,
-  percentile(p.price, 0.25) AS q1_price,
-  percentile(p.price, 0.50) AS median_price,
-  percentile(p.price, 0.75) AS q3_price,
-  percentile(p.price, 0.95) AS p95_price,
+  collect(p.price) /* stddev/variance parse but are never computed; reduce client-side */ AS price_stddev,
+  collect(p.price) /* percentile_cont/_disc parse but are never computed; sort client-side */ AS q1_price,
+  collect(p.price) /* percentile_cont/_disc parse but are never computed; sort client-side */ AS median_price,
+  collect(p.price) /* percentile_cont/_disc parse but are never computed; sort client-side */ AS q3_price,
+  collect(p.price) /* percentile_cont/_disc parse but are never computed; sort client-side */ AS p95_price,
   min(p.price) AS min_price,
   max(p.price) AS max_price
 GROUP BY p.subcategory;
@@ -294,8 +294,8 @@ RETURN
   p.category,
   p.name,
   p.sales,
-  rank() OVER (PARTITION BY p.category ORDER BY p.sales DESC) AS rank_in_category,
-  p.sales - avg(p.sales) OVER (PARTITION BY p.category) AS deviation_from_avg
+  null /* Geode has no window functions and no OVER clause */ AS rank_in_category,
+  p.sales - avg(p.sales) AS deviation_from_avg
 ORDER BY p.category, rank_in_category;
 ```
 
@@ -310,7 +310,7 @@ Geode's temporal support enables time-based graph analysis.
 MATCH (s:Sale)
 WHERE s.timestamp >= DATE '2024-01-01'
 RETURN
-  date_trunc('month', s.timestamp) AS month,
+  $bucket_start /* no date_trunc(): bucket at write time or compare an explicit range */ AS month,
   count(*) AS sale_count,
   sum(s.amount) AS revenue,
   avg(s.amount) AS avg_order_value
@@ -325,7 +325,7 @@ ORDER BY month;
 MATCH (u:User)-[:LOGGED_IN]->(session:Session)
 RETURN
   extract(dow from session.timestamp) AS day_of_week,
-  extract(hour from session.timestamp) AS hour,
+  session.timestamp.hour AS hour,
   count(*) AS session_count
 GROUP BY day_of_week, hour
 ORDER BY day_of_week, hour;
@@ -341,12 +341,12 @@ WITH
 MATCH (e:Event)
 WHERE e.timestamp >= start_date AND e.timestamp <= end_date
 WITH
-  date_trunc('day', e.timestamp) AS day,
+  $bucket_start /* no date_trunc(): bucket at write time or compare an explicit range */ AS day,
   count(*) AS daily_count
 WITH
   day,
   daily_count,
-  avg(daily_count) OVER (ORDER BY day ROWS BETWEEN 6 PRECEDING AND CURRENT ROW) AS moving_avg
+  avg(daily_count) AS moving_avg
 WHERE daily_count > moving_avg * 2  -- Spike: 2x the moving average
 RETURN day, daily_count, moving_avg
 ORDER BY day;
@@ -507,7 +507,7 @@ RETURN
   manufacturer.name,
   distributor.name,
   length(path) AS supply_chain_length,
-  reduce(time = 0, r IN relationships(path) | time + r.lead_time_days) AS total_lead_time
+  null /* reduce() is advertised by SHOW FUNCTIONS but has no evaluator dispatch; collect() the values and fold client-side (for path weights use algo.dijkstra.stream, which yields cost) */ AS total_lead_time
 ORDER BY total_lead_time DESC;
 ```
 
@@ -541,16 +541,11 @@ GROUP BY p.subcategory;
 
 ```gql
 -- Pre-compute expensive analytics
-CREATE MATERIALIZED VIEW daily_sales_summary AS
-  MATCH (o:Order)
-  WHERE o.date >= CURRENT_DATE - DURATION 'P90D'
-  RETURN
-    date_trunc('day', o.date) AS day,
-    o.region,
-    count(*) AS order_count,
-    sum(o.total) AS revenue,
-    avg(o.total) AS avg_order_value
-  GROUP BY day, o.region;
+-- Materialized views are not reachable from GQL: the grammar has no
+-- MATERIALIZED keyword. Precompute the aggregate onto nodes instead:
+MATCH (u:User)-[:PURCHASED]->(p:Product)
+WITH p, count(*) AS purchases
+SET p.purchase_count = purchases;
 
 -- Use materialized view
 MATCH (s:daily_sales_summary)

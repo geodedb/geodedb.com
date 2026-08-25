@@ -32,6 +32,7 @@ Claude Code provides AI-assisted development for Geode GQL, offering intelligent
 Claude Code integrates with Geode's Language Server Protocol (LSP) to provide an enhanced development experience. The integration combines Claude's language understanding with Geode's schema awareness to deliver context-aware assistance for GQL query development.
 
 **Key Benefits**:
+
 - **Intelligent Completions**: Context-aware suggestions based on your graph schema
 - **Query Optimization**: Real-time suggestions for improving query performance
 - **Schema Understanding**: Deep integration with your graph model
@@ -102,6 +103,7 @@ WHERE u.email = $email
 ```
 
 **Completion Features**:
+
 - Label suggestions from schema
 - Relationship types with direction
 - Property names with type hints
@@ -127,6 +129,7 @@ RETURN u.name, p.name
 ```
 
 **Optimization Categories**:
+
 - Missing index suggestions
 - Filter pushdown opportunities
 - Cartesian product warnings
@@ -140,6 +143,7 @@ Ask Claude to generate GQL from natural language:
 **You**: "Find users who purchased more than 5 products last month"
 
 **Claude**:
+
 ```gql
 MATCH (u:User)-[:PURCHASED]->(p:Product)
 WHERE p.purchase_date >= date() - duration('P1M')
@@ -156,6 +160,7 @@ Claude helps with schema design and evolution:
 **You**: "How should I model a social network with posts and comments?"
 
 **Claude** suggests:
+
 ```gql
 -- Users with profiles
 CREATE (u:User {
@@ -207,11 +212,13 @@ RETURN u
 > The `age` property is defined as INTEGER in your schema, but you're comparing it with the string "25".
 >
 > **Fix**: Remove quotes to use an integer literal:
+>
 > ```gql
 > WHERE u.age = 25
 > ```
 >
 > **Or** use a parameter with proper typing:
+>
 > ```gql
 > WHERE u.age = $age  -- Pass age as integer in parameters
 > ```
@@ -229,6 +236,7 @@ Explain how a query will execute:
 ```
 
 Claude provides:
+
 - Execution plan breakdown
 - Estimated row counts
 - Index usage analysis
@@ -253,6 +261,7 @@ Generate schema documentation:
 ```
 
 Claude returns:
+
 - Node properties with types
 - Incoming/outgoing relationships
 - Constraints and indexes
@@ -273,6 +282,7 @@ Claude generates test queries with sample data setup.
 ### Effective Prompting
 
 **Be specific about your schema**:
+
 ```
 I have User nodes with email, name, created_at properties
 and FOLLOWS relationships between users.
@@ -280,6 +290,7 @@ How do I find mutual friends?
 ```
 
 **Include constraints**:
+
 ```
 Generate a query to find popular products.
 - Must use the existing Product.view_count index
@@ -288,6 +299,7 @@ Generate a query to find popular products.
 ```
 
 **Ask for explanations**:
+
 ```
 Why is this query slow?
 [paste query]

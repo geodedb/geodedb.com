@@ -20,7 +20,7 @@ Geode's query execution follows a sophisticated pipeline that transforms user GQ
 
 ### Execution Pipeline
 
-\`\`\`
+```text
 ┌─────────────┐
 │ GQL Query   │
 └──────┬──────┘
@@ -64,7 +64,7 @@ Geode's query execution follows a sophisticated pipeline that transforms user GQ
 ┌──────────────────┐
 │ Results          │
 └──────────────────┘
-\`\`\`
+```
 
 ## Component 1: Parser and Lexer
 
@@ -83,7 +83,8 @@ The lexer (`src/gql/lexer.zig`) tokenizes the input GQL query into a stream of t
 - Manage whitespace and comments
 
 **Example Tokenization**:
-\`\`\`
+
+```text
 Input: "MATCH (p:Person {age: 30}) RETURN p.name"
 
 Tokens:
@@ -103,7 +104,7 @@ Tokens:
 13. p (identifier)
 14. . (dot)
 15. name (identifier)
-\`\`\`
+```
 
 **Performance**:
 
@@ -126,7 +127,8 @@ The parser (`src/gql/parser.zig`) builds an Abstract Syntax Tree (AST) from the 
 - Error recovery and reporting
 
 **AST Structure**:
-\`\`\`zig
+
+```zig
 pub const Statement = union(enum) {
     Query: QueryStatement,
     Create: CreateStatement,
@@ -157,12 +159,13 @@ pub const Pattern = struct {
     relationships: []RelationshipPattern,
     path_variable: ?[]const u8,
 };
-\`\`\`
+```
 
 **Parser Techniques**:
 
 1. **Recursive Descent Parsing**:
-\`\`\`zig
+
+```zig
 fn parseStatement(self: *Parser) ParserError!Statement {
     const token = self.peek();
     return switch (token.type) {
@@ -175,10 +178,11 @@ fn parseStatement(self: *Parser) ParserError!Statement {
         else => error.UnexpectedToken,
     };
 }
-\`\`\`
+```
 
 2. **Operator Precedence Climbing**:
-\`\`\`zig
+
+```zig
 fn parseExpression(self: *Parser, min_precedence: u8) ParserError!Expression {
     var left = try self.parsePrimaryExpression();
 
@@ -202,7 +206,7 @@ fn parseExpression(self: *Parser, min_precedence: u8) ParserError!Expression {
 
     return left;
 }
-\`\`\`
+```
 
 **Operator Precedence** (highest to lowest):
 
@@ -218,7 +222,8 @@ fn parseExpression(self: *Parser, min_precedence: u8) ParserError!Expression {
 10. OR
 
 **Error Handling**:
-\`\`\`zig
+
+```zig
 pub const ParserError = error{
     UnexpectedToken,
     UnexpectedEOF,
@@ -235,7 +240,7 @@ fn reportError(self: *Parser, err: ParserError) void {
         .{ token.line, token.column, @errorName(err) }
     );
 }
-\`\`\`
+```
 
 ### GQL Compliance
 
@@ -271,7 +276,8 @@ The query planner (`src/planner/`) transforms the AST into a logical query plan.
 - `src/planner/adaptive.zig` - Adaptive query execution
 
 **Logical Plan Structure**:
-\`\`\`
+
+```text
 ┌─────────────────┐
 │ Return (project)│
 └────────┬────────┘
@@ -295,7 +301,7 @@ The query planner (`src/planner/`) transforms the AST into a logical query plan.
 ┌─────────────────┐
 │ Scan (nodes)    │
 └─────────────────┘
-\`\`\`
+```
 
 **Plan Operators**:
 
@@ -333,7 +339,8 @@ The query planner (`src/planner/`) transforms the AST into a logical query plan.
 ### Semantic Analysis
 
 **Type Checking**:
-\`\`\`zig
+
+```zig
 fn checkTypes(expr: Expression, context: *SemanticContext) TypeError!Type {
     return switch (expr) {
         .Literal => |lit| inferLiteralType(lit),
@@ -364,7 +371,7 @@ fn checkBinaryOperation(bin: BinaryExpression, context: *SemanticContext) TypeEr
         // ... other operators
     };
 }
-\`\`\`
+```
 
 **Validation Checks**:
 
@@ -383,7 +390,8 @@ fn checkBinaryOperation(bin: BinaryExpression, context: *SemanticContext) TypeEr
 **Optimization Strategies**:
 
 1. **Predicate Pushdown**:
-\`\`\`
+
+```text
 Before:
   Filter (age > 30)
     ├─ Expand (KNOWS)
@@ -393,10 +401,11 @@ After:
   Expand (KNOWS)
     └─ Filter (age > 30)  ← Pushed down
        └─ Scan (Person)
-\`\`\`
+```
 
 2. **Index Selection**:
-\`\`\`zig
+
+```zig
 fn selectIndex(scan: ScanOperator, stats: *Statistics) ?Index {
     var best_index: ?Index = null;
     var best_cost = std.math.inf(f64);
@@ -413,10 +422,11 @@ fn selectIndex(scan: ScanOperator, stats: *Statistics) ?Index {
 
     return best_index;
 }
-\`\`\`
+```
 
 3. **Join Order Optimization**:
-\`\`\`zig
+
+```zig
 fn optimizeJoinOrder(joins: []Join, stats: *Statistics) []Join {
     // Dynamic programming approach for join order
     const n = joins.len;
@@ -440,7 +450,7 @@ fn optimizeJoinOrder(joins: []Join, stats: *Statistics) []Join {
 
     return dp.items[n - 1].plan;
 }
-\`\`\`
+```
 
 ### Cost Model
 
@@ -449,7 +459,8 @@ fn optimizeJoinOrder(joins: []Join, stats: *Statistics) []Join {
 **Cost Factors**:
 
 1. **I/O Cost**:
-\`\`\`zig
+
+```zig
 fn estimateIOCost(operator: Operator) f64 {
     return switch (operator) {
         .NodeScan => estimateFullScanCost(),
@@ -469,10 +480,11 @@ fn estimateIndexSeekCost(index: Index, selectivity: f64) f64 {
     const leaf_pages = @intToFloat(f64, index.entry_count) *selectivity / entries_per_page;
     return tree_height* io_cost_per_page + leaf_pages * io_cost_per_page;
 }
-\`\`\`
+```
 
 2. **CPU Cost**:
-\`\`\`zig
+
+```zig
 fn estimateCPUCost(operator: Operator) f64 {
     return switch (operator) {
         .Filter => |filter| estimateFilterCost(filter),
@@ -492,10 +504,11 @@ fn estimateSortCost(sort: SortOperator) f64 {
     const rows = estimateRowCount(sort.input);
     return rows *@log2(@intToFloat(f64, rows))* cpu_cost_per_comparison;
 }
-\`\`\`
+```
 
 3. **Memory Cost**:
-\`\`\`zig
+
+```zig
 fn estimateMemoryCost(operator: Operator) f64 {
     return switch (operator) {
         .HashJoin => estimateHashTableSize(),
@@ -504,7 +517,7 @@ fn estimateMemoryCost(operator: Operator) f64 {
         // ... other operators
     };
 }
-\`\`\`
+```
 
 ### Statistics Collection
 
@@ -522,9 +535,9 @@ fn estimateMemoryCost(operator: Operator) f64 {
 There is no statistics-refresh procedure and no `statistics:` configuration
 block; inspect the plan the optimizer chose instead:
 
-\`\`\`gql
+```gql
 EXPLAIN MATCH (p:Person) WHERE p.age > 30 RETURN p;
-\`\`\`
+```
 
 ## Component 4: Query Executor
 
@@ -543,7 +556,7 @@ EXPLAIN MATCH (p:Person) WHERE p.age > 30 RETURN p;
 
 Geode uses a **volcano-style iterator model** with pipelining:
 
-\`\`\`zig
+```zig
 pub const Executor = struct {
     plan: ExecutionPlan,
     context: *ExecutionContext,
@@ -564,12 +577,13 @@ pub const Executor = struct {
         };
     }
 };
-\`\`\`
+```
 
 **Execution Operators**:
 
 1. **Node Scan**:
-\`\`\`zig
+
+```zig
 fn executeScan(self: *Executor, scan: ScanOperator) !ResultSet {
     var results = std.ArrayList(Row).init(self.allocator);
 
@@ -587,10 +601,11 @@ fn executeScan(self: *Executor, scan: ScanOperator) !ResultSet {
 
     return ResultSet{ .rows = results.items };
 }
-\`\`\`
+```
 
 2. **Index Seek**:
-\`\`\`zig
+
+```zig
 fn executeIndexSeek(self: *Executor, seek: IndexSeekOperator) !ResultSet {
     var results = std.ArrayList(Row).init(self.allocator);
 
@@ -608,10 +623,11 @@ fn executeIndexSeek(self: *Executor, seek: IndexSeekOperator) !ResultSet {
 
     return ResultSet{ .rows = results.items };
 }
-\`\`\`
+```
 
 3. **Relationship Expansion**:
-\`\`\`zig
+
+```zig
 fn executeExpand(self: *Executor, expand: ExpandOperator) !ResultSet {
     var results = std.ArrayList(Row).init(self.allocator);
 
@@ -643,10 +659,11 @@ fn executeExpand(self: *Executor, expand: ExpandOperator) !ResultSet {
 
     return ResultSet{ .rows = results.items };
 }
-\`\`\`
+```
 
 4. **Hash Join**:
-\`\`\`zig
+
+```zig
 fn executeHashJoin(self: *Executor, join: HashJoinOperator) !ResultSet {
     var results = std.ArrayList(Row).init(self.allocator);
 
@@ -676,10 +693,11 @@ fn executeHashJoin(self: *Executor, join: HashJoinOperator) !ResultSet {
 
     return ResultSet{ .rows = results.items };
 }
-\`\`\`
+```
 
 5. **Aggregation**:
-\`\`\`zig
+
+```zig
 fn executeAggregate(self: *Executor, agg: AggregateOperator) !ResultSet {
     var results = std.ArrayList(Row).init(self.allocator);
 
@@ -715,14 +733,15 @@ fn executeAggregate(self: *Executor, agg: AggregateOperator) !ResultSet {
 
     return ResultSet{ .rows = results.items };
 }
-\`\`\`
+```
 
 ### Expression Evaluation
 
 **Implementation Location**: `src/eval.zig`
 
 **Evaluator**:
-\`\`\`zig
+
+```zig
 pub fn evaluateExpression(
     expr: Expression,
     context: *EvaluationContext
@@ -755,7 +774,7 @@ fn evaluateBinaryExpression(
         // ... other operators
     };
 }
-\`\`\`
+```
 
 ## Component 5: Distributed Query Execution
 
@@ -765,7 +784,7 @@ fn evaluateBinaryExpression(
 
 **Distributed Execution Flow**:
 
-\`\`\`
+```text
 ┌───────────────────────┐
 │ Distributed Coordinator│
 └──────────┬────────────┘
@@ -807,10 +826,11 @@ fn evaluateBinaryExpression(
     ┌─────────────────┐
     │ Final Results   │
     └─────────────────┘
-\`\`\`
+```
 
 **Shard Pruning**:
-\`\`\`zig
+
+```zig
 fn pruneShards(
     query: QueryPlan,
     shards: []Shard,
@@ -829,12 +849,13 @@ fn pruneShards(
 
     return relevant_shards.items;
 }
-\`\`\`
+```
 
 **Result Merging Strategies**:
 
 1. **Union All** (Simple Concatenation):
-\`\`\`zig
+
+```zig
 fn unionAllMerge(shard_results: []ResultSet) ResultSet {
     var merged = ResultSet.init(allocator);
 
@@ -844,10 +865,11 @@ fn unionAllMerge(shard_results: []ResultSet) ResultSet {
 
     return merged;
 }
-\`\`\`
+```
 
 2. **Union Distinct** (Deduplication):
-\`\`\`zig
+
+```zig
 fn unionDistinctMerge(shard_results: []ResultSet) ResultSet {
     var seen = std.AutoHashMap(RowHash, void).init(allocator);
     var merged = ResultSet.init(allocator);
@@ -864,10 +886,11 @@ fn unionDistinctMerge(shard_results: []ResultSet) ResultSet {
 
     return merged;
 }
-\`\`\`
+```
 
 3. **Merge Sorted** (K-way Merge):
-\`\`\`zig
+
+```zig
 fn mergeSorted(shard_results: []ResultSet, order_by: OrderBy) ResultSet {
     var merged = ResultSet.init(allocator);
     var heap = PriorityQueue(Row).init(allocator, compareRows(order_by));
@@ -893,12 +916,13 @@ fn mergeSorted(shard_results: []ResultSet, order_by: OrderBy) ResultSet {
 
     return merged;
 }
-\`\`\`
+```
 
 ### Distributed Transaction Coordination
 
 **Two-Phase Commit**:
-\`\`\`zig
+
+```zig
 fn executeDistributedTransaction(
     queries: []QueryPlan,
     shards: []Shard
@@ -920,7 +944,7 @@ fn executeDistributedTransaction(
         try shard.commit();
     }
 }
-\`\`\`
+```
 
 ## Performance Characteristics
 
@@ -966,16 +990,17 @@ fn executeDistributedTransaction(
 
 ### EXPLAIN Output
 
-\`\`\`gql
+```gql
 EXPLAIN MATCH (p:Person)-[:KNOWS]->(f:Person)
 WHERE p.age > 30 AND f.city = 'San Francisco'
 RETURN p.name, f.name
 ORDER BY p.name
 LIMIT 10
-\`\`\`
+```
 
 **Output**:
-\`\`\`
+
+```text
 
 | plan                          |
 |-------------------------------|
@@ -987,20 +1012,21 @@ LIMIT 10
 |         Expand (KNOWS)        |
 |           Filter (p.age > 30) |
 |             IndexSeek (Person)|
-\`\`\`
+```
 
 ### PROFILE Output
 
-\`\`\`gql
+```gql
 PROFILE MATCH (p:Person)-[:KNOWS]->(f:Person)
 WHERE p.age > 30 AND f.city = 'San Francisco'
 RETURN p.name, f.name
 ORDER BY p.name
 LIMIT 10
-\`\`\`
+```
 
 **Output**:
-\`\`\`
+
+```text
 
 | metric              | value |
 |---------------------|-------|
@@ -1009,13 +1035,13 @@ LIMIT 10
 | index_seeks         | 1     |
 | relationships_expanded | 5420 |
 | execution_time_ms   | 15    |
-\`\`\`
+```
 
 ### Query Logging
 
 Enable query logging for debugging:
 
-\`\`\`yaml
+```yaml
 
 # geode.yaml
 
@@ -1023,32 +1049,35 @@ logging:
   query_log: true
   slow_query_threshold_ms: 100
   log_level: debug
-\`\`\`
+```
 
 **Log Output**:
-\`\`\`
+
+```text
 [2026-01-24T10:30:00Z] INFO  Query received: MATCH (p:Person) WHERE p.age > 30 RETURN p
 [2026-01-24T10:30:00Z] DEBUG Parse time: 0.5ms
 [2026-01-24T10:30:00Z] DEBUG Plan time: 2.1ms
 [2026-01-24T10:30:00Z] DEBUG Execute time: 12.3ms
 [2026-01-24T10:30:00Z] INFO  Query completed in 14.9ms, returned 42 rows
-\`\`\`
+```
 
 ## Best Practices
 
 ### Query Optimization
 
 1. **Use Indexes Wisely**:
-\`\`\`gql
+
+```gql
 -- Create index for frequent predicates
 CREATE INDEX ON :Person(email)
 
 -- Query uses index automatically
 MATCH (p:Person {email: '<alice@example.com>'}) RETURN p
-\`\`\`
+```
 
 2. **Filter Early**:
-\`\`\`gql
+
+```gql
 -- Good: Filter before expansion
 MATCH (p:Person)
 WHERE p.age > 30
@@ -1059,19 +1088,21 @@ RETURN f.name
 MATCH (p:Person)-[:KNOWS]->(f)
 WHERE p.age > 30
 RETURN f.name
-\`\`\`
+```
 
 3. **Use LIMIT**:
-\`\`\`gql
+
+```gql
 -- Add LIMIT to prevent large result sets
 MATCH (p:Person)
 RETURN p
 ORDER BY p.name
 LIMIT 100
-\`\`\`
+```
 
 4. **Avoid Cartesian Products**:
-\`\`\`gql
+
+```gql
 -- Bad: Cartesian product
 MATCH (p:Person), (c:Company)
 RETURN p.name, c.name
@@ -1079,25 +1110,27 @@ RETURN p.name, c.name
 -- Good: Use relationships
 MATCH (p:Person)-[:WORKS_AT]->(c:Company)
 RETURN p.name, c.name
-\`\`\`
+```
 
 ### Distributed Queries
 
 1. **Shard Pruning**:
-\`\`\`gql
+
+```gql
 -- Include shard key in predicates
 MATCH (p:Person {shard_id: 1})  -- Prunes to single shard
 WHERE p.age > 30
 RETURN p
-\`\`\`
+```
 
 2. **Local Aggregation**:
-\`\`\`gql
+
+```gql
 -- Aggregation pushes down to shards
 MATCH (p:Person)
 RETURN p.department, count(*) AS emp_count
 GROUP BY p.department
-\`\`\`
+```
 
 ## Next Steps
 

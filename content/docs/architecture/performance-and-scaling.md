@@ -55,6 +55,7 @@ RETURN p.name, friend.name;
 ```
 
 **Plan**:
+
 ```
 Project [p.name, friend.name]
   Expand [(p)-[:KNOWS]->(friend)]
@@ -63,6 +64,7 @@ Project [p.name, friend.name]
 ```
 
 **Without index**:
+
 ```
 Project [p.name, friend.name]
   Expand [(p)-[:KNOWS]->(friend)]
@@ -108,7 +110,7 @@ From `BM25_INDEX_OPTIMIZER_INTEGRATION.md`:
 
 **BM25 ranking** integrated with optimizer:
 
-- **Index-aware planning**: Use full-text index when `ORDER BY bm25_score()`
+- **Full-text search**: reached with `CALL geode.fts.search(...) YIELD node, score`, which returns BM25-ranked hits directly
 - **Early termination**: Stop after top-K results
 - **Parallel scoring**: Multi-threaded relevance computation
 
@@ -152,6 +154,7 @@ RETURN p.name, friend.name;
 ```
 
 **Execution plan**:
+
 ```
 Merge [ORDER BY p.name]
   │
@@ -164,6 +167,7 @@ Merge [ORDER BY p.name]
 ### Optimization Techniques
 
 **Predicate pushdown**:
+
 ```gql
 -- Coordinator pushes filter to shards (reduce network transfer)
 MATCH (p:Person)-[:KNOWS]->(friend)
@@ -177,11 +181,13 @@ RETURN p.name, friend.name;
 ```
 
 **Parallel execution**:
+
 - All shard queries run **concurrently**
 - **Barrier synchronization**: Wait for all shards to complete
 - **Streaming results**: Return rows as they arrive (for large result sets)
 
 **Deterministic ordering**:
+
 - Shards return results in **local order**
 - Coordinator **merges** with global ordering (e.g., `ORDER BY p.name`)
 - **Consistent pagination** across queries
@@ -196,6 +202,7 @@ RETURN p.name, friend.name;
 - **UDP-based**: Lower latency than TCP
 
 **Performance** vs TCP:
+
 - **Connection setup**: 0-RTT (vs 1-3 RTT for TCP+TLS)
 - **Head-of-line blocking**: None (vs significant for TCP)
 - **Packet loss recovery**: Independent streams (vs entire connection blocked)
@@ -207,6 +214,7 @@ RETURN p.name, friend.name;
 ### Single-Node Sizing
 
 **Recommended single-node sizing**:
+
 - **Memory**: 64GB+ (for large datasets with in-memory cache)
 - **CPU**: 8+ cores (for parallel query execution)
 - **Storage**: NVMe SSD (for memory-mapped I/O)
@@ -217,6 +225,7 @@ RETURN p.name, friend.name;
 - **Vector search**: HNSW with SIMD-optimized distance calculations
 
 **Shard count guidance**:
+
 - **Small datasets**: Single node
 - **Medium datasets**: 2-4 shards
 - **Large datasets**: 8-16 shards
@@ -303,6 +312,7 @@ storage:
 ```
 
 **Guidance**:
+
 - **Small datasets** (<1GB): 1GB cache
 - **Medium datasets** (1-10GB): 2-4GB cache
 - **Large datasets** (>10GB): 8-16GB cache

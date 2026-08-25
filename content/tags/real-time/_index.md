@@ -73,7 +73,7 @@ LIMIT 100;  // Limit results for predictable latency
 // GOOD: Use WHERE clauses to filter early
 MATCH (u:User)-[:PURCHASED]->(p:Product)
 WHERE u.user_id = $user_id
-  AND p.created_at > datetime().minusDays(30)
+  AND p.created_at > datetime() - duration('P30D')
 RETURN p;
 ```
 
@@ -171,13 +171,11 @@ Keep derived data up-to-date using CDC:
 
 ```gql
 // Maintain user activity statistics in real-time
-CREATE MATERIALIZED VIEW user_stats AS
-SELECT u.user_id,
-       COUNT(p) AS purchase_count,
-       SUM(p.amount) AS total_spent,
-       MAX(p.timestamp) AS last_purchase
-FROM (u:User)-[p:PURCHASED]->()
-GROUP BY u.user_id;
+-- Materialized views are not reachable from GQL: the grammar has no
+-- MATERIALIZED keyword. Precompute the aggregate onto nodes instead:
+MATCH (u:User)-[:PURCHASED]->(p:Product)
+WITH p, count(*) AS purchases
+SET p.purchase_count = purchases;
 
 // Geode automatically updates view when purchases are inserted/deleted
 INSERT (user:User {user_id: 'user_123'})
@@ -198,15 +196,15 @@ Compute metrics over time windows:
 ```gql
 // Count events in last 5 minutes
 MATCH (e:Event)
-WHERE e.timestamp > datetime().minusMinutes(5)
+WHERE e.timestamp > datetime() - duration('PT5M')
 WITH COUNT(e) AS event_count_5min,
      COUNT(DISTINCT e.user_id) AS unique_users_5min
 RETURN event_count_5min, unique_users_5min;
 
 // Hourly breakdown for real-time dashboard
 MATCH (e:Event)
-WHERE e.timestamp > datetime().minusHours(24)
-WITH date.truncate('hour', e.timestamp) AS hour,
+WHERE e.timestamp > datetime() - duration('PT24H')
+WITH $bucket_start /* no date_trunc(): bucket at write time or compare an explicit range */ AS hour,
      COUNT(e) AS event_count
 ORDER BY hour DESC
 RETURN hour, event_count;
@@ -219,7 +217,7 @@ Identify user sessions in real-time:
 ```gql
 // Detect session boundaries (30-minute inactivity threshold)
 MATCH (u:User {user_id: $user_id})-[:PERFORMED]->(e:Event)
-WHERE e.timestamp > datetime().minusHours(24)
+WHERE e.timestamp > datetime() - duration('PT24H')
 WITH u, e
 ORDER BY e.timestamp ASC
 
@@ -229,14 +227,12 @@ UNWIND RANGE(0, SIZE(events) - 1) AS i
 WITH u, events[i] AS current_event,
      CASE
        WHEN i = 0 THEN true
-       WHEN duration.between(events[i-1].timestamp, events[i].timestamp).minutes > 30
+       WHEN (events[i].timestamp - events[i-1].timestamp).minutes > 30
        THEN true
        ELSE false
      END AS is_session_start
 WITH u, current_event,
-     SUM(CASE WHEN is_session_start THEN 1 ELSE 0 END) OVER (
-       ORDER BY current_event.timestamp
-     ) AS session_id
+     SUM(CASE WHEN is_session_start THEN 1 ELSE 0 END) AS session_id
 RETURN session_id,
        MIN(current_event.timestamp) AS session_start,
        MAX(current_event.timestamp) AS session_end,
@@ -405,7 +401,7 @@ SHOW DATABASE METRICS;
 
 // Track query statistics
 SHOW QUERY STATISTICS
-WHERE query_time > datetime().minusMinutes(5)
+WHERE query_time > datetime() - duration('PT5M')
 ORDER BY execution_time DESC
 LIMIT 10;
 ```

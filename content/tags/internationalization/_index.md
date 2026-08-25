@@ -57,6 +57,7 @@ The process of adapting software for specific languages and regions:
 Geode uses UTF-8 encoding throughout:
 
 **String Storage**:
+
 ```gql
 -- Store text in any language
 CREATE (:Document {
@@ -71,6 +72,7 @@ CREATE (:Document {
 ```
 
 **Query with Unicode**:
+
 ```gql
 -- Search in multiple scripts
 MATCH (d:Document)
@@ -85,12 +87,14 @@ RETURN d;
 Geode supports Unicode normalization for consistent string comparison:
 
 **Normalization Forms**:
+
 - **NFC (Canonical Composition)**: Preferred for most text
 - **NFD (Canonical Decomposition)**: Separates combined characters
 - **NFKC (Compatibility Composition)**: For compatibility
 - **NFKD (Compatibility Decomposition)**: Full decomposition
 
 **Example**:
+
 ```gql
 -- Create property with combining characters
 CREATE (:Text {
@@ -114,8 +118,8 @@ WHERE is_alphabetic(user.name)
 RETURN user;
 
 -- Case conversion (locale-aware)
-RETURN to_upper('straße', 'de_DE');  -- 'STRASSE' (German)
-RETURN to_upper('i', 'tr_TR');        -- 'İ' (Turkish dotted I)
+RETURN toUpper('straße', 'de_DE');  -- 'STRASSE' (German)
+RETURN toUpper('i', 'tr_TR');        -- 'İ' (Turkish dotted I)
 ```
 
 ## Collation and Sorting
@@ -125,6 +129,7 @@ RETURN to_upper('i', 'tr_TR');        -- 'İ' (Turkish dotted I)
 Geode supports ICU collation for culturally appropriate sorting:
 
 **Create Index with Collation**:
+
 ```gql
 -- German phonebook sorting
 CREATE INDEX user_name_de ON :User(name)
@@ -140,6 +145,7 @@ CREATE INDEX user_name_zh ON :User(name)
 ```
 
 **Query with Specific Collation**:
+
 ```gql
 -- Sort using German rules
 MATCH (u:User)
@@ -157,24 +163,28 @@ LIMIT 50;
 ### Collation Strength Levels
 
 **Primary**: Base character differences only
+
 ```gql
 -- 'a' = 'A' = 'á' = 'Á'
 ORDER BY name COLLATE 'en_US@strength=primary'
 ```
 
 **Secondary**: Accents matter
+
 ```gql
 -- 'a' = 'A' but 'a' ≠ 'á'
 ORDER BY name COLLATE 'en_US@strength=secondary'
 ```
 
 **Tertiary**: Case matters
+
 ```gql
 -- 'a' ≠ 'A' and 'a' ≠ 'á'
 ORDER BY name COLLATE 'en_US@strength=tertiary'
 ```
 
 **Quaternary**: Punctuation and spaces matter
+
 ```gql
 -- All differences considered
 ORDER BY name COLLATE 'en_US@strength=quaternary'
@@ -183,6 +193,7 @@ ORDER BY name COLLATE 'en_US@strength=quaternary'
 ### Language-Specific Sorting Examples
 
 **Swedish (å, ä, ö at end)**:
+
 ```gql
 MATCH (c:City)
 WHERE c.country = 'Sweden'
@@ -192,6 +203,7 @@ ORDER BY c.name COLLATE 'sv_SE';
 ```
 
 **Czech (ch as single letter)**:
+
 ```gql
 MATCH (p:Person)
 WHERE p.country = 'Czech Republic'
@@ -201,6 +213,7 @@ ORDER BY p.surname COLLATE 'cs_CZ';
 ```
 
 **Japanese (mixed scripts)**:
+
 ```gql
 MATCH (u:User)
 WHERE u.country = 'Japan'
@@ -214,6 +227,7 @@ ORDER BY u.name COLLATE 'ja_JP@collation=unihan';
 ### Date and Time Formatting
 
 **Store timestamps in UTC, display in local time**:
+
 ```gql
 -- Store event with timezone
 CREATE (:Event {
@@ -232,40 +246,44 @@ RETURN e.name,
 ```
 
 **Locale-Specific Formatting**:
+
 ```gql
 -- Format dates per locale
 MATCH (order:Order)
 RETURN order.id,
-       format_date(order.created, 'en_US') AS us_date,      -- "06/15/2025"
-       format_date(order.created, 'en_GB') AS uk_date,      -- "15/06/2025"
-       format_date(order.created, 'de_DE') AS german_date,  -- "15.06.2025"
-       format_date(order.created, 'zh_CN') AS chinese_date; -- "2025年6月15日"
+       toString(order.created) /* no format_*(); format in the client */ AS us_date,      -- "06/15/2025"
+       toString(order.created) /* no format_*(); format in the client */ AS uk_date,      -- "15/06/2025"
+       toString(order.created) /* no format_*(); format in the client */ AS german_date,  -- "15.06.2025"
+       toString(order.created) /* no format_*(); format in the client */ AS chinese_date; -- "2025年6月15日"
 ```
 
 ### Number Formatting
 
 **Currency Formatting**:
+
 ```gql
 MATCH (product:Product)
 RETURN product.name,
-       format_currency(product.price, 'USD', 'en_US') AS us_price,     -- "$29.99"
-       format_currency(product.price, 'EUR', 'de_DE') AS euro_price,   -- "29,99 €"
-       format_currency(product.price, 'JPY', 'ja_JP') AS yen_price,    -- "¥2,999"
-       format_currency(product.price, 'INR', 'hi_IN') AS rupee_price;  -- "₹2,499.00"
+       toString(product.price) /* no format_*(); format in the client */ AS us_price,     -- "$29.99"
+       toString(product.price) /* no format_*(); format in the client */ AS euro_price,   -- "29,99 €"
+       toString(product.price) /* no format_*(); format in the client */ AS yen_price,    -- "¥2,999"
+       toString(product.price) /* no format_*(); format in the client */ AS rupee_price;  -- "₹2,499.00"
 ```
 
 **Decimal Formatting**:
+
 ```gql
 MATCH (stat:Statistics)
 RETURN stat.metric,
-       format_number(stat.value, 'en_US') AS us_format,   -- "1,234.56"
-       format_number(stat.value, 'de_DE') AS de_format,   -- "1.234,56"
-       format_number(stat.value, 'fr_FR') AS fr_format;   -- "1 234,56"
+       toString(stat.value) /* no format_*(); format in the client */ AS us_format,   -- "1,234.56"
+       toString(stat.value) /* no format_*(); format in the client */ AS de_format,   -- "1.234,56"
+       toString(stat.value) /* no format_*(); format in the client */ AS fr_format;   -- "1 234,56"
 ```
 
 ### String Comparison
 
 **Case-Insensitive Comparison**:
+
 ```gql
 -- Turkish locale (special I handling)
 MATCH (u:User)
@@ -279,6 +297,7 @@ RETURN c;
 ```
 
 **Accent-Insensitive Comparison**:
+
 ```gql
 -- French names (ignore accents)
 MATCH (p:Person)
@@ -294,6 +313,7 @@ RETURN p;
 Geode supports RTL languages (Arabic, Hebrew, Persian, Urdu):
 
 **Store Bidirectional Text**:
+
 ```gql
 CREATE (:Article {
   title_ar: 'مقالة باللغة العربية',
@@ -304,6 +324,7 @@ CREATE (:Article {
 ```
 
 **Mixed LTR/RTL Text**:
+
 ```gql
 -- Store text with embedded numbers and Latin text
 CREATE (:Product {
@@ -341,6 +362,7 @@ RETURN m.text,
 ### Multiple Language Properties
 
 **Separate Properties Pattern**:
+
 ```gql
 CREATE (:Product {
   id: 'P123',
@@ -357,6 +379,7 @@ CREATE (:Product {
 ```
 
 **Query with Language Fallback**:
+
 ```gql
 MATCH (p:Product)
 RETURN p.id,
@@ -367,6 +390,7 @@ RETURN p.id,
 ### Translation Relationships
 
 **Linked Translations Pattern**:
+
 ```gql
 -- Create base content
 CREATE (base:Content:en {
@@ -400,6 +424,7 @@ CREATE (base)-[:TRANSLATION]->(es),
 ```
 
 **Query Translations**:
+
 ```gql
 -- Get content in user's language
 MATCH (content:Content {id: $content_id})
@@ -421,6 +446,7 @@ RETURN trans.lang AS language, trans AS content;
 ### Timezone Storage
 
 **Store All Timestamps in UTC**:
+
 ```gql
 CREATE (:Event {
   name: 'Conference',
@@ -431,6 +457,7 @@ CREATE (:Event {
 ```
 
 **Convert for Display**:
+
 ```gql
 MATCH (e:Event)
 RETURN e.name,
@@ -441,6 +468,7 @@ RETURN e.name,
 ### Timezone-Aware Queries
 
 **Find Events in User's Timezone**:
+
 ```gql
 -- Events happening "today" in user's timezone
 MATCH (e:Event)
@@ -452,14 +480,15 @@ ORDER BY user_local;
 ```
 
 **Business Hours Queries**:
+
 ```gql
 -- Find stores open now in each timezone
 MATCH (store:Store)
 WITH store,
-     datetime_in_timezone(now(), store.timezone) AS store_local_time
+     datetime_in_timezone(datetime(), store.timezone) AS store_local_time
 WHERE time(store_local_time) >= store.open_time
   AND time(store_local_time) <= store.close_time
-  AND dayofweek(store_local_time) NOT IN [6, 7]  -- Weekend check
+  AND null /* no dayOfWeek(); derive it in the client */ NOT IN [6, 7]  -- Weekend check
 RETURN store.name, store.timezone, store_local_time;
 ```
 
@@ -468,6 +497,7 @@ RETURN store.name, store.timezone, store_local_time;
 ### Translation Workflow
 
 **Track Translation Status**:
+
 ```gql
 CREATE (:TranslationJob {
   content_id: 'article-123',
@@ -491,6 +521,7 @@ SET job.status = 'in_progress',
 ```
 
 **Translation Memory**:
+
 ```gql
 -- Store translation segments for reuse
 CREATE (:TranslationSegment {
@@ -517,6 +548,7 @@ LIMIT 5;
 ### User Locale Preferences
 
 **Store User Preferences**:
+
 ```gql
 CREATE (:User {
   id: 'user123',
@@ -532,6 +564,7 @@ CREATE (:User {
 ```
 
 **Fallback Chain**:
+
 ```gql
 -- Get content with locale fallback
 MATCH (u:User {id: $user_id})
@@ -543,7 +576,7 @@ MATCH (content:Content {id: $content_id})
 OPTIONAL MATCH (content)-[:TRANSLATION]->(trans:Content)
 WHERE trans.locale IN locale_chain
 WITH content, trans, locale_chain
-ORDER BY indexOf(locale_chain, COALESCE(trans.locale, content.locale))
+ORDER BY null /* no indexOf(); use locale_chain CONTAINS COALESCE(trans.locale, content.locale as a predicate */)
 RETURN COALESCE(trans, content) AS localized
 LIMIT 1;
 ```
@@ -551,6 +584,7 @@ LIMIT 1;
 ### Browser/System Detection
 
 **Accept-Language Header Processing**:
+
 ```python
 # Python client example
 import geode_client
@@ -580,6 +614,7 @@ async def get_localized_content(accept_language: str, content_id: str):
 ### Index Optimization for i18n
 
 **Separate Indexes per Language**:
+
 ```gql
 -- More efficient than single multi-language index
 CREATE INDEX product_name_en ON :Product(name_en);
@@ -592,21 +627,23 @@ CREATE INDEX product_name_de ON :Product(name_de)
 ```
 
 **Language-Specific Full-Text Search**:
+
 ```gql
 -- Create language-specific full-text indexes
-CREATE FULLTEXT INDEX content_en FOR (n:Content) ON (n.title_en, n.body_en)
-  OPTIONS {analyzer: 'english'};
+CREATE INDEX content_en FOR (n:Content) ON (n.title_en, n.body_en)
+  OPTIONS {analyzer: 'english'} USING fulltext;
 
-CREATE FULLTEXT INDEX content_es FOR (n:Content) ON (n.title_es, n.body_es)
-  OPTIONS {analyzer: 'spanish'};
+CREATE INDEX content_es FOR (n:Content) ON (n.title_es, n.body_es)
+  OPTIONS {analyzer: 'spanish'} USING fulltext;
 
-CREATE FULLTEXT INDEX content_zh FOR (n:Content) ON (n.title_zh, n.body_zh)
-  OPTIONS {analyzer: 'chinese'};
+CREATE INDEX content_zh FOR (n:Content) ON (n.title_zh, n.body_zh)
+  OPTIONS {analyzer: 'chinese'} USING fulltext;
 ```
 
 ### Caching Strategies
 
 **Cache Translated Content**:
+
 ```python
 # Application-level caching
 from functools import lru_cache
@@ -685,6 +722,7 @@ async def get_translation(content_id: str, locale: str):
 Geode provides comprehensive internationalization and localization support enabling you to build truly global graph applications. From full Unicode support and locale-aware collation to timezone handling and multilingual data modeling, Geode gives you the tools to serve users worldwide with appropriate language and cultural conventions.
 
 Key capabilities:
+
 - **Full UTF-8 Support**: Store and query text in any language
 - **ICU Collation**: Culturally appropriate sorting and comparison
 - **Locale-Aware Operations**: Date, time, number formatting per locale

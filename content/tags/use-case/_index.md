@@ -282,7 +282,7 @@ MATCH path = (a:Account)-[:TRANSFERRED*3..5]->(a)
 WHERE ALL(rel IN relationships(path) WHERE rel.amount > 1000)
 RETURN nodes(path) as accounts,
        [rel IN relationships(path) | rel.amount] as amounts,
-       reduce(total = 0, rel IN relationships(path) | total + rel.amount) as total
+       null /* reduce() is advertised by SHOW FUNCTIONS but has no evaluator dispatch; collect() the values and fold client-side (for path weights use algo.dijkstra.stream, which yields cost) */ as total
 ```
 
 ### Velocity Checks

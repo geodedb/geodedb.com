@@ -80,13 +80,13 @@ Enable fast similarity search with HNSW indexes:
 
 ```gql
 -- Create HNSW index for document embeddings
-CREATE VECTOR INDEX document_embeddings
-ON Document(embedding)
+CREATE INDEX document_embeddings
+ON Document(embedding) USING vector
 WITH (metric = 'cosine');
 
 -- Create index for multi-modal search
-CREATE VECTOR INDEX product_images
-ON Product(image_embedding)
+CREATE INDEX product_images
+ON Product(image_embedding) USING vector
 WITH (metric = 'cosine');
 ```
 

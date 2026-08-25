@@ -160,7 +160,7 @@ MATCH (u:User {name: 'Alice'})
 CREATE (u)-[:POSTED]->(p:Post {
   title: 'Hello World',
   content: 'My first post',
-  created_at: NOW()
+  created_at: datetime()
 })
 RETURN p
 ```
@@ -170,24 +170,24 @@ RETURN p
 ```gql
 // Create if not exists
 MERGE (u:User {email: 'alice@example.com'})
-ON CREATE SET u.created_at = NOW()
-ON MATCH SET u.last_seen = NOW()
+ON CREATE SET u.created_at = datetime()
+ON MATCH SET u.last_seen = datetime()
 RETURN u
 
 // Merge relationships
 MATCH (u1:User {name: 'Alice'}), (u2:User {name: 'Bob'})
 MERGE (u1)-[f:FOLLOWS]->(u2)
-ON CREATE SET f.since = NOW()
+ON CREATE SET f.since = datetime()
 RETURN f
 
 // Complex merge
 MERGE (u:User {email: 'alice@example.com'})
 ON CREATE SET
-  u.created_at = NOW(),
+  u.created_at = datetime(),
   u.verified = false,
   u.login_count = 1
 ON MATCH SET
-  u.last_login = NOW(),
+  u.last_login = datetime(),
   u.login_count = u.login_count + 1
 RETURN u
 ```
@@ -203,7 +203,7 @@ RETURN u
 // Set multiple properties
 MATCH (u:User {id: 123})
 SET u.name = 'Alice Smith',
-    u.updated_at = NOW()
+    u.updated_at = datetime()
 RETURN u
 
 // Set from map
@@ -220,7 +220,7 @@ RETURN u
 MATCH (p:Post)
 WHERE p.likes > 100
 SET p.featured = true,
-    p.featured_at = NOW()
+    p.featured_at = datetime()
 RETURN COUNT(p) AS featured_count
 ```
 
@@ -242,7 +242,7 @@ DETACH DELETE u  // Deletes node and all its relationships
 
 // Conditional delete
 MATCH (p:Post)
-WHERE p.created_at < DATE() - DURATION('P1Y')
+WHERE p.created_at < DATE() - duration('P1Y')
   AND p.archived = true
 DETACH DELETE p
 ```
@@ -604,7 +604,7 @@ client.execute(
 
 1. **Use Parameters**: Always use parameters ($1, $name, etc.) instead of string concatenation to prevent injection attacks
 2. **Index Strategically**: Create indexes on properties used in WHERE clauses and relationship endpoints
-3. **Bound Traversals**: Always limit variable-length path traversals (use *1..5, not *)
+3. **Bound Traversals**: Always limit variable-length path traversals (use `*1..5`, not `*`)
 4. **Filter Early**: Apply WHERE clauses as early as possible in the query pipeline
 5. **Limit Results**: Use LIMIT on queries that might return large result sets
 6. **Profile Queries**: Use EXPLAIN/PROFILE to understand query execution plans

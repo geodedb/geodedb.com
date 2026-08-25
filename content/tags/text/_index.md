@@ -499,7 +499,7 @@ WHERE u.email STARTS WITH 'alice'  -- Uses index
 RETURN u;
 
 -- Full-text index for content search
-CREATE FULLTEXT INDEX post_content ON :Post(content);
+CREATE INDEX post_content ON :Post(content) USING fulltext;
 
 MATCH (p:Post)
 WHERE p.content MATCHES 'graph database'  -- Uses full-text index

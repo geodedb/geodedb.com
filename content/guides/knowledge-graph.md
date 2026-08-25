@@ -147,7 +147,7 @@ CREATE INDEX location_name ON :Location(name)
 CREATE INDEX concept_name ON :Concept(name)
 
 // Full-text search index
-CREATE FULLTEXT INDEX entity_search ON :Entity(name, description, aliases)
+CREATE INDEX entity_search ON :Entity(name, description, aliases) USING fulltext
 ```
 
 ## Entity-Relationship Modeling
@@ -156,6 +156,7 @@ CREATE FULLTEXT INDEX entity_search ON :Entity(name, description, aliases)
 
 {{< tabs >}}
 {{< tab "GQL" >}}
+
 ```gql
 // Create a person entity
 CREATE (p:Person:Entity {
@@ -172,8 +173,10 @@ CREATE (p:Person:Entity {
 })
 RETURN p
 ```
+
 {{< /tab >}}
 {{< tab "Go" >}}
+
 ```go
 package main
 
@@ -252,8 +255,10 @@ func main() {
     log.Printf("Created person: %s", id)
 }
 ```
+
 {{< /tab >}}
 {{< tab "Python" >}}
+
 ```python
 import asyncio
 from dataclasses import dataclass, field
@@ -328,8 +333,10 @@ async def main():
 
 asyncio.run(main())
 ```
+
 {{< /tab >}}
 {{< tab "Rust" >}}
+
 ```rust
 use geode_client::{Client, Value};
 use std::collections::HashMap;
@@ -410,8 +417,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 ```
+
 {{< /tab >}}
 {{< tab "Node.js" >}}
+
 ```typescript
 import { createClient, Client } from '@geodedb/client';
 import { v4 as uuidv4 } from 'uuid';
@@ -485,8 +494,10 @@ async function main() {
 
 main();
 ```
+
 {{< /tab >}}
 {{< tab "Zig" >}}
+
 ```zig
 const std = @import("std");
 const geode = @import("geode_client");
@@ -568,6 +579,7 @@ pub fn main() !void {
     std.debug.print("Created person: {s}\n", .{id});
 }
 ```
+
 {{< /tab >}}
 {{< /tabs >}}
 
@@ -700,6 +712,7 @@ RETURN e.start_date AS start_date
 
 {{< tabs >}}
 {{< tab "Go" >}}
+
 ```go
 type Answer struct {
     Value      interface{}
@@ -733,8 +746,10 @@ func AnswerQuestion(ctx context.Context, db *sql.DB, question string) (*Answer, 
     return nil, fmt.Errorf("could not understand question")
 }
 ```
+
 {{< /tab >}}
 {{< tab "Python" >}}
+
 ```python
 from dataclasses import dataclass
 from typing import Any, Optional
@@ -824,8 +839,10 @@ async def main():
             print(f"A: {answer.value} (confidence: {answer.confidence})")
             print()
 ```
+
 {{< /tab >}}
 {{< tab "Rust" >}}
+
 ```rust
 use regex::Regex;
 
@@ -890,8 +907,10 @@ async fn answer_question(
     Ok(None)
 }
 ```
+
 {{< /tab >}}
 {{< tab "Node.js" >}}
+
 ```typescript
 interface Answer {
   value: string;
@@ -944,8 +963,10 @@ async function answerQuestion(client: Client, question: string): Promise<Answer 
   return null;
 }
 ```
+
 {{< /tab >}}
 {{< tab "Zig" >}}
+
 ```zig
 const Answer = struct {
     value: []const u8,
@@ -985,6 +1006,7 @@ pub fn answerQuestion(
     return null;
 }
 ```
+
 {{< /tab >}}
 {{< /tabs >}}
 
@@ -1058,6 +1080,7 @@ CREATE (mention)-[:REFERS_TO {
 
 {{< tabs >}}
 {{< tab "Go" >}}
+
 ```go
 type EntityMention struct {
     ID         string
@@ -1112,8 +1135,10 @@ func StoreEntityMentions(ctx context.Context, db *sql.DB, mentions []EntityMenti
     return tx.Commit()
 }
 ```
+
 {{< /tab >}}
 {{< tab "Python" >}}
+
 ```python
 from dataclasses import dataclass
 from typing import List, Optional
@@ -1231,8 +1256,10 @@ async def find_matching_entity(client, text: str, entity_type: str) -> Optional[
 
     return None
 ```
+
 {{< /tab >}}
 {{< tab "Rust" >}}
+
 ```rust
 #[derive(Debug)]
 struct EntityMention {
@@ -1295,8 +1322,10 @@ async fn store_entity_mentions(
     Ok(())
 }
 ```
+
 {{< /tab >}}
 {{< tab "Node.js" >}}
+
 ```typescript
 interface EntityMention {
   id: string;
@@ -1354,8 +1383,10 @@ async function storeEntityMentions(client: Client, mentions: EntityMention[]): P
   });
 }
 ```
+
 {{< /tab >}}
 {{< tab "Zig" >}}
+
 ```zig
 const EntityMention = struct {
     id: []const u8,
@@ -1422,6 +1453,7 @@ pub fn storeEntityMentions(
     _ = try client.receiveMessage(30000);
 }
 ```
+
 {{< /tab >}}
 {{< /tabs >}}
 
@@ -1482,7 +1514,7 @@ CREATE (person)-[:WORKS_FOR {
 UNWIND $wikidata_results AS item
 MERGE (e:Entity {wikidata_id: item.id})
 ON CREATE SET
-  e.id = randomUUID(),
+  e.id = uuid_v4(),
   e.name = item.label,
   e.description = item.description,
   e.aliases = item.aliases,

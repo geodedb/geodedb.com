@@ -195,6 +195,7 @@ RETURN DISTINCT f.name
 ```
 
 Look for:
+
 - Index usage (avoid full scans)
 - Cardinality estimates (ensure statistics are current)
 - Expensive operations (sort, distinct, large aggregations)
@@ -380,10 +381,11 @@ RETURN u.name, u.city
 Implement data-level access control:
 
 ```gql
-// Create RLS policy
-CREATE POLICY user_data_isolation ON :UserData
-USING (node.owner_id = current_user_id())
-WITH CHECK (node.owner_id = current_user_id())
+// Create RLS policy: UserData.owner_id must equal the caller's 'user_id'
+// principal attribute. This filters reads; Geode has no WITH CHECK
+// enforcement on writes.
+CALL geode.rls.add_attribute_policy('app', 'UserData', 'owner_id', 'user_id');
+CALL geode.auth.user_set_attribute('alice', 'user_id', 'u-1001');
 
 // Queries automatically enforce policy
 MATCH (d:UserData)

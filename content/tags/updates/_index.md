@@ -234,7 +234,7 @@ For distributed deployments maintaining quorum:
 # Upgrade one node at a time
 for node in node1 node2 node3; do
   # Drain node
-  ssh $node "./geode admin drain --wait"
+  ssh $node "./geode query "SHOW CLUSTER STATUS""
 
   # Stop node
   ssh $node "systemctl stop geode"
@@ -249,7 +249,7 @@ for node in node1 node2 node3; do
   ssh $node "systemctl start geode"
 
   # Wait for node to rejoin cluster
-  ssh $node "./geode admin wait-ready --timeout 120s"
+  ssh $node "./geode query "SHOW CLUSTER STATUS""
 
   # Verify version
   ssh $node "./geode --version"

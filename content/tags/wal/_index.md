@@ -273,7 +273,7 @@ This supports:
 1. **Use dedicated storage**: Place WAL on separate disks from data files
 
    ```bash
-   geode serve --wal-dir /mnt/wal-ssd --data-dir /mnt/data-hdd
+   geode serve --data-dir /mnt/data-hdd
    ```
 
 2. **Use SSDs for WAL**: Sequential writes benefit from SSD latency
@@ -779,7 +779,7 @@ async def check_wal_health(client):
     lag, _ = await client.query("""
         SELECT replica_name,
                current_lsn - replica_lsn AS lag_bytes,
-               extract(epoch from now() - last_replay_time) AS lag_seconds
+               now( /* no EXTRACT(... FROM ...): subtract to get a Duration, or store epoch millis */ - last_replay_time) AS lag_seconds
         FROM SYSTEM.replication_status
     """)
 

@@ -675,13 +675,7 @@ Track replica freshness:
 
 ```gql
 -- Check replication status
-SELECT
-  replica_name,
-  last_update_time,
-  lag_seconds,
-  lag_bytes
-FROM system.replication_status
-ORDER BY lag_seconds DESC;
+SHOW CLUSTER STATUS;
 
 -- Alert on excessive lag
 -- If lag_seconds > 60, investigate
@@ -721,13 +715,7 @@ client = Client(
 
 ```gql
 -- Check shard load distribution
-SELECT
-  shard_name,
-  query_count,
-  avg_cpu_percent,
-  storage_gb
-FROM system.shard_stats
-ORDER BY query_count DESC;
+SHOW CLUSTER STATUS;
 ```
 
 **Solutions**:

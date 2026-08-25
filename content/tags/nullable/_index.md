@@ -30,25 +30,33 @@ By default in Geode, all properties are nullable unless explicitly declared as N
 
 ```gql
 -- Best practice: explicitly declare nullability intent
-CREATE NODE TYPE Person (
-    id STRING NOT NULL,                 -- Required: primary identifier
-    name STRING NOT NULL,               -- Required: every person has a name
-    middle_name STRING NULL,            -- Explicitly nullable (optional)
-    nickname STRING,                    -- Implicitly nullable
-    email STRING NOT NULL,              -- Required for communication
-    phone STRING NULL,                  -- Optional contact method
-    date_of_birth DATE,                 -- May be unknown
-    date_of_death DATE                  -- NULL for living persons
-);
+-- Geode has no CREATE NODE TYPE / CREATE EDGE TYPE: labels are
+-- schema-free. The only typed DDL is CREATE GRAPH TYPE, whose field
+-- list is `name TYPE [PRIMARY KEY] [@annotations]` in braces.
+-- Not supported in a field definition: NOT NULL — enforce with CREATE CONSTRAINT or at write time.
+CREATE GRAPH TYPE PersonType AS {
+  id STRING,  -- Required: primary identifier
+  name STRING,  -- Required: every person has a name
+  middle_name STRING,  -- Explicitly nullable (optional)
+  nickname STRING,  -- Implicitly nullable
+  email STRING,  -- Required for communication
+  phone STRING,  -- Optional contact method
+  date_of_birth DATE,  -- May be unknown
+  date_of_death DATE  -- NULL for living persons
+};
 
 -- Edge with required and optional properties
-CREATE EDGE TYPE WORKS_FOR (
-    start_date DATE NOT NULL,           -- Employment must have start date
-    end_date DATE,                      -- NULL = currently employed
-    position STRING NOT NULL,
-    salary DECIMAL,                     -- May be confidential/unknown
-    department STRING NOT NULL
-);
+-- Geode has no CREATE NODE TYPE / CREATE EDGE TYPE: labels are
+-- schema-free. The only typed DDL is CREATE GRAPH TYPE, whose field
+-- list is `name TYPE [PRIMARY KEY] [@annotations]` in braces.
+-- Not supported in a field definition: NOT NULL — enforce with CREATE CONSTRAINT or at write time.
+CREATE GRAPH TYPE WORKS_FORType AS {
+  start_date DATE,  -- Employment must have start date
+  end_date DATE,  -- NULL = currently employed
+  position STRING,
+  salary DECIMAL,  -- May be confidential/unknown
+  department STRING
+};
 ```
 
 ### NOT NULL Constraints
@@ -56,27 +64,33 @@ CREATE EDGE TYPE WORKS_FOR (
 NOT NULL constraints ensure data completeness for critical properties:
 
 ```gql
-CREATE NODE TYPE Product (
-    sku STRING NOT NULL,                -- Must have identifier
-    name STRING NOT NULL,               -- Must be named
-    price DECIMAL NOT NULL,             -- Must have price
-    description TEXT,                   -- Optional
-    manufacturer STRING,                -- May be unknown
-    discontinued_date DATE              -- NULL = still active
-);
+-- Geode has no CREATE NODE TYPE / CREATE EDGE TYPE: labels are
+-- schema-free. The only typed DDL is CREATE GRAPH TYPE, whose field
+-- list is `name TYPE [PRIMARY KEY] [@annotations]` in braces.
+-- Not supported in a field definition: NOT NULL — enforce with CREATE CONSTRAINT or at write time.
+CREATE GRAPH TYPE ProductType AS {
+  sku STRING,  -- Must have identifier
+  name STRING,  -- Must be named
+  price DECIMAL,  -- Must have price
+  manufacturer STRING,  -- May be unknown
+  discontinued_date DATE  -- NULL = still active
+};
 ```
 
 Using NOT NULL with defaults provides sensible fallbacks:
 
 ```gql
-CREATE NODE TYPE User (
-    id STRING NOT NULL DEFAULT gen_random_uuid(),
-    email STRING NOT NULL,
-    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
-    status STRING NOT NULL DEFAULT 'active',
-    last_login TIMESTAMP,               -- NULL until first login
-    preferences JSONB NOT NULL DEFAULT '{}'::JSONB  -- Empty but not NULL
-);
+-- Geode has no CREATE NODE TYPE / CREATE EDGE TYPE: labels are
+-- schema-free. The only typed DDL is CREATE GRAPH TYPE, whose field
+-- list is `name TYPE [PRIMARY KEY] [@annotations]` in braces.
+-- Not supported in a field definition: DEFAULT, NOT NULL — enforce with CREATE CONSTRAINT or at write time.
+CREATE GRAPH TYPE UserType AS {
+  id STRING,
+  email STRING,
+  created_at TIMESTAMP,
+  status STRING,
+  last_login TIMESTAMP  -- NULL until first login
+};
 ```
 
 ## NULL in GQL Queries
@@ -439,6 +453,7 @@ async def get_contact_info(client: Client, user_id: str) -> str:
 ## Common Anti-Patterns
 
 **Anti-pattern**: Using empty strings instead of NULL
+
 ```gql
 -- BAD: Empty string is not NULL
 UPDATE Person SET middle_name = '' WHERE id = '123';  -- Use NULL instead
@@ -448,6 +463,7 @@ UPDATE Person SET middle_name = NULL WHERE id = '123';
 ```
 
 **Anti-pattern**: Comparing with NULL using `=`
+
 ```gql
 -- BAD: Never TRUE, always NULL
 WHERE p.middle_name = NULL
@@ -457,6 +473,7 @@ WHERE p.middle_name IS NULL
 ```
 
 **Anti-pattern**: Ignoring NULL in business logic
+
 ```python
 # BAD: age might be None, causing TypeError
 def is_adult(person):

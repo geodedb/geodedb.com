@@ -31,6 +31,7 @@ Row-Level Security (RLS) in Geode provides fine-grained access control at the no
 Traditional database access control operates at the table or column level, granting or denying access to entire datasets. Row-Level Security goes further by controlling access to individual rows (in Geode's case, nodes and relationships) based on the context of the query and the user executing it.
 
 In graph databases, RLS enables:
+
 - **Multi-tenant isolation**: Different customers see only their data
 - **Data compartmentalization**: Users access only data relevant to their role
 - **Privacy compliance**: Automatic filtering of sensitive information
@@ -39,56 +40,56 @@ In graph databases, RLS enables:
 
 ## RLS Policy Basics
 
-RLS policies in Geode consist of:
-- **Target**: The node labels or relationship types the policy applies to
-- **Operation**: SELECT, INSERT, UPDATE, or DELETE
-- **Role**: Which users/roles the policy applies to
-- **Condition**: A GQL expression that determines access
+Geode offers two distinct mechanisms, described in full under
+[Row-Level Security](/tags/rls/):
+
+- **Attribute policies** (`CALL geode.rls.add_attribute_policy(graph, label,
+  row_property, attribute_key)`) — real per-row filtering. A row is visible only
+  when the named property equals the caller's principal attribute of that name.
+  Node labels only; equality only.
+- **Graph-scoped policies** (`CREATE POLICY … ON GRAPH … FOR <actions> [USING …]`)
+  — coarse authorization over a whole graph. Actions are `READ`, `WRITE`,
+  `MATCH`, `CREATE`, `UPDATE`, `DELETE`, `SCHEMA` (not `SELECT`/`INSERT`), and the
+  `USING` predicate compiles only equality against a **string literal**.
 
 ### Creating Basic Policies
 
 ```gql
 -- Only allow users to see their own data
-CREATE POLICY user_isolation
-  ON Person
-  FOR SELECT
-  TO authenticated_user
-  USING (person_id = current_user());
+-- Person.person_id must equal the caller's 'username' principal attribute
+CALL geode.rls.add_attribute_policy('app', 'Person', 'person_id', 'username');
 
 -- Allow managers to see their team's data
-CREATE POLICY manager_team_access
-  ON Employee
-  FOR SELECT
-  TO manager
-  USING (manager_id = current_user());
+-- Employee.manager_id must equal the caller's 'username' principal attribute
+CALL geode.rls.add_attribute_policy('app', 'Employee', 'manager_id', 'username');
 
 -- Allow admins to see everything
-CREATE POLICY admin_full_access
-  ON Person
-  FOR ALL
-  TO admin
-  USING (true);
+CREATE POLICY admin_full_access ON GRAPH app FOR READ, MATCH USING true;
 ```
 
 ### Policy Evaluation
 
-When a query executes, Geode:
-1. Identifies the user's roles
-2. Finds all applicable RLS policies
-3. Combines policy conditions with AND logic for restrictive policies
-4. Combines policy conditions with OR logic for permissive policies
-5. Automatically adds conditions to query WHERE clauses
+Attribute policies are **restrictive**: a row must satisfy the policy to be
+returned, and a principal with no value for the attribute key matches nothing, so
+the mechanism fails closed rather than falling back to "see everything". The
+filter is applied inside the match loop, so the query text never changes:
 
 ```gql
--- User executes this query
+-- The user writes this
 MATCH (p:Person)
 RETURN p.name, p.email;
 
--- With user_isolation policy, Geode executes
-MATCH (p:Person)
-WHERE p.person_id = current_user()  -- Automatically added by RLS
-RETURN p.name, p.email;
+-- With an attribute policy on (Person, person_id, username), only rows whose
+-- person_id equals the caller's 'username' attribute are returned. There is no
+-- rewritten predicate to inspect; use EXPLAIN to confirm the scan is filtered.
 ```
+
+{{< callout type="danger" >}}
+A `CREATE POLICY … USING (…)` expression outside the supported subset is accepted
+at DDL time **without error**, stored uncompiled, and then never grants access —
+the graph reads as empty. Always verify with a read-back query. See
+[the `USING` subset](/tags/rls/#the-using-expression-subset).
+{{< /callout >}}
 
 ## Multi-Tenant Applications
 
@@ -96,22 +97,23 @@ RLS is ideal for SaaS applications serving multiple customers:
 
 ### Tenant Isolation
 
-```gql
--- Create tenant isolation policy
-CREATE POLICY tenant_isolation
-  ON (n)  -- Applies to all node types
-  FOR ALL
-  TO tenant_user
-  USING (n.tenant_id = current_tenant_id());
+Per-row tenant isolation is installed with an attribute policy, one per label,
+and resolved against a per-user attribute:
 
--- Optionally, restrict at relationship level too
-CREATE POLICY tenant_relationship_isolation
-  ON ()-[r]-()
-  FOR ALL
-  TO tenant_user
-  USING (start_node(r).tenant_id = current_tenant_id()
-     AND end_node(r).tenant_id = current_tenant_id());
+```gql
+-- Row is visible only when row.tenant_id equals the caller's `tenant` attribute
+CALL geode.rls.add_attribute_policy('app', 'Customer', 'tenant_id', 'tenant');
+CALL geode.rls.add_attribute_policy('app', 'Order',    'tenant_id', 'tenant');
+
+-- Give each user their tenant value
+CALL geode.auth.user_set_attribute('alice', 'tenant', 'tenant_123');
 ```
+
+{{< callout type="note" >}}
+Attribute policies apply to **node labels**. There is no relationship-level RLS
+policy, and no wildcard that covers every label at once — register one policy per
+label you need to protect.
+{{< /callout >}}
 
 Every node includes a `tenant_id` property:
 
@@ -129,15 +131,13 @@ CREATE (:Customer {
 
 ### Shared Reference Data
 
-Some data may be shared across tenants:
+Some data may be shared across tenants. An attribute policy tests a single
+equality, so "shared OR mine" cannot be expressed directly. The simplest model is
+to leave shared labels unprotected, so every tenant can read them:
 
 ```gql
--- Allow all tenants to see shared reference data
-CREATE POLICY shared_data_access
-  ON ReferenceData
-  FOR SELECT
-  TO tenant_user
-  USING (is_shared = true OR tenant_id = current_tenant_id());
+-- No attribute policy on :ReferenceData, so it stays readable by every tenant.
+CALL geode.rls.policy_count();
 
 -- Create shared data
 CREATE (:ReferenceData {
@@ -153,38 +153,21 @@ Model organizational hierarchies with RLS:
 
 ```gql
 -- Employees can see their own data
-CREATE POLICY employee_self_access
-  ON Employee
-  FOR SELECT
-  TO employee
-  USING (employee_id = current_user());
+-- Employee.employee_id must equal the caller's 'username' principal attribute
+CALL geode.rls.add_attribute_policy('app', 'Employee', 'employee_id', 'username');
 
 -- Managers can see their direct reports
-CREATE POLICY manager_reports_access
-  ON Employee
-  FOR SELECT
-  TO manager
-  USING (
-    manager_id = current_user()
-    OR employee_id = current_user()
-  );
+-- Not expressible as a Geode policy predicate (only `=` against a string
+-- literal compiles); precompute the decision into a property instead:
+CALL geode.rls.add_attribute_policy('app', 'Employee', 'access_tag', 'access_tag');
 
 -- Directors can see entire department
-CREATE POLICY director_department_access
-  ON Employee
-  FOR SELECT
-  TO director
-  USING (
-    department IN get_managed_departments(current_user())
-    OR employee_id = current_user()
-  );
+-- Not expressible as a Geode policy predicate (only `=` against a string
+-- literal compiles); precompute the decision into a property instead:
+CALL geode.rls.add_attribute_policy('app', 'Employee', 'access_tag', 'access_tag');
 
 -- Executives can see everything
-CREATE POLICY executive_all_access
-  ON Employee
-  FOR SELECT
-  TO executive
-  USING (true);
+CREATE POLICY executive_all_access ON GRAPH app FOR READ, MATCH USING true;
 ```
 
 ### Graph-Based Hierarchy
@@ -193,16 +176,9 @@ Use the graph structure itself for hierarchical access:
 
 ```gql
 -- Access based on organizational graph structure
-CREATE POLICY org_hierarchy_access
-  ON Employee
-  FOR SELECT
-  TO employee
-  USING (
-    EXISTS {
-      MATCH path = (current:Employee {id: current_user()})-[:MANAGES*0..]->(e:Employee)
-      WHERE e = this  -- 'this' refers to the current Employee node being checked
-    }
-  );
+-- Not expressible as a Geode policy predicate (only `=` against a string
+-- literal compiles); precompute the decision into a property instead:
+CALL geode.rls.add_attribute_policy('app', 'Employee', 'access_tag', 'access_tag');
 ```
 
 ## Attribute-Based Access Control
@@ -211,33 +187,19 @@ Define access based on node properties:
 
 ```gql
 -- Access based on security clearance level
-CREATE POLICY clearance_based_access
-  ON Document
-  FOR SELECT
-  TO employee
-  USING (
-    required_clearance <= get_user_clearance(current_user())
-  );
+-- Not expressible as a Geode policy predicate (only `=` against a string
+-- literal compiles); precompute the decision into a property instead:
+CALL geode.rls.add_attribute_policy('app', 'Document', 'access_tag', 'access_tag');
 
 -- Access based on data classification
-CREATE POLICY classification_access
-  ON DataAsset
-  FOR SELECT
-  TO analyst
-  USING (
-    classification IN ['public', 'internal']
-    OR (classification = 'confidential' AND user_has_approval(current_user(), this.id))
-  );
+-- Not expressible as a Geode policy predicate (only `=` against a string
+-- literal compiles); precompute the decision into a property instead:
+CALL geode.rls.add_attribute_policy('app', 'DataAsset', 'access_tag', 'access_tag');
 
 -- Time-based access
-CREATE POLICY time_limited_access
-  ON TemporaryData
-  FOR SELECT
-  TO user
-  USING (
-    valid_from <= current_timestamp()
-    AND valid_until >= current_timestamp()
-  );
+-- Not expressible as a Geode policy predicate (only `=` against a string
+-- literal compiles); precompute the decision into a property instead:
+CALL geode.rls.add_attribute_policy('app', 'TemporaryData', 'access_tag', 'access_tag');
 ```
 
 ## Column-Level Security with RLS
@@ -246,12 +208,9 @@ Restrict access to specific properties:
 
 ```gql
 -- Policy that only exposes certain properties
-CREATE POLICY employee_limited_view
-  ON Employee
-  FOR SELECT
-  TO public
-  WITH COLUMNS (name, title, department, email)
-  USING (is_public_directory_enabled = true);
+-- Not expressible as a Geode policy predicate (only `=` against a string
+-- literal compiles); precompute the decision into a property instead:
+CALL geode.rls.add_attribute_policy('app', 'Employee', 'access_tag', 'access_tag');
 
 -- Sensitive properties like salary not included
 MATCH (e:Employee)
@@ -260,30 +219,26 @@ RETURN e.name, e.salary;  -- salary is NULL for public role
 
 ## Conditional Insert/Update Policies
 
-Control data modifications with RLS:
+Write actions are gated at the **graph** level, by action, not per row. The action
+list is `READ`, `WRITE`, `MATCH`, `CREATE`, `UPDATE`, `DELETE`, `SCHEMA`:
 
 ```gql
--- Users can only insert data for their tenant
-CREATE POLICY tenant_insert_restriction
-  ON (n)
-  FOR INSERT
-  TO tenant_user
-  USING (n.tenant_id = current_tenant_id());
+-- Only alice may create or update in the `app` graph
+CREATE POLICY app_writers ON GRAPH app FOR CREATE, UPDATE
+  USING (current_user() = 'alice');
 
--- Users can only update their own data
-CREATE POLICY self_update_only
-  ON Person
-  FOR UPDATE
-  TO authenticated_user
-  USING (person_id = current_user());
-
--- Prevent deletion of archived records
-CREATE POLICY prevent_archive_deletion
-  ON Record
-  FOR DELETE
-  TO user
-  USING (status != 'archived');
+-- Nobody gets DELETE via this policy; it is simply not granted
+CREATE POLICY app_readers ON GRAPH app FOR READ, MATCH USING true;
 ```
+
+{{< callout type="warning" >}}
+Geode has no per-row `WITH CHECK` enforcement on writes: an attribute policy
+filters what a query can **read**, it does not validate the values a write
+supplies. Enforce write-side invariants in the application, or with a uniqueness
+or existence constraint. A row-valued predicate such as
+`USING (status != 'archived')` does not compile and would silently deny all
+access — see the [`USING` subset](/tags/rls/#the-using-expression-subset).
+{{< /callout >}}
 
 ## Policy Functions
 
@@ -291,22 +246,14 @@ Create reusable functions for complex policies:
 
 ```gql
 -- Define helper function
-CREATE FUNCTION is_accessible_to_user(node_id STRING, user_id STRING)
-RETURNS BOOLEAN
-AS $$
-  MATCH (u:User {id: $user_id})
-  MATCH (n {id: $node_id})
-  RETURN EXISTS {
-    MATCH (u)-[:HAS_ACCESS|MANAGES*1..3]->(n)
-  }
-$$;
+-- Geode has no user-defined functions, aggregates or procedures: the
+-- grammar has no CREATE FUNCTION / AGGREGATE / PROCEDURE. Inline the
+-- logic into the query, or compute it in the client.
 
 -- Use in policy
-CREATE POLICY complex_access_policy
-  ON Document
-  FOR SELECT
-  TO user
-  USING (is_accessible_to_user(this.id, current_user()));
+-- Not expressible as a Geode policy predicate (only `=` against a string
+-- literal compiles); precompute the decision into a property instead:
+CALL geode.rls.add_attribute_policy('app', 'Document', 'access_tag', 'access_tag');
 ```
 
 ## Performance Optimization
@@ -315,40 +262,28 @@ RLS policies can impact query performance if not carefully designed:
 
 ### Index Filtered Properties
 
-```gql
--- Create index on frequently filtered property
-CREATE INDEX tenant_id_index ON (n) FOR (n.tenant_id);
+An attribute policy adds an equality test on the row property to every scan of
+that label, so index the property the policy names:
 
--- Policy uses indexed property
-CREATE POLICY tenant_isolation
-  ON (n)
-  FOR SELECT
-  TO tenant_user
-  USING (n.tenant_id = current_tenant_id());  -- Uses index
+```gql
+CREATE INDEX customer_tenant FOR (c:Customer) ON (c.tenant_id);
+
+-- The policy compares that same indexed property
+CALL geode.rls.add_attribute_policy('app', 'Customer', 'tenant_id', 'tenant');
 ```
 
 ### Avoid Complex Subqueries
 
 ```gql
 -- Inefficient: Complex EXISTS subquery for every node
-CREATE POLICY slow_policy
-  ON Document
-  FOR SELECT
-  TO user
-  USING (
-    EXISTS {
-      MATCH (u:User {id: current_user()})-[:BELONGS_TO]->(g:Group)-[:CAN_ACCESS]->(this)
-    }
-  );
+-- Not expressible as a Geode policy predicate (only `=` against a string
+-- literal compiles); precompute the decision into a property instead:
+CALL geode.rls.add_attribute_policy('app', 'Document', 'access_tag', 'access_tag');
 
 -- More efficient: Pre-compute accessible documents
-CREATE POLICY fast_policy
-  ON Document
-  FOR SELECT
-  TO user
-  USING (
-    this.id IN get_accessible_documents(current_user())  -- Cached function
-  );
+-- Not expressible as a Geode policy predicate (only `=` against a string
+-- literal compiles); precompute the decision into a property instead:
+CALL geode.rls.add_attribute_policy('app', 'Document', 'access_tag', 'access_tag');
 ```
 
 ### Policy Caching
@@ -413,11 +348,9 @@ DESCRIBE POLICY employee_self_access;
 DROP POLICY employee_self_access;
 
 -- Recreate with updated condition
-CREATE POLICY employee_self_access
-  ON Employee
-  FOR SELECT
-  TO employee
-  USING (employee_id = current_user() OR is_manager = true);
+-- Not expressible as a Geode policy predicate (only `=` against a string
+-- literal compiles); precompute the decision into a property instead:
+CALL geode.rls.add_attribute_policy('app', 'Employee', 'access_tag', 'access_tag');
 
 -- Disable policy temporarily
 ALTER POLICY employee_self_access DISABLE;
@@ -444,44 +377,33 @@ ALTER POLICY employee_self_access ENABLE;
 ### Department-Based Access
 
 ```gql
-CREATE POLICY department_isolation
-  ON Employee
-  FOR SELECT
-  TO department_user
-  USING (department = get_user_department(current_user()));
+-- Not expressible as a Geode policy predicate (only `=` against a string
+-- literal compiles); precompute the decision into a property instead:
+CALL geode.rls.add_attribute_policy('app', 'Employee', 'access_tag', 'access_tag');
 ```
 
 ### Time-Based Access
 
 ```gql
-CREATE POLICY business_hours_access
-  ON SensitiveData
-  FOR SELECT
-  TO employee
-  USING (
-    extract_hour(current_timestamp()) BETWEEN 9 AND 17
-    AND extract_dow(current_timestamp()) BETWEEN 1 AND 5
-  );
+-- Not expressible as a Geode policy predicate (only `=` against a string
+-- literal compiles); precompute the decision into a property instead:
+CALL geode.rls.add_attribute_policy('app', 'SensitiveData', 'access_tag', 'access_tag');
 ```
 
 ### Geographic Restrictions
 
 ```gql
-CREATE POLICY geographic_restriction
-  ON CustomerData
-  FOR SELECT
-  TO analyst
-  USING (region IN get_user_regions(current_user()));
+-- Not expressible as a Geode policy predicate (only `=` against a string
+-- literal compiles); precompute the decision into a property instead:
+CALL geode.rls.add_attribute_policy('app', 'CustomerData', 'access_tag', 'access_tag');
 ```
 
 ### Data Owner Access
 
 ```gql
-CREATE POLICY owner_access
-  ON Document
-  FOR ALL
-  TO user
-  USING (created_by = current_user() OR owner = current_user());
+-- Not expressible as a Geode policy predicate (only `=` against a string
+-- literal compiles); precompute the decision into a property instead:
+CALL geode.rls.add_attribute_policy('app', 'Document', 'access_tag', 'access_tag');
 ```
 
 ## Troubleshooting
@@ -489,6 +411,7 @@ CREATE POLICY owner_access
 ### Policy Not Applied
 
 Check that:
+
 1. User has correct role assigned
 2. Policy target matches query pattern
 3. Policy is enabled: `SHOW POLICIES`

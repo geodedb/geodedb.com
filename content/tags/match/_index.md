@@ -67,6 +67,7 @@ RETURN COUNT(*) AS user_count
 ```
 
 **Syntax Components**:
+
 - `(n)` - Parentheses denote nodes, `n` is variable name
 - `:Label` - Colon prefix for label constraint
 - `{prop: value}` - Curly braces for inline property filters
@@ -109,6 +110,7 @@ RETURN u.name
 ```
 
 **Relationship Directions**:
+
 - `->` - Directed right (from left to right)
 - `<-` - Directed left (from right to left)
 - `-` - Undirected (matches both directions)
@@ -182,7 +184,7 @@ WHERE a.name = 'New York' AND b.name = 'Los Angeles'
 RETURN LENGTH(path) AS segments,
        [node IN NODES(path) | node.name] AS cities,
        [rel IN RELATIONSHIPS(path) | rel.distance] AS distances,
-       REDUCE(total = 0, rel IN RELATIONSHIPS(path) | total + rel.distance) AS total_distance
+       null /* reduce() is advertised by SHOW FUNCTIONS but has no evaluator dispatch; collect() the values and fold client-side (for path weights use algo.dijkstra.stream, which yields cost) */ AS total_distance
 ORDER BY total_distance
 LIMIT 1
 ```
@@ -244,7 +246,7 @@ RETURN u.name, p.name
 // Second MATCH uses results from first
 MATCH (u:User {name: 'Alice'})
 MATCH (u)-[:FOLLOWS]->(following:User)-[:POSTED]->(p:Post)
-WHERE p.created_at > DATE() - DURATION('P7D')
+WHERE p.created_at > DATE() - duration('P7D')
 RETURN following.name, COUNT(p) AS recent_posts
 ORDER BY recent_posts DESC
 

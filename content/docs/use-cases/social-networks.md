@@ -510,7 +510,7 @@ RETURN u1.username, new_connections;
 MATCH (user:User)-[:POSTED]->(post:Post)
 WHERE post.timestamp > timestamp() - (30 * 24 * 60 * 60 * 1000)  -- Last month
 WITH user,
-     duration.between(datetime(post.timestamp), datetime()).days AS days_ago,
+     (datetime( - datetime(post.timestamp))).days AS days_ago,
      post
 WITH user, (days_ago / 7) AS week, count(post) AS posts_per_week
 RETURN user.username,

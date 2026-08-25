@@ -48,21 +48,25 @@ Benchmarking serves multiple purposes:
 ### Key Performance Metrics
 
 **Throughput**: Operations per second the system can sustain
+
 - Queries per second (QPS)
 - Transactions per second (TPS)
 - Nodes/edges created per second
 
 **Latency**: Time to complete individual operations
+
 - Average latency
 - Percentiles (p50, p95, p99, p99.9)
 - Maximum latency
 
 **Scalability**: How performance changes with load
+
 - Vertical scaling (larger machines)
 - Horizontal scaling (more nodes)
 - Data volume scaling
 
 **Resource Utilization**: System resource consumption
+
 - CPU usage
 - Memory usage
 - Disk I/O
@@ -184,6 +188,7 @@ RETURN u.name, u.email, u.created_at;
 ```
 
 **Benchmark Script**:
+
 ```python
 import asyncio
 import time
@@ -398,6 +403,7 @@ Gradually increase load to find system limits:
 ```
 
 **Custom Stress Test**:
+
 ```python
 async def stress_test(host: str, max_rate: int, step: int):
     """Find maximum sustainable throughput"""
@@ -641,13 +647,13 @@ Collect comprehensive metrics during benchmarks:
 
 ```bash
 # Start Prometheus metrics collection
-curl http://localhost:3141/metrics > metrics_before.txt
+curl http://localhost:9090/metrics > metrics_before.txt
 
 # Run benchmark
 ./geode benchmark run --workload standard --duration 300
 
 # Collect metrics after
-curl http://localhost:3141/metrics > metrics_after.txt
+curl http://localhost:9090/metrics > metrics_after.txt
 ```
 
 ### Real-Time Monitoring
@@ -719,6 +725,7 @@ async def monitor_benchmark(benchmark_coro, metrics_port=8000):
 ## Benchmark Checklist
 
 Before running benchmarks:
+
 - [ ] Environment isolated and documented
 - [ ] Data loaded and representative
 - [ ] Configuration documented
@@ -726,12 +733,14 @@ Before running benchmarks:
 - [ ] Warm-up period defined
 
 During benchmarks:
+
 - [ ] Monitor resource utilization
 - [ ] Check for errors
 - [ ] Verify steady-state reached
 - [ ] Collect all metrics
 
 After benchmarks:
+
 - [ ] Verify data integrity
 - [ ] Analyze results
 - [ ] Document findings

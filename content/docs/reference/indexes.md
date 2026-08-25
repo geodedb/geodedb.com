@@ -225,8 +225,8 @@ CREATE INDEX article_content_idx ON :Article(content) USING FULLTEXT
 
 | Operation | Supported | Example |
 |-----------|-----------|---------|
-| `fulltext_match()` | Yes | `WHERE fulltext_match(a.content, 'graph database')` |
-| `bm25_score()` | Yes | `RETURN bm25_score(a.content, 'query') AS score` |
+| `geode.fts.search` | Yes | `CALL geode.fts.search('a_content', 'graph database') YIELD node, score` |
+| `geode.fts.phrase` | Yes | `CALL geode.fts.phrase('a_content', 'graph database') YIELD node, score` |
 | Boolean operators | Yes | `'graph AND database'`, `'graph OR network'` |
 | Phrase search | Yes | `'"graph database"'` |
 | Wildcard | Yes | `'graph*'` |
@@ -253,25 +253,31 @@ Where:
 -- Basic full-text search
 CREATE INDEX doc_content_idx ON :Document(content) USING FULLTEXT;
 
-MATCH (d:Document)
-WHERE fulltext_match(d.content, 'graph database performance')
-RETURN d.title, bm25_score(d.content, 'graph database performance') AS relevance
+CALL geode.fts.search('document_content', 'graph database performance')
+YIELD node, score
+MATCH (d:Document) WHERE id(d) = node
+RETURN d.title, score AS relevance
 ORDER BY relevance DESC
 LIMIT 10;
 
 -- Boolean operators
-MATCH (d:Document)
-WHERE fulltext_match(d.content, 'graph AND (database OR storage) NOT sql')
+CALL geode.fts.search('document_content', 'graph AND (database OR storage) NOT sql')
+YIELD node, score
+MATCH (d:Document) WHERE id(d) = node
 RETURN d.title;
 
 -- Phrase search
-MATCH (d:Document)
-WHERE fulltext_match(d.content, '"property graph"')
+CALL geode.fts.search('document_content', '"property graph"')
+YIELD node, score
+MATCH (d:Document) WHERE id(d) = node
 RETURN d.title;
 
 -- Fuzzy search (typo-tolerant)
+CALL geode.fts.search('document_content', 'databse~')
+YIELD node, score
 MATCH (d:Document)
-WHERE fulltext_match(d.content, 'databse~')  -- Matches "database"
+-- Matches "database"
+WHERE id(d) = node
 RETURN d.title;
 ```
 
@@ -330,27 +336,27 @@ Insert             | O(log N)        | May trigger split
 CREATE INDEX store_location_idx ON :Store(location) USING SPATIAL;
 
 MATCH (s:Store)
-WHERE geo_distance(s.location, latlon(40.7128, -74.0060)) < 5000
-RETURN s.name, geo_distance(s.location, latlon(40.7128, -74.0060)) AS meters
+WHERE st_distance(s.location, latlon(40.7128, -74.0060)) < 5000
+RETURN s.name, st_distance(s.location, latlon(40.7128, -74.0060)) AS meters
 ORDER BY meters
 LIMIT 10;
 
 -- Bounding box query
 MATCH (s:Store)
-WHERE geo_within_box(s.location,
+WHERE geobox_contains(s.location,
                      latlon(40.70, -74.05),   -- Southwest corner
                      latlon(40.75, -73.95))   -- Northeast corner
 RETURN s.name;
 
 -- Polygon containment
-WITH polygon([
+WITH geometryfromtext([
   latlon(40.70, -74.05),
   latlon(40.70, -73.95),
   latlon(40.75, -73.95),
   latlon(40.75, -74.05)
 ]) AS nyc_area
 MATCH (s:Store)
-WHERE geo_within_polygon(s.location, nyc_area)
+WHERE st_within(s.location, nyc_area)
 RETURN s.name;
 ```
 
@@ -542,7 +548,7 @@ Automatically used for IP address prefix queries.
 ```gql
 -- IP subnet containment
 MATCH (s:Server)
-WHERE subnet_contains('10.0.0.0/8'::subnet, s.ip)
+WHERE ip_contains('10.0.0.0/8'::subnet, s.ip)
 RETURN s;
 ```
 

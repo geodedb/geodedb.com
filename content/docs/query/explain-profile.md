@@ -239,7 +239,7 @@ DELETE p
 ```gql
 EXPLAIN MERGE (p:Person {email: 'user@example.com'})
 ON CREATE SET p.created = datetime()
-ON MATCH SET p.accessed = now()
+ON MATCH SET p.accessed = datetime()
 ```
 
 **Output:**

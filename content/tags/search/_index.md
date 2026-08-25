@@ -43,13 +43,13 @@ Geode provides GQL syntax for creating and managing full-text indexes:
 
 ```gql
 -- Create a full-text index on a single property
-CREATE FULLTEXT INDEX article_title ON :Article(title);
+CREATE INDEX article_title ON :Article(title) USING fulltext;
 
 -- Create a multi-property full-text index
-CREATE FULLTEXT INDEX article_search ON :Article(title, body, summary);
+CREATE INDEX article_search ON :Article(title, body, summary) USING fulltext;
 
 -- Create a full-text index with custom configuration
-CREATE FULLTEXT INDEX product_search ON :Product(name, description)
+CREATE INDEX product_search ON :Product(name, description) USING fulltext
 WITH (
   language: 'english',
   stemming: true,
@@ -195,13 +195,13 @@ Geode supports full-text search across multiple languages with language-specific
 
 ```gql
 -- Create language-specific indexes
-CREATE FULLTEXT INDEX article_en ON :Article(title_en, body_en)
+CREATE INDEX article_en ON :Article(title_en, body_en) USING fulltext
 WITH (language: 'english');
 
-CREATE FULLTEXT INDEX article_es ON :Article(title_es, body_es)
+CREATE INDEX article_es ON :Article(title_es, body_es) USING fulltext
 WITH (language: 'spanish');
 
-CREATE FULLTEXT INDEX article_fr ON :Article(title_fr, body_fr)
+CREATE INDEX article_fr ON :Article(title_fr, body_fr) USING fulltext
 WITH (language: 'french');
 
 -- Query with language-specific matching
@@ -211,6 +211,7 @@ RETURN a.title_es;
 ```
 
 **Supported Languages**:
+
 - English, Spanish, French, German, Italian, Portuguese
 - Chinese (simplified and traditional), Japanese, Korean
 - Russian, Arabic, Hindi

@@ -71,16 +71,16 @@ This structure allows CI to:
 ```bash
 # geode/Makefile
 build:
-	zig build -Doptimize=ReleaseSafe
+ zig build -Doptimize=ReleaseSafe
 
 test:
-	zig build test
+ zig build test
 
 test-all-integration:
-	# Local integration suites (integration, regression, ordering,
-	# pagination, aggregation)
-	$(MAKE) integration-test regression-test property-ordering-test \
-		pagination-test aggregation-test
+ # Local integration suites (integration, regression, ordering,
+ # pagination, aggregation)
+ $(MAKE) integration-test regression-test property-ordering-test \
+  pagination-test aggregation-test
 ```
 
 **CI Build Configuration**:

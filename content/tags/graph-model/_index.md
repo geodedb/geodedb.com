@@ -32,6 +32,7 @@ The property graph model is the most widely adopted graph database model, used b
 Nodes represent entities in your domain model: people, products, locations, events, documents, or any discrete object.
 
 **Characteristics**:
+
 - Unique identity (typically an ID)
 - Zero or more labels for categorization
 - Zero or more properties (key-value pairs)
@@ -64,6 +65,7 @@ Nodes represent entities in your domain model: people, products, locations, even
 Relationships connect nodes and represent how entities relate to each other.
 
 **Characteristics**:
+
 - Always directed (source → target)
 - Always have a type/label
 - Connect exactly two nodes (source and target)
@@ -91,6 +93,7 @@ Relationships connect nodes and represent how entities relate to each other.
 Properties are key-value pairs that store data on nodes and relationships.
 
 **Supported Data Types** (in Geode):
+
 - **Primitives**: INTEGER, FLOAT, STRING, BOOLEAN
 - **Temporal**: DATE, TIME, TIMESTAMP, DURATION
 - **Complex**: LIST, MAP
@@ -120,12 +123,14 @@ INSERT (p:Product {
 Labels categorize nodes into types or groups, enabling efficient filtering and schema organization.
 
 **Single Label**:
+
 ```gql
 INSERT (u:User {name: 'Alice'});
 MATCH (u:User) RETURN u.name;
 ```
 
 **Multiple Labels**:
+
 ```gql
 -- Node can have multiple labels
 INSERT (e:Person:Employee:Manager {name: 'Bob'});
@@ -207,24 +212,28 @@ INSERT (product)-[:IN_CATEGORY]->(category);
 Choose descriptive, action-oriented relationship types:
 
 **Good Examples**:
+
 - `:KNOWS`, `:FOLLOWS`, `:LIKES`
 - `:WORKS_AT`, `:REPORTS_TO`, `:MANAGES`
 - `:PURCHASED`, `:CONTAINS`, `:SHIPPED_TO`
 - `:DEPENDS_ON`, `:IMPLEMENTS`, `:EXTENDS`
 
 **Avoid**:
+
 - Generic types like `:RELATED_TO`, `:CONNECTED_TO`
 - Nouns instead of verbs: `:FRIEND` (use `:FRIENDS_WITH`)
 
 ### When to Use Nodes vs. Properties
 
 **Use a Node When**:
+
 - Entity is referenced by multiple other entities
 - Entity has its own relationships
 - Entity has complex attributes
 - You need to query by this entity
 
 **Use a Property When**:
+
 - Simple attribute value
 - Not queried independently
 - Not shared across entities
@@ -395,6 +404,7 @@ INSERT (transform)-[:USED_SOURCE]->(source2);
 Avoid nodes with millions of relationships (degrades performance).
 
 **Problem**:
+
 ```gql
 -- BAD: Country node connected to millions of users
 INSERT (user1)-[:LIVES_IN]->(usa:Country);
@@ -451,8 +461,9 @@ MATCH (p:Person {tenant_id: 'company_a'})
 RETURN p.name;
 
 -- Or use row-level security
-CREATE POLICY tenant_isolation ON ALL
-USING (tenant_id = current_tenant());
+-- Not expressible as a Geode policy predicate (only `=` against a string
+-- literal compiles); precompute the decision into a property instead:
+CALL geode.rls.add_attribute_policy('app', 'Label', 'access_tag', 'access_tag');
 ```
 
 ## Schema Evolution

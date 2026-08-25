@@ -299,60 +299,74 @@ geode batch --file queries.gql --continue-on-error \
 
 ```bash
 # Create user
-geode admin user create --username alice --password --role admin
+geode user create --username alice --password --role admin
 
 # List users
-geode admin user list
+geode user list
 
 # Change password
-geode admin user password --username alice
+geode user password --username alice
 
 # Grant role
-geode admin user grant --username alice --role read_write
+geode grant --username alice --role read_write
 
 # Revoke role
-geode admin user revoke --username alice --role admin
+geode revoke --username alice --role admin
 
 # Delete user
-geode admin user delete --username alice
+geode user delete --username alice
 ```
 
 ### Database Management
 
 ```bash
 # Create database
-geode admin database create --name testdb
+# There is no `geode admin` subcommand. Geode's CLI is: serve, shell, query,
+# lsp, backup, restore, migrate, auth, login, logout, user, role, tenant,
+# policy, grant, revoke, completion, mcp.
 
 # List databases
-geode admin database list
+geode query "SHOW GRAPHS"
 
 # Describe database
-geode admin database describe --name testdb
+# There is no `geode admin` subcommand. Geode's CLI is: serve, shell, query,
+# lsp, backup, restore, migrate, auth, login, logout, user, role, tenant,
+# policy, grant, revoke, completion, mcp.
 
 # Drop database
-geode admin database drop --name testdb --confirm
+# There is no `geode admin` subcommand. Geode's CLI is: serve, shell, query,
+# lsp, backup, restore, migrate, auth, login, logout, user, role, tenant,
+# policy, grant, revoke, completion, mcp.
 
 # Database statistics
-geode admin database stats --name graph
+# There is no `geode admin` subcommand. Geode's CLI is: serve, shell, query,
+# lsp, backup, restore, migrate, auth, login, logout, user, role, tenant,
+# policy, grant, revoke, completion, mcp.
 ```
 
 ### Index Management
 
 ```bash
 # Create index
-geode admin index create --label User --property email
+# There is no `geode admin` subcommand. Geode's CLI is: serve, shell, query,
+# lsp, backup, restore, migrate, auth, login, logout, user, role, tenant,
+# policy, grant, revoke, completion, mcp.
 
 # List indexes
-geode admin index list
+geode query "SHOW INDEXES"
 
 # Describe index
-geode admin index describe --name idx_user_email
+geode query "SHOW INDEXES"
 
 # Rebuild index
-geode admin index rebuild --name idx_user_email
+# There is no `geode admin` subcommand. Geode's CLI is: serve, shell, query,
+# lsp, backup, restore, migrate, auth, login, logout, user, role, tenant,
+# policy, grant, revoke, completion, mcp.
 
 # Drop index
-geode admin index drop --name idx_user_email
+# There is no `geode admin` subcommand. Geode's CLI is: serve, shell, query,
+# lsp, backup, restore, migrate, auth, login, logout, user, role, tenant,
+# policy, grant, revoke, completion, mcp.
 ```
 
 ## Backup and Recovery
@@ -424,24 +438,32 @@ geode query "EXPLAIN MATCH (n:User) RETURN n" --format yaml
 geode query "PROFILE MATCH (n:User) RETURN n" --format json
 
 # Analyze slow queries
-geode admin slow-queries --min-duration 1000  # Queries >1 second
+# There is no `geode admin` subcommand. Geode's CLI is: serve, shell, query,
+# lsp, backup, restore, migrate, auth, login, logout, user, role, tenant,
+# policy, grant, revoke, completion, mcp.
 
 # Query statistics
-geode admin query-stats --top 10  # Top 10 queries by execution time
+# There is no `geode admin` subcommand. Geode's CLI is: serve, shell, query,
+# lsp, backup, restore, migrate, auth, login, logout, user, role, tenant,
+# policy, grant, revoke, completion, mcp.
 ```
 
 ### System Diagnostics
 
 ```bash
 # Health check
-geode admin health
+geode query "SHOW CLUSTER STATUS"
 
 # Connection diagnostics
-geode admin connections list
-geode admin connections show --id conn-123
+# There is no `geode admin` subcommand. Geode's CLI is: serve, shell, query,
+# lsp, backup, restore, migrate, auth, login, logout, user, role, tenant,
+# policy, grant, revoke, completion, mcp.
+# There is no `geode admin` subcommand. Geode's CLI is: serve, shell, query,
+# lsp, backup, restore, migrate, auth, login, logout, user, role, tenant,
+# policy, grant, revoke, completion, mcp.
 
 # Resource usage
-geode admin resources
+geode query "CALL geode.storage.stats()"
 
 # Logs
 geode logs --tail 100
@@ -473,7 +495,9 @@ echo "Total users: $COUNT"
 # Conditional execution
 if [ "$COUNT" -gt 1000000 ]; then
     echo "Running maintenance..."
-    geode admin vacuum --analyze
+    # There is no `geode admin` subcommand. Geode's CLI is: serve, shell, query,
+    # lsp, backup, restore, migrate, auth, login, logout, user, role, tenant,
+    # policy, grant, revoke, completion, mcp.
 fi
 
 # Exit codes
@@ -529,7 +553,7 @@ geode query "MATCH (n:User) RETURN n.email" --format json | \
 
 ```bash
 # Test connectivity
-geode admin ping --host localhost:3141
+geode query "SHOW CLUSTER STATUS"
 
 # Verbose connection diagnostics
 geode shell --connect localhost:3141 --verbose
@@ -546,7 +570,7 @@ geode query "PROFILE MATCH (n)-[r*1..5]-(m) RETURN COUNT(*)" \
   --format yaml
 
 # Check server resources
-geode admin resources --watch 1
+geode query "CALL geode.storage.stats()"
 
 # Analyze query plan
 geode query "EXPLAIN MATCH (n:User) WHERE n.email = 'test@example.com' RETURN n"
@@ -559,10 +583,14 @@ geode query "EXPLAIN MATCH (n:User) WHERE n.email = 'test@example.com' RETURN n"
 geode verify --full-scan
 
 # Check for corrupted indexes
-geode admin index verify --all
+# There is no `geode admin` subcommand. Geode's CLI is: serve, shell, query,
+# lsp, backup, restore, migrate, auth, login, logout, user, role, tenant,
+# policy, grant, revoke, completion, mcp.
 
 # Repair database
-geode admin repair --backup-first --verify-after
+# There is no `geode admin` subcommand. Geode's CLI is: serve, shell, query,
+# lsp, backup, restore, migrate, auth, login, logout, user, role, tenant,
+# policy, grant, revoke, completion, mcp.
 ```
 
 ## Related Topics

@@ -230,10 +230,10 @@ the bytes as a `\x`-prefixed hex string.
 
 ```gql
 -- Explicit constructors
-RETURN int8(127) AS i8;
-RETURN int16(32000) AS i16;
-RETURN int32(2000000) AS i32;
-RETURN int64(9000000000000) AS i64;
+RETURN int(127) AS i8;
+RETURN int(32000) AS i16;
+RETURN int(2000000) AS i32;
+RETURN int(9000000000000) AS i64;
 ```
 
 ### Float Variants
@@ -244,8 +244,8 @@ RETURN int64(9000000000000) AS i64;
 | `FLOAT64` | 8 bytes | ~15 digits | High-precision decimals |
 
 ```gql
-RETURN float32(3.14) AS f32;
-RETURN float64(3.14159265358979) AS f64;
+RETURN double(3.14) AS f32;
+RETURN double(3.14159265358979) AS f64;
 ```
 
 ### DECIMAL / BIGDECIMAL
@@ -354,10 +354,10 @@ Date and time with explicit timezone.
 
 ```gql
 -- Constructor with timezone
-RETURN zoned_datetime('2026-01-28T14:30:00', 'America/New_York') AS zdt;
+RETURN timestamptz('2026-01-28T14:30:00', 'America/New_York') AS zdt;
 
 -- Timezone conversion
-RETURN zdt.in_timezone('Europe/London') AS london_time;
+RETURN timestamptz('Europe/London') AS london_time;
 ```
 
 ---
@@ -557,8 +557,7 @@ RETURN latlon(40.7128, -74.0060).latitude AS lat;   -- 40.7128
 RETURN latlon(40.7128, -74.0060).longitude AS lon;  -- -74.0060
 
 -- Distance (meters)
-RETURN geo_distance(
-  latlon(40.7128, -74.0060),
+RETURN st_distance(latlon(40.7128, -74.0060),
   latlon(34.0522, -118.2437)
 ) AS nyc_to_la;
 ```
@@ -574,7 +573,7 @@ Generic geographic point.
 **Storage:** 16 bytes
 
 ```gql
-RETURN geopoint(40.7128, -74.0060) AS point;
+RETURN st_point(40.7128, -74.0060) AS point;
 ```
 
 ---
@@ -587,7 +586,7 @@ Geographic polygon (boundary).
 
 ```gql
 -- Constructor from points
-RETURN polygon([
+RETURN geometryfromtext([
   latlon(40.70, -74.05),
   latlon(40.70, -73.95),
   latlon(40.75, -73.95),
@@ -596,7 +595,7 @@ RETURN polygon([
 
 -- Containment check
 MATCH (s:Store)
-WHERE geo_within_polygon(s.location, $manhattan_polygon)
+WHERE st_within(s.location, $manhattan_polygon)
 RETURN s.name;
 ```
 
@@ -620,7 +619,7 @@ RETURN ip_version('192.168.1.100'::ipaddr) AS version;  -- 4
 
 -- Subnet containment
 MATCH (s:Server)
-WHERE subnet_contains('192.168.0.0/16'::subnet, s.ip)
+WHERE ip_contains('192.168.0.0/16'::subnet, s.ip)
 RETURN s.hostname;
 ```
 
@@ -638,7 +637,7 @@ RETURN '192.168.1.0/24'::subnet AS network;
 RETURN '10.0.0.0/8'::subnet AS large_network;
 
 -- Containment
-RETURN subnet_contains('10.0.0.0/8'::subnet, '10.1.2.3'::ipaddr);  -- true
+RETURN ip_contains('10.0.0.0/8'::subnet, '10.1.2.3'::ipaddr);  -- true
 
 -- Network address
 RETURN network_address('192.168.1.100/24'::subnet);  -- 192.168.1.0
@@ -727,13 +726,13 @@ Universally Unique Identifier (128-bit).
 
 ```gql
 -- Generate random UUID (v4)
-RETURN gen_random_uuid() AS id;
+RETURN uuid_v4() AS id;
 
 -- From string
 RETURN '550e8400-e29b-41d4-a716-446655440000'::uuid AS id;
 
 -- Version
-RETURN uuid_version('550e8400-e29b-41d4-a716-446655440000'::uuid);  -- 4
+RETURN uuid_v4('550e8400-e29b-41d4-a716-446655440000'::uuid);  -- 4
 ```
 
 **Indexing:** Hash index recommended for equality lookups
@@ -779,14 +778,14 @@ Currency amount with precision.
 
 ```gql
 -- Constructor
-RETURN money(99.99, 'USD') AS price;
-RETURN money(1234.56, 'EUR') AS euro_amount;
+RETURN currency(99.99, 'USD') AS price;
+RETURN currency(1234.56, 'EUR') AS euro_amount;
 
 -- Arithmetic (same currency only)
-RETURN money(10.00, 'USD') + money(5.50, 'USD') AS total;
+RETURN currency(10.00, 'USD') + currency(5.50, 'USD') AS total;
 
 -- Currency code
-RETURN money(99.99, 'USD').currency AS code;  -- 'USD'
+RETURN currency(99.99, 'USD').currency AS code;  -- 'USD'
 ```
 
 ---

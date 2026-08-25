@@ -44,10 +44,9 @@ Geode uses event-driven patterns for asynchronous operations:
 
 ```gql
 // Change Data Capture triggers events
-CREATE TRIGGER user_changes
-ON GRAPH social
-FOR INSERT, UPDATE, DELETE
-EXECUTE NOTIFY 'user_events';
+-- Geode has no trigger system (no CREATE TRIGGER). React to changes with
+-- a CDC subscription on the client, or write the derived value in the same
+-- transaction as the change.
 ```
 
 Events flow through the system without tight coupling between producers and consumers.
@@ -217,10 +216,9 @@ Geode exposes comprehensive metrics:
 
 ```gql
 -- Query system metrics
-SELECT *
-FROM SYSTEM.metrics
-WHERE component = 'query_engine'
-  AND timestamp > NOW() - INTERVAL '1 hour';
+-- There is no query-statistics table, slow-query log or plan cache to
+-- query. Measure a specific statement with EXPLAIN / PROFILE, and scrape
+-- aggregate counters from the Prometheus endpoint (GEODE_METRICS_PORT).
 ```
 
 Metrics include:

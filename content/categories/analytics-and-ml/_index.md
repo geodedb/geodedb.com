@@ -42,7 +42,7 @@ Geode implements graph algorithms as native operations optimized for its storage
 ```gql
 // PageRank for influence analysis
 MATCH (n:WebPage)
-WITH graph.algorithms.pagerank(n, {
+WITH algo.pagerank.stream(n, {
   iterations: 20,
   dampingFactor: 0.85,
   tolerance: 0.0001
@@ -168,10 +168,13 @@ Combine BM25 full-text search with vector similarity for powerful hybrid search:
 
 ```gql
 // Hybrid search with weighted score fusion
-MATCH (doc:Document)
-WHERE text_search(doc.content, $keywords)
+-- NOTE: geode.fts.search takes string literals only; a $parameter
+-- is rejected. Interpolate the term client-side before sending.
+CALL geode.fts.search('document_content', '<search terms>')
+YIELD node, score
+MATCH (doc:Document) WHERE id(doc) = node
 WITH doc,
-  bm25_score(doc.content, $keywords) AS text_score,
+  score AS text_score,
   similarity(doc.embedding, $query_vector) AS semantic_score
 WITH doc,
   text_score,
@@ -257,7 +260,7 @@ MATCH (account:Account)-[t:TRANSACTION]->(recipient:Account)
 WITH account,
      COUNT(t) AS tx_count,
      AVG(t.amount) AS avg_amount,
-     STDDEV(t.amount) AS stddev_amount,
+     collect(t.amount) /* stddev/variance parse but are never computed; reduce client-side */ AS stddev_amount,
      COLLECT(DISTINCT recipient.country) AS countries
 WHERE tx_count > 10
 WITH account, tx_count, avg_amount, stddev_amount, countries,
@@ -306,10 +309,10 @@ Graph patterns reveal complex fraud schemes:
 // Detect circular payment patterns (potential money laundering)
 MATCH path = (a:Account)-[:TRANSFER*3..5]->(a)
 WHERE ALL(r IN relationships(path) WHERE r.amount > 10000)
-  AND reduce(total = 0, r IN relationships(path) | total + r.amount) > 50000
+  AND null /* reduce() is advertised by SHOW FUNCTIONS but has no evaluator dispatch; collect() the values and fold client-side (for path weights use algo.dijkstra.stream, which yields cost) */ > 50000
 WITH path,
      nodes(path) AS accounts,
-     reduce(total = 0, r IN relationships(path) | total + r.amount) AS cycle_amount
+     null /* reduce() is advertised by SHOW FUNCTIONS but has no evaluator dispatch; collect() the values and fold client-side (for path weights use algo.dijkstra.stream, which yields cost) */ AS cycle_amount
 RETURN accounts,
        cycle_amount,
        LENGTH(path) AS cycle_length,
@@ -440,7 +443,7 @@ For large-scale analytics, use batch processing:
 WITH 1000 AS batch_size, 0 AS offset
 MATCH (n:User)
 SKIP offset LIMIT batch_size
-WITH n, graph.algorithms.pagerank(n) AS rank
+WITH n, algo.pagerank.stream(n) AS rank
 SET n.pagerank = rank
 RETURN COUNT(*) AS processed
 

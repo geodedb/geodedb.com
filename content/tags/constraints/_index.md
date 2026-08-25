@@ -31,22 +31,30 @@ NOT NULL constraints ensure that required properties always have values, prevent
 
 ```gql
 -- Define required properties for Person nodes
-CREATE NODE TYPE Person (
-    id STRING NOT NULL,
-    name STRING NOT NULL,
-    email STRING NOT NULL,
-    phone STRING,              -- Optional field, nullable by default
-    middle_name STRING,        -- Explicitly nullable
-    created_at TIMESTAMP NOT NULL DEFAULT NOW()
-);
+-- Geode has no CREATE NODE TYPE / CREATE EDGE TYPE: labels are
+-- schema-free. The only typed DDL is CREATE GRAPH TYPE, whose field
+-- list is `name TYPE [PRIMARY KEY] [@annotations]` in braces.
+-- Not supported in a field definition: DEFAULT, NOT NULL — enforce with CREATE CONSTRAINT or at write time.
+CREATE GRAPH TYPE PersonType AS {
+  id STRING,
+  name STRING,
+  email STRING,
+  phone STRING,  -- Optional field, nullable by default
+  middle_name STRING,  -- Explicitly nullable
+  created_at TIMESTAMP
+};
 
 -- Edge type with required relationship metadata
-CREATE EDGE TYPE WORKS_FOR (
-    start_date DATE NOT NULL,
-    end_date DATE,             -- NULL means current employment
-    position STRING NOT NULL,
-    department STRING NOT NULL
-);
+-- Geode has no CREATE NODE TYPE / CREATE EDGE TYPE: labels are
+-- schema-free. The only typed DDL is CREATE GRAPH TYPE, whose field
+-- list is `name TYPE [PRIMARY KEY] [@annotations]` in braces.
+-- Not supported in a field definition: NOT NULL — enforce with CREATE CONSTRAINT or at write time.
+CREATE GRAPH TYPE WORKS_FORType AS {
+  start_date DATE,
+  end_date DATE,  -- NULL means current employment
+  position STRING,
+  department STRING
+};
 ```
 
 When inserting nodes without required values, Geode immediately rejects the operation:
@@ -75,26 +83,36 @@ UNIQUE constraints prevent duplicate values across nodes or edges of the same ty
 
 ```gql
 -- Single-column uniqueness
-CREATE NODE TYPE Person (
-    id STRING PRIMARY KEY,           -- Implicitly UNIQUE and NOT NULL
-    email STRING UNIQUE NOT NULL,    -- Business key uniqueness
-    ssn STRING UNIQUE,               -- Nullable but unique when present
-    username STRING UNIQUE NOT NULL
-);
+-- Geode has no CREATE NODE TYPE / CREATE EDGE TYPE: labels are
+-- schema-free. The only typed DDL is CREATE GRAPH TYPE, whose field
+-- list is `name TYPE [PRIMARY KEY] [@annotations]` in braces.
+-- Not supported in a field definition: NOT NULL, UNIQUE — enforce with CREATE CONSTRAINT or at write time.
+CREATE GRAPH TYPE PersonType AS {
+  id STRING PRIMARY KEY,  -- Implicitly UNIQUE and NOT NULL
+  email STRING,  -- Business key uniqueness
+  ssn STRING,  -- Nullable but unique when present
+  username STRING
+};
 
 -- Multi-column uniqueness (composite keys)
-CREATE NODE TYPE Employee (
-    employee_id STRING NOT NULL,
-    department STRING NOT NULL,
-    badge_number STRING NOT NULL,
-    CONSTRAINT unique_dept_badge UNIQUE (department, badge_number)
-);
+-- Geode has no CREATE NODE TYPE / CREATE EDGE TYPE: labels are
+-- schema-free. The only typed DDL is CREATE GRAPH TYPE, whose field
+-- list is `name TYPE [PRIMARY KEY] [@annotations]` in braces.
+-- Not supported in a field definition: CONSTRAINT, NOT NULL — enforce with CREATE CONSTRAINT or at write time.
+CREATE GRAPH TYPE EmployeeType AS {
+  employee_id STRING,
+  department STRING,
+  badge_number STRING
+};
 
 -- Edge uniqueness prevents duplicate relationships
-CREATE EDGE TYPE FOLLOWS (
-    followed_at TIMESTAMP NOT NULL DEFAULT NOW(),
-    CONSTRAINT unique_follow UNIQUE (FROM, TO)
-);
+-- Geode has no CREATE NODE TYPE / CREATE EDGE TYPE: labels are
+-- schema-free. The only typed DDL is CREATE GRAPH TYPE, whose field
+-- list is `name TYPE [PRIMARY KEY] [@annotations]` in braces.
+-- Not supported in a field definition: CONSTRAINT, DEFAULT, NOT NULL — enforce with CREATE CONSTRAINT or at write time.
+CREATE GRAPH TYPE FOLLOWSType AS {
+  followed_at TIMESTAMP
+};
 ```
 
 Application-level usage:
@@ -128,49 +146,56 @@ CHECK constraints enforce business rules using boolean expressions. These constr
 
 ```gql
 -- Simple range checks
-CREATE NODE TYPE Person (
-    age INTEGER CHECK (age >= 0 AND age <= 150),
-    salary DECIMAL CHECK (salary >= 0),
-    email STRING CHECK (email LIKE '%@%.%')
-);
+-- Geode has no CREATE NODE TYPE / CREATE EDGE TYPE: labels are
+-- schema-free. The only typed DDL is CREATE GRAPH TYPE, whose field
+-- list is `name TYPE [PRIMARY KEY] [@annotations]` in braces.
+CREATE GRAPH TYPE PersonType AS {
+  age INTEGER,
+  salary DECIMAL,
+  email STRING
+};
 
 -- Pattern validation
-CREATE NODE TYPE Product (
-    sku STRING CHECK (sku ~ '^[A-Z]{3}-[0-9]{6}$'),  -- Format: ABC-123456
-    price DECIMAL CHECK (price > 0),
-    discount_pct DECIMAL CHECK (discount_pct >= 0 AND discount_pct <= 100)
-);
+-- Geode has no CREATE NODE TYPE / CREATE EDGE TYPE: labels are
+-- schema-free. The only typed DDL is CREATE GRAPH TYPE, whose field
+-- list is `name TYPE [PRIMARY KEY] [@annotations]` in braces.
+CREATE GRAPH TYPE ProductType AS {
+  sku STRING,  -- Format: ABC-123456
+  price DECIMAL,
+  discount_pct DECIMAL
+};
 
 -- Enumeration constraints
-CREATE NODE TYPE Order (
-    status STRING CHECK (status IN ('pending', 'processing', 'shipped', 'delivered', 'cancelled')),
-    priority STRING CHECK (priority IN ('low', 'normal', 'high', 'urgent'))
-);
+-- Geode has no CREATE NODE TYPE / CREATE EDGE TYPE: labels are
+-- schema-free. The only typed DDL is CREATE GRAPH TYPE, whose field
+-- list is `name TYPE [PRIMARY KEY] [@annotations]` in braces.
+CREATE GRAPH TYPE OrderType AS {
+  status STRING,
+  priority STRING
+};
 
 -- Multi-property constraints
-CREATE NODE TYPE Booking (
-    check_in DATE NOT NULL,
-    check_out DATE NOT NULL,
-    guests INTEGER CHECK (guests > 0 AND guests <= 10),
-    CONSTRAINT valid_date_range CHECK (check_out > check_in),
-    CONSTRAINT min_stay CHECK (check_out >= check_in + INTERVAL '1 day')
-);
+-- Geode has no CREATE NODE TYPE / CREATE EDGE TYPE: labels are
+-- schema-free. The only typed DDL is CREATE GRAPH TYPE, whose field
+-- list is `name TYPE [PRIMARY KEY] [@annotations]` in braces.
+-- Not supported in a field definition: CONSTRAINT, NOT NULL — enforce with CREATE CONSTRAINT or at write time.
+CREATE GRAPH TYPE BookingType AS {
+  check_in DATE,
+  check_out DATE,
+  guests INTEGER
+};
 
 -- Conditional constraints based on other properties
-CREATE NODE TYPE Employee (
-    type STRING CHECK (type IN ('full_time', 'part_time', 'contractor')),
-    salary DECIMAL,
-    hourly_rate DECIMAL,
-    benefits_eligible BOOLEAN,
-    CONSTRAINT compensation_model CHECK (
-        (type = 'full_time' AND salary IS NOT NULL AND hourly_rate IS NULL)
-        OR
-        (type IN ('part_time', 'contractor') AND salary IS NULL AND hourly_rate IS NOT NULL)
-    ),
-    CONSTRAINT benefits_rule CHECK (
-        type = 'full_time' OR benefits_eligible = false
-    )
-);
+-- Geode has no CREATE NODE TYPE / CREATE EDGE TYPE: labels are
+-- schema-free. The only typed DDL is CREATE GRAPH TYPE, whose field
+-- list is `name TYPE [PRIMARY KEY] [@annotations]` in braces.
+-- Not supported in a field definition: CONSTRAINT — enforce with CREATE CONSTRAINT or at write time.
+CREATE GRAPH TYPE EmployeeType AS {
+  type STRING,
+  salary DECIMAL,
+  hourly_rate DECIMAL,
+  benefits_eligible BOOLEAN
+};
 ```
 
 Geode evaluates CHECK constraints on every INSERT and UPDATE operation, providing immediate feedback:
@@ -201,24 +226,34 @@ Foreign key constraints ensure that relationships reference existing nodes, main
 
 ```gql
 -- Edge type with foreign key constraints
-CREATE EDGE TYPE WORKS_FOR (
-    employee_id STRING REFERENCES Person(id),
-    company_id STRING REFERENCES Company(id),
-    start_date DATE NOT NULL
-);
+-- Geode has no CREATE NODE TYPE / CREATE EDGE TYPE: labels are
+-- schema-free. The only typed DDL is CREATE GRAPH TYPE, whose field
+-- list is `name TYPE [PRIMARY KEY] [@annotations]` in braces.
+-- Not supported in a field definition: NOT NULL — enforce with CREATE CONSTRAINT or at write time.
+CREATE GRAPH TYPE WORKS_FORType AS {
+  employee_id STRING,
+  company_id STRING,
+  start_date DATE
+};
 
 -- Cascade options for deletions
-CREATE EDGE TYPE MANAGES (
-    manager_id STRING REFERENCES Employee(id) ON DELETE CASCADE,
-    team_id STRING REFERENCES Team(id) ON DELETE SET NULL
-);
+-- Geode has no CREATE NODE TYPE / CREATE EDGE TYPE: labels are
+-- schema-free. The only typed DDL is CREATE GRAPH TYPE, whose field
+-- list is `name TYPE [PRIMARY KEY] [@annotations]` in braces.
+CREATE GRAPH TYPE MANAGESType AS {
+  manager_id STRING,
+  team_id STRING
+};
 
 -- Self-referential constraints
-CREATE EDGE TYPE REPORTS_TO (
-    from_id STRING REFERENCES Employee(id),
-    to_id STRING REFERENCES Employee(id),
-    CONSTRAINT no_self_reporting CHECK (from_id != to_id)
-);
+-- Geode has no CREATE NODE TYPE / CREATE EDGE TYPE: labels are
+-- schema-free. The only typed DDL is CREATE GRAPH TYPE, whose field
+-- list is `name TYPE [PRIMARY KEY] [@annotations]` in braces.
+-- Not supported in a field definition: CONSTRAINT — enforce with CREATE CONSTRAINT or at write time.
+CREATE GRAPH TYPE REPORTS_TOType AS {
+  from_id STRING,
+  to_id STRING
+};
 ```
 
 ## Complex Constraint Patterns
@@ -227,49 +262,48 @@ CREATE EDGE TYPE REPORTS_TO (
 
 ```gql
 -- Price consistency across currencies
-CREATE NODE TYPE Product (
-    base_price_usd DECIMAL NOT NULL CHECK (base_price_usd > 0),
-    price_eur DECIMAL,
-    price_gbp DECIMAL,
-    CONSTRAINT currency_consistency CHECK (
-        (price_eur IS NULL AND price_gbp IS NULL)
-        OR (price_eur > 0 AND price_gbp > 0)
-    )
-);
+-- Geode has no CREATE NODE TYPE / CREATE EDGE TYPE: labels are
+-- schema-free. The only typed DDL is CREATE GRAPH TYPE, whose field
+-- list is `name TYPE [PRIMARY KEY] [@annotations]` in braces.
+-- Not supported in a field definition: CONSTRAINT, NOT NULL — enforce with CREATE CONSTRAINT or at write time.
+CREATE GRAPH TYPE ProductType AS {
+  base_price_usd DECIMAL,
+  price_eur DECIMAL,
+  price_gbp DECIMAL
+};
 
 -- Temporal validity
-CREATE NODE TYPE Contract (
-    signed_date DATE NOT NULL,
-    effective_date DATE NOT NULL,
-    expiry_date DATE,
-    CONSTRAINT chronological_order CHECK (
-        effective_date >= signed_date
-        AND (expiry_date IS NULL OR expiry_date > effective_date)
-    )
-);
+-- Geode has no CREATE NODE TYPE / CREATE EDGE TYPE: labels are
+-- schema-free. The only typed DDL is CREATE GRAPH TYPE, whose field
+-- list is `name TYPE [PRIMARY KEY] [@annotations]` in braces.
+-- Not supported in a field definition: CONSTRAINT, NOT NULL — enforce with CREATE CONSTRAINT or at write time.
+CREATE GRAPH TYPE ContractType AS {
+  signed_date DATE,
+  effective_date DATE,
+  expiry_date DATE
+};
 ```
 
 ### Graph-Specific Constraints
 
 ```gql
 -- Degree constraints on relationships
-CREATE NODE TYPE Person (
-    max_connections INTEGER DEFAULT 5000,
-    CONSTRAINT connection_limit CHECK (
-        (SELECT COUNT(*) FROM MATCH (this)-[:FOLLOWS]->() ) <= max_connections
-    )
-);
+-- Geode has no CREATE NODE TYPE / CREATE EDGE TYPE: labels are
+-- schema-free. The only typed DDL is CREATE GRAPH TYPE, whose field
+-- list is `name TYPE [PRIMARY KEY] [@annotations]` in braces.
+-- Not supported in a field definition: CONSTRAINT, DEFAULT — enforce with CREATE CONSTRAINT or at write time.
+CREATE GRAPH TYPE PersonType AS {
+  max_connections INTEGER
+};
 
 -- Path length constraints
-CREATE EDGE TYPE REFERENCES (
-    depth INTEGER CHECK (depth >= 0 AND depth < 10),
-    CONSTRAINT no_cycles CHECK (
-        NOT EXISTS(
-            MATCH (a)-[:REFERENCES*1..10]->(b)-[:REFERENCES]->(a)
-            WHERE a = FROM_NODE
-        )
-    )
-);
+-- Geode has no CREATE NODE TYPE / CREATE EDGE TYPE: labels are
+-- schema-free. The only typed DDL is CREATE GRAPH TYPE, whose field
+-- list is `name TYPE [PRIMARY KEY] [@annotations]` in braces.
+-- Not supported in a field definition: CONSTRAINT — enforce with CREATE CONSTRAINT or at write time.
+CREATE GRAPH TYPE REFERENCESType AS {
+  depth INTEGER
+};
 ```
 
 ## Managing Constraints Dynamically
@@ -278,33 +312,43 @@ CREATE EDGE TYPE REFERENCES (
 
 ```gql
 -- Add new constraint to existing node type
-ALTER NODE TYPE Person
-ADD CONSTRAINT check_adult CHECK (age >= 18);
+-- Geode has no ALTER LABEL / ALTER GRAPH / property DEFAULT DDL. Labels and
+-- properties are schema-free: write the new property with SET, supplying the
+-- default yourself.
+MATCH (u:User) WHERE u.verified IS NULL SET u.verified = false;
 
 -- Add uniqueness constraint
-ALTER NODE TYPE Person
-ADD CONSTRAINT unique_phone UNIQUE (phone);
+-- Geode has no ALTER LABEL / ALTER GRAPH / property DEFAULT DDL. Labels and
+-- properties are schema-free: write the new property with SET, supplying the
+-- default yourself.
+MATCH (u:User) WHERE u.verified IS NULL SET u.verified = false;
 
 -- Add multi-column constraint
-ALTER NODE TYPE Employee
-ADD CONSTRAINT unique_dept_position UNIQUE (department, position_id);
+-- Geode has no ALTER LABEL / ALTER GRAPH / property DEFAULT DDL. Labels and
+-- properties are schema-free: write the new property with SET, supplying the
+-- default yourself.
+MATCH (u:User) WHERE u.verified IS NULL SET u.verified = false;
 ```
 
 ### Modifying Constraints
 
 ```gql
 -- Remove outdated constraint
-ALTER NODE TYPE Person
-DROP CONSTRAINT check_adult;
+-- Geode has no ALTER LABEL / ALTER GRAPH / property DEFAULT DDL. Labels and
+-- properties are schema-free: write the new property with SET, supplying the
+-- default yourself.
+MATCH (u:User) WHERE u.verified IS NULL SET u.verified = false;
 
 -- Replace constraint with updated rule
-ALTER NODE TYPE Person
-DROP CONSTRAINT email_format;
+-- Geode has no ALTER LABEL / ALTER GRAPH / property DEFAULT DDL. Labels and
+-- properties are schema-free: write the new property with SET, supplying the
+-- default yourself.
+MATCH (u:User) WHERE u.verified IS NULL SET u.verified = false;
 
-ALTER NODE TYPE Person
-ADD CONSTRAINT email_format_v2 CHECK (
-    email ~ '^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
-);
+-- Geode has no ALTER LABEL / ALTER GRAPH / property DEFAULT DDL. Labels and
+-- properties are schema-free: write the new property with SET, supplying the
+-- default yourself.
+MATCH (u:User) WHERE u.verified IS NULL SET u.verified = false;
 ```
 
 ### Bulk Operations with Constraint Suspension

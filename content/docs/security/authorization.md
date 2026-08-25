@@ -42,6 +42,7 @@ Geode provides layered authorization mechanisms:
 | 3 | RLS | Row-level | Multi-tenancy, data isolation |
 
 **Authorization Flow**:
+
 1. User authenticates (see [Authentication](/docs/security/authentication/))
 2. System evaluates RBAC permissions
 3. ABAC policies filter accessible resources
@@ -120,7 +121,7 @@ GRANT CREATE, ALTER, DROP ON SCHEMA SocialNetwork TO dba;
 -- Grant procedure execution
 GRANT EXECUTE ON PROCEDURE analytics.* TO data_scientist;
 
--- Grant with grant option (can delegate)
+-- Grant with grant
 GRANT SELECT ON GRAPH SocialNetwork TO team_lead WITH GRANT OPTION;
 ```
 
@@ -180,6 +181,7 @@ ABAC provides dynamic, context-aware authorization using attributes.
 ### Policy Components
 
 ABAC policies evaluate:
+
 - **Subject attributes**: User properties (department, clearance, location)
 - **Resource attributes**: Data properties (classification, owner, type)
 - **Action**: Operation being performed (SELECT, INSERT, etc.)
@@ -281,6 +283,7 @@ RLS provides fine-grained access control at the row (node/relationship) level.
 ### RLS Overview
 
 RLS policies are **transparent** to applications:
+
 - Automatically applied to all queries
 - No query rewriting needed
 - Users see only permitted data
@@ -292,95 +295,73 @@ RLS policies are **transparent** to applications:
 
 ```gql
 -- Multi-tenant isolation
-CREATE POLICY tenant_isolation ON Person
-FOR SELECT
-USING (tenant_id = current_user_tenant_id());
+-- Person.tenant_id must equal the caller's 'tenant' principal attribute
+CALL geode.rls.add_attribute_policy('app', 'Person', 'tenant_id', 'tenant');
 
 -- Data ownership
-CREATE POLICY owner_access ON Document
-FOR SELECT
-USING (
-  owner_id = current_user.id OR
-  is_public = true OR
-  has_role('admin')
-);
+-- Not expressible as a Geode policy predicate (only `=` against a string
+-- literal compiles); precompute the decision into a property instead:
+CALL geode.rls.add_attribute_policy('app', 'Document', 'access_tag', 'access_tag');
 
 -- Classification-based access
-CREATE POLICY classification_filter ON Record
-FOR SELECT
-USING (
-  classification IN ('public', 'internal') OR
-  (classification = 'confidential' AND has_role('manager')) OR
-  (classification = 'secret' AND has_role('executive'))
-);
+-- Not expressible as a Geode policy predicate (only `=` against a string
+-- literal compiles); precompute the decision into a property instead:
+CALL geode.rls.add_attribute_policy('app', 'Record', 'access_tag', 'access_tag');
 ```
 
 **INSERT Policies** (control creation):
 
 ```gql
 -- Users can only create in their tenant
-CREATE POLICY tenant_insert ON Person
-FOR INSERT
-USING (tenant_id = current_user_tenant_id());
+-- Person.tenant_id must equal the caller's 'tenant' principal attribute
+CALL geode.rls.add_attribute_policy('app', 'Person', 'tenant_id', 'tenant');
 
 -- Validate data on insert
-CREATE POLICY valid_classification ON Document
-FOR INSERT
-USING (classification IN ('public', 'internal', 'confidential'));
+-- Not expressible as a Geode policy predicate (only `=` against a string
+-- literal compiles); precompute the decision into a property instead:
+CALL geode.rls.add_attribute_policy('app', 'Document', 'access_tag', 'access_tag');
 ```
 
 **UPDATE Policies** (control modification):
 
 ```gql
 -- Users can only update their own data
-CREATE POLICY owner_update ON Profile
-FOR UPDATE
-USING (owner_id = current_user.id);
+-- Not expressible as a Geode policy predicate (only `=` against a string
+-- literal compiles); precompute the decision into a property instead:
+CALL geode.rls.add_attribute_policy('app', 'Profile', 'access_tag', 'access_tag');
 
 -- Prevent modification of archived data
-CREATE POLICY no_archive_update ON Document
-FOR UPDATE
-USING (status != 'archived');
+-- Not expressible as a Geode policy predicate (only `=` against a string
+-- literal compiles); precompute the decision into a property instead:
+CALL geode.rls.add_attribute_policy('app', 'Document', 'access_tag', 'access_tag');
 ```
 
 **DELETE Policies** (control deletion):
 
 ```gql
 -- Only owners or admins can delete
-CREATE POLICY owner_delete ON Document
-FOR DELETE
-USING (
-  owner_id = current_user.id OR
-  has_role('admin')
-);
+-- Not expressible as a Geode policy predicate (only `=` against a string
+-- literal compiles); precompute the decision into a property instead:
+CALL geode.rls.add_attribute_policy('app', 'Document', 'access_tag', 'access_tag');
 
 -- Soft delete only (prevent hard delete)
-CREATE POLICY soft_delete_only ON AuditRecord
-FOR DELETE
-USING (false);  -- Always deny hard delete
+-- Not expressible as a Geode policy predicate (only `=` against a string
+-- literal compiles); precompute the decision into a property instead:
+CALL geode.rls.add_attribute_policy('app', 'AuditRecord', 'access_tag', 'access_tag');  -- Always deny hard delete
 ```
 
 ### RLS for Relationships
 
 ```gql
 -- Relationship visibility based on node access
-CREATE POLICY relationship_visibility ON KNOWS
-FOR SELECT
-USING (
-  -- User must be able to see both endpoints
-  EXISTS(
-    MATCH (a)-[this]->(b)
-    WHERE can_access(a) AND can_access(b)
-  )
-);
+-- Not expressible as a Geode policy predicate (only `=` against a string
+-- literal compiles); precompute the decision into a property instead:
+CALL geode.rls.add_attribute_policy('app', 'Label', 'access_tag', 'access_tag');
 
 -- Tenant isolation for relationships
-CREATE POLICY relationship_tenant ON WORKS_AT
-FOR SELECT
-USING (
-  start_node.tenant_id = current_user_tenant_id() AND
-  end_node.tenant_id = current_user_tenant_id()
-);
+-- Not expressible as a Geode policy predicate (only `=` against a string
+-- literal compiles); precompute the decision into a property instead:
+CALL geode.rls.add_attribute_policy('app', 'Label', 'access_tag', 'access_tag');
 ```
 
 ### RLS Context Variables
@@ -394,9 +375,9 @@ SET session.user_department = 'Engineering';
 SET session.clearance_level = 3;
 
 -- Use in RLS policies
-CREATE POLICY tenant_filter ON *
-FOR SELECT
-USING (tenant_id = session.tenant_id);
+-- Not expressible as a Geode policy predicate (only `=` against a string
+-- literal compiles); precompute the decision into a property instead:
+CALL geode.rls.add_attribute_policy('app', 'Label', 'access_tag', 'access_tag');
 ```
 
 **Client-Side Context Setting**:
@@ -428,6 +409,7 @@ EXPLAIN MATCH (p:Person) WHERE p.age > 30 RETURN p;
 ```
 
 **Best Practices for RLS Performance**:
+
 1. Index columns used in RLS policies
 2. Use simple equality checks when possible
 3. Avoid complex subqueries in policies
@@ -459,14 +441,10 @@ GRANT SELECT (name, email) ON GRAPH SocialNetwork.Person TO analyst;
 Configure default permissions for new objects:
 
 ```yaml
-security:
-  authorization:
-    default_permissions:
-      new_graphs: ["SELECT"]     # Default for new graphs
-      new_users: ["reader"]      # Default role for new users
-    public_schema:
-      enabled: true              # Allow public schema
-      permissions: ["SELECT"]    # Public schema permissions
+# NOTE: `security:` is not a configuration-file section — it is ignored.
+# KMS and encryption-at-rest are configured with environment variables:
+#   GEODE_KMS_URL, GEODE_KMS_ENDPOINT, GEODE_KMS_API_KEY
+#   GEODE_MASTER_KEY, GEODE_TDE_ENABLED, GEODE_ALLOW_LOCAL_KMS
 ```
 
 ## Effective Permissions
@@ -523,22 +501,14 @@ DENY DELETE ON GRAPH SocialNetwork TO analyst;
 ### Authorization Audit Events
 
 ```yaml
-security:
-  audit:
-    authorization_events:
-      - permission_granted
-      - permission_revoked
-      - role_created
-      - role_dropped
-      - role_assigned
-      - role_revoked
-      - policy_created
-      - policy_dropped
-      - access_denied
-      - rls_filter_applied
+# NOTE: `security:` is not a configuration-file section — it is ignored.
+# KMS and encryption-at-rest are configured with environment variables:
+#   GEODE_KMS_URL, GEODE_KMS_ENDPOINT, GEODE_KMS_API_KEY
+#   GEODE_MASTER_KEY, GEODE_TDE_ENABLED, GEODE_ALLOW_LOCAL_KMS
 ```
 
 **Sample Audit Log**:
+
 ```json
 {
   "timestamp": "2026-01-28T14:30:00.123Z",
@@ -557,17 +527,17 @@ security:
 
 ```bash
 # Generate access report
-geode admin access-report \
+geode query "SHOW GRANTS"
   --user alice \
   --output access-report.json
 
 # Generate permission matrix
-geode admin permission-matrix \
+geode query "SHOW GRANTS"
   --graph SocialNetwork \
   --output permissions.csv
 
 # Audit permission changes
-geode admin audit-log \
+geode query "CALL audit.get_recent_events(100)"
   --event-type permission_* \
   --since "2026-01-01" \
   --output audit.json
@@ -578,9 +548,10 @@ geode admin audit-log \
 ### Complete Authorization Configuration
 
 ```yaml
-security:
-  authorization:
-    enabled: true
+# NOTE: `security:` is not a configuration-file section — it is ignored.
+# KMS and encryption-at-rest are configured with environment variables:
+#   GEODE_KMS_URL, GEODE_KMS_ENDPOINT, GEODE_KMS_API_KEY
+#   GEODE_MASTER_KEY, GEODE_TDE_ENABLED, GEODE_ALLOW_LOCAL_KMS
 
     # Default deny (require explicit grants)
     default_deny: true
@@ -657,7 +628,7 @@ geode query "SHOW ROLES FOR USER alice"
 
 ```bash
 # Verify RLS is enabled
-geode admin show-config | grep rls
+geode query "SHOW VERSION"| grep rls
 
 # Check policy exists
 geode query "SHOW POLICIES ON Person"
@@ -673,7 +644,9 @@ geode query "SELECT session.tenant_id"
 geode query "SHOW POLICIES ON :Person VERBOSE"
 
 # Check policy evaluation order
-geode admin policy-debug --type Person --action SELECT
+# There is no `geode admin` subcommand. Geode's CLI is: serve, shell, query,
+# lsp, backup, restore, migrate, auth, login, logout, user, role, tenant,
+# policy, grant, revoke, completion, mcp.
 ```
 
 ## Related Documentation

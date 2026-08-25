@@ -195,6 +195,7 @@ LIMIT 20
 
 {{< tabs >}}
 {{< tab "Go" >}}
+
 ```go
 package main
 
@@ -270,8 +271,10 @@ func main() {
     }
 }
 ```
+
 {{< /tab >}}
 {{< tab "Python" >}}
+
 ```python
 import asyncio
 from dataclasses import dataclass
@@ -328,8 +331,10 @@ async def main():
 
 asyncio.run(main())
 ```
+
 {{< /tab >}}
 {{< tab "Rust" >}}
+
 ```rust
 use geode_client::{Client, Value};
 use std::collections::HashMap;
@@ -393,8 +398,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 ```
+
 {{< /tab >}}
 {{< tab "Node.js" >}}
+
 ```typescript
 import { createClient, Client } from '@geodedb/client';
 
@@ -448,8 +455,10 @@ async function main() {
 
 main();
 ```
+
 {{< /tab >}}
 {{< tab "Zig" >}}
+
 ```zig
 const std = @import("std");
 const geode = @import("geode_client");
@@ -518,6 +527,7 @@ pub fn main() !void {
     }
 }
 ```
+
 {{< /tab >}}
 {{< /tabs >}}
 
@@ -571,6 +581,7 @@ ORDER BY velocity_multiplier DESC
 
 {{< tabs >}}
 {{< tab "Go" >}}
+
 ```go
 type VelocityAlert struct {
     AccountEmail       string
@@ -634,8 +645,10 @@ func FindVelocityAnomalies(ctx context.Context, db *sql.DB) ([]VelocityAlert, er
     return alerts, nil
 }
 ```
+
 {{< /tab >}}
 {{< tab "Python" >}}
+
 ```python
 @dataclass
 class VelocityAlert:
@@ -689,8 +702,10 @@ async def find_velocity_anomalies(client) -> List[VelocityAlert]:
             for row in result.rows
         ]
 ```
+
 {{< /tab >}}
 {{< tab "Rust" >}}
+
 ```rust
 #[derive(Debug)]
 struct VelocityAlert {
@@ -748,8 +763,10 @@ async fn find_velocity_anomalies(
     Ok(alerts)
 }
 ```
+
 {{< /tab >}}
 {{< tab "Node.js" >}}
+
 ```typescript
 interface VelocityAlert {
   accountEmail: string;
@@ -799,8 +816,10 @@ async function findVelocityAnomalies(client: Client): Promise<VelocityAlert[]> {
   }));
 }
 ```
+
 {{< /tab >}}
 {{< tab "Zig" >}}
+
 ```zig
 const VelocityAlert = struct {
     account_email: []const u8,
@@ -850,6 +869,7 @@ pub fn findVelocityAnomalies(
     return alerts;
 }
 ```
+
 {{< /tab >}}
 {{< /tabs >}}
 
@@ -961,6 +981,7 @@ RETURN
 
 {{< tabs >}}
 {{< tab "Go" >}}
+
 ```go
 type RiskScore struct {
     TotalRisk    float64
@@ -1044,8 +1065,10 @@ func ShouldBlockTransaction(score *RiskScore, amount float64) (bool, string) {
     return false, ""
 }
 ```
+
 {{< /tab >}}
 {{< tab "Python" >}}
+
 ```python
 @dataclass
 class RiskScore:
@@ -1158,8 +1181,10 @@ async def process_transaction(
         }
     }
 ```
+
 {{< /tab >}}
 {{< tab "Rust" >}}
+
 ```rust
 #[derive(Debug)]
 struct RiskScore {
@@ -1235,8 +1260,10 @@ async fn calculate_transaction_risk(
     }
 }
 ```
+
 {{< /tab >}}
 {{< tab "Node.js" >}}
+
 ```typescript
 interface RiskScore {
   totalRisk: number;
@@ -1295,8 +1322,10 @@ async function calculateTransactionRisk(
   };
 }
 ```
+
 {{< /tab >}}
 {{< tab "Zig" >}}
+
 ```zig
 const RiskScore = struct {
     total_risk: f64,
@@ -1354,6 +1383,7 @@ pub fn calculateTransactionRisk(
     };
 }
 ```
+
 {{< /tab >}}
 {{< /tabs >}}
 
@@ -1460,7 +1490,7 @@ WHERE tx.timestamp > timestamp() - duration('PT5M')
   AND tx.risk_score > 80
   AND tx.status = 'pending'
 CREATE (alert:Alert {
-  id: randomUUID(),
+  id: uuid_v4(),
   type: 'high_risk_transaction',
   severity: 'critical',
   account_id: account.id,
@@ -1478,7 +1508,7 @@ MATCH (account)-[:INITIATED]->(tx:Transaction)
 WHERE tx.timestamp > timestamp() - duration('PT1H')
   AND tx.amount > 5000
 CREATE (alert:Alert {
-  id: randomUUID(),
+  id: uuid_v4(),
   type: 'new_device_high_value',
   severity: 'high',
   account_id: account.id,
@@ -1495,7 +1525,7 @@ WHERE tx.timestamp > timestamp() - duration('PT1H')
 WITH account, count(tx) AS tx_count, sum(tx.amount) AS total_amount
 WHERE tx_count > 20 OR total_amount > 50000
 CREATE (alert:Alert {
-  id: randomUUID(),
+  id: uuid_v4(),
   type: 'velocity_spike',
   severity: 'high',
   account_id: account.id,

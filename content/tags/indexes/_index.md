@@ -178,7 +178,7 @@ Search text content efficiently:
 
 ```gql
 // Create full-text index
-CREATE FULLTEXT INDEX post_content_idx ON Post(title, body);
+CREATE INDEX post_content_idx ON Post(title, body) USING fulltext;
 
 // Enables text search:
 MATCH (p:Post)
@@ -202,7 +202,7 @@ Optimize geographic queries:
 
 ```gql
 // Create spatial index for location data
-CREATE SPATIAL INDEX location_idx ON Place(latitude, longitude);
+CREATE INDEX location_idx ON Place(latitude, longitude) USING spatial;
 
 // Accelerates proximity queries:
 MATCH (p:Place)
@@ -277,7 +277,7 @@ SELECT
   execution_count,
   avg_duration_ms,
   table_scans
-FROM system.query_stats
+-- no query-statistics table; use EXPLAIN / PROFILE and the Prometheus endpoint
 WHERE table_scans > 0
 ORDER BY execution_count DESC
 LIMIT 50;
@@ -356,12 +356,9 @@ INCLUDE (return_prop1, return_prop2);
 CREATE INDEX CONCURRENTLY user_email_idx ON User(email);
 
 -- Progress tracking
-SELECT
-  index_name,
-  build_progress,
-  estimated_completion
-FROM system.index_builds
-WHERE status = 'in_progress';
+-- SHOW INDEXES lists name, type, label and properties. Geode keeps no
+-- per-index usage counters, scan tallies or health scores.
+SHOW INDEXES;
 ```
 
 ### Monitoring Indexes
@@ -370,46 +367,27 @@ WHERE status = 'in_progress';
 
 ```gql
 -- View index usage
-SELECT
-  index_name,
-  table_name,
-  index_scans,
-  rows_read,
-  last_scan_time,
-  index_size_mb
-FROM system.index_stats
-ORDER BY index_scans DESC;
+-- SHOW INDEXES lists name, type, label and properties. Geode keeps no
+-- per-index usage counters, scan tallies or health scores.
+SHOW INDEXES;
 ```
 
 **Unused Indexes**:
 
 ```gql
 -- Find indexes that are never used
-SELECT
-  index_name,
-  table_name,
-  index_size_mb,
-  created_at
-FROM system.index_stats
-WHERE index_scans = 0
-  AND created_at < NOW() - INTERVAL '30 days'
-ORDER BY index_size_mb DESC;
+-- SHOW INDEXES lists name, type, label and properties. Geode keeps no
+-- per-index usage counters, scan tallies or health scores.
+SHOW INDEXES;
 ```
 
 **Index Efficiency**:
 
 ```gql
 -- Identify inefficient indexes
-SELECT
-  index_name,
-  table_name,
-  index_scans,
-  rows_read / NULLIF(index_scans, 0) AS avg_rows_per_scan,
-  index_size_mb
-FROM system.index_stats
-WHERE index_scans > 0
-  AND rows_read / NULLIF(index_scans, 0) > 1000  -- Low selectivity
-ORDER BY avg_rows_per_scan DESC;
+-- SHOW INDEXES lists name, type, label and properties. Geode keeps no
+-- per-index usage counters, scan tallies or health scores.
+SHOW INDEXES;
 ```
 
 ### Index Maintenance
@@ -418,38 +396,39 @@ ORDER BY avg_rows_per_scan DESC;
 
 ```gql
 -- Check index health
-SELECT
-  index_name,
-  fragmentation_percent,
-  page_count,
-  last_rebuild_time
-FROM system.index_health
-WHERE fragmentation_percent > 30;
+-- SHOW INDEXES lists name, type, label and properties. Geode keeps no
+-- per-index usage counters, scan tallies or health scores.
+SHOW INDEXES;
 
 -- Rebuild index
-REINDEX INDEX user_email_idx;
+-- Geode has no ANALYZE / VACUUM / REINDEX. Statistics are maintained by
+-- the engine, freed pages are reused automatically, and an index is
+-- rebuilt by dropping and recreating it.
 
 -- Rebuild all indexes on table
-REINDEX TABLE User;
+-- Geode has no ANALYZE / VACUUM / REINDEX. Statistics are maintained by
+-- the engine, freed pages are reused automatically, and an index is
+-- rebuilt by dropping and recreating it.
 ```
 
 **Update Statistics**:
 
 ```gql
 -- Refresh optimizer statistics
-ANALYZE User;
+-- Geode has no ANALYZE / VACUUM / REINDEX. Statistics are maintained by
+-- the engine, freed pages are reused automatically, and an index is
+-- rebuilt by dropping and recreating it.
 
 -- Full database analysis
-ANALYZE;
+-- Geode has no ANALYZE / VACUUM / REINDEX. Statistics are maintained by
+-- the engine, freed pages are reused automatically, and an index is
+-- rebuilt by dropping and recreating it.
 
 -- Check statistics freshness
-SELECT
-  table_name,
-  last_analyze_time,
-  row_count,
-  mod_count
-FROM system.table_stats
-WHERE last_analyze_time < NOW() - INTERVAL '7 days';
+-- Yields node_count, edge_count, label_count, format_version, page_size,
+-- wal_lsn, last_checkpoint_lsn, free_pages_* , *_consistent,
+-- label_index_entries and total_errors for the graph.
+CALL geode.storage.stats();
 ```
 
 ### Dropping Indexes
@@ -471,9 +450,9 @@ DROP INDEX user_idx1, user_idx2, user_idx3;
 
 ```gql
 -- Check what queries use an index
-SELECT DISTINCT query_text
-FROM system.query_plans
-WHERE index_name = 'user_region_idx';
+-- There is no query-statistics table, slow-query log or plan cache to
+-- query. Measure a specific statement with EXPLAIN / PROFILE, and scrape
+-- aggregate counters from the Prometheus endpoint (GEODE_METRICS_PORT).
 ```
 
 ## Performance Optimization
@@ -618,24 +597,24 @@ ALTER INDEX user_email_idx REBUILD;
 
 ```gql
 -- 1. Check unused indexes
-SELECT index_name, index_size_mb
-FROM system.index_stats
-WHERE index_scans = 0 AND created_at < NOW() - INTERVAL '30 days';
+-- SHOW INDEXES lists name, type, label and properties. Geode keeps no
+-- per-index usage counters, scan tallies or health scores.
+SHOW INDEXES;
 
 -- 2. Identify missing indexes
-SELECT query_text, execution_count, avg_duration_ms
-FROM system.query_stats
-WHERE table_scans > 0 AND execution_count > 100
-ORDER BY execution_count * avg_duration_ms DESC
-LIMIT 20;
+-- There is no query-statistics table, slow-query log or plan cache to
+-- query. Measure a specific statement with EXPLAIN / PROFILE, and scrape
+-- aggregate counters from the Prometheus endpoint (GEODE_METRICS_PORT).
 
 -- 3. Review index health
-SELECT index_name, fragmentation_percent
-FROM system.index_health
-WHERE fragmentation_percent > 30;
+-- SHOW INDEXES lists name, type, label and properties. Geode keeps no
+-- per-index usage counters, scan tallies or health scores.
+SHOW INDEXES;
 
 -- 4. Update statistics
-ANALYZE;
+-- Geode has no ANALYZE / VACUUM / REINDEX. Statistics are maintained by
+-- the engine, freed pages are reused automatically, and an index is
+-- rebuilt by dropping and recreating it.
 ```
 
 ## Advanced Techniques
@@ -676,12 +655,15 @@ Store table data in index order:
 
 ```gql
 -- Create table ordered by timestamp
-CREATE NODE TYPE Event (
+-- Geode has no CREATE NODE TYPE / CREATE EDGE TYPE: labels are
+-- schema-free. The only typed DDL is CREATE GRAPH TYPE, whose field
+-- list is `name TYPE [PRIMARY KEY] [@annotations]` in braces.
+CREATE GRAPH TYPE EventType AS {
   event_id UUID PRIMARY KEY,
   timestamp TIMESTAMP,
   event_type STRING,
   data JSON
-) CLUSTERED BY (timestamp);
+}; CLUSTERED BY (timestamp);
 
 -- Range queries on timestamp are extremely fast
 MATCH (e:Event)
@@ -741,7 +723,9 @@ RETURN u;
 
 ```gql
 -- Update optimizer statistics
-ANALYZE User;
+-- Geode has no ANALYZE / VACUUM / REINDEX. Statistics are maintained by
+-- the engine, freed pages are reused automatically, and an index is
+-- rebuilt by dropping and recreating it.
 ```
 
 ### Slow Index Scans
@@ -752,11 +736,9 @@ ANALYZE User;
 
 ```gql
 -- 1. Check index selectivity
-SELECT
-  index_name,
-  rows_read / NULLIF(index_scans, 0) AS avg_rows_per_scan
-FROM system.index_stats
-WHERE index_name = 'problematic_idx';
+-- SHOW INDEXES lists name, type, label and properties. Geode keeps no
+-- per-index usage counters, scan tallies or health scores.
+SHOW INDEXES;
 -- High avg_rows_per_scan indicates low selectivity
 
 -- 2. Consider composite index for better selectivity

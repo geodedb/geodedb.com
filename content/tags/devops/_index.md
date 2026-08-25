@@ -262,7 +262,7 @@ sleep 10
 ssh $DEPLOY_HOST "systemctl is-active geode"
 
 # Health check
-if ! curl -s "http://$DEPLOY_HOST:3141/health" | grep -q "ok"; then
+if ! curl -s "http://$DEPLOY_HOST:9090/health" | grep -q "ok"; then
   echo "Health check failed, rolling back..."
   ssh $DEPLOY_HOST "sudo systemctl stop geode"
   ssh $DEPLOY_HOST "sudo cp $BACKUP_DIR/geode /opt/geode/bin/geode"

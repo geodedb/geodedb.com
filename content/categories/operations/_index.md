@@ -32,6 +32,7 @@ Production operations span the entire database lifecycle: initial capacity plann
 ### Deployment and Configuration
 
 **Deployment Options**
+
 - Docker containers for simple deployments
 - Kubernetes for orchestrated clusters
 - Binary installation for traditional deployments
@@ -40,6 +41,7 @@ Production operations span the entire database lifecycle: initial capacity plann
 - Edge deployment patterns
 
 **Configuration Management**
+
 - Production configuration templates
 - Performance tuning parameters
 - Security hardening settings
@@ -49,6 +51,7 @@ Production operations span the entire database lifecycle: initial capacity plann
 - Environment-specific configuration
 
 **Infrastructure as Code**
+
 - Terraform modules for cloud deployment
 - Kubernetes Helm charts
 - Docker Compose configurations
@@ -58,6 +61,7 @@ Production operations span the entire database lifecycle: initial capacity plann
 ### Monitoring and Observability
 
 **Metrics Collection**
+
 - Prometheus exposition endpoints
 - Grafana dashboard templates
 - Query performance metrics
@@ -69,6 +73,7 @@ Production operations span the entire database lifecycle: initial capacity plann
 - Query plan changes
 
 **Logging**
+
 - Structured JSON logging
 - Log levels and configuration
 - Query logging for performance analysis
@@ -79,6 +84,7 @@ Production operations span the entire database lifecycle: initial capacity plann
 - Log retention policies
 
 **Distributed Tracing**
+
 - OpenTelemetry integration
 - Trace context propagation
 - Query execution tracing
@@ -87,6 +93,7 @@ Production operations span the entire database lifecycle: initial capacity plann
 - Trace sampling strategies
 
 **Alerting**
+
 - Alert rules for common issues
 - Threshold-based alerts
 - Anomaly detection alerts
@@ -97,6 +104,7 @@ Production operations span the entire database lifecycle: initial capacity plann
 ### Backup and Recovery
 
 **Backup Strategies**
+
 - Full database backups
 - Incremental backups
 - Point-in-time recovery (PITR)
@@ -107,6 +115,7 @@ Production operations span the entire database lifecycle: initial capacity plann
 - Backup verification and testing
 
 **Disaster Recovery**
+
 - Recovery Time Objective (RTO) planning
 - Recovery Point Objective (RPO) planning
 - Automated failover procedures
@@ -116,6 +125,7 @@ Production operations span the entire database lifecycle: initial capacity plann
 - Disaster recovery drills
 
 **High Availability**
+
 - Multi-node clustering
 - Automatic failover
 - Read replicas for scaling
@@ -127,6 +137,7 @@ Production operations span the entire database lifecycle: initial capacity plann
 ### Performance Management
 
 **Capacity Planning**
+
 - Workload characterization
 - Hardware sizing guidelines
 - Storage capacity planning
@@ -136,6 +147,7 @@ Production operations span the entire database lifecycle: initial capacity plann
 - Growth projections
 
 **Performance Tuning**
+
 - Query optimization techniques
 - Index strategy optimization
 - Cache tuning
@@ -145,6 +157,7 @@ Production operations span the entire database lifecycle: initial capacity plann
 - Network optimization
 
 **Benchmarking**
+
 - Performance baseline establishment
 - Regression testing
 - Workload simulation
@@ -155,6 +168,7 @@ Production operations span the entire database lifecycle: initial capacity plann
 ### Troubleshooting
 
 **Diagnostic Tools**
+
 - EXPLAIN for query plans
 - PROFILE for execution analysis
 - Health check endpoints
@@ -164,6 +178,7 @@ Production operations span the entire database lifecycle: initial capacity plann
 - Connection debugging
 
 **Common Issues**
+
 - Slow query diagnosis
 - Connection exhaustion
 - Memory pressure
@@ -173,6 +188,7 @@ Production operations span the entire database lifecycle: initial capacity plann
 - Network connectivity
 
 **Incident Response**
+
 - Incident detection and triage
 - Escalation procedures
 - Communication templates
@@ -309,7 +325,7 @@ async def check_geode_health() -> Dict[str, Any]:
     try:
         async with aiohttp.ClientSession() as session:
             async with session.get(
-                'https://geode:3141/health',
+                'https://geode:9090/health',
                 ssl=True,
                 timeout=aiohttp.ClientTimeout(total=5)
             ) as resp:

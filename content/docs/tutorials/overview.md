@@ -307,8 +307,10 @@ CREATE INDEX doc_content_idx ON Document(content) USING fulltext;
 
 -- Search with BM25 ranking
 MATCH (d:Document)
-WHERE fulltext_match(d.content, "graph database")
-RETURN d.title, bm25_score(d.content, "graph database") AS relevance
+CALL geode.fts.search('document_content', 'graph database')
+YIELD node, score
+MATCH (d:Document) WHERE id(d) = node
+RETURN d.title, score AS relevance
 ORDER BY relevance DESC;
 ```
 

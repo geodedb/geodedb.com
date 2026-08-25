@@ -57,10 +57,10 @@ CREATE INDEX user_email ON :User(email);
 CREATE INDEX product_lookup ON :Product(category, status);
 
 -- Create a full-text index for search
-CREATE FULLTEXT INDEX article_content ON :Article(title, body);
+CREATE INDEX article_content ON :Article(title, body) USING fulltext;
 
 -- Create a vector index for similarity search
-CREATE VECTOR INDEX product_embeddings ON :Product(embedding)
+CREATE INDEX product_embeddings ON :Product(embedding) USING vector
   WITH (metric = 'cosine');
 
 -- View all indexes

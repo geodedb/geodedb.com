@@ -479,15 +479,15 @@ cdc:
 ```gql
 -- Seed data
 CREATE
-  (:User {id: gen_random_uuid(), name: "Alice"}),
-  (:User {id: gen_random_uuid(), name: "Bob"}),
-  (:User {id: gen_random_uuid(), name: "Charlie"});
+  (:User {id: uuid_v4(), name: "Alice"}),
+  (:User {id: uuid_v4(), name: "Bob"}),
+  (:User {id: uuid_v4(), name: "Charlie"});
 
 CREATE
-  (:Item {id: gen_random_uuid(), name: "Laptop", category: "Electronics"}),
-  (:Item {id: gen_random_uuid(), name: "Mouse", category: "Electronics"}),
-  (:Item {id: gen_random_uuid(), name: "Desk Chair", category: "Furniture"}),
-  (:Item {id: gen_random_uuid(), name: "Monitor", category: "Electronics"});
+  (:Item {id: uuid_v4(), name: "Laptop", category: "Electronics"}),
+  (:Item {id: uuid_v4(), name: "Mouse", category: "Electronics"}),
+  (:Item {id: uuid_v4(), name: "Desk Chair", category: "Furniture"}),
+  (:Item {id: uuid_v4(), name: "Monitor", category: "Electronics"});
 
 -- Alice and Bob purchase Laptop
 MATCH (alice:User {name: "Alice"}), (laptop:Item {name: "Laptop"})

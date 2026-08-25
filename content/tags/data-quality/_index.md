@@ -32,7 +32,7 @@ Accuracy measures whether data correctly represents the real-world entities and 
 MATCH (p:Person)
 WHERE p.age IS NOT NULL
   AND p.date_of_birth IS NOT NULL
-  AND p.age != EXTRACT(YEAR FROM AGE(CURRENT_DATE, p.date_of_birth))
+  AND p.age != AGE(CURRENT_DATE, p.date_of_birth.year)
 RETURN p.id, p.age, p.date_of_birth, 'age mismatch' AS issue;
 ```
 
@@ -104,7 +104,7 @@ Timeliness measures whether data is up-to-date and available when needed. Stale 
 ```gql
 -- Find stale records (not updated in 30 days)
 MATCH (p:Product)
-WHERE p.updated_at < (NOW() - INTERVAL '30 days')
+WHERE p.updated_at < (datetime() - duration('P30D'))
 RETURN p.sku, p.name, p.updated_at, 'stale data' AS issue;
 ```
 
@@ -170,7 +170,7 @@ RETURN
     MIN(p.age) AS min_age,
     MAX(p.age) AS max_age,
     AVG(p.age) AS avg_age,
-    PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY p.age) AS median_age;
+    collect(0.5) /* percentile_cont/_disc parse but are never computed; sort client-side */ WITHIN GROUP (ORDER BY p.age) AS median_age;
 ```
 
 ### Distribution Analysis
@@ -221,7 +221,7 @@ WITH stats AS (
     MATCH (p:Product)
     RETURN
         AVG(p.price) AS mean_price,
-        STDDEV(p.price) AS stddev_price
+        collect(p.price) /* stddev/variance parse but are never computed; reduce client-side */ AS stddev_price
 )
 MATCH (p:Product), (s:stats)
 WHERE p.price < (s.mean_price - 3 * s.stddev_price)
@@ -483,17 +483,19 @@ QUALITY_RULES = {
 
 ```gql
 -- Track data quality issues over time
-CREATE NODE TYPE DataQualityIssue (
-    id STRING DEFAULT gen_random_uuid(),
-    issue_type STRING NOT NULL,
-    severity STRING CHECK (severity IN ('low', 'medium', 'high', 'critical')),
-    detected_at TIMESTAMP NOT NULL DEFAULT NOW(),
-    resolved_at TIMESTAMP,
-    entity_type STRING NOT NULL,
-    entity_id STRING NOT NULL,
-    description TEXT NOT NULL,
-    resolution TEXT
-);
+-- Geode has no CREATE NODE TYPE / CREATE EDGE TYPE: labels are
+-- schema-free. The only typed DDL is CREATE GRAPH TYPE, whose field
+-- list is `name TYPE [PRIMARY KEY] [@annotations]` in braces.
+-- Not supported in a field definition: DEFAULT, NOT NULL — enforce with CREATE CONSTRAINT or at write time.
+CREATE GRAPH TYPE DataQualityIssueType AS {
+  id STRING,
+  issue_type STRING,
+  severity STRING,
+  detected_at TIMESTAMP,
+  resolved_at TIMESTAMP,
+  entity_type STRING,
+  entity_id STRING
+};
 
 -- Log quality issue
 INSERT (issue:DataQualityIssue {

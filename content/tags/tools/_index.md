@@ -54,10 +54,14 @@ geode user list       # List all users
 
 ```bash
 # Create new database instance
-geode init --path /var/lib/geode --graph production
+# There is no `geode init`. The server creates its data directory on
+# first start; TDE and FLE are always available.
+geode serve --data-dir ./data
 
 # Initialize with specific configuration
-geode init --path /var/lib/geode \
+# There is no `geode init`. The server creates its data directory on
+# first start; TDE and FLE are always available.
+geode serve --data-dir ./data
            --graph production \
            --config /etc/geode/config.yaml
 

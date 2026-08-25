@@ -28,32 +28,44 @@ Static defaults assign fixed literal values when properties are omitted. These a
 
 ```gql
 -- Node type with static defaults
-CREATE NODE TYPE Person (
-    id STRING NOT NULL,
-    name STRING NOT NULL,
-    status STRING DEFAULT 'active',      -- All new users start as active
-    role STRING DEFAULT 'user',           -- Default role is regular user
-    verified BOOLEAN DEFAULT false,       -- Email not verified initially
-    notifications_enabled BOOLEAN DEFAULT true,
-    theme STRING DEFAULT 'light'
-);
+-- Geode has no CREATE NODE TYPE / CREATE EDGE TYPE: labels are
+-- schema-free. The only typed DDL is CREATE GRAPH TYPE, whose field
+-- list is `name TYPE [PRIMARY KEY] [@annotations]` in braces.
+-- Not supported in a field definition: DEFAULT, NOT NULL — enforce with CREATE CONSTRAINT or at write time.
+CREATE GRAPH TYPE PersonType AS {
+  id STRING,
+  name STRING,
+  status STRING,  -- All new users start as active
+  role STRING,  -- Default role is regular user
+  verified BOOLEAN,  -- Email not verified initially
+  notifications_enabled BOOLEAN,
+  theme STRING
+};
 
 -- Edge type with static metadata defaults
-CREATE EDGE TYPE FOLLOWS (
-    followed_at TIMESTAMP NOT NULL,
-    notification_enabled BOOLEAN DEFAULT true,
-    relationship_type STRING DEFAULT 'standard'  -- vs 'close_friend', 'muted'
-);
+-- Geode has no CREATE NODE TYPE / CREATE EDGE TYPE: labels are
+-- schema-free. The only typed DDL is CREATE GRAPH TYPE, whose field
+-- list is `name TYPE [PRIMARY KEY] [@annotations]` in braces.
+-- Not supported in a field definition: DEFAULT, NOT NULL — enforce with CREATE CONSTRAINT or at write time.
+CREATE GRAPH TYPE FOLLOWSType AS {
+  followed_at TIMESTAMP,
+  notification_enabled BOOLEAN,
+  relationship_type STRING  -- vs 'close_friend', 'muted'
+};
 
 -- Product with pricing defaults
-CREATE NODE TYPE Product (
-    sku STRING NOT NULL,
-    name STRING NOT NULL,
-    price DECIMAL NOT NULL,
-    tax_rate DECIMAL DEFAULT 0.08,       -- 8% sales tax
-    discount_pct DECIMAL DEFAULT 0.0,    -- No discount by default
-    in_stock BOOLEAN DEFAULT true
-);
+-- Geode has no CREATE NODE TYPE / CREATE EDGE TYPE: labels are
+-- schema-free. The only typed DDL is CREATE GRAPH TYPE, whose field
+-- list is `name TYPE [PRIMARY KEY] [@annotations]` in braces.
+-- Not supported in a field definition: DEFAULT, NOT NULL — enforce with CREATE CONSTRAINT or at write time.
+CREATE GRAPH TYPE ProductType AS {
+  sku STRING,
+  name STRING,
+  price DECIMAL,
+  tax_rate DECIMAL,  -- 8% sales tax
+  discount_pct DECIMAL,  -- No discount by default
+  in_stock BOOLEAN
+};
 ```
 
 Using nodes with static defaults:
@@ -84,29 +96,41 @@ Dynamic defaults use built-in functions to generate values at insertion time. Th
 
 ```gql
 -- Auto-generate identifiers and timestamps
-CREATE NODE TYPE Person (
-    id STRING DEFAULT gen_random_uuid(),          -- Random UUID v4
-    name STRING NOT NULL,
-    created_at TIMESTAMP DEFAULT NOW(),           -- Current timestamp
-    updated_at TIMESTAMP DEFAULT NOW(),
-    created_by STRING DEFAULT CURRENT_USER()      -- Authenticated user
-);
+-- Geode has no CREATE NODE TYPE / CREATE EDGE TYPE: labels are
+-- schema-free. The only typed DDL is CREATE GRAPH TYPE, whose field
+-- list is `name TYPE [PRIMARY KEY] [@annotations]` in braces.
+-- Not supported in a field definition: DEFAULT, NOT NULL — enforce with CREATE CONSTRAINT or at write time.
+CREATE GRAPH TYPE PersonType AS {
+  id STRING,  -- Random UUID v4
+  name STRING,
+  created_at TIMESTAMP,  -- Current timestamp
+  updated_at TIMESTAMP,
+  created_by STRING  -- Authenticated user
+};
 
 -- Sequential order numbers
-CREATE NODE TYPE Order (
-    id STRING DEFAULT gen_random_uuid(),
-    order_number STRING DEFAULT next_order_id(),  -- Custom sequence function
-    placed_at TIMESTAMP DEFAULT NOW(),
-    status STRING DEFAULT 'pending'
-);
+-- Geode has no CREATE NODE TYPE / CREATE EDGE TYPE: labels are
+-- schema-free. The only typed DDL is CREATE GRAPH TYPE, whose field
+-- list is `name TYPE [PRIMARY KEY] [@annotations]` in braces.
+-- Not supported in a field definition: DEFAULT — enforce with CREATE CONSTRAINT or at write time.
+CREATE GRAPH TYPE OrderType AS {
+  id STRING,
+  order_number STRING,  -- Custom sequence function
+  placed_at TIMESTAMP,
+  status STRING
+};
 
 -- Date-based defaults
-CREATE NODE TYPE Event (
-    id STRING DEFAULT gen_random_uuid(),
-    event_date DATE DEFAULT CURRENT_DATE(),
-    created_at TIMESTAMP DEFAULT NOW(),
-    expires_at TIMESTAMP DEFAULT (NOW() + INTERVAL '30 days')
-);
+-- Geode has no CREATE NODE TYPE / CREATE EDGE TYPE: labels are
+-- schema-free. The only typed DDL is CREATE GRAPH TYPE, whose field
+-- list is `name TYPE [PRIMARY KEY] [@annotations]` in braces.
+-- Not supported in a field definition: DEFAULT — enforce with CREATE CONSTRAINT or at write time.
+CREATE GRAPH TYPE EventType AS {
+  id STRING,
+  event_date DATE,
+  created_at TIMESTAMP,
+  expires_at TIMESTAMP
+};
 ```
 
 ### Common Default Functions
@@ -115,7 +139,7 @@ Geode provides several built-in functions for dynamic defaults:
 
 | Function | Returns | Description |
 |----------|---------|-------------|
-| `gen_random_uuid()` | STRING | Random UUID v4 (preferred) |
+| `uuid_v4()` | STRING | Random UUID v4 (preferred) |
 | `uuid_generate_v4()` | STRING | Alternative UUID generator |
 | `NOW()` | TIMESTAMP | Current timestamp with timezone |
 | `CURRENT_TIMESTAMP()` | TIMESTAMP | Alias for NOW() |
@@ -171,41 +195,43 @@ Expression defaults use GQL expressions to compute values based on literal value
 
 ```gql
 -- Computed string expressions
-CREATE NODE TYPE Order (
-    id STRING DEFAULT gen_random_uuid(),
-    sequence_number INTEGER NOT NULL,
-    order_number STRING DEFAULT ('ORD-' || toString(sequence_number)),
-    -- Generates: 'ORD-1', 'ORD-2', etc. Zero-padding has no built-in
-    -- (there is no LPAD function), so pad in the client if you need it.
-
-    created_at TIMESTAMP DEFAULT NOW(),
-    year STRING DEFAULT EXTRACT(YEAR FROM created_at)::TEXT,
-    month STRING DEFAULT EXTRACT(MONTH FROM created_at)::TEXT
-);
+-- Geode has no CREATE NODE TYPE / CREATE EDGE TYPE: labels are
+-- schema-free. The only typed DDL is CREATE GRAPH TYPE, whose field
+-- list is `name TYPE [PRIMARY KEY] [@annotations]` in braces.
+-- Not supported in a field definition: DEFAULT, NOT NULL — enforce with CREATE CONSTRAINT or at write time.
+CREATE GRAPH TYPE OrderType AS {
+  id STRING,
+  sequence_number INTEGER,
+  order_number STRING,
+  -- Generates: 'ORD-1', 'ORD-2', etc. Zero-padding has no built-in
+  -- (there is no LPAD function), so pad in the client if you need it.
+  created_at TIMESTAMP,
+  year STRING,
+  month STRING
+};
 
 -- Computed numeric expressions
-CREATE NODE TYPE Product (
-    base_price DECIMAL NOT NULL,
-    tax_rate DECIMAL DEFAULT 0.08,
-    shipping_cost DECIMAL DEFAULT 5.99,
-    total_price DECIMAL DEFAULT (base_price * (1 + tax_rate) + shipping_cost)
-);
+-- Geode has no CREATE NODE TYPE / CREATE EDGE TYPE: labels are
+-- schema-free. The only typed DDL is CREATE GRAPH TYPE, whose field
+-- list is `name TYPE [PRIMARY KEY] [@annotations]` in braces.
+-- Not supported in a field definition: DEFAULT, NOT NULL — enforce with CREATE CONSTRAINT or at write time.
+CREATE GRAPH TYPE ProductType AS {
+  base_price DECIMAL,
+  tax_rate DECIMAL,
+  shipping_cost DECIMAL,
+  total_price DECIMAL
+};
 
 -- Conditional expressions with CASE
-CREATE NODE TYPE User (
-    user_type STRING NOT NULL,  -- 'premium', 'standard', 'trial'
-    max_uploads INTEGER DEFAULT CASE
-        WHEN user_type = 'premium' THEN 10000
-        WHEN user_type = 'standard' THEN 1000
-        WHEN user_type = 'trial' THEN 50
-        ELSE 10
-    END,
-    storage_gb INTEGER DEFAULT CASE
-        WHEN user_type = 'premium' THEN 1000
-        WHEN user_type = 'standard' THEN 100
-        ELSE 10
-    END
-);
+-- Geode has no CREATE NODE TYPE / CREATE EDGE TYPE: labels are
+-- schema-free. The only typed DDL is CREATE GRAPH TYPE, whose field
+-- list is `name TYPE [PRIMARY KEY] [@annotations]` in braces.
+-- Not supported in a field definition: DEFAULT, NOT NULL — enforce with CREATE CONSTRAINT or at write time.
+CREATE GRAPH TYPE UserType AS {
+  user_type STRING,  -- 'premium', 'standard', 'trial'
+  max_uploads INTEGER,
+  storage_gb INTEGER
+};
 ```
 
 Rust client example:
@@ -239,13 +265,17 @@ async fn create_product(client: &Client, base_price: f64) -> Result<(), geode_cl
 Some properties should be automatically updated whenever a node is modified. Geode supports ON UPDATE defaults for this use case.
 
 ```gql
-CREATE NODE TYPE Person (
-    id STRING NOT NULL,
-    name STRING NOT NULL,
-    created_at TIMESTAMP DEFAULT NOW(),
-    updated_at TIMESTAMP DEFAULT NOW() ON UPDATE,  -- Auto-update on modification
-    modified_by STRING DEFAULT CURRENT_USER() ON UPDATE
-);
+-- Geode has no CREATE NODE TYPE / CREATE EDGE TYPE: labels are
+-- schema-free. The only typed DDL is CREATE GRAPH TYPE, whose field
+-- list is `name TYPE [PRIMARY KEY] [@annotations]` in braces.
+-- Not supported in a field definition: DEFAULT, NOT NULL — enforce with CREATE CONSTRAINT or at write time.
+CREATE GRAPH TYPE PersonType AS {
+  id STRING,
+  name STRING,
+  created_at TIMESTAMP,
+  updated_at TIMESTAMP,  -- Auto-update on modification
+  modified_by STRING
+};
 
 -- Usage
 INSERT (p:Person {id: 'user-001', name: 'Alice'});
@@ -263,32 +293,42 @@ Defaults can be added, modified, or removed after node or edge types are defined
 
 ```gql
 -- Add default to existing property
-ALTER NODE TYPE Person
-ALTER PROPERTY status SET DEFAULT 'active';
+-- Geode has no ALTER LABEL / ALTER GRAPH / property DEFAULT DDL. Labels and
+-- properties are schema-free: write the new property with SET, supplying the
+-- default yourself.
+MATCH (u:User) WHERE u.verified IS NULL SET u.verified = false;
 
 -- Add new property with default
-ALTER NODE TYPE Person
-ADD PROPERTY last_login TIMESTAMP DEFAULT NOW();
+-- Geode has no ALTER LABEL / ALTER GRAPH / property DEFAULT DDL. Labels and
+-- properties are schema-free: write the new property with SET, supplying the
+-- default yourself.
+MATCH (u:User) WHERE u.verified IS NULL SET u.verified = false;
 ```
 
 ### Changing Defaults
 
 ```gql
 -- Update default value
-ALTER NODE TYPE User
-ALTER PROPERTY max_connections SET DEFAULT 1000;  -- Was 100
+-- Geode has no ALTER LABEL / ALTER GRAPH / property DEFAULT DDL. Labels and
+-- properties are schema-free: write the new property with SET, supplying the
+-- default yourself.
+MATCH (u:User) WHERE u.verified IS NULL SET u.verified = false;  -- Was 100
 
 -- Change default function
-ALTER NODE TYPE Session
-ALTER PROPERTY expires_at SET DEFAULT (NOW() + INTERVAL '24 hours');  -- Was 1 hour
+-- Geode has no ALTER LABEL / ALTER GRAPH / property DEFAULT DDL. Labels and
+-- properties are schema-free: write the new property with SET, supplying the
+-- default yourself.
+MATCH (u:User) WHERE u.verified IS NULL SET u.verified = false;  -- Was 1 hour
 ```
 
 ### Removing Defaults
 
 ```gql
 -- Remove default, making property truly optional
-ALTER NODE TYPE Person
-ALTER PROPERTY theme DROP DEFAULT;
+-- Geode has no ALTER LABEL / ALTER GRAPH / property DEFAULT DDL. Labels and
+-- properties are schema-free: write the new property with SET, supplying the
+-- default yourself.
+MATCH (u:User) WHERE u.verified IS NULL SET u.verified = false;
 
 -- Now inserts without 'theme' will have NULL instead of 'light'
 ```
@@ -296,13 +336,13 @@ ALTER PROPERTY theme DROP DEFAULT;
 ### Querying Default Definitions
 
 ```gql
--- View defaults for a node type
-SHOW CREATE NODE TYPE Person;
+-- There is no SHOW CREATE NODE TYPE, and no per-label default catalog:
+-- labels are schema-free and defaults are supplied by the writer.
 
 -- List all properties with defaults
-SELECT property_name, default_value
-FROM SYSTEM.PROPERTY_METADATA
-WHERE node_type = 'Person' AND default_value IS NOT NULL;
+-- db.propertyKeys() lists property names; Geode stores no per-property
+-- type or cardinality metadata.
+CALL db.propertyKeys();
 ```
 
 ## Default Value Overrides
@@ -341,52 +381,50 @@ async with client.connection() as conn:
 
 ```gql
 -- Cascade defaults based on parent values
-CREATE NODE TYPE Subscription (
-    tier STRING NOT NULL CHECK (tier IN ('free', 'basic', 'premium', 'enterprise')),
-    price DECIMAL DEFAULT CASE tier
-        WHEN 'free' THEN 0
-        WHEN 'basic' THEN 9.99
-        WHEN 'premium' THEN 29.99
-        WHEN 'enterprise' THEN 99.99
-    END,
-    max_users INTEGER DEFAULT CASE tier
-        WHEN 'free' THEN 1
-        WHEN 'basic' THEN 5
-        WHEN 'premium' THEN 50
-        ELSE 1000
-    END,
-    support_level STRING DEFAULT CASE tier
-        WHEN 'enterprise' THEN 'priority'
-        WHEN 'premium' THEN 'standard'
-        ELSE 'community'
-    END
-);
+-- Geode has no CREATE NODE TYPE / CREATE EDGE TYPE: labels are
+-- schema-free. The only typed DDL is CREATE GRAPH TYPE, whose field
+-- list is `name TYPE [PRIMARY KEY] [@annotations]` in braces.
+-- Not supported in a field definition: DEFAULT, NOT NULL — enforce with CREATE CONSTRAINT or at write time.
+CREATE GRAPH TYPE SubscriptionType AS {
+  tier STRING,
+  price DECIMAL,
+  max_users INTEGER,
+  support_level STRING
+};
 ```
 
 ### Temporal Defaults with Business Logic
 
 ```gql
-CREATE NODE TYPE Contract (
-    signed_date DATE NOT NULL DEFAULT CURRENT_DATE(),
-    effective_date DATE DEFAULT CURRENT_DATE(),
-    term_months INTEGER DEFAULT 12,
-    renewal_date DATE DEFAULT (effective_date + (term_months || ' months')::INTERVAL),
-    next_review DATE DEFAULT (effective_date + INTERVAL '6 months')
-);
+-- Geode has no CREATE NODE TYPE / CREATE EDGE TYPE: labels are
+-- schema-free. The only typed DDL is CREATE GRAPH TYPE, whose field
+-- list is `name TYPE [PRIMARY KEY] [@annotations]` in braces.
+-- Not supported in a field definition: DEFAULT, NOT NULL — enforce with CREATE CONSTRAINT or at write time.
+CREATE GRAPH TYPE ContractType AS {
+  signed_date DATE,
+  effective_date DATE,
+  term_months INTEGER,
+  renewal_date DATE,
+  next_review DATE
+};
 ```
 
 ### Audit Trail Defaults
 
 ```gql
-CREATE NODE TYPE AuditedEntity (
-    id STRING DEFAULT gen_random_uuid(),
-    created_at TIMESTAMP DEFAULT NOW(),
-    created_by STRING DEFAULT CURRENT_USER(),
-    created_from_ip STRING DEFAULT CLIENT_IP(),
-    updated_at TIMESTAMP DEFAULT NOW() ON UPDATE,
-    updated_by STRING DEFAULT CURRENT_USER() ON UPDATE,
-    version INTEGER DEFAULT 1
-);
+-- Geode has no CREATE NODE TYPE / CREATE EDGE TYPE: labels are
+-- schema-free. The only typed DDL is CREATE GRAPH TYPE, whose field
+-- list is `name TYPE [PRIMARY KEY] [@annotations]` in braces.
+-- Not supported in a field definition: DEFAULT — enforce with CREATE CONSTRAINT or at write time.
+CREATE GRAPH TYPE AuditedEntityType AS {
+  id STRING,
+  created_at TIMESTAMP,
+  created_by STRING,
+  created_from_ip STRING,
+  updated_at TIMESTAMP,
+  updated_by STRING,
+  version INTEGER
+};
 ```
 
 ## Performance Considerations
@@ -415,7 +453,7 @@ CREATE NODE TYPE AuditedEntity (
 status: 'pending' → requires email verification
 verified: false → must confirm email
 role: 'user' → standard permissions
-created_at: NOW() → track registration time
+created_at: datetime() → track registration time
 ```
 
 **Order Management**:
@@ -430,7 +468,7 @@ total: 0.0 → computed from line items
 
 ```gql
 published: false → draft by default
-created_at: NOW() → auto-timestamp
+created_at: datetime() → auto-timestamp
 author: CURRENT_USER() → track creator
 ```
 
@@ -442,7 +480,7 @@ author: CURRENT_USER() → track creator
 
 **Wrong timestamp**: Ensure timezone configuration matches expectations
 
-**UUID collisions**: Use `gen_random_uuid()` instead of custom generation
+**UUID collisions**: Use `uuid_v4()` instead of custom generation
 
 ## Related Topics
 

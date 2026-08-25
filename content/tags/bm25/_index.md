@@ -124,14 +124,14 @@ Enable BM25 ranking by creating full-text indexes:
 
 ```gql
 -- Create full-text index on document content
-CREATE TEXT INDEX document_content
+CREATE INDEX document_content
 FOR (d:Document)
 ON (d.content, d.title)
 OPTIONS {
   analyzer: 'standard',    -- Tokenization and stemming
   k1: 1.2,                 -- Term frequency saturation
   b: 0.75                  -- Length normalization
-};
+} USING fulltext;
 ```
 
 Options:
@@ -148,9 +148,10 @@ Search using the text index:
 
 ```gql
 -- BM25-ranked full-text search
-MATCH (d:Document)
-WHERE text_search(d.content, 'graph database performance')
-RETURN d.title, d.author, text_score(d) AS relevance
+CALL geode.fts.search('document_content', 'graph database performance')
+YIELD node, score
+MATCH (d:Document) WHERE id(d) = node
+RETURN d.title, d.author, score AS relevance
 ORDER BY relevance DESC
 LIMIT 20;
 
@@ -168,21 +169,24 @@ Combine terms with Boolean operators:
 
 ```gql
 -- Must contain "graph" and "database"
-MATCH (d:Document)
-WHERE text_search(d.content, '+graph +database')
-RETURN d.title, text_score(d) AS score
+CALL geode.fts.search('document_content', '+graph +database')
+YIELD node, score
+MATCH (d:Document) WHERE id(d) = node
+RETURN d.title, score AS score
 ORDER BY score DESC;
 
 -- Must contain "graph", should contain "database" (boosts score)
-MATCH (d:Document)
-WHERE text_search(d.content, '+graph database')
-RETURN d.title, text_score(d) AS score
+CALL geode.fts.search('document_content', '+graph database')
+YIELD node, score
+MATCH (d:Document) WHERE id(d) = node
+RETURN d.title, score AS score
 ORDER BY score DESC;
 
 -- Contains "graph" but not "neo4j"
-MATCH (d:Document)
-WHERE text_search(d.content, 'graph -neo4j')
-RETURN d.title, text_score(d) AS score
+CALL geode.fts.search('document_content', 'graph -neo4j')
+YIELD node, score
+MATCH (d:Document) WHERE id(d) = node
+RETURN d.title, score AS score
 ORDER BY score DESC;
 ```
 
@@ -192,15 +196,17 @@ Search for exact phrases:
 
 ```gql
 -- Exact phrase match
-MATCH (d:Document)
-WHERE text_search(d.content, '"graph database"')
-RETURN d.title, text_score(d) AS score
+CALL geode.fts.search('document_content', '"graph database"')
+YIELD node, score
+MATCH (d:Document) WHERE id(d) = node
+RETURN d.title, score AS score
 ORDER BY score DESC;
 
 -- Proximity search (words within 5 tokens)
-MATCH (d:Document)
-WHERE text_search(d.content, '"graph database"~5')
-RETURN d.title, text_score(d) AS score
+CALL geode.fts.search('document_content', '"graph database"~5')
+YIELD node, score
+MATCH (d:Document) WHERE id(d) = node
+RETURN d.title, score AS score
 ORDER BY score DESC;
 ```
 
@@ -210,21 +216,26 @@ The power of BM25 in a graph database:
 
 ```gql
 -- Find relevant documents written by friends
+-- NOTE: geode.fts.search takes string literals only; a $parameter is
+-- rejected. Interpolate the search terms client-side before sending.
+CALL geode.fts.search('document_content', '<search terms>')
+YIELD node, score
 MATCH (me:User {id: $userId})-[:FRIEND]->(friend:User)
      -[:AUTHORED]->(doc:Document)
-WHERE text_search(doc.content, $query)
+WHERE id(doc) = node
 RETURN doc.title,
        friend.name AS author,
-       text_score(doc) AS relevance,
+       score AS relevance,
        COUNT(DISTINCT friend) AS friend_author_count
 ORDER BY relevance DESC, friend_author_count DESC
 LIMIT 10;
 
 -- Search within a specific graph context
+CALL geode.fts.search('document_content', 'machine learning')
+YIELD node, score
 MATCH (category:Category {name: 'Technology'})<-[:IN_CATEGORY]-(doc:Document)
-WHERE text_search(doc.content, 'machine learning')
-  AND doc.publish_date > date('2024-01-01')
-RETURN doc.title, text_score(doc) AS score
+WHERE id(doc) = node AND doc.publish_date > date('2024-01-01')
+RETURN doc.title, score
 ORDER BY score DESC
 LIMIT 20;
 ```
@@ -237,9 +248,12 @@ Classic full-text search:
 
 ```gql
 -- Search knowledge base
-MATCH (doc:Document)
-WHERE text_search(doc.content, $user_query)
-RETURN doc.title, doc.summary, text_score(doc) AS relevance
+-- NOTE: geode.fts.search takes string literals only; a $parameter
+-- is rejected. Interpolate the term client-side before sending.
+CALL geode.fts.search('document_content', '<search terms>')
+YIELD node, score
+MATCH (doc:Document) WHERE id(doc) = node
+RETURN doc.title, doc.summary, score AS relevance
 ORDER BY relevance DESC
 LIMIT 50;
 ```
@@ -250,13 +264,16 @@ Find relevant products:
 
 ```gql
 -- Product search with metadata filtering
+-- NOTE: geode.fts.search takes string literals only; a $parameter is
+-- rejected. Interpolate the search terms client-side before sending.
+CALL geode.fts.search('product_name_description', '<search terms>')
+YIELD node, score
 MATCH (product:Product)
-WHERE text_search(product.name, product.description, $query)
-  AND product.price BETWEEN $min_price AND $max_price
+WHERE id(product) = node AND product.price BETWEEN $min_price AND $max_price
   AND product.in_stock = true
 RETURN product.name,
        product.price,
-       text_score(product) AS relevance
+       score AS relevance
 ORDER BY relevance DESC
 LIMIT 20;
 ```
@@ -267,11 +284,12 @@ Search through logs:
 
 ```gql
 -- Find relevant log entries
-MATCH (log:LogEntry)
-WHERE text_search(log.message, 'error timeout connection')
+CALL geode.fts.search('logentry_message', 'error timeout connection')
+YIELD node, score
+MATCH (log:LogEntry) WHERE id(log) = node
   AND log.timestamp > datetime() - duration('P1D')
   AND log.severity IN ['ERROR', 'FATAL']
-RETURN log.timestamp, log.message, log.service, text_score(log) AS score
+RETURN log.timestamp, log.message, log.service, score AS score
 ORDER BY score DESC, log.timestamp DESC
 LIMIT 100;
 ```
@@ -282,11 +300,14 @@ Combine keyword and semantic search:
 
 ```gql
 -- Hybrid search: BM25 + HNSW
-MATCH (doc:Document)
-WHERE text_search(doc.content, $keyword_query)
+-- NOTE: geode.fts.search takes string literals only; a $parameter
+-- is rejected. Interpolate the term client-side before sending.
+CALL geode.fts.search('document_content', '<search terms>')
+YIELD node, score
+MATCH (doc:Document) WHERE id(doc) = node
   AND similarity(doc.embedding, $query_embedding) > 0.7
 WITH doc,
-     text_score(doc) AS bm25_score,
+     score AS bm25_score,
      similarity(doc.embedding, $query_embedding) AS vector_score
 RETURN doc.title,
        bm25_score,
@@ -306,25 +327,25 @@ This hybrid approach leverages both keyword matching (BM25) and semantic underst
 
 ```gql
 -- English text with stemming
-CREATE TEXT INDEX docs_en FOR (d:Document) ON (d.content)
-OPTIONS {analyzer: 'english'};  -- running → run, databases → database
+CREATE INDEX docs_en FOR (d:Document) ON (d.content)
+OPTIONS {analyzer: 'english'} USING fulltext;  -- running → run, databases → database
 
 -- Multilingual support
-CREATE TEXT INDEX docs_multi FOR (d:Document) ON (d.content)
-OPTIONS {analyzer: 'multilingual'};  -- Detects language automatically
+CREATE INDEX docs_multi FOR (d:Document) ON (d.content)
+OPTIONS {analyzer: 'multilingual'} USING fulltext;  -- Detects language automatically
 
 -- Code/technical content
-CREATE TEXT INDEX code FOR (d:Code) ON (d.content)
-OPTIONS {analyzer: 'keyword'};  -- No stemming, preserve exact terms
+CREATE INDEX code FOR (d:Code) ON (d.content)
+OPTIONS {analyzer: 'keyword'} USING fulltext;  -- No stemming, preserve exact terms
 ```
 
 **Configure stopwords**:
 
 ```gql
-CREATE TEXT INDEX docs FOR (d:Document) ON (d.content)
+CREATE INDEX docs FOR (d:Document) ON (d.content)
 OPTIONS {
   stopwords: ['the', 'a', 'an', 'and', 'or', 'but']  -- Custom stopword list
-};
+} USING fulltext;
 ```
 
 ### Query Optimization
@@ -332,22 +353,27 @@ OPTIONS {
 **Use specific terms**:
 
 ```gql
--- Poor: Too generic
-WHERE text_search(d.content, 'data')
+-- Poor: one very common term matches almost everything
+CALL geode.fts.search('document_content', 'data')
+YIELD node, score
 
--- Better: Specific terms
-WHERE text_search(d.content, 'graph database ACID transactions')
+-- Better: more terms, so documents matching more of them rank higher
+CALL geode.fts.search('document_content', 'graph database ACID transactions')
+YIELD node, score
 ```
 
 **Combine with filters**:
 
 ```gql
 -- Efficient: Filter before expensive text search
+-- NOTE: geode.fts.search takes string literals only; a $parameter is
+-- rejected. Interpolate the search terms client-side before sending.
+CALL geode.fts.search('document_content', '<search terms>')
+YIELD node, score
 MATCH (d:Document)
-WHERE d.category = 'technical'
+WHERE id(d) = node AND d.category = 'technical'
   AND d.publish_date > date('2024-01-01')
-  AND text_search(d.content, $query)
-RETURN d.title, text_score(d) AS score
+RETURN d.title, score
 ORDER BY score DESC;
 ```
 
@@ -355,26 +381,28 @@ ORDER BY score DESC;
 
 ```gql
 -- Short documents (tweets, titles): Reduce length penalty
-CREATE TEXT INDEX tweets FOR (t:Tweet) ON (t.content)
-OPTIONS {k1: 1.2, b: 0.5};  -- Weak length normalization
+CREATE INDEX tweets FOR (t:Tweet) ON (t.content)
+OPTIONS {k1: 1.2, b: 0.5} USING fulltext;  -- Weak length normalization
 
 -- Long documents (articles, books): Increase length penalty
-CREATE TEXT INDEX articles FOR (a:Article) ON (a.content)
-OPTIONS {k1: 1.2, b: 0.9};  -- Strong length normalization
+CREATE INDEX articles FOR (a:Article) ON (a.content)
+OPTIONS {k1: 1.2, b: 0.9} USING fulltext;  -- Strong length normalization
 ```
 
 ### Relevance Tuning
 
 **Field weighting**:
 
+Per-field weighting is not expressible in a query: search is a procedure call,
+not a predicate, so it cannot appear inside `CASE`. Index the fields separately
+and combine the two result sets in the client.
+
 ```gql
--- Weight title matches higher than content matches
-MATCH (d:Document)
-WITH d,
-     CASE WHEN text_search(d.title, $query) THEN 3.0 ELSE 0.0 END AS title_score,
-     CASE WHEN text_search(d.content, $query) THEN 1.0 ELSE 0.0 END AS content_score
-WHERE title_score > 0 OR content_score > 0
-RETURN d.title, (title_score + content_score) AS score
+-- Run each search separately, then merge and weight client-side
+CALL geode.fts.search('document_title', 'graph database')
+YIELD node, score
+MATCH (d:Document) WHERE id(d) = node
+RETURN d.title, score
 ORDER BY score DESC;
 ```
 
@@ -382,10 +410,13 @@ ORDER BY score DESC;
 
 ```gql
 -- Boost recent documents
-MATCH (d:Document)
-WHERE text_search(d.content, $query)
+-- NOTE: geode.fts.search takes string literals only; a $parameter
+-- is rejected. Interpolate the term client-side before sending.
+CALL geode.fts.search('document_content', '<search terms>')
+YIELD node, score
+MATCH (d:Document) WHERE id(d) = node
 WITH d,
-     text_score(d) AS base_score,
+     score AS base_score,
      (datetime().epochSeconds - d.publish_date.epochSeconds) / (86400 * 365) AS age_years
 RETURN d.title, base_score, (base_score / (1 + 0.1 * age_years)) AS adjusted_score
 ORDER BY adjusted_score DESC;
@@ -441,9 +472,13 @@ RETURN count(d) AS documents,
 
 ```gql
 -- Profile text search query
-PROFILE MATCH (d:Document)
-WHERE text_search(d.content, $query)
-RETURN d.title, text_score(d) AS score
+-- NOTE: geode.fts.search takes string literals only; a $parameter is
+-- rejected. Interpolate the search terms client-side before sending.
+PROFILE CALL geode.fts.search('document_content', '<search terms>')
+YIELD node, score
+MATCH (d:Document)
+WHERE id(d) = node
+RETURN d.title, score
 ORDER BY score DESC
 LIMIT 20;
 ```
@@ -486,13 +521,12 @@ Where δ = typically 1.0
 Weight different document fields separately:
 
 ```gql
--- BM25F: weighted fields
-MATCH (d:Document)
-WHERE text_search(d.title, $query) OR text_search(d.content, $query)
-WITH d,
-     text_score(d.title, $query) AS title_score,
-     text_score(d.content, $query) AS content_score,
-     text_score(d.abstract, $query) AS abstract_score
+-- There is no BM25F / per-field weighting. A single index may span several
+-- properties, and a hit on any of them contributes to one combined score.
+CALL geode.fts.search('document_all_fields', 'graph database')
+YIELD node, score
+MATCH (d:Document) WHERE id(d) = node
+WITH d, score
 WITH d,
      0.5 * title_score +    // Title boost: 2x
      0.3 * abstract_score + // Abstract boost: 1.5x
@@ -543,15 +577,18 @@ Progressively relax boolean constraints:
 
 ```gql
 -- Strict: All terms required
-MATCH (d:Document)
-WHERE text_search(d.content, '+term1 +term2 +term3')
+CALL geode.fts.search('document_content', 'term1 term2 term3')
+YIELD node, score
+CALL geode.fts.search('document_content', '+term1 +term2 +term3')
+YIELD node, score
+MATCH (d:Document) WHERE id(d) = node
+WHERE id(d) = node
 WITH COUNT(d) AS strict_count
 
 -- Relaxed: At least 2 of 3 terms
 MATCH (d:Document)
 WHERE strict_count = 0
-  AND text_search(d.content, 'term1 term2 term3')
-WITH d, text_score(d) AS score
+WITH d, score
 WHERE score > 0.5  // Higher threshold for relaxed query
 RETURN d.title, score
 ORDER BY score DESC;
@@ -563,38 +600,38 @@ ORDER BY score DESC;
 
 ```gql
 -- English with stemming and stopword removal
-CREATE TEXT INDEX docs_en FOR (d:Document) ON (d.content)
+CREATE INDEX docs_en FOR (d:Document) ON (d.content)
 OPTIONS {
     analyzer: 'english',
     stopwords: ['the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at'],
     stemmer: 'porter',
     k1: 1.2,
     b: 0.75
-};
+} USING fulltext;
 
 -- German with compound word handling
-CREATE TEXT INDEX docs_de FOR (d:Document) ON (d.content)
+CREATE INDEX docs_de FOR (d:Document) ON (d.content)
 OPTIONS {
     analyzer: 'german',
     stemmer: 'snowball_german',
     compound_splitting: true
-};
+} USING fulltext;
 
 -- Multi-language with automatic detection
-CREATE TEXT INDEX docs_multi FOR (d:Document) ON (d.content)
+CREATE INDEX docs_multi FOR (d:Document) ON (d.content)
 OPTIONS {
     analyzer: 'icu',  // Unicode-aware tokenization
     language_detection: true,
     k1: 1.5,
     b: 0.75
-};
+} USING fulltext;
 ```
 
 ### Custom Analyzers
 
 ```gql
 -- Code search analyzer (no stemming, preserve case)
-CREATE TEXT INDEX code_search FOR (c:Code) ON (c.source)
+CREATE INDEX code_search FOR (c:Code) ON (c.source)
 OPTIONS {
     analyzer: 'code',
     tokenizer: 'whitespace',
@@ -602,15 +639,15 @@ OPTIONS {
     preserve_original: true,
     k1: 1.2,
     b: 0.0  // No length normalization for code
-};
+} USING fulltext;
 
 -- Product SKU search (exact matching)
-CREATE TEXT INDEX product_sku FOR (p:Product) ON (p.sku)
+CREATE INDEX product_sku FOR (p:Product) ON (p.sku)
 OPTIONS {
     analyzer: 'keyword',  // No tokenization
     case_sensitive: true,
     k1: 2.0  // Higher term frequency boost
-};
+} USING fulltext;
 ```
 
 ## Performance Optimization
@@ -621,20 +658,23 @@ Partition large indexes:
 
 ```gql
 -- Create date-partitioned indexes
-CREATE TEXT INDEX docs_2024 FOR (d:Document) ON (d.content)
+CREATE INDEX docs_2024 FOR (d:Document) ON (d.content)
 WHERE d.publish_date >= date('2024-01-01')
-OPTIONS {analyzer: 'english'};
+OPTIONS {analyzer: 'english'} USING fulltext;
 
-CREATE TEXT INDEX docs_2023 FOR (d:Document) ON (d.content)
+CREATE INDEX docs_2023 FOR (d:Document) ON (d.content)
 WHERE d.publish_date >= date('2023-01-01')
   AND d.publish_date < date('2024-01-01')
-OPTIONS {analyzer: 'english'};
+OPTIONS {analyzer: 'english'} USING fulltext;
 
 -- Query specific partition
+-- NOTE: geode.fts.search takes string literals only; a $parameter is
+-- rejected. Interpolate the search terms client-side before sending.
+CALL geode.fts.search('document_content', '<search terms>')
+YIELD node, score
 MATCH (d:Document)
-WHERE d.publish_date >= date('2024-01-01')
-  AND text_search(d.content, $query)
-RETURN d.title, text_score(d) AS score
+WHERE id(d) = node AND d.publish_date >= date('2024-01-01')
+RETURN d.title, score
 ORDER BY score DESC;
 ```
 
@@ -647,12 +687,13 @@ from functools import lru_cache
 @lru_cache(maxsize=1000)
 async def cached_search(query: str, limit: int = 20):
     result, _ = await client.query("""
-        MATCH (d:Document)
-        WHERE text_search(d.content, $query)
-        RETURN d.doc_id, d.title, text_score(d) AS score
+        CALL geode.fts.search('document_content', 'graph database')
+        YIELD node, score
+        MATCH (d:Document) WHERE id(d) = node
+        RETURN d.doc_id, d.title, score
         ORDER BY score DESC
         LIMIT $limit
-    """, {"query": query, "limit": limit})
+    """, {"limit": limit})  # index/query args must be string literals
     return result
 ```
 
@@ -663,9 +704,12 @@ async def cached_search(query: str, limit: int = 20):
 ```gql
 -- Compute precision@k and recall@k
 WITH ['doc1', 'doc2', 'doc3', 'doc4', 'doc5'] AS relevant_docs
-MATCH (d:Document)
-WHERE text_search(d.content, $query)
-WITH d, text_score(d) AS score, relevant_docs
+-- NOTE: geode.fts.search takes string literals only; a $parameter
+-- is rejected. Interpolate the term client-side before sending.
+CALL geode.fts.search('document_content', '<search terms>')
+YIELD node, score
+MATCH (d:Document) WHERE id(d) = node
+WITH d, score AS score, relevant_docs
 ORDER BY score DESC
 LIMIT 10
 WITH COLLECT(d.doc_id) AS retrieved_docs, relevant_docs
@@ -690,8 +734,8 @@ CALL {
     WITH k1, b
     // Recreate index with parameters
     DROP INDEX IF EXISTS test_index;
-    CREATE TEXT INDEX test_index FOR (d:Document) ON (d.content)
-    OPTIONS {k1: k1, b: b};
+    CREATE INDEX test_index FOR (d:Document) ON (d.content)
+    OPTIONS {k1: k1, b: b} USING fulltext;
 
     // Run evaluation queries
     CALL evaluate_queries() YIELD avg_ndcg

@@ -49,12 +49,14 @@ GQL and Cypher are similar in many ways, but there are key differences. Here's a
 ### Basic Pattern Matching
 
 **Cypher**:
+
 ```cypher
 MATCH (n:Person {name: 'Alice'})
 RETURN n
 ```
 
 **GQL**:
+
 ```gql
 MATCH (n:Person {name: 'Alice'})
 RETURN n
@@ -65,12 +67,14 @@ Most basic patterns are identical!
 ### Variable-Length Paths
 
 **Cypher**:
+
 ```cypher
 MATCH (a:Person)-[:KNOWS*1..3]->(b:Person)
 RETURN a, b
 ```
 
 **GQL**:
+
 ```gql
 MATCH (a:Person)-[:KNOWS*1..3]->(b:Person)
 RETURN a, b
@@ -79,6 +83,7 @@ RETURN a, b
 ### Optional Match
 
 **Cypher**:
+
 ```cypher
 MATCH (p:Person)
 OPTIONAL MATCH (p)-[:KNOWS]->(friend)
@@ -86,6 +91,7 @@ RETURN p.name, friend.name
 ```
 
 **GQL**:
+
 ```gql
 MATCH (p:Person)
 OPTIONAL MATCH (p)-[:KNOWS]->(friend)
@@ -95,12 +101,14 @@ RETURN p.name, friend.name
 ### Creating Nodes
 
 **Cypher**:
+
 ```cypher
 CREATE (n:Person {name: 'Alice', age: 30})
 RETURN n
 ```
 
 **GQL**:
+
 ```gql
 CREATE (n:Person {name: 'Alice', age: 30})
 RETURN n
@@ -109,6 +117,7 @@ RETURN n
 ### Creating Relationships
 
 **Cypher**:
+
 ```cypher
 MATCH (a:Person {name: 'Alice'})
 MATCH (b:Person {name: 'Bob'})
@@ -116,6 +125,7 @@ CREATE (a)-[:KNOWS {since: 2020}]->(b)
 ```
 
 **GQL**:
+
 ```gql
 MATCH (a:Person {name: 'Alice'})
 MATCH (b:Person {name: 'Bob'})
@@ -127,6 +137,7 @@ CREATE (a)-[:KNOWS {since: 2020}]->(b)
 #### 1. MERGE Syntax
 
 **Cypher**:
+
 ```cypher
 MERGE (n:Person {name: 'Alice'})
 ON CREATE SET n.created = timestamp()
@@ -135,6 +146,7 @@ RETURN n
 ```
 
 **GQL**:
+
 ```gql
 MERGE (n:Person {name: 'Alice'})
 ON CREATE SET n.created = timestamp()
@@ -145,12 +157,14 @@ RETURN n
 #### 2. List Comprehensions
 
 **Cypher**:
+
 ```cypher
 WITH [x IN range(1, 5) WHERE x % 2 = 0 | x * 2] AS evens
 RETURN evens
 ```
 
 **GQL**:
+
 ```gql
 WITH [x IN range(1, 5) WHERE x % 2 = 0 | x * 2] AS evens
 RETURN evens
@@ -159,12 +173,14 @@ RETURN evens
 #### 3. Path Functions
 
 **Cypher**:
+
 ```cypher
 MATCH path = (a:Person)-[:KNOWS*]->(b:Person)
 RETURN nodes(path), relationships(path), length(path)
 ```
 
 **GQL**:
+
 ```gql
 MATCH path = (a:Person)-[:KNOWS*]->(b:Person)
 RETURN nodes(path), relationships(path), length(path)
@@ -173,6 +189,7 @@ RETURN nodes(path), relationships(path), length(path)
 #### 4. Aggregations
 
 **Cypher**:
+
 ```cypher
 MATCH (p:Person)
 RETURN p.city, count(*) AS population, avg(p.age) AS avg_age
@@ -180,6 +197,7 @@ ORDER BY population DESC
 ```
 
 **GQL**:
+
 ```gql
 MATCH (p:Person)
 RETURN p.city, count(*) AS population, avg(p.age) AS avg_age
@@ -191,6 +209,7 @@ ORDER BY population DESC
 Neo4j's APOC library has no direct equivalent. Translate APOC calls to native GQL.
 
 **Cypher with APOC**:
+
 ```cypher
 CALL apoc.path.spanningTree(startNode, {relationshipFilter: 'KNOWS'})
 YIELD path
@@ -198,6 +217,7 @@ RETURN path
 ```
 
 **GQL equivalent**:
+
 ```gql
 MATCH path = (start:Person {id: $id})-[:KNOWS*0..]->(end)
 WHERE NOT (end)-[:KNOWS]->()
@@ -206,11 +226,13 @@ RETURN DISTINCT path
 ```
 
 **Cypher with APOC date functions**:
+
 ```cypher
 RETURN apoc.date.format(timestamp(), 'ms', 'yyyy-MM-dd')
 ```
 
 **GQL equivalent**:
+
 ```gql
 RETURN toString(date(timestamp()))
 ```
@@ -218,12 +240,14 @@ RETURN toString(date(timestamp()))
 #### 6. Index Creation
 
 **Cypher**:
+
 ```cypher
 CREATE INDEX FOR (n:Person) ON (n.name)
 CREATE CONSTRAINT FOR (n:Person) REQUIRE n.email IS UNIQUE
 ```
 
 **GQL**:
+
 ```gql
 CREATE INDEX person_name ON :Person(name)
 CREATE CONSTRAINT person_email_unique ON :Person(email) ASSERT UNIQUE
@@ -232,12 +256,14 @@ CREATE CONSTRAINT person_email_unique ON :Person(email) ASSERT UNIQUE
 #### 7. Parameters
 
 **Cypher**:
+
 ```cypher
 MATCH (n:Person {name: $name})
 RETURN n
 ```
 
 **GQL**:
+
 ```gql
 MATCH (n:Person {name: $name})
 RETURN n
@@ -290,12 +316,14 @@ RETURN a, b
 ### Constraints
 
 **Neo4j**:
+
 ```cypher
 CREATE CONSTRAINT person_name_unique FOR (n:Person) REQUIRE n.name IS UNIQUE
 CREATE CONSTRAINT person_email_exists FOR (n:Person) REQUIRE n.email IS NOT NULL
 ```
 
 **Geode**:
+
 ```gql
 CREATE CONSTRAINT person_name_unique ON :Person(name) ASSERT UNIQUE
 CREATE CONSTRAINT person_email_exists ON :Person(email) ASSERT EXISTS
@@ -304,6 +332,7 @@ CREATE CONSTRAINT person_email_exists ON :Person(email) ASSERT EXISTS
 ### Indexes
 
 **Neo4j**:
+
 ```cypher
 CREATE INDEX person_name FOR (n:Person) ON (n.name)
 CREATE INDEX person_age_city FOR (n:Person) ON (n.age, n.city)
@@ -312,11 +341,12 @@ CREATE FULLTEXT INDEX person_search FOR (n:Person) ON EACH [n.name, n.bio]
 ```
 
 **Geode**:
+
 ```gql
 CREATE INDEX person_name ON :Person(name)
 CREATE INDEX person_age_city ON :Person(age, city)
-CREATE TEXT INDEX person_bio ON :Person(bio)
-CREATE FULLTEXT INDEX person_search ON :Person(name, bio)
+CREATE INDEX person_bio ON :Person(bio) USING fulltext
+CREATE INDEX person_search ON :Person(name, bio) USING fulltext
 ```
 
 ## Data Export from Neo4j
@@ -511,6 +541,7 @@ async def batch_import_nodes(client, label, input_file, batch_size=1000):
 ### Go Driver Migration
 
 **Neo4j Go Driver**:
+
 ```go
 import (
     "github.com/neo4j/neo4j-go-driver/v5/neo4j"
@@ -539,6 +570,7 @@ func main() {
 ```
 
 **Geode Go Driver**:
+
 ```go
 import (
     "context"
@@ -569,6 +601,7 @@ func main() {
 ### Python Driver Migration
 
 **Neo4j Python Driver**:
+
 ```python
 from neo4j import GraphDatabase
 
@@ -589,6 +622,7 @@ driver.close()
 ```
 
 **Geode Python Driver**:
+
 ```python
 import asyncio
 from geode_client import Client
@@ -610,6 +644,7 @@ asyncio.run(main())
 ### Rust Driver Migration
 
 **Neo4j Rust Driver (neo4rs)**:
+
 ```rust
 use neo4rs::*;
 
@@ -634,6 +669,7 @@ async fn main() {
 ```
 
 **Geode Rust Driver**:
+
 ```rust
 use geode_client::{Client, Value};
 use std::collections::HashMap;
@@ -665,6 +701,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 ### Node.js Driver Migration
 
 **Neo4j JavaScript Driver**:
+
 ```javascript
 const neo4j = require('neo4j-driver');
 
@@ -689,6 +726,7 @@ await driver.close();
 ```
 
 **Geode JavaScript Driver**:
+
 ```typescript
 import { createClient } from '@geodedb/client';
 
@@ -709,6 +747,7 @@ await client.close();
 ### Zig Driver Migration
 
 **Geode Zig Driver** (no Neo4j equivalent):
+
 ```zig
 const std = @import("std");
 const geode = @import("geode_client");
@@ -953,7 +992,7 @@ RETURN n
 // Neo4j
 MATCH (n)
 WHERE n.uuid IS NULL
-SET n.uuid = randomUUID()
+SET n.uuid = uuid_v4()
 
 // Use uuid for relationships in Geode
 MATCH (a {uuid: $from_uuid})
@@ -1056,6 +1095,7 @@ RETURN p.name, COALESCE(p.nickname, p.name) AS display_name
 Use this checklist to track your migration progress:
 
 ### Pre-Migration
+
 - [ ] Inventory all node labels and relationship types
 - [ ] Document all Cypher queries used in applications
 - [ ] Identify APOC procedure usage
@@ -1063,12 +1103,14 @@ Use this checklist to track your migration progress:
 - [ ] Plan for hybrid operation period
 
 ### Schema Migration
+
 - [ ] Export schema from Neo4j (labels, types, constraints, indexes)
 - [ ] Create equivalent Geode schema
 - [ ] Verify all constraints can be replicated
 - [ ] Create all necessary indexes
 
 ### Data Migration
+
 - [ ] Export all nodes by label
 - [ ] Export all relationships by type
 - [ ] Import nodes to Geode
@@ -1077,24 +1119,28 @@ Use this checklist to track your migration progress:
 - [ ] Validate data counts
 
 ### Query Migration
+
 - [ ] Translate all Cypher queries to GQL
 - [ ] Replace APOC procedures with native GQL
 - [ ] Test all queries for correctness
 - [ ] Benchmark query performance
 
 ### Driver Migration
+
 - [ ] Update dependencies in all applications
 - [ ] Refactor connection code
 - [ ] Update query execution code
 - [ ] Test all application functionality
 
 ### Validation
+
 - [ ] Run data validation scripts
 - [ ] Execute query equivalence tests
 - [ ] Perform load testing
 - [ ] Verify backup/restore procedures
 
 ### Cutover
+
 - [ ] Plan maintenance window
 - [ ] Prepare rollback procedure
 - [ ] Execute final data sync

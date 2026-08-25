@@ -75,6 +75,7 @@ String representation of the value's type according to GQL type system.
 ### Examples
 
 **Basic Types**:
+
 ```gql
 RETURN type(123)          -- "INTEGER"
 RETURN type('hello')      -- "STRING"
@@ -84,6 +85,7 @@ RETURN type(null)         -- "NULL"
 ```
 
 **Temporal Types**:
+
 ```gql
 RETURN type(date('2026-01-24'))              -- "DATE"
 RETURN type(time('10:30:15'))                -- "TIME"
@@ -92,12 +94,14 @@ RETURN type(duration('PT1H30M'))             -- "DURATION"
 ```
 
 **Collection Types**:
+
 ```gql
 RETURN type([1, 2, 3])                    -- "LIST"
 RETURN type({name: 'Alice', age: 30})     -- "MAP"
 ```
 
 **Graph Types**:
+
 ```gql
 MATCH (n:Person)
 RETURN type(n)  -- "NODE"
@@ -112,6 +116,7 @@ RETURN type(p)  -- "PATH"
 ### Use Cases
 
 **Runtime Type Checking**:
+
 ```gql
 -- Conditional logic based on type
 MATCH (n)
@@ -124,6 +129,7 @@ RETURN n,
 ```
 
 **Type Validation**:
+
 ```gql
 -- Find nodes with unexpected property types
 MATCH (p:Product)
@@ -132,6 +138,7 @@ RETURN p.id, type(p.price) AS wrong_type, p.price
 ```
 
 **Schema Discovery**:
+
 ```gql
 -- Discover property types in graph
 MATCH (n:User)
@@ -178,6 +185,7 @@ String representation of the input value, or `null` if conversion fails.
 ### Examples
 
 **Basic Conversion**:
+
 ```gql
 RETURN toString(123)         -- "123"
 RETURN toString(true)        -- "true"
@@ -186,6 +194,7 @@ RETURN toString(123.45)      -- "123.450000"
 ```
 
 **Temporal Values**:
+
 ```gql
 RETURN toString(date('2026-01-24'))
 -- "2026-01-24"
@@ -198,6 +207,7 @@ RETURN toString(duration('PT1H30M'))
 ```
 
 **Collection Values**:
+
 ```gql
 RETURN toString([1, 2, 3, 4, 5])
 -- "[1, 2, 3, 4, 5]"
@@ -209,6 +219,7 @@ RETURN toString({name: 'Alice', age: 30})
 ### Use Cases
 
 **String Concatenation**:
+
 ```gql
 -- Build formatted strings
 MATCH (p:Person)
@@ -216,6 +227,7 @@ RETURN 'Person #' + toString(p.id) + ': ' + p.name AS label
 ```
 
 **Export Formatting**:
+
 ```gql
 -- Format data for export
 MATCH (o:Order)
@@ -225,10 +237,11 @@ RETURN toString(o.created_date) + ',' +
 ```
 
 **Logging & Debugging**:
+
 ```gql
 -- Convert values for logging
 MATCH (n)
-WHERE n.updated_at > datetime().subtract(PT1H)
+WHERE n.updated_at > datetime()./* no subtract(); use the - operator */ (PT1H)
 RETURN 'Updated: ' + toString(n.id) + ' at ' + toString(n.updated_at) AS log_entry
 ```
 
@@ -267,6 +280,7 @@ Integer value, or `null` if conversion fails or value is invalid.
 ### Examples
 
 **String Conversion**:
+
 ```gql
 RETURN toInteger('456')      -- 456
 RETURN toInteger('123.45')   -- 123 (decimal part ignored)
@@ -275,6 +289,7 @@ RETURN toInteger('')         -- null (empty string)
 ```
 
 **Numeric Conversion**:
+
 ```gql
 RETURN toInteger(123)        -- 123
 RETURN toInteger(123.7)      -- 123 (truncated, not rounded)
@@ -283,6 +298,7 @@ RETURN toInteger(-456.789)   -- -456
 ```
 
 **Edge Cases**:
+
 ```gql
 RETURN toInteger(null)       -- null
 RETURN toInteger('  123  ')  -- 123 (whitespace trimmed)
@@ -293,10 +309,12 @@ RETURN toInteger('-789')     -- -789 (negative numbers)
 ### Overflow Protection
 
 **Safe Range** (64-bit signed integer):
+
 - Minimum: `-9,223,372,036,854,775,808`
 - Maximum: `9,223,372,036,854,775,807`
 
 **Overflow Behavior**:
+
 ```gql
 RETURN toInteger('9999999999999999999999')  -- null (overflow)
 RETURN toInteger('-9999999999999999999999') -- null (underflow)
@@ -305,6 +323,7 @@ RETURN toInteger('-9999999999999999999999') -- null (underflow)
 ### Use Cases
 
 **User Input Processing**:
+
 ```gql
 -- Convert user input to integer
 WITH '42' AS user_input
@@ -314,6 +333,7 @@ RETURN p.name
 ```
 
 **Data Cleaning**:
+
 ```gql
 -- Clean imported data
 MATCH (n:ImportedData)
@@ -322,6 +342,7 @@ SET n.count = toInteger(n.count_str)
 ```
 
 **Pagination**:
+
 ```gql
 -- Convert pagination parameters
 WITH '10' AS page_size_param, '2' AS page_num_param
@@ -365,6 +386,7 @@ Decimal value, or `null` if conversion fails.
 ### Examples
 
 **String Conversion**:
+
 ```gql
 RETURN toReal('123.45')      -- 123.450000
 RETURN toReal('456')         -- 456.000000
@@ -373,6 +395,7 @@ RETURN toReal('abc')         -- null (invalid format)
 ```
 
 **Numeric Conversion**:
+
 ```gql
 RETURN toReal(123)           -- 123.000000
 RETURN toReal(123.45)        -- 123.450000
@@ -380,6 +403,7 @@ RETURN toReal(-456.789)      -- -456.789000
 ```
 
 **Scientific Notation**:
+
 ```gql
 RETURN toReal('1.23e-4')     -- 0.000123
 RETURN toReal('5.67E+3')     -- 5670.000000
@@ -391,12 +415,14 @@ RETURN toReal('2.5e10')      -- 25000000000.000000
 **Default Precision**: 6 decimal places
 
 **Range**:
+
 - Minimum: Approximately `-1.7976931348623157e+308`
 - Maximum: Approximately `1.7976931348623157e+308`
 
 ### Use Cases
 
 **Financial Calculations**:
+
 ```gql
 -- Convert price strings to decimals
 MATCH (p:Product)
@@ -405,6 +431,7 @@ SET p.price = toReal(p.price_str)
 ```
 
 **Statistical Analysis**:
+
 ```gql
 -- Calculate averages from string data
 MATCH (m:Metric)
@@ -414,6 +441,7 @@ RETURN avg(value) AS average_value
 ```
 
 **Percentage Calculations**:
+
 ```gql
 -- Convert percentage strings to decimals
 MATCH (s:Sale)
@@ -434,12 +462,14 @@ SET s.discount_rate = toReal(s.discount_percent_str) / 100.0
 | NULL | ✓ (`"null"`) | `null` | `null` | `null` | `null` |
 
 **Legend**:
+
 - ✓ : Supported conversion
 - ✗ : Not supported (returns `null`)
 
 ### Safe Conversion Patterns
 
 **Check Before Convert**:
+
 ```gql
 -- Validate before conversion
 MATCH (n)
@@ -451,6 +481,7 @@ RETURN int_value
 ```
 
 **Provide Defaults**:
+
 ```gql
 -- Use COALESCE for default values
 MATCH (n)
@@ -458,6 +489,7 @@ RETURN coalesce(toInteger(n.value), 0) AS value_or_default
 ```
 
 **Chain Conversions**:
+
 ```gql
 -- Convert through intermediate types
 MATCH (n)
@@ -537,12 +569,14 @@ RETURN toString(name)  -- Works correctly
 The `type()` function has dual semantics in GQL:
 
 1. **Graph Element Type** (relationship labels):
+
    ```gql
    MATCH ()-[r]->()
    RETURN type(r)  -- Returns relationship type name
    ```
 
 2. **Value Data Type** (our implementation):
+
    ```gql
    RETURN type(123)  -- Returns "INTEGER"
    ```
@@ -564,6 +598,7 @@ zig test tests/test_type_conversion.zig
 ### Test Coverage
 
 **Tested Scenarios**:
+
 - ✓ All basic types (INTEGER, STRING, DECIMAL, BOOLEAN, NULL)
 - ✓ Temporal types (DATE, TIME, DATETIME, DURATION)
 - ✓ Collection types (LIST, MAP)
@@ -593,20 +628,24 @@ RETURN toInteger('  123  ') = 123      -- true (whitespace)
 ### Benchmark Results
 
 **toString()**:
+
 - **Overhead**: <1μs per conversion
 - **Throughput**: >1M conversions/second
 - **Memory**: Allocates new string (minimal)
 
 **toInteger()**:
+
 - Efficient parsing for valid integers
 - Format validation
 - Returns null on invalid input
 
 **toReal()**:
+
 - Handles decimal and scientific notation
 - **Precision**: 6 decimal places (standard)
 
 **type()**:
+
 - Constant time type lookup
 - Cached string literals for common types
 
@@ -615,6 +654,7 @@ RETURN toInteger('  123  ') = 123      -- true (whitespace)
 ### Type Safety
 
 1. **Always Validate**:
+
    ```gql
    -- Check conversion success
    WITH toInteger(user_input) AS value
@@ -623,12 +663,14 @@ RETURN toInteger('  123  ') = 123      -- true (whitespace)
    ```
 
 2. **Provide Defaults**:
+
    ```gql
    -- Use COALESCE for safety
    RETURN coalesce(toInteger(n.value), 0)
    ```
 
 3. **Type Check First**:
+
    ```gql
    -- Verify type before conversion
    WHERE type(n.value) IN ['STRING', 'INTEGER']
@@ -637,6 +679,7 @@ RETURN toInteger('  123  ') = 123      -- true (whitespace)
 ### Error Handling
 
 **Production Pattern**:
+
 ```gql
 -- Comprehensive error handling
 MATCH (n:Data)
@@ -648,6 +691,7 @@ RETURN n.id, count_int, price_real
 ```
 
 **Logging Invalid Data**:
+
 ```gql
 -- Track conversion failures
 MATCH (n:ImportedData)
@@ -685,11 +729,13 @@ CREATE (e:ConversionError {
 ## Next Steps
 
 **For New Users**:
+
 - [Data Types Overview](/docs/data-types/_index/) - Type system fundamentals
 - [GQL Guide](/docs/gql/guide/) - Query language basics
 - [Quick Reference](/docs/reference/cli-and-api/) - Command reference
 
 **For Developers**:
+
 - [API Reference](/docs/reference/api-reference-complete/) - Complete function reference
 - [Testing Strategies](/docs/guides/testing-strategies/) - Type validation testing
 - [Client Libraries](/docs/client-libraries/go-client/) - Type handling in clients

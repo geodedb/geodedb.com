@@ -401,7 +401,7 @@ timestamp you name** and restore that. Your effective recovery point is
 therefore your backup interval, not a single transaction.
 
 There is no `[wal] archive_enabled` / `archive_command` configuration, no
-`--wal-dir` flag and no `--target-lsn` flag. The server configuration file is a
+`` flag and no `--target-lsn` flag. The server configuration file is a
 flat YAML/TOML/JSON document (`.geode/config.yaml`, `.geode/config.toml`, ...)
 holding keys such as `data_dir`, `listen_quic`, `listen_grpc`, `cert_path`,
 `key_path`, `log_level` and `idle_timeout`.
@@ -982,7 +982,7 @@ while True:
 
 Backup encryption is a property of the **server**, not a CLI flag: there is no
 `--encrypt`, `--decrypt` or `--encryption-key-file` option. When the server runs
-with Transparent Data Encryption (`geode serve --enable-tde --tde-provider ...`),
+with Transparent Data Encryption (`geode serve --tde-provider ...`),
 the backup it produces is written encrypted and `geode backup info` reports
 `Encrypted: true`. See the [KMS integration guide](/docs/security/kms-integration/) for key
 provider configuration and the `tde.*` procedures.

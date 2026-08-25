@@ -197,7 +197,7 @@ WHERE ALL(tx IN relationships(path) WHERE
   tx.amount > 5000
 )
 WITH path,
-     reduce(total = 0, tx IN relationships(path) | total + tx.amount) as total
+     null /* reduce() is advertised by SHOW FUNCTIONS but has no evaluator dispatch; collect() the values and fold client-side (for path weights use algo.dijkstra.stream, which yields cost) */ as total
 WHERE total > 100000
 RETURN path, total
 ```

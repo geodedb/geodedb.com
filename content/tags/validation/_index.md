@@ -28,91 +28,108 @@ Schema constraints provide the first and most critical validation layer. These c
 
 ```gql
 -- Basic type and format validation
-CREATE NODE TYPE Person (
-    email STRING CHECK (email LIKE '%@%.%' AND LENGTH(email) <= 255),
-    age INTEGER CHECK (age >= 0 AND age <= 150),
-    phone STRING CHECK (phone ~ '^\+?[0-9]{10,15}$'),  -- E.164 format
-    ssn STRING CHECK (ssn ~ '^\d{3}-\d{2}-\d{4}$'),    -- US SSN format
-    postal_code STRING CHECK (postal_code ~ '^[0-9]{5}(-[0-9]{4})?$')  -- US ZIP
-);
+-- Geode has no CREATE NODE TYPE / CREATE EDGE TYPE: labels are
+-- schema-free. The only typed DDL is CREATE GRAPH TYPE, whose field
+-- list is `name TYPE [PRIMARY KEY] [@annotations]` in braces.
+CREATE GRAPH TYPE PersonType AS {
+  email STRING,
+  age INTEGER,
+  phone STRING,  -- E.164 format
+  ssn STRING,  -- US SSN format
+  postal_code STRING  -- US ZIP
+};
 
 -- SKU and product code patterns
-CREATE NODE TYPE Product (
-    sku STRING CHECK (sku ~ '^[A-Z]{2,3}-[0-9]{6}$'),  -- Format: AB-123456
-    upc STRING CHECK (upc ~ '^\d{12}$'),               -- UPC-A barcode
-    price DECIMAL CHECK (price > 0),
-    weight_kg DECIMAL CHECK (weight_kg > 0 AND weight_kg < 1000)
-);
+-- Geode has no CREATE NODE TYPE / CREATE EDGE TYPE: labels are
+-- schema-free. The only typed DDL is CREATE GRAPH TYPE, whose field
+-- list is `name TYPE [PRIMARY KEY] [@annotations]` in braces.
+CREATE GRAPH TYPE ProductType AS {
+  sku STRING,  -- Format: AB-123456
+  upc STRING,  -- UPC-A barcode
+  price DECIMAL,
+  weight_kg DECIMAL
+};
 
 -- URL and domain validation
-CREATE NODE TYPE Website (
-    url STRING CHECK (url ~ '^https?://[a-zA-Z0-9.-]+\.[a-z]{2,}(/.*)?$'),
-    domain STRING CHECK (domain ~ '^[a-zA-Z0-9.-]+\.[a-z]{2,}$')
-);
+-- Geode has no CREATE NODE TYPE / CREATE EDGE TYPE: labels are
+-- schema-free. The only typed DDL is CREATE GRAPH TYPE, whose field
+-- list is `name TYPE [PRIMARY KEY] [@annotations]` in braces.
+CREATE GRAPH TYPE WebsiteType AS {
+  url STRING,
+  domain STRING
+};
 ```
 
 ### Range and Enumeration Validation
 
 ```gql
 -- Numeric ranges
-CREATE NODE TYPE Booking (
-    guests INTEGER CHECK (guests >= 1 AND guests <= 20),
-    nights INTEGER CHECK (nights >= 1 AND nights <= 365),
-    room_number INTEGER CHECK (room_number >= 100 AND room_number <= 9999)
-);
+-- Geode has no CREATE NODE TYPE / CREATE EDGE TYPE: labels are
+-- schema-free. The only typed DDL is CREATE GRAPH TYPE, whose field
+-- list is `name TYPE [PRIMARY KEY] [@annotations]` in braces.
+CREATE GRAPH TYPE BookingType AS {
+  guests INTEGER,
+  nights INTEGER,
+  room_number INTEGER
+};
 
 -- Enumerated values
-CREATE NODE TYPE Order (
-    status STRING CHECK (status IN ('draft', 'pending', 'processing', 'shipped', 'delivered', 'cancelled', 'refunded')),
-    priority STRING CHECK (priority IN ('low', 'normal', 'high', 'urgent')),
-    payment_method STRING CHECK (payment_method IN ('credit_card', 'debit_card', 'paypal', 'bank_transfer', 'cash'))
-);
+-- Geode has no CREATE NODE TYPE / CREATE EDGE TYPE: labels are
+-- schema-free. The only typed DDL is CREATE GRAPH TYPE, whose field
+-- list is `name TYPE [PRIMARY KEY] [@annotations]` in braces.
+CREATE GRAPH TYPE OrderType AS {
+  status STRING,
+  priority STRING,
+  payment_method STRING
+};
 
 -- Percentage constraints
-CREATE NODE TYPE Discount (
-    percentage DECIMAL CHECK (percentage >= 0 AND percentage <= 100),
-    min_order_value DECIMAL CHECK (min_order_value >= 0)
-);
+-- Geode has no CREATE NODE TYPE / CREATE EDGE TYPE: labels are
+-- schema-free. The only typed DDL is CREATE GRAPH TYPE, whose field
+-- list is `name TYPE [PRIMARY KEY] [@annotations]` in braces.
+CREATE GRAPH TYPE DiscountType AS {
+  percentage DECIMAL,
+  min_order_value DECIMAL
+};
 ```
 
 ### Cross-Property Validation
 
 ```gql
 -- Date range validation
-CREATE NODE TYPE Event (
-    registration_start DATE NOT NULL,
-    registration_end DATE NOT NULL,
-    event_start DATE NOT NULL,
-    event_end DATE NOT NULL,
-    CONSTRAINT valid_registration_period CHECK (registration_end >= registration_start),
-    CONSTRAINT valid_event_period CHECK (event_end >= event_start),
-    CONSTRAINT registration_before_event CHECK (registration_end <= event_start)
-);
+-- Geode has no CREATE NODE TYPE / CREATE EDGE TYPE: labels are
+-- schema-free. The only typed DDL is CREATE GRAPH TYPE, whose field
+-- list is `name TYPE [PRIMARY KEY] [@annotations]` in braces.
+-- Not supported in a field definition: CONSTRAINT, NOT NULL — enforce with CREATE CONSTRAINT or at write time.
+CREATE GRAPH TYPE EventType AS {
+  registration_start DATE,
+  registration_end DATE,
+  event_start DATE,
+  event_end DATE
+};
 
 -- Conditional requirements
-CREATE NODE TYPE Employee (
-    employment_type STRING CHECK (employment_type IN ('full_time', 'part_time', 'contractor')),
-    annual_salary DECIMAL,
-    hourly_rate DECIMAL,
-    benefits_eligible BOOLEAN,
-    CONSTRAINT compensation_model CHECK (
-        (employment_type = 'full_time' AND annual_salary IS NOT NULL AND hourly_rate IS NULL)
-        OR
-        (employment_type IN ('part_time', 'contractor') AND annual_salary IS NULL AND hourly_rate IS NOT NULL)
-    ),
-    CONSTRAINT benefits_eligibility CHECK (
-        employment_type = 'full_time' OR benefits_eligible = false
-    )
-);
+-- Geode has no CREATE NODE TYPE / CREATE EDGE TYPE: labels are
+-- schema-free. The only typed DDL is CREATE GRAPH TYPE, whose field
+-- list is `name TYPE [PRIMARY KEY] [@annotations]` in braces.
+-- Not supported in a field definition: CONSTRAINT — enforce with CREATE CONSTRAINT or at write time.
+CREATE GRAPH TYPE EmployeeType AS {
+  employment_type STRING,
+  annual_salary DECIMAL,
+  hourly_rate DECIMAL,
+  benefits_eligible BOOLEAN
+};
 
 -- Price consistency
-CREATE NODE TYPE Product (
-    base_price DECIMAL NOT NULL CHECK (base_price > 0),
-    sale_price DECIMAL CHECK (sale_price > 0),
-    cost DECIMAL CHECK (cost > 0),
-    CONSTRAINT sale_below_base CHECK (sale_price IS NULL OR sale_price <= base_price),
-    CONSTRAINT positive_margin CHECK (base_price > cost)
-);
+-- Geode has no CREATE NODE TYPE / CREATE EDGE TYPE: labels are
+-- schema-free. The only typed DDL is CREATE GRAPH TYPE, whose field
+-- list is `name TYPE [PRIMARY KEY] [@annotations]` in braces.
+-- Not supported in a field definition: CONSTRAINT, NOT NULL — enforce with CREATE CONSTRAINT or at write time.
+CREATE GRAPH TYPE ProductType AS {
+  base_price DECIMAL,
+  sale_price DECIMAL,
+  cost DECIMAL
+};
 ```
 
 ## Custom Validation Functions
@@ -121,39 +138,30 @@ Create reusable validation logic as database functions:
 
 ```gql
 -- Email validation function
-CREATE FUNCTION is_valid_email(email STRING)
-RETURNS BOOLEAN
-AS $$
-    SELECT email IS NOT NULL
-        AND email ~ '^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
-        AND LENGTH(email) >= 5
-        AND LENGTH(email) <= 255
-        AND email NOT LIKE '%@%@%'  -- No multiple @ signs
-$$;
+-- Geode has no user-defined functions, aggregates or procedures: the
+-- grammar has no CREATE FUNCTION / AGGREGATE / PROCEDURE. Inline the
+-- logic into the query, or compute it in the client.
 
 -- Phone number validation (international)
-CREATE FUNCTION is_valid_phone(phone STRING)
-RETURNS BOOLEAN
-AS $$
-    SELECT phone ~ '^\+?[1-9]\d{1,14}$'  -- E.164 format
-$$;
+-- Geode has no user-defined functions, aggregates or procedures: the
+-- grammar has no CREATE FUNCTION / AGGREGATE / PROCEDURE. Inline the
+-- logic into the query, or compute it in the client.
 
 -- Credit card validation (Luhn algorithm)
-CREATE FUNCTION is_valid_credit_card(number STRING)
-RETURNS BOOLEAN
-AS $$
-    -- Simplified Luhn check
-    SELECT LENGTH(number) BETWEEN 13 AND 19
-        AND number ~ '^\d+$'
-        AND luhn_checksum(number) = 0
-$$;
+-- Geode has no user-defined functions, aggregates or procedures: the
+-- grammar has no CREATE FUNCTION / AGGREGATE / PROCEDURE. Inline the
+-- logic into the query, or compute it in the client.
 
 -- Use in schema constraints
-ALTER NODE TYPE Person
-ADD CONSTRAINT check_email CHECK (is_valid_email(email));
+-- Geode has no ALTER LABEL / ALTER GRAPH / property DEFAULT DDL. Labels and
+-- properties are schema-free: write the new property with SET, supplying the
+-- default yourself.
+MATCH (u:User) WHERE u.verified IS NULL SET u.verified = false;
 
-ALTER NODE TYPE Person
-ADD CONSTRAINT check_phone CHECK (is_valid_phone(phone));
+-- Geode has no ALTER LABEL / ALTER GRAPH / property DEFAULT DDL. Labels and
+-- properties are schema-free: write the new property with SET, supplying the
+-- default yourself.
+MATCH (u:User) WHERE u.verified IS NULL SET u.verified = false;
 ```
 
 ## Application-Level Validation
@@ -493,6 +501,7 @@ async def validate_order(order_data: dict) -> ValidationResult:
 ## Common Validation Patterns
 
 **Email Uniqueness**:
+
 ```python
 async def check_email_unique(email: str) -> bool:
     result, _ = await client.query(
@@ -503,11 +512,13 @@ async def check_email_unique(email: str) -> bool:
 ```
 
 **Age Verification**:
+
 ```gql
-CHECK (EXTRACT(YEAR FROM AGE(CURRENT_DATE, date_of_birth)) >= 18)
+CHECK (AGE(CURRENT_DATE, date_of_birth.year) >= 18)
 ```
 
 **Stock Availability**:
+
 ```gql
 CONSTRAINT check_stock CHECK (quantity_ordered <= quantity_available)
 ```

@@ -678,18 +678,18 @@ endsnippet
 # ~/.vim/snippets/gql.snippets
 
 snippet match
-	MATCH (${1:n}:${2:Label})
-	WHERE ${3:condition}
-	RETURN ${4:$1};
+ MATCH (${1:n}:${2:Label})
+ WHERE ${3:condition}
+ RETURN ${4:$1};
 
 snippet create
-	CREATE (${1:n}:${2:Label} {
-	  ${3:property}: ${4:value}
-	});
+ CREATE (${1:n}:${2:Label} {
+   ${3:property}: ${4:value}
+ });
 
 snippet path
-	MATCH path = (${1:start}:${2:Label})-[:${3:REL}*${4:1..3}]->(${5:end}:${6:Label})
-	RETURN path;
+ MATCH path = (${1:start}:${2:Label})-[:${3:REL}*${4:1..3}]->(${5:end}:${6:Label})
+ RETURN path;
 ```
 
 ## Commands Reference

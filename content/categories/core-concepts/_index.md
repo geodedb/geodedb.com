@@ -315,14 +315,16 @@ Key benefits:
 ```gql
 -- MVCC enables time-travel queries
 MATCH (u:User {id: 1})
-AS OF TIMESTAMP '2025-01-01T00:00:00Z'
+-- Geode has no AS OF / time-travel syntax: MVCC snapshots are not
+-- addressable from GQL. Model history explicitly with versioned nodes.
 RETURN u.name, u.email
 
 -- Query all historical versions
 MATCH (u:User {id: 1})
-FOR ALL VERSIONS
-RETURN u.name, version_timestamp(), version_transaction_id()
-ORDER BY version_timestamp()
+-- Geode has no AS OF / time-travel syntax: MVCC snapshots are not
+-- addressable from GQL. Model history explicitly with versioned nodes.
+RETURN u.name, null /* MVCC versions are not addressable from GQL */, null /* MVCC versions are not addressable from GQL */
+ORDER BY null /* MVCC versions are not addressable from GQL */
 ```
 
 ## Indexes
@@ -353,12 +355,13 @@ RETURN u.name
 
 ```gql
 -- Create full-text index
-CREATE TEXT INDEX doc_content_idx ON :Document(content)
+CREATE INDEX doc_content_idx ON :Document(content) USING fulltext
 
 -- Search with relevance ranking
-MATCH (d:Document)
-WHERE text_search(d.content, 'graph database performance')
-RETURN d.title, bm25_score(d.content, 'graph database performance') AS score
+CALL geode.fts.search('document_content', 'graph database performance')
+YIELD node, score
+MATCH (d:Document) WHERE id(d) = node
+RETURN d.title, score AS score
 ORDER BY score DESC
 ```
 
@@ -366,7 +369,7 @@ ORDER BY score DESC
 
 ```gql
 -- Create vector index
-CREATE VECTOR INDEX doc_embedding_idx ON :Document(embedding)
+CREATE INDEX doc_embedding_idx ON :Document(embedding) USING vector
 
 -- Semantic search
 MATCH (d:Document)
@@ -412,10 +415,10 @@ Geode supports multiple authentication providers:
 
 ```yaml
 # Configuration
-security:
-  authentication:
-    enabled: true
-    provider: "local"  # or ldap, oauth2, saml
+# NOTE: `security:` is not a configuration-file section — it is ignored.
+# KMS and encryption-at-rest are configured with environment variables:
+#   GEODE_KMS_URL, GEODE_KMS_ENDPOINT, GEODE_KMS_API_KEY
+#   GEODE_MASTER_KEY, GEODE_TDE_ENABLED, GEODE_ALLOW_LOCAL_KMS
 ```
 
 ```python
@@ -449,10 +452,11 @@ GRANT ROLE analyst_role TO user_alice
 Fine-grained data-level access control:
 
 ```gql
--- Create RLS policy
-CREATE POLICY user_data_isolation ON :UserData
-USING (node.user_id = current_user_id())
-WITH CHECK (node.user_id = current_user_id())
+-- Create RLS policy: UserData.user_id must equal the caller's 'user_id'
+-- principal attribute. This filters reads; Geode has no WITH CHECK
+-- enforcement on writes.
+CALL geode.rls.add_attribute_policy('app', 'UserData', 'user_id', 'user_id');
+CALL geode.auth.user_set_attribute('alice', 'user_id', 'u-1001');
 
 -- Queries automatically enforce policy
 MATCH (d:UserData)

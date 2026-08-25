@@ -323,7 +323,7 @@ RETURN min(n.age)
 RETURN max(n.price)
 
 -- Standard deviation
-RETURN stdev(n.value)
+RETURN collect(n.value) /* stddev/variance parse but are never computed; reduce client-side */
 ```
 
 ### Collection Aggregations
@@ -438,7 +438,7 @@ duration({days: 7, hours: 2})
 
 -- Date arithmetic
 datetime() + duration({days: 30})
-datetime().subtract(P7D)
+datetime()./* no subtract(); use the - operator */ (P7D)
 ```
 
 ## Transactions
@@ -560,7 +560,7 @@ CREATE INDEX person_email_idx ON Person (email)
 CREATE INDEX order_customer_date_idx ON Order (customer_id, order_date)
 
 -- Full-text index
-CREATE FULLTEXT INDEX product_search_idx ON Product (name, description)
+CREATE INDEX product_search_idx ON Product (name, description) USING fulltext
 ```
 
 ### Show Indexes

@@ -29,6 +29,7 @@ Geode uses **Argon2id** for password hashing, the industry-standard password has
 Argon2id is a hybrid password hashing algorithm that combines the best properties of both Argon2i (resistant to side-channel attacks) and Argon2d (resistant to GPU cracking attacks). It was the winner of the 2015 Password Hashing Competition and is now the gold standard for password storage.
 
 **Key Benefits**:
+
 - **Memory-hard**: Requires significant RAM (64 MiB default) making GPU/ASIC attacks expensive
 - **Time-cost configurable**: Adjustable iterations to control computational cost
 - **Side-channel resistant**: Protects against timing and cache-timing attacks
@@ -86,6 +87,7 @@ const params = crypto.pwhash.argon2.Params{
 ```
 
 **Parameter Explanation**:
+
 - **t (time cost)**: Number of iterations. Higher = slower = more secure. Minimum: 3
 - **m (memory cost)**: Memory usage in KiB. Higher = more RAM required = harder to attack. Default: 64 MiB
 - **p (parallelism)**: Number of parallel threads. Matches modern CPU cores for efficiency
@@ -99,12 +101,14 @@ $argon2id$[64 hex characters]$
 ```
 
 **Structure**:
+
 - **Prefix**: `$argon2id$` (10 bytes) - Algorithm identifier
 - **Hash**: 64 hex characters (32 bytes × 2) - The actual hash value
 - **Suffix**: `$` (1 byte) - Delimiter
 - **Total Size**: 75 bytes fixed length
 
 **Example Hash**:
+
 ```
 $argon2id$a3b5c8d1e4f7g9h2i5k8l1m4n7p0q3r6s9t2u5v8w1x4y7z0a3b5c8d1e4f7g9h2$
 ```
@@ -126,6 +130,7 @@ pub const User = struct {
 ```
 
 **Benefits of Fixed Size**:
+
 - Predictable memory usage
 - Fast hash comparisons
 - No dynamic allocation needed
@@ -136,12 +141,14 @@ pub const User = struct {
 ### Hashing Time
 
 **Single Hash Operation**:
+
 - **Duration**: ~200-300ms on modern CPU (intentionally slow)
 - **Memory Usage**: 64 MiB per operation
 - **CPU Utilization**: 4 threads during computation
 - **Purpose**: Slow enough to resist brute-force, fast enough for legitimate users
 
 **Why Slow is Good**:
+
 - Legitimate users: 200ms is imperceptible during login
 - Attackers: 200ms × millions of attempts = years of computation
 - Rate limiting amplifies this protection
@@ -158,6 +165,7 @@ Password verification requires re-hashing the input password with the same param
 ### Scalability Considerations
 
 **High-Volume Authentication**:
+
 ```plaintext
 Single Server Capacity:
 - 1 core: ~3-5 auth/sec
@@ -171,6 +179,7 @@ With Caching:
 ```
 
 **Recommendations**:
+
 - Use session tokens for subsequent requests
 - Implement connection pooling
 - Consider horizontal scaling for very high volumes
@@ -217,6 +226,7 @@ With Caching:
 These enhancements are planned for future releases but not required for current security:
 
 🔧 **Random Per-User Salts**:
+
 ```zig
 pub const User = struct {
     // ... existing fields ...
@@ -233,6 +243,7 @@ fn hashPasswordWithSalt(
 ```
 
 🔧 **Configurable Parameters**:
+
 ```yaml
 # config/security.yaml
 password_hashing:
@@ -243,6 +254,7 @@ password_hashing:
 ```
 
 🔧 **Password Strength Requirements**:
+
 ```zig
 pub fn validatePasswordStrength(password: []const u8) !void {
     if (password.len < 12) return error.PasswordTooShort;
@@ -256,6 +268,7 @@ pub fn validatePasswordStrength(password: []const u8) !void {
 ```
 
 🔧 **Rate Limiting**:
+
 ```zig
 pub const RateLimiter = struct {
     failed_attempts: std.StringHashMap(u32),
@@ -290,13 +303,16 @@ pub fn hashPassword(
 ```
 
 **Parameters**:
+
 - `allocator`: Memory allocator for temporary operations
 - `password`: Plaintext password to hash
 
 **Returns**:
+
 - `[75]u8`: Fixed-size Argon2id hash
 
 **Example**:
+
 ```zig
 const hash = try hashPassword(allocator, "SecurePassword123!");
 // hash = "$argon2id$a3b5c8d1e4f7g9h2....$"
@@ -314,13 +330,16 @@ pub fn verifyPassword(
 ```
 
 **Parameters**:
+
 - `password`: Plaintext password to verify
 - `hash`: Stored Argon2id hash
 
 **Returns**:
+
 - `bool`: `true` if password matches, `false` otherwise
 
 **Example**:
+
 ```zig
 const is_valid = verifyPassword("SecurePassword123!", stored_hash);
 if (!is_valid) {
@@ -343,6 +362,7 @@ pub fn createUser(
 ```
 
 **Parameters**:
+
 - `allocator`: Memory allocator
 - `username`: Unique username
 - `password`: Plaintext password (will be hashed)
@@ -350,6 +370,7 @@ pub fn createUser(
 - `role`: User role (Admin, ReadWrite, ReadOnly)
 
 **Example**:
+
 ```zig
 try createUser(
     allocator,
@@ -372,14 +393,17 @@ pub fn authenticate(
 ```
 
 **Parameters**:
+
 - `username`: Username to authenticate
 - `password`: Plaintext password
 
 **Returns**:
+
 - `Role`: User's role if authentication succeeds
 - `error.InvalidCredentials`: If authentication fails
 
 **Example**:
+
 ```zig
 const role = try authenticate("alice", "SecurePassword123!");
 switch (role) {
@@ -479,24 +503,28 @@ geode query --insecure --user testuser --password testpass -
 **Expected Results**:
 
 ✅ **Valid Credentials**:
+
 ```bash
 $ echo "RETURN 1" | geode query --insecure --user testuser --password testpass -
 {"status_class":"00000","columns":["column"],"rows":[[1]]}
 ```
 
 ✅ **Invalid Password**:
+
 ```bash
 $ echo "RETURN 1" | geode query --insecure --user testuser --password wrong -
 Authentication failed
 ```
 
 ✅ **Permission Denied**:
+
 ```bash
 $ echo "CREATE (n) RETURN n" | geode query --insecure --user testuser --password testpass -
 Permission denied
 ```
 
 ✅ **Admin Access**:
+
 ```bash
 $ echo "CREATE (n) RETURN n" | geode query --insecure --user admin --password admin -
 {"status_class":"00000","columns":["n"],"rows":[[{"id":84}]]}
@@ -505,6 +533,7 @@ $ echo "CREATE (n) RETURN n" | geode query --insecure --user admin --password ad
 ### Security Testing
 
 **Timing Attack Resistance**:
+
 ```bash
 # Verify constant-time comparison
 time geode query --user alice --password correct123 -
@@ -514,6 +543,7 @@ time geode query --user alice --password xxxxxxxxxx -
 ```
 
 **Concurrent Authentication**:
+
 ```bash
 # Test thread safety
 for i in {1..100}; do
@@ -541,6 +571,7 @@ wait
 ### Implementation Guidelines
 
 1. **Never Log Passwords**:
+
    ```zig
    // ❌ WRONG
    std.debug.print("User login: {s}, password: {s}\n", .{username, password});
@@ -550,6 +581,7 @@ wait
    ```
 
 2. **Always Use Provided Functions**:
+
    ```zig
    // ❌ WRONG
    const hash = sha256(password); // Insecure!
@@ -559,6 +591,7 @@ wait
    ```
 
 3. **Implement Rate Limiting**:
+
    ```zig
    // Prevent brute-force attacks
    try rateLimiter.checkRateLimit(username);
@@ -566,6 +599,7 @@ wait
    ```
 
 4. **Use Session Tokens**:
+
    ```zig
    // Don't re-authenticate on every request
    const session = try auth.createSession(username, role);
@@ -594,16 +628,19 @@ Before deploying to production:
 Geode previously used SHA256 for password hashing. The migration is automatic:
 
 **Old Format**:
+
 ```
 $geode$[64 hex chars]$ (72 bytes)
 ```
 
 **New Format**:
+
 ```
 $argon2id$[64 hex chars]$ (75 bytes)
 ```
 
 **Migration Path**:
+
 1. Old hashes (72 bytes, `$geode$` prefix) no longer generated
 2. New users automatically get Argon2id hashes
 3. User store is ephemeral, so no migration needed for existing users
@@ -626,6 +663,7 @@ pub fn migratePasswordHash(
 ```
 
 **Important**: This requires plaintext passwords, so plan migration carefully:
+
 1. Force password reset for all users, OR
 2. Migrate during upgrade window with temporary plaintext access, OR
 3. Use gradual migration (re-hash on first successful login with old hash)
@@ -637,6 +675,7 @@ pub fn migratePasswordHash(
 **Issue**: "Authentication failed" for valid credentials
 
 **Solution**:
+
 ```bash
 # Check user exists
 geode query "MATCH (u:User {username: 'alice'}) RETURN u" --insecure
@@ -653,6 +692,7 @@ journalctl -u geode -f
 **Issue**: Slow authentication performance
 
 **Solution**:
+
 ```zig
 // Reduce time cost (less secure but faster)
 const params = crypto.pwhash.argon2.Params{
@@ -670,6 +710,7 @@ const params = crypto.pwhash.argon2.Params{
 **Issue**: High CPU usage during authentication
 
 **Expected Behavior**:
+
 - Argon2id is intentionally CPU-intensive
 - 200-300ms per authentication is normal
 - Use session tokens to reduce authentication frequency
@@ -680,6 +721,7 @@ const params = crypto.pwhash.argon2.Params{
 **Issue**: Memory pressure during peak authentication
 
 **Solution**:
+
 ```bash
 # Monitor memory usage
 top -p $(pgrep geode)
@@ -699,26 +741,26 @@ top -p $(pgrep geode)
 ### Standards & Specifications
 
 - **RFC 9106**: Argon2 Memory-Hard Function for Password Hashing and Proof-of-Work Applications
-  - https://datatracker.ietf.org/doc/html/rfc9106
+  - <https://datatracker.ietf.org/doc/html/rfc9106>
 
 - **OWASP Password Storage Cheat Sheet**
-  - https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html
+  - <https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html>
 
 - **Password Hashing Competition**
-  - https://www.password-hashing.net/
+  - <https://www.password-hashing.net/>
 
 - **Zig Crypto Library Documentation**
-  - https://ziglang.org/documentation/master/std/#std.crypto.pwhash.argon2
+  - <https://ziglang.org/documentation/master/std/#std.crypto.pwhash.argon2>
 
 ### Additional Resources
 
 - **NIST Digital Identity Guidelines (SP 800-63B)**
   - Password storage and verification requirements
-  - https://pages.nist.gov/800-63-3/sp800-63b.html
+  - <https://pages.nist.gov/800-63-3/sp800-63b.html>
 
 - **Argon2 Specification (Version 1.3)**
   - Detailed algorithm specification
-  - https://github.com/P-H-C/phc-winner-argon2/blob/master/argon2-specs.pdf
+  - <https://github.com/P-H-C/phc-winner-argon2/blob/master/argon2-specs.pdf>
 
 ### Code Location
 
@@ -730,16 +772,19 @@ top -p $(pgrep geode)
 ## Next Steps
 
 **For New Users**:
+
 - [User Authentication Guide](/docs/security/overview/) - Complete authentication system
 - [Session Management](/docs/security/session-management/) - Token-based authentication
 - [Audit Logging](/docs/ops/audit-logging/) - Track authentication events
 
 **For Administrators**:
+
 - [Security Configuration](/docs/configuration/server-configuration/) - Server security settings
 - [Access Control](/docs/security/overview/) - RBAC and ABAC implementation
 - [Monitoring & Alerts](/docs/ops/observability/) - Security event monitoring
 
 **For Developers**:
+
 - [Client Authentication](/docs/client-libraries/go-client/) - Authenticate from client libraries
 - [Security Best Practices](/docs/security/overview/) - Application security guidelines
 - [Testing Security](/docs/guides/testing-strategies/) - Security testing approaches

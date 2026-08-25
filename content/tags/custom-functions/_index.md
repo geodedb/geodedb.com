@@ -86,23 +86,9 @@ Define a function that normalizes phone numbers:
 
 ```gql
 -- Create a scalar function
-CREATE FUNCTION normalize_phone(phone STRING) RETURNS STRING
-LANGUAGE GQL
-AS $$
-  -- Remove all non-digit characters
-  WITH regexp_replace(phone, '[^0-9]', '') AS digits
-  RETURN CASE
-    WHEN length(digits) = 10 THEN
-      '(' + substring(digits, 0, 3) + ') ' +
-      substring(digits, 3, 3) + '-' +
-      substring(digits, 6, 4)
-    WHEN length(digits) = 11 AND substring(digits, 0, 1) = '1' THEN
-      '+1 (' + substring(digits, 1, 3) + ') ' +
-      substring(digits, 4, 3) + '-' +
-      substring(digits, 7, 4)
-    ELSE phone
-  END
-$$;
+-- Geode has no user-defined functions, aggregates or procedures: the
+-- grammar has no CREATE FUNCTION / AGGREGATE / PROCEDURE. Inline the
+-- logic into the query, or compute it in the client.
 
 -- Use the function
 MATCH (c:Contact)
@@ -115,26 +101,9 @@ Calculate distance between geographic coordinates:
 
 ```gql
 -- Haversine distance function
-CREATE FUNCTION haversine_distance(
-  lat1 FLOAT,
-  lon1 FLOAT,
-  lat2 FLOAT,
-  lon2 FLOAT
-) RETURNS FLOAT
-LANGUAGE GQL
-AS $$
-  WITH 6371.0 AS earth_radius_km,  -- Earth's radius
-       radians(lat1) AS lat1_rad,
-       radians(lat2) AS lat2_rad,
-       radians(lat2 - lat1) AS delta_lat,
-       radians(lon2 - lon1) AS delta_lon
-  WITH earth_radius_km, lat1_rad, lat2_rad, delta_lat, delta_lon,
-       sin(delta_lat / 2) * sin(delta_lat / 2) +
-       cos(lat1_rad) * cos(lat2_rad) *
-       sin(delta_lon / 2) * sin(delta_lon / 2) AS a
-  WITH earth_radius_km, 2 * atan2(sqrt(a), sqrt(1 - a)) AS c
-  RETURN earth_radius_km * c
-$$;
+-- Geode has no user-defined functions, aggregates or procedures: the
+-- grammar has no CREATE FUNCTION / AGGREGATE / PROCEDURE. Inline the
+-- logic into the query, or compute it in the client.
 
 -- Find locations within radius
 MATCH (store:Store)
@@ -147,27 +116,14 @@ ORDER BY haversine_distance($user_lat, $user_lon, store.latitude, store.longitud
 
 ```gql
 -- Function with default values
-CREATE FUNCTION format_currency(
-  amount FLOAT,
-  currency STRING DEFAULT 'USD',
-  decimals INT DEFAULT 2
-) RETURNS STRING
-LANGUAGE GQL
-AS $$
-  WITH CASE currency
-    WHEN 'USD' THEN '$'
-    WHEN 'EUR' THEN '\u20AC'
-    WHEN 'GBP' THEN '\u00A3'
-    WHEN 'JPY' THEN '\u00A5'
-    ELSE currency + ' '
-  END AS symbol
-  RETURN symbol + round(amount, decimals)
-$$;
+-- Geode has no user-defined functions, aggregates or procedures: the
+-- grammar has no CREATE FUNCTION / AGGREGATE / PROCEDURE. Inline the
+-- logic into the query, or compute it in the client.
 
 -- Usage with defaults
-SELECT format_currency(99.99);                    -- '$99.99'
-SELECT format_currency(99.99, 'EUR');            -- '99.99'
-SELECT format_currency(1234.567, 'USD', 0);       -- '$1235'
+SELECT toString(99.99) /* no format_*(); format in the client */;                    -- '$99.99'
+SELECT toString(99.99) /* no format_*(); format in the client */;            -- '99.99'
+SELECT toString(1234.567) /* no format_*(); format in the client */;       -- '$1235'
 ```
 
 ### Function with Complex Logic
@@ -175,18 +131,9 @@ SELECT format_currency(1234.567, 'USD', 0);       -- '$1235'
 Calculate credit score tier:
 
 ```gql
-CREATE FUNCTION credit_tier(score INT) RETURNS STRING
-LANGUAGE GQL
-AS $$
-  RETURN CASE
-    WHEN score >= 800 THEN 'Excellent'
-    WHEN score >= 740 THEN 'Very Good'
-    WHEN score >= 670 THEN 'Good'
-    WHEN score >= 580 THEN 'Fair'
-    WHEN score >= 300 THEN 'Poor'
-    ELSE 'Invalid'
-  END
-$$;
+-- Geode has no user-defined functions, aggregates or procedures: the
+-- grammar has no CREATE FUNCTION / AGGREGATE / PROCEDURE. Inline the
+-- logic into the query, or compute it in the client.
 
 -- Use in queries
 MATCH (c:Customer)
@@ -206,26 +153,9 @@ RETURN c.name, c.credit_limit;
 
 ```gql
 -- Weighted average that handles nulls
-CREATE AGGREGATE FUNCTION weighted_avg(
-  value FLOAT,
-  weight FLOAT
-) RETURNS FLOAT
-STATE (sum FLOAT, weight_sum FLOAT)
-INIT $$
-  SET sum = 0.0, weight_sum = 0.0
-$$
-ACCUMULATE $$
-  IF value IS NOT NULL AND weight IS NOT NULL THEN
-    SET sum = sum + (value * weight),
-        weight_sum = weight_sum + weight
-  END IF
-$$
-FINALIZE $$
-  RETURN CASE
-    WHEN weight_sum > 0 THEN sum / weight_sum
-    ELSE NULL
-  END
-$$;
+-- Geode has no user-defined functions, aggregates or procedures: the
+-- grammar has no CREATE FUNCTION / AGGREGATE / PROCEDURE. Inline the
+-- logic into the query, or compute it in the client.
 
 -- Usage
 MATCH (p:Product)
@@ -242,65 +172,28 @@ ORDER BY category_rating DESC;
 
 ```gql
 -- Percentile aggregation function
-CREATE AGGREGATE FUNCTION percentile(
-  value FLOAT,
-  percentile FLOAT
-) RETURNS FLOAT
-STATE (values LIST<FLOAT>)
-INIT $$
-  SET values = []
-$$
-ACCUMULATE $$
-  IF value IS NOT NULL THEN
-    SET values = values + [value]
-  END IF
-$$
-FINALIZE $$
-  WITH size(values) AS n
-  WHERE n > 0
-  WITH values, percentile * (n - 1) AS idx
-  WITH values, floor(idx) AS lower_idx, ceil(idx) AS upper_idx, idx - floor(idx) AS frac
-  -- Sort values
-  WITH [v IN values ORDER BY v] AS sorted, lower_idx, upper_idx, frac
-  RETURN CASE
-    WHEN lower_idx = upper_idx THEN sorted[lower_idx]
-    ELSE sorted[lower_idx] * (1 - frac) + sorted[upper_idx] * frac
-  END
-$$;
+-- Geode has no user-defined functions, aggregates or procedures: the
+-- grammar has no CREATE FUNCTION / AGGREGATE / PROCEDURE. Inline the
+-- logic into the query, or compute it in the client.
 
 -- Calculate median (50th percentile)
 MATCH (e:Employee)
-RETURN percentile(e.salary, 0.5) AS median_salary;
+RETURN collect(e.salary) /* percentile_cont/_disc parse but are never computed; sort client-side */ AS median_salary;
 
 -- Multiple percentiles
 MATCH (o:Order)
-RETURN percentile(o.total, 0.25) AS p25,
-       percentile(o.total, 0.50) AS median,
-       percentile(o.total, 0.75) AS p75,
-       percentile(o.total, 0.90) AS p90;
+RETURN collect(o.total) /* percentile_cont/_disc parse but are never computed; sort client-side */ AS p25,
+       collect(o.total) /* percentile_cont/_disc parse but are never computed; sort client-side */ AS median,
+       collect(o.total) /* percentile_cont/_disc parse but are never computed; sort client-side */ AS p75,
+       collect(o.total) /* percentile_cont/_disc parse but are never computed; sort client-side */ AS p90;
 ```
 
 ### Mode (Most Frequent Value)
 
 ```gql
-CREATE AGGREGATE FUNCTION mode(value ANY) RETURNS ANY
-STATE (counts MAP<ANY, INT>)
-INIT $$
-  SET counts = {}
-$$
-ACCUMULATE $$
-  IF value IS NOT NULL THEN
-    SET counts[value] = COALESCE(counts[value], 0) + 1
-  END IF
-$$
-FINALIZE $$
-  WITH [entry IN counts | entry] AS entries
-  UNWIND entries AS entry
-  WITH entry
-  ORDER BY entry.value DESC
-  LIMIT 1
-  RETURN entry.key
-$$;
+-- Geode has no user-defined functions, aggregates or procedures: the
+-- grammar has no CREATE FUNCTION / AGGREGATE / PROCEDURE. Inline the
+-- logic into the query, or compute it in the client.
 
 -- Find most common category
 MATCH (p:Product)-[:IN_CATEGORY]->(c:Category)
@@ -311,24 +204,9 @@ RETURN mode(c.name) AS most_common_category;
 
 ```gql
 -- Concatenate strings with separator
-CREATE AGGREGATE FUNCTION string_agg(
-  value STRING,
-  separator STRING DEFAULT ', '
-) RETURNS STRING
-STATE (values LIST<STRING>)
-INIT $$
-  SET values = []
-$$
-ACCUMULATE $$
-  IF value IS NOT NULL THEN
-    SET values = values + [value]
-  END IF
-$$
-FINALIZE $$
-  RETURN reduce(result = '', i IN range(0, size(values) - 1) |
-    result + CASE WHEN i = 0 THEN '' ELSE separator END + values[i]
-  )
-$$;
+-- Geode has no user-defined functions, aggregates or procedures: the
+-- grammar has no CREATE FUNCTION / AGGREGATE / PROCEDURE. Inline the
+-- logic into the query, or compute it in the client.
 
 -- Usage
 MATCH (o:Order)-[:CONTAINS]->(p:Product)
@@ -347,15 +225,9 @@ RETURN u.name,
 
 ```gql
 -- Procedure to archive old orders
-CREATE PROCEDURE archive_old_orders(cutoff_date DATE)
-LANGUAGE GQL
-AS $$
-  -- Move old orders to archive
-  MATCH (o:Order)
-  WHERE o.order_date < cutoff_date
-    AND o.status = 'completed'
-  SET o:ArchivedOrder
-  REMOVE o:Order;
+-- Geode has no user-defined functions, aggregates or procedures: the
+-- grammar has no CREATE FUNCTION / AGGREGATE / PROCEDURE. Inline the
+-- logic into the query, or compute it in the client.
 
   -- Return count of archived orders
   MATCH (a:ArchivedOrder)
@@ -372,27 +244,9 @@ CALL archive_old_orders(DATE '2024-01-01');
 
 ```gql
 -- Procedure that yields multiple result sets
-CREATE PROCEDURE find_influencers(
-  min_followers INT,
-  category STRING DEFAULT NULL
-)
-RETURNS (user_id STRING, username STRING, followers INT, influence_score FLOAT)
-LANGUAGE GQL
-AS $$
-  MATCH (u:User)
-  WHERE u.followers_count >= min_followers
-  OPTIONAL MATCH (u)-[:POSTS_IN]->(c:Category)
-  WHERE category IS NULL OR c.name = category
-  WITH u,
-       u.followers_count AS followers,
-       u.followers_count * 1.0 / (u.following_count + 1) AS ratio
-  WHERE category IS NULL OR c IS NOT NULL
-  RETURN u.id AS user_id,
-         u.username AS username,
-         followers,
-         ratio * log(followers + 1) AS influence_score
-  ORDER BY influence_score DESC
-$$;
+-- Geode has no user-defined functions, aggregates or procedures: the
+-- grammar has no CREATE FUNCTION / AGGREGATE / PROCEDURE. Inline the
+-- logic into the query, or compute it in the client.
 
 -- Use with YIELD
 CALL find_influencers(1000, 'Technology')
@@ -405,16 +259,9 @@ RETURN user_id, username, influence_score;
 
 ```gql
 -- Cleanup procedure for expired sessions
-CREATE PROCEDURE cleanup_expired_sessions()
-RETURNS (deleted_count INT, freed_mb FLOAT)
-LANGUAGE GQL
-AS $$
-  -- Find expired sessions
-  MATCH (s:Session)
-  WHERE s.expires_at < datetime()
-  WITH COLLECT(s) AS expired_sessions
-
-  -- Delete associated data
+-- Geode has no user-defined functions, aggregates or procedures: the
+-- grammar has no CREATE FUNCTION / AGGREGATE / PROCEDURE. Inline the
+-- logic into the query, or compute it in the client.  -- Delete associated data
   UNWIND expired_sessions AS session
   OPTIONAL MATCH (session)-[:HAS_CACHE]->(cache)
   DELETE cache
@@ -439,17 +286,9 @@ RETURN deleted_count;
 
 ```gql
 -- Procedure with explicit transaction handling
-CREATE PROCEDURE transfer_funds(
-  from_account_id STRING,
-  to_account_id STRING,
-  amount FLOAT
-)
-RETURNS (success BOOLEAN, message STRING)
-LANGUAGE GQL
-AS $$
-  -- Validate amount
-  IF amount <= 0 THEN
-    RETURN false, 'Amount must be positive';
+-- Geode has no user-defined functions, aggregates or procedures: the
+-- grammar has no CREATE FUNCTION / AGGREGATE / PROCEDURE. Inline the
+-- logic into the query, or compute it in the client.
   END IF;
 
   -- Check source account balance
@@ -474,7 +313,7 @@ AS $$
 
   -- Create transaction record
   CREATE (t:Transaction {
-    id: randomUUID(),
+    id: uuid_v4(),
     from_account: from_account_id,
     to_account: to_account_id,
     amount: amount,
@@ -510,16 +349,9 @@ SHOW FUNCTION normalize_phone;
 
 ```gql
 -- Replace existing function (CREATE OR REPLACE)
-CREATE OR REPLACE FUNCTION normalize_phone(phone STRING) RETURNS STRING
-LANGUAGE GQL
-AS $$
-  -- Updated implementation
-  WITH regexp_replace(phone, '[^0-9+]', '') AS cleaned
-  RETURN CASE
-    WHEN length(cleaned) = 10 THEN '+1' + cleaned
-    ELSE cleaned
-  END
-$$;
+-- Geode has no user-defined functions, aggregates or procedures: the
+-- grammar has no CREATE FUNCTION / AGGREGATE / PROCEDURE. Inline the
+-- logic into the query, or compute it in the client.
 
 -- Drop function
 DROP FUNCTION normalize_phone;
@@ -538,14 +370,9 @@ GRANT EXECUTE ON FUNCTION normalize_phone TO role_analyst;
 REVOKE EXECUTE ON FUNCTION transfer_funds FROM role_user;
 
 -- Set function as SECURITY DEFINER (runs with creator's permissions)
-CREATE FUNCTION admin_task()
-RETURNS BOOLEAN
-SECURITY DEFINER
-LANGUAGE GQL
-AS $$
-  -- Runs with elevated permissions
-  RETURN true
-$$;
+-- Geode has no user-defined functions, aggregates or procedures: the
+-- grammar has no CREATE FUNCTION / AGGREGATE / PROCEDURE. Inline the
+-- logic into the query, or compute it in the client.
 ```
 
 ## Advanced Patterns
@@ -554,49 +381,28 @@ $$;
 
 ```gql
 -- Calculate factorial
-CREATE FUNCTION factorial(n INT) RETURNS INT
-LANGUAGE GQL
-AS $$
-  RETURN CASE
-    WHEN n <= 1 THEN 1
-    ELSE n * factorial(n - 1)
-  END
-$$;
+-- Geode has no user-defined functions, aggregates or procedures: the
+-- grammar has no CREATE FUNCTION / AGGREGATE / PROCEDURE. Inline the
+-- logic into the query, or compute it in the client.
 
 -- Fibonacci (with memoization consideration)
-CREATE FUNCTION fibonacci(n INT) RETURNS INT
-LANGUAGE GQL
-AS $$
-  RETURN CASE
-    WHEN n <= 0 THEN 0
-    WHEN n = 1 THEN 1
-    ELSE fibonacci(n - 1) + fibonacci(n - 2)
-  END
-$$;
+-- Geode has no user-defined functions, aggregates or procedures: the
+-- grammar has no CREATE FUNCTION / AGGREGATE / PROCEDURE. Inline the
+-- logic into the query, or compute it in the client.
 ```
 
 ### Functions with Graph Traversal
 
 ```gql
 -- Calculate shortest path length
-CREATE FUNCTION path_length(from_id STRING, to_id STRING, max_hops INT DEFAULT 10)
-RETURNS INT
-LANGUAGE GQL
-AS $$
-  MATCH path = shortestPath(
-    (a {id: from_id})-[*..max_hops]->(b {id: to_id})
-  )
-  RETURN COALESCE(length(path), -1)
-$$;
+-- Geode has no user-defined functions, aggregates or procedures: the
+-- grammar has no CREATE FUNCTION / AGGREGATE / PROCEDURE. Inline the
+-- logic into the query, or compute it in the client.
 
 -- Check if nodes are connected
-CREATE FUNCTION is_connected(from_id STRING, to_id STRING) RETURNS BOOLEAN
-LANGUAGE GQL
-AS $$
-  RETURN EXISTS {
-    MATCH (a {id: from_id})-[*..20]-(b {id: to_id})
-  }
-$$;
+-- Geode has no user-defined functions, aggregates or procedures: the
+-- grammar has no CREATE FUNCTION / AGGREGATE / PROCEDURE. Inline the
+-- logic into the query, or compute it in the client.
 
 -- Usage
 MATCH (u1:User), (u2:User)
@@ -611,48 +417,19 @@ LIMIT 20;
 
 ```gql
 -- E-commerce: Calculate shipping cost
-CREATE FUNCTION calculate_shipping(
-  weight FLOAT,
-  distance FLOAT,
-  expedited BOOLEAN DEFAULT false
-) RETURNS FLOAT
-LANGUAGE GQL
-AS $$
-  WITH 0.50 AS base_per_lb,
-       0.01 AS base_per_mile,
-       1.5 AS expedited_multiplier
-  WITH weight * base_per_lb + distance * base_per_mile AS base_cost
-  RETURN CASE
-    WHEN expedited THEN base_cost * expedited_multiplier
-    ELSE base_cost
-  END
-$$;
+-- Geode has no user-defined functions, aggregates or procedures: the
+-- grammar has no CREATE FUNCTION / AGGREGATE / PROCEDURE. Inline the
+-- logic into the query, or compute it in the client.
 
 -- Finance: Calculate compound interest
-CREATE FUNCTION compound_interest(
-  principal FLOAT,
-  rate FLOAT,
-  periods INT,
-  compounds_per_period INT DEFAULT 12
-) RETURNS FLOAT
-LANGUAGE GQL
-AS $$
-  RETURN principal * power(
-    1 + rate / compounds_per_period,
-    compounds_per_period * periods
-  )
-$$;
+-- Geode has no user-defined functions, aggregates or procedures: the
+-- grammar has no CREATE FUNCTION / AGGREGATE / PROCEDURE. Inline the
+-- logic into the query, or compute it in the client.
 
 -- Healthcare: Calculate BMI
-CREATE FUNCTION calculate_bmi(
-  weight_kg FLOAT,
-  height_cm FLOAT
-) RETURNS FLOAT
-LANGUAGE GQL
-AS $$
-  WITH height_cm / 100.0 AS height_m
-  RETURN round(weight_kg / (height_m * height_m), 1)
-$$;
+-- Geode has no user-defined functions, aggregates or procedures: the
+-- grammar has no CREATE FUNCTION / AGGREGATE / PROCEDURE. Inline the
+-- logic into the query, or compute it in the client.
 ```
 
 ## Client Integration Examples

@@ -47,6 +47,7 @@ RETURN u.name, p.name
 ```
 
 The planner estimates:
+
 - How many users have `country = 'USA'`
 - How many products have `category = 'Electronics'`
 - How many purchase relationships connect them
@@ -67,6 +68,7 @@ RETURN a.name, p.title
 ```
 
 Possible join orders:
+
 1. Tag → Post → User → User (start with selective tag filter)
 2. User → User → Post → Tag (start with social graph)
 3. Post → User → User → Tag (start with content)
@@ -85,6 +87,7 @@ RETURN u
 ```
 
 If you have indexes on both `country` and `premium`:
+
 - If 5% of users have `country = 'USA'` (low selectivity)
 - And 1% have `premium = true` (high selectivity)
 - The planner uses the premium index, then filters by country
@@ -115,6 +118,7 @@ Sort [p.price DESC]
 ```
 
 Key information:
+
 - **Operator tree**: Physical operators in execution order
 - **Index usage**: Which indexes are used
 - **Estimated cardinalities**: Expected rows at each step
@@ -177,6 +181,7 @@ Sort [mutual_connections DESC] LIMIT 10
 ```
 
 Key metrics:
+
 - **Actual rows**: How many rows each operator produced
 - **Actual time**: Wall-clock time per operator
 - **Memory usage**: Memory consumed per operator
@@ -370,9 +375,9 @@ Monitor index usage:
 SHOW INDEX STATISTICS;
 
 -- Identify unused indexes
-SELECT index_name, read_count, write_count
-FROM system.index_stats
-WHERE read_count = 0 AND created < current_timestamp() - INTERVAL '30' DAY;
+-- SHOW INDEXES lists name, type, label and properties. Geode keeps no
+-- per-index usage counters, scan tallies or health scores.
+SHOW INDEXES;
 ```
 
 Drop unused indexes to reduce write overhead:
@@ -450,6 +455,7 @@ PROFILE
 ```
 
 Look for:
+
 - Operators consuming >80% of time
 - Large cardinality estimates vs. actuals
 - Missing index usage
@@ -465,6 +471,7 @@ EXPLAIN
 ```
 
 If indexes aren't used:
+
 - Ensure index exists: `SHOW INDEXES`
 - Check statistics are current: `ANALYZE`
 - Verify query predicates match index definition
@@ -472,6 +479,7 @@ If indexes aren't used:
 ### Step 3: Analyze Cardinalities
 
 Compare estimated vs. actual row counts. Large mismatches indicate:
+
 - Outdated statistics (run `ANALYZE`)
 - Correlated predicates planner can't model
 - Need for query rewrite
@@ -479,6 +487,7 @@ Compare estimated vs. actual row counts. Large mismatches indicate:
 ### Step 4: Simplify and Test
 
 Simplify the query to isolate the problem:
+
 - Remove complex subqueries
 - Reduce variable-length path bounds
 - Remove expensive filters
@@ -488,6 +497,7 @@ Test each component individually to identify the bottleneck.
 ### Step 5: Consider Alternatives
 
 Sometimes structural changes help:
+
 - Materialize frequently computed results
 - Denormalize for read-heavy workloads
 - Add redundant indexes for specific queries

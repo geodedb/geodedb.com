@@ -70,9 +70,9 @@ Use Row-Level Security (RLS) to isolate data by tenant:
 
 ```gql
 -- Create RLS policy for tenant isolation
-CREATE POLICY tenant_isolation ON Node
-FOR SELECT
-USING (tenant_id = current_user_tenant_id());
+-- Not expressible as a Geode policy predicate (only `=` against a string
+-- literal compiles); precompute the decision into a property instead:
+CALL geode.rls.add_attribute_policy('app', 'Label', 'access_tag', 'access_tag');
 
 -- All queries automatically filtered by tenant
 MATCH (n)

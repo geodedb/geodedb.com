@@ -333,7 +333,7 @@ WHERE manager.role = 'CEO'
 RETURN [n IN nodes(path) | {
   name: n.name,
   title: n.title,
-  level: length(path) - indexOf(nodes(path), n)
+  level: length(path) - null /* no indexOf(); use nodes(path) CONTAINS n as a predicate */
 }] AS hierarchy
 ```
 
@@ -377,13 +377,13 @@ ON (p.category, p.price, p.availability)
 INCLUDE (p.name, p.description);
 
 // Full-text search index for text queries
-CREATE TEXT INDEX article_content_idx
+CREATE INDEX article_content_idx
 FOR (a:Article)
 ON (a.title, a.body)
 OPTIONS {
   analyzer: 'english',
   min_token_length: 3
-};
+} USING fulltext;
 ```
 
 ### Query Rewriting for Performance
@@ -456,7 +456,7 @@ ORDER BY occurrences DESC;
 // Duration calculations
 MATCH (session:Session)
 WITH session,
-     duration.between(session.start_time, session.end_time) AS session_length
+     (session.end_time - session.start_time) AS session_length
 WHERE session_length > duration('PT30M')
 RETURN session.user_id, session_length
 ORDER BY session_length DESC;
@@ -476,13 +476,13 @@ Geode extends GQL with spatial operations:
 ```gql
 // Point-based proximity search
 MATCH (store:Store)
-WHERE point.distance(
+WHERE st_distance(
   store.location,
   point({latitude: $user_lat, longitude: $user_lon})
 ) < 5000  // meters
 RETURN store.name,
        store.address,
-       point.distance(store.location,
+       st_distance(store.location,
                      point({latitude: $user_lat, longitude: $user_lon})) AS distance
 ORDER BY distance
 LIMIT 10;
@@ -491,7 +491,7 @@ LIMIT 10;
 MATCH (property:Property)
 WHERE point.within(
   property.location,
-  polygon($neighborhood_boundary)
+  geometryfromtext($neighborhood_boundary)
 )
 RETURN property.address, property.price;
 ```

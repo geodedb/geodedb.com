@@ -120,9 +120,9 @@ Build an HNSW index on vector properties:
 
 ```gql
 -- Create HNSW index for semantic search
-CREATE VECTOR INDEX document_embeddings
+CREATE INDEX document_embeddings
 FOR (d:Document)
-ON (d.embedding)
+ON (d.embedding) USING vector
 WITH (metric = 'cosine');
 ```
 
@@ -328,7 +328,7 @@ INSERT (:Document {
 ```gql
 -- Rebuild index
 DROP INDEX document_embeddings;
-CREATE VECTOR INDEX document_embeddings FOR (d:Document) ON (d.embedding)
+CREATE INDEX document_embeddings FOR (d:Document) ON (d.embedding) USING vector
 WITH (metric = 'cosine');
 ```
 
@@ -547,7 +547,7 @@ CALL {
 
 -- Rebuild index after bulk load
 DROP INDEX embeddings_idx;
-CREATE VECTOR INDEX embeddings_idx FOR (n:Node) ON (n.embedding)
+CREATE INDEX embeddings_idx FOR (n:Node) ON (n.embedding) USING vector
 WITH (metric = 'cosine');
 ```
 
@@ -563,7 +563,7 @@ WHERE insert_ratio > 0.1  // 10% growth
 
 -- There is no index-rebuild procedure: drop and recreate the index instead
 DROP INDEX embeddings_idx;
-CREATE VECTOR INDEX embeddings_idx FOR (n:Node) ON (n.embedding)
+CREATE INDEX embeddings_idx FOR (n:Node) ON (n.embedding) USING vector
 WITH (metric = 'cosine');
 ```
 
@@ -634,15 +634,15 @@ Separate indexes for different embedding types:
 
 ```gql
 -- Text embeddings (768d, BERT)
-CREATE VECTOR INDEX text_embeddings FOR (d:Document) ON (d.text_embedding)
+CREATE INDEX text_embeddings FOR (d:Document) ON (d.text_embedding) USING vector
 WITH (metric = 'cosine');
 
 -- Image embeddings (512d, CLIP)
-CREATE VECTOR INDEX image_embeddings FOR (p:Product) ON (p.image_embedding)
+CREATE INDEX image_embeddings FOR (p:Product) ON (p.image_embedding) USING vector
 WITH (metric = 'cosine');
 
 -- User embeddings (128d, custom)
-CREATE VECTOR INDEX user_embeddings FOR (u:User) ON (u.behavior_embedding)
+CREATE INDEX user_embeddings FOR (u:User) ON (u.behavior_embedding) USING vector
 WITH (metric = 'euclidean');
 
 -- Query the property backed by the appropriate index
@@ -663,7 +663,7 @@ CALL db.indexes();
 
 -- Recreate an index after restoring data
 DROP INDEX embeddings_idx;
-CREATE VECTOR INDEX embeddings_idx FOR (n:Node) ON (n.embedding)
+CREATE INDEX embeddings_idx FOR (n:Node) ON (n.embedding) USING vector
 WITH (metric = 'cosine');
 ```
 

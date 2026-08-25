@@ -218,12 +218,13 @@ RETURN p;
 **Full-Text Search Indexes**:
 
 ```gql
-CREATE TEXT INDEX product_description ON Product(description)
+CREATE INDEX product_description ON Product(description) USING fulltext
 WITH (analyzer = 'english', tokenizer = 'standard');
 
 -- Fast text search
-MATCH (p:Product)
-WHERE text_search(p.description, 'wireless bluetooth speaker')
+CALL geode.fts.search('product_description', 'wireless bluetooth speaker')
+YIELD node, score
+MATCH (p:Product) WHERE id(p) = node
 RETURN p.name, text_rank(p.description, 'wireless bluetooth speaker') AS relevance
 ORDER BY relevance DESC;
 ```
@@ -231,7 +232,7 @@ ORDER BY relevance DESC;
 **Vector Indexes (HNSW)**:
 
 ```gql
-CREATE VECTOR INDEX product_embeddings ON Product(embedding)
+CREATE INDEX product_embeddings ON Product(embedding) USING vector
 WITH (metric = 'cosine');
 
 -- Fast similarity search

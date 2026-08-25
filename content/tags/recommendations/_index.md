@@ -241,7 +241,7 @@ LIMIT 10;
 ```gql
 -- Recommend seasonally relevant items
 MATCH (user:User {id: $user_id})-[:PURCHASED]->(past:Product)
-WHERE EXTRACT(MONTH FROM past.purchase_timestamp) = EXTRACT(MONTH FROM CURRENT_TIMESTAMP)
+WHERE past.purchase_timestamp.month = CURRENT_TIMESTAMP.month
 WITH COLLECT(DISTINCT past.category) AS seasonal_categories
 MATCH (rec:Product)
 WHERE rec.category IN seasonal_categories
@@ -250,7 +250,7 @@ WHERE rec.category IN seasonal_categories
 WITH rec,
      COUNT {
          (other:User)-[p:PURCHASED]->(rec)
-         WHERE EXTRACT(MONTH FROM p.timestamp) = EXTRACT(MONTH FROM CURRENT_TIMESTAMP)
+         WHERE p.timestamp.month = CURRENT_TIMESTAMP.month
      } AS seasonal_popularity
 RETURN rec.id,
        rec.name,

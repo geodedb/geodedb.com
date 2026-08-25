@@ -23,6 +23,7 @@ This guide demonstrates how to build a comprehensive social network using Geode.
 ## Overview
 
 Social networks are a natural fit for graph databases because they're built on relationships:
+
 - Users **follow** or **friend** other users
 - Users **create** posts and **comment** on content
 - Users **like** content and **share** posts
@@ -171,6 +172,7 @@ CREATE INDEX comment_created_at ON :Comment(created_at)
 
 {{< tabs >}}
 {{< tab "GQL" >}}
+
 ```gql
 CREATE (u:User {
   id: $id,
@@ -186,8 +188,10 @@ CREATE (u:User {
 })
 RETURN u
 ```
+
 {{< /tab >}}
 {{< tab "Go" >}}
+
 ```go
 package main
 
@@ -252,8 +256,10 @@ func main() {
     log.Println("User created successfully")
 }
 ```
+
 {{< /tab >}}
 {{< tab "Python" >}}
+
 ```python
 import asyncio
 from datetime import datetime
@@ -307,8 +313,10 @@ async def main():
 
 asyncio.run(main())
 ```
+
 {{< /tab >}}
 {{< tab "Rust" >}}
+
 ```rust
 use geode_client::{Client, Value};
 use std::collections::HashMap;
@@ -385,8 +393,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 ```
+
 {{< /tab >}}
 {{< tab "Node.js" >}}
+
 ```typescript
 import { createClient, Client } from '@geodedb/client';
 import { v4 as uuidv4 } from 'uuid';
@@ -462,8 +472,10 @@ async function main() {
 
 main();
 ```
+
 {{< /tab >}}
 {{< tab "Zig" >}}
+
 ```zig
 const std = @import("std");
 const geode = @import("geode_client");
@@ -535,6 +547,7 @@ pub fn main() !void {
     std.debug.print("Created user: {s}\n", .{user_id});
 }
 ```
+
 {{< /tab >}}
 {{< /tabs >}}
 
@@ -556,6 +569,7 @@ RETURN follower.username, followed.username
 
 {{< tabs >}}
 {{< tab "Go" >}}
+
 ```go
 func FollowUser(ctx context.Context, db *sql.DB, followerID, followedID string) error {
     result, err := db.ExecContext(ctx, `
@@ -582,8 +596,10 @@ func FollowUser(ctx context.Context, db *sql.DB, followerID, followedID string) 
     return nil
 }
 ```
+
 {{< /tab >}}
 {{< tab "Python" >}}
+
 ```python
 async def follow_user(client, follower_id: str, followed_id: str) -> bool:
     """Follow another user."""
@@ -603,8 +619,10 @@ async def follow_user(client, follower_id: str, followed_id: str) -> bool:
 
         return len(result.rows) > 0
 ```
+
 {{< /tab >}}
 {{< tab "Rust" >}}
+
 ```rust
 async fn follow_user(
     conn: &mut geode_client::Connection,
@@ -631,8 +649,10 @@ async fn follow_user(
     Ok(!page.rows.is_empty())
 }
 ```
+
 {{< /tab >}}
 {{< tab "Node.js" >}}
+
 ```typescript
 async function followUser(
   client: Client,
@@ -655,8 +675,10 @@ async function followUser(
   return result.length > 0;
 }
 ```
+
 {{< /tab >}}
 {{< tab "Zig" >}}
+
 ```zig
 pub fn followUser(
     client: *geode.GeodeClient,
@@ -690,6 +712,7 @@ pub fn followUser(
     return std.mem.indexOf(u8, result, "BINDINGS") != null;
 }
 ```
+
 {{< /tab >}}
 {{< /tabs >}}
 
@@ -731,6 +754,7 @@ RETURN p
 
 {{< tabs >}}
 {{< tab "Go" >}}
+
 ```go
 import (
     "regexp"
@@ -820,8 +844,10 @@ func CreatePost(ctx context.Context, db *sql.DB, authorID string, post Post) err
     return tx.Commit()
 }
 ```
+
 {{< /tab >}}
 {{< tab "Python" >}}
+
 ```python
 import re
 from typing import List, Optional
@@ -903,8 +929,10 @@ async def create_post(
         "mentions": mentions
     }
 ```
+
 {{< /tab >}}
 {{< tab "Rust" >}}
+
 ```rust
 use regex::Regex;
 
@@ -988,8 +1016,10 @@ async fn create_post(
     Ok(post_id)
 }
 ```
+
 {{< /tab >}}
 {{< tab "Node.js" >}}
+
 ```typescript
 function extractHashtags(content: string): string[] {
   const matches = content.match(/#(\w+)/g) || [];
@@ -1051,8 +1081,10 @@ async function createPost(
   return { id: postId, hashtags, mentions };
 }
 ```
+
 {{< /tab >}}
 {{< tab "Zig" >}}
+
 ```zig
 const std = @import("std");
 const geode = @import("geode_client");
@@ -1139,6 +1171,7 @@ pub fn createPost(
     return &post_id;
 }
 ```
+
 {{< /tab >}}
 {{< /tabs >}}
 
@@ -1202,6 +1235,7 @@ OFFSET $offset
 
 {{< tabs >}}
 {{< tab "Go" >}}
+
 ```go
 type FeedItem struct {
     ID             string
@@ -1259,8 +1293,10 @@ func GetHomeFeed(ctx context.Context, db *sql.DB, userID string, limit, offset i
     return feed, nil
 }
 ```
+
 {{< /tab >}}
 {{< tab "Python" >}}
+
 ```python
 from dataclasses import dataclass
 from datetime import datetime
@@ -1323,8 +1359,10 @@ async def get_home_feed(
 
         return feed
 ```
+
 {{< /tab >}}
 {{< tab "Rust" >}}
+
 ```rust
 #[derive(Debug)]
 struct FeedItem {
@@ -1389,8 +1427,10 @@ async fn get_home_feed(
     Ok(feed)
 }
 ```
+
 {{< /tab >}}
 {{< tab "Node.js" >}}
+
 ```typescript
 interface FeedItem {
   id: string;
@@ -1444,8 +1484,10 @@ async function getHomeFeed(
   }));
 }
 ```
+
 {{< /tab >}}
 {{< tab "Zig" >}}
+
 ```zig
 const FeedItem = struct {
     id: []const u8,
@@ -1507,6 +1549,7 @@ pub fn getHomeFeed(
     return feed;
 }
 ```
+
 {{< /tab >}}
 {{< /tabs >}}
 
@@ -1596,6 +1639,7 @@ ORDER BY mutual_friends DESC
 
 {{< tabs >}}
 {{< tab "Go" >}}
+
 ```go
 type UserSuggestion struct {
     ID            string
@@ -1648,8 +1692,10 @@ func GetFriendRecommendations(ctx context.Context, db *sql.DB, userID string, li
     return suggestions, nil
 }
 ```
+
 {{< /tab >}}
 {{< tab "Python" >}}
+
 ```python
 @dataclass
 class UserSuggestion:
@@ -1703,8 +1749,10 @@ async def get_friend_recommendations(
             for row in result.rows
         ]
 ```
+
 {{< /tab >}}
 {{< tab "Rust" >}}
+
 ```rust
 #[derive(Debug)]
 struct UserSuggestion {
@@ -1764,8 +1812,10 @@ async fn get_friend_recommendations(
     Ok(suggestions)
 }
 ```
+
 {{< /tab >}}
 {{< tab "Node.js" >}}
+
 ```typescript
 interface UserSuggestion {
   id: string;
@@ -1815,8 +1865,10 @@ async function getFriendRecommendations(
   }));
 }
 ```
+
 {{< /tab >}}
 {{< tab "Zig" >}}
+
 ```zig
 const UserSuggestion = struct {
     id: []const u8,
@@ -1870,6 +1922,7 @@ pub fn getFriendRecommendations(
     return suggestions;
 }
 ```
+
 {{< /tab >}}
 {{< /tabs >}}
 
@@ -2158,7 +2211,7 @@ RETURN
   size(commenters) AS unique_commenters,
   post.reply_count AS total_comments,
   post.share_count AS shares,
-  duration.between(post.created_at, timestamp()).hours AS age_hours
+  (timestamp( - post.created_at)).hours AS age_hours
 ```
 
 ## Next Steps

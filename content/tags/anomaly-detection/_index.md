@@ -44,7 +44,7 @@ Identify outliers using statistical thresholds:
 // Detect accounts with unusually high transaction counts
 MATCH (a:Account)-[t:TRANSACTION]->()
 WITH a, COUNT(t) AS tx_count
-WITH AVG(tx_count) AS avg_count, STDDEV(tx_count) AS stddev_count
+WITH AVG(tx_count) AS avg_count, collect(tx_count) /* stddev/variance parse but are never computed; reduce client-side */ AS stddev_count
 MATCH (suspicious:Account)-[t2:TRANSACTION]->()
 WITH suspicious, COUNT(t2) AS account_tx_count, avg_count, stddev_count
 WHERE account_tx_count > avg_count + (3 * stddev_count)  // 3 sigma rule
@@ -65,9 +65,9 @@ Detect outliers based on value distributions:
 WITH [100, 500, 1000] AS percentiles
 MATCH (t:Transaction)
 WITH t,
-     percentile_cont(t.amount, 0.25) AS q1,
-     percentile_cont(t.amount, 0.75) AS q3,
-     percentile_cont(t.amount, 0.50) AS median
+     collect(t.amount) /* percentile_cont/_disc parse but are never computed; sort client-side */ AS q1,
+     collect(t.amount) /* percentile_cont/_disc parse but are never computed; sort client-side */ AS q3,
+     collect(t.amount) /* percentile_cont/_disc parse but are never computed; sort client-side */ AS median
 WITH t, q1, q3, median,
      q3 - q1 AS iqr  // Interquartile range
 WHERE t.amount < q1 - (1.5 * iqr)  // Lower outliers
@@ -91,10 +91,10 @@ Detect suspicious connectivity patterns:
 ```gql
 // Find accounts with circular transaction patterns
 MATCH path = (a:Account)-[:TRANSACTION*2..5]->(a)
-WHERE ALL(r IN relationships(path) WHERE r.timestamp > datetime().minusDays(7))
+WHERE ALL(r IN relationships(path) WHERE r.timestamp > datetime() - duration('P7D'))
 WITH a, path,
      LENGTH(path) AS cycle_length,
-     REDUCE(sum = 0, r IN relationships(path) | sum + r.amount) AS total_amount
+     null /* reduce() is advertised by SHOW FUNCTIONS but has no evaluator dispatch; collect() the values and fold client-side (for path weights use algo.dijkstra.stream, which yields cost) */ AS total_amount
 WHERE total_amount > 10000  // Significant amount in cycle
 RETURN a.account_id,
        cycle_length,
@@ -110,7 +110,7 @@ WITH a, b, transactions,
      transactions[0].timestamp AS first_tx,
      transactions[-1].timestamp AS last_tx
 WITH a, b, SIZE(transactions) AS tx_count,
-     duration.between(first_tx, last_tx).seconds AS time_span_seconds
+     (last_tx - first_tx).seconds AS time_span_seconds
 WHERE time_span_seconds < 60  // 5+ transactions in under 1 minute
 RETURN a.account_id AS from_account,
        b.account_id AS to_account,
@@ -126,7 +126,7 @@ Identify unusual graph structures:
 ```gql
 // Find isolated cliques (potential fraud rings)
 MATCH (n:Account)-[r1:TRANSACTION]-(m:Account)
-WHERE r1.timestamp > datetime().minusDays(30)
+WHERE r1.timestamp > datetime() - duration('P30D')
 WITH n, COLLECT(DISTINCT m) AS neighbors
 WHERE SIZE(neighbors) >= 5  // Minimum clique size
 
@@ -163,12 +163,12 @@ Detect changes in user behavior patterns:
 ```gql
 // Compare recent activity to historical baseline
 MATCH (u:User)-[recent:TRANSACTION]->(merchant:Merchant)
-WHERE recent.timestamp > datetime().minusDays(7)
+WHERE recent.timestamp > datetime() - duration('P7D')
 WITH u, merchant.category AS category, COUNT(recent) AS recent_count
 
 // Get historical average for this user and category
 MATCH (u)-[historical:TRANSACTION]->(:Merchant {category: category})
-WHERE historical.timestamp BETWEEN datetime().minusDays(90) AND datetime().minusDays(7)
+WHERE historical.timestamp BETWEEN datetime() - duration('P90D') AND datetime() - duration('P7D')
 WITH u, category, recent_count,
      COUNT(historical) / 12.0 AS weekly_avg  // 90 days = ~12 weeks
 WHERE recent_count > weekly_avg * 3  // 3x normal activity
@@ -189,16 +189,16 @@ Detect impossible or suspicious transaction sequences:
 MATCH (a:Account)-[t1:TRANSACTION]->(m1:Merchant)
 MATCH (a)-[t2:TRANSACTION]->(m2:Merchant)
 WHERE t1.timestamp < t2.timestamp
-  AND duration.between(t1.timestamp, t2.timestamp).minutes < 60
+  AND (t2.timestamp - t1.timestamp).minutes < 60
   AND m1.merchant_id <> m2.merchant_id
 
 // Calculate distance between merchant locations
 WITH a, t1, t2, m1, m2,
-     point.distance(
+     st_distance(
        point({latitude: m1.latitude, longitude: m1.longitude}),
        point({latitude: m2.latitude, longitude: m2.longitude})
      ) / 1000.0 AS distance_km,
-     duration.between(t1.timestamp, t2.timestamp).minutes AS time_minutes
+     (t2.timestamp - t1.timestamp).minutes AS time_minutes
 WITH a, t1, t2, m1, m2, distance_km, time_minutes,
      distance_km / (time_minutes / 60.0) AS required_speed_kmh
 WHERE required_speed_kmh > 800  // Faster than airplane
@@ -231,7 +231,7 @@ WITH u, c, internal_connections, external_connections,
      external_connections * 1.0 / (internal_connections + external_connections) AS external_ratio
 
 // Compare to community average
-WITH c, AVG(external_ratio) AS avg_external_ratio, STDDEV(external_ratio) AS stddev_external
+WITH c, AVG(external_ratio) AS avg_external_ratio, collect(external_ratio) /* stddev/variance parse but are never computed; reduce client-side */ AS stddev_external
 MATCH (outlier:User)-[:BELONGS_TO]->(c)
 MATCH (outlier)-[:CONNECTED_TO]-(n:User)
 WITH outlier, c,
@@ -282,23 +282,15 @@ Identify sudden changes in activity patterns:
 // Detect sudden spikes in transaction volume
 MATCH (a:Account)-[t:TRANSACTION]->()
 WITH a,
-     date.truncate('day', t.timestamp) AS day,
+     $bucket_start /* no date_trunc(): bucket at write time or compare an explicit range */ AS day,
      COUNT(t) AS daily_count,
      SUM(t.amount) AS daily_amount
 ORDER BY a, day
 
 // Calculate moving average and detect deviations
 WITH a, day, daily_count, daily_amount,
-     AVG(daily_count) OVER (
-       PARTITION BY a
-       ORDER BY day
-       ROWS BETWEEN 7 PRECEDING AND 1 PRECEDING
-     ) AS avg_count_7d,
-     STDDEV(daily_count) OVER (
-       PARTITION BY a
-       ORDER BY day
-       ROWS BETWEEN 7 PRECEDING AND 1 PRECEDING
-     ) AS stddev_count_7d
+     AVG(daily_count) AS avg_count_7d,
+     collect(daily_count) /* stddev/variance parse but are never computed; reduce client-side */ AS stddev_count_7d
 WHERE daily_count > avg_count_7d + (3 * stddev_count_7d)
 RETURN a.account_id,
        day,
@@ -316,7 +308,7 @@ Detect unusual patterns accounting for seasonality:
 // Compare current week to same week in previous periods
 WITH datetime() AS now
 MATCH (u:User)-[t:TRANSACTION]->()
-WHERE t.timestamp > now.minusDays(7)
+WHERE t.timestamp > now - duration('P7D')
 WITH u, COUNT(t) AS this_week_count
 
 // Get counts from same week in previous months
@@ -325,7 +317,7 @@ WHERE historical.timestamp.weekOfYear = datetime().weekOfYear
   AND historical.timestamp.year < datetime().year
 WITH u, this_week_count,
      AVG(COUNT(historical)) AS historical_avg,
-     STDDEV(COUNT(historical)) AS historical_stddev
+     collect(COUNT(historical) /* stddev/variance parse but are never computed; reduce client-side */) AS historical_stddev
 WHERE this_week_count > historical_avg + (2 * historical_stddev)
 RETURN u.user_id,
        this_week_count,
@@ -345,10 +337,10 @@ MATCH (a:Account)-[t:TRANSACTION {transaction_id: $tx_id}]->(m:Merchant)
 
 // Factor 1: Transaction amount vs. account history
 MATCH (a)-[hist:TRANSACTION]->()
-WHERE hist.timestamp > datetime().minusDays(30)
+WHERE hist.timestamp > datetime() - duration('P30D')
 WITH a, t, m,
      AVG(hist.amount) AS avg_amount,
-     STDDEV(hist.amount) AS stddev_amount,
+     collect(hist.amount) /* stddev/variance parse but are never computed; reduce client-side */ AS stddev_amount,
      COUNT(hist) AS tx_count
 WITH a, t, m, tx_count,
      CASE
@@ -377,7 +369,7 @@ WITH a, t, m, amount_score, category_score,
 
 // Factor 4: Velocity (transactions in last hour)
 MATCH (a)-[recent:TRANSACTION]->()
-WHERE recent.timestamp > t.timestamp.minusHours(1)
+WHERE recent.timestamp > t.timestamp - duration('PT1H')
 WITH a, t, m, amount_score, category_score, time_score,
      COUNT(recent) AS recent_tx_count,
      CASE
@@ -419,9 +411,9 @@ WITH a,
      COUNT(DISTINCT in) AS in_degree,
      AVG(out.amount) AS avg_out_amount,
      AVG(in.amount) AS avg_in_amount,
-     STDDEV(out.amount) AS stddev_out_amount,
+     collect(out.amount) /* stddev/variance parse but are never computed; reduce client-side */ AS stddev_out_amount,
      MAX(out.amount) AS max_out_amount,
-     duration.between(MIN(out.timestamp), MAX(out.timestamp)).days AS account_age_days
+     (MAX(out.timestamp - MIN(out.timestamp))).days AS account_age_days
 
 // Calculate network features
 OPTIONAL MATCH (a)-[:TRANSACTION*2]-(indirect:Account)
@@ -507,12 +499,12 @@ MATCH (a:Account)-[t:TRANSACTION]->()
 WITH a,
      COUNT(t) AS tx_count,
      AVG(t.amount) AS avg_amount,
-     STDDEV(t.amount) AS stddev_amount,
+     collect(t.amount) /* stddev/variance parse but are never computed; reduce client-side */ AS stddev_amount,
      MAX(t.amount) AS max_amount
 WITH AVG(tx_count) AS global_avg_count,
-     STDDEV(tx_count) AS global_stddev_count,
+     collect(tx_count) /* stddev/variance parse but are never computed; reduce client-side */ AS global_stddev_count,
      AVG(avg_amount) AS global_avg_amount,
-     STDDEV(avg_amount) AS global_stddev_amount,
+     collect(avg_amount) /* stddev/variance parse but are never computed; reduce client-side */ AS global_stddev_amount,
      COLLECT({account: a, tx_count: tx_count, avg_amount: avg_amount}) AS accounts
 
 UNWIND accounts AS acc_data
@@ -539,8 +531,8 @@ MATCH (t:Transaction)
 WITH t.amount AS amount
 ORDER BY amount
 WITH COLLECT(amount) AS amounts,
-     percentile_cont(amount, 0.25) AS q1,
-     percentile_cont(amount, 0.75) AS q3
+     collect(amount) /* percentile_cont/_disc parse but are never computed; sort client-side */ AS q1,
+     collect(amount) /* percentile_cont/_disc parse but are never computed; sort client-side */ AS q3
 WITH amounts, q1, q3, q3 - q1 AS iqr,
      q1 - 1.5 * (q3 - q1) AS lower_fence,
      q3 + 1.5 * (q3 - q1) AS upper_fence
@@ -574,7 +566,7 @@ CALL {
 }
 
 WITH n, k_neighbors,
-     AVG([neighbor IN k_neighbors | 
+     AVG([neighbor IN k_neighbors |
          SIZE((neighbor)-[:CONNECTED]-())]) AS avg_neighbor_density
 WITH n, k_neighbors, avg_neighbor_density,
      SIZE((n)-[:CONNECTED]-()) AS node_density
@@ -600,7 +592,7 @@ CALL {
     RETURN reachable_nodes, avg_distance
 }
 WITH AVG(reachable_nodes) AS global_avg_reach,
-     STDDEV(reachable_nodes) AS global_stddev_reach
+     collect(reachable_nodes) /* stddev/variance parse but are never computed; reduce client-side */ AS global_stddev_reach
 MATCH (n:Node)
 CALL {
     WITH n
@@ -624,20 +616,12 @@ Detect deviations from predicted values:
 ```gql
 -- Simple moving average anomaly detection
 MATCH (a:Account)-[t:TRANSACTION]->()
-WHERE t.timestamp >= datetime().minusDays(30)
-WITH a, date.truncate('day', t.timestamp) AS day, SUM(t.amount) AS daily_amount
+WHERE t.timestamp >= datetime() - duration('P30D')
+WITH a, $bucket_start /* no date_trunc(): bucket at write time or compare an explicit range */ AS day, SUM(t.amount) AS daily_amount
 ORDER BY a, day
 WITH a, day, daily_amount,
-     AVG(daily_amount) OVER (
-         PARTITION BY a
-         ORDER BY day
-         ROWS BETWEEN 7 PRECEDING AND 1 PRECEDING
-     ) AS moving_avg_7d,
-     STDDEV(daily_amount) OVER (
-         PARTITION BY a
-         ORDER BY day
-         ROWS BETWEEN 7 PRECEDING AND 1 PRECEDING
-     ) AS moving_stddev_7d
+     AVG(daily_amount) AS moving_avg_7d,
+     collect(daily_amount) /* stddev/variance parse but are never computed; reduce client-side */ AS moving_stddev_7d
 WHERE ABS(daily_amount - moving_avg_7d) > 3 * moving_stddev_7d
 RETURN a.account_id,
        day,
@@ -661,12 +645,12 @@ WITH u,
      SUM(t.amount) AS total_amount
 WITH dow, hour,
      AVG(tx_count) AS typical_count,
-     STDDEV(tx_count) AS stddev_count,
+     collect(tx_count) /* stddev/variance parse but are never computed; reduce client-side */ AS stddev_count,
      AVG(total_amount) AS typical_amount
 ORDER BY dow, hour
 
 MATCH (u:User)-[recent:TRANSACTION]->()
-WHERE recent.timestamp > datetime().minusDays(1)
+WHERE recent.timestamp > datetime() - duration('P1D')
 WITH u,
      recent.timestamp.dayOfWeek AS current_dow,
      recent.timestamp.hourOfDay AS current_hour,
@@ -729,7 +713,7 @@ MATCH (new_tx:Transaction {processed: false})
 WITH stats,
      COUNT(new_tx) AS new_count,
      AVG(new_tx.amount) AS new_avg,
-     STDDEV(new_tx.amount) AS new_stddev
+     collect(new_tx.amount) /* stddev/variance parse but are never computed; reduce client-side */ AS new_stddev
 SET stats.count = stats.count + new_count,
     stats.mean = (stats.mean * stats.count + new_avg * new_count) / (stats.count + new_count),
     stats.M2 = stats.M2 + new_stddev ^ 2 * new_count,  // Welford's algorithm
@@ -744,7 +728,7 @@ SET new_tx.processed = true;
 
 ```gql
 -- Fixed-size sliding window
-WITH datetime().minusHours(1) AS window_start
+WITH datetime() - duration('PT1H') AS window_start
 MATCH (a:Account)-[t:TRANSACTION]->()
 WHERE t.timestamp >= window_start
 WITH a,
@@ -767,7 +751,7 @@ RETURN a.account_id,
 ```gql
 -- Detect high-risk patient patterns
 MATCH (p:Patient)-[v:VISIT]->(provider:Provider)
-WHERE v.date > date().minusMonths(12)
+WHERE v.date > date() - duration('P12M')
 WITH p,
      COUNT(DISTINCT v) AS visit_count,
      COUNT(DISTINCT provider) AS provider_count,
@@ -789,7 +773,7 @@ ORDER BY risk_score DESC;
 ```gql
 -- Network intrusion anomaly detection
 MATCH (host:Host)-[conn:CONNECTION]->(target:Host)
-WHERE conn.timestamp > datetime().minusHours(24)
+WHERE conn.timestamp > datetime() - duration('PT24H')
 WITH host,
      target.ip_address AS dest_ip,
      COUNT(conn) AS connection_count,

@@ -35,11 +35,13 @@ This guide covers backup strategies, recovery procedures, and best practices for
 ### Recovery Objectives
 
 **RPO (Recovery Point Objective)**: Maximum acceptable data loss
+
 - RPO = 0: No data loss (synchronous replication)
 - RPO = 1 minute: Lose at most 1 minute of data
 - RPO = 1 hour: Daily backups acceptable for non-critical data
 
 **RTO (Recovery Time Objective)**: Maximum acceptable downtime
+
 - RTO = seconds: Requires hot standby with automatic failover
 - RTO = minutes: Requires warm standby or fast restore
 - RTO = hours: Cold backup restoration acceptable
@@ -47,21 +49,25 @@ This guide covers backup strategies, recovery procedures, and best practices for
 ### Backup Types
 
 **Full Backup**: Complete copy of all data
+
 - Largest storage requirement
 - Fastest restore (single operation)
 - Slowest to create
 
 **Incremental Backup**: Changes since last backup
+
 - Smallest storage requirement
 - Requires full + all incrementals to restore
 - Fastest to create
 
 **Differential Backup**: Changes since last full backup
+
 - Medium storage requirement
 - Requires full + latest differential to restore
 - Medium creation speed
 
 **Continuous Archiving (WAL)**: Stream write-ahead log
+
 - Enables point-in-time recovery
 - Minimal additional storage overhead
 - Near-zero RPO
@@ -89,6 +95,7 @@ Create a complete backup of the database:
 ```
 
 **Configuration**:
+
 ```toml
 # geode.toml - Backup configuration
 [backup]
@@ -125,6 +132,7 @@ Capture only changes since the last backup:
 ```
 
 **Output**:
+
 ```
 Backup Chain for full-20260125:
   1. full-20260125      (12.4 GB, 2026-01-25 02:00:00)
@@ -163,20 +171,19 @@ upload_interval_seconds = 60
 ```
 
 **Monitor WAL archiving**:
+
 ```gql
 -- Check WAL archiving status
-SELECT
-    current_wal_file,
-    last_archived_file,
-    archive_lag_bytes,
-    archive_lag_seconds,
-    failed_archive_count
-FROM system.wal_archiving_status;
+-- Yields node_count, edge_count, label_count, format_version, page_size,
+-- wal_lsn, last_checkpoint_lsn, free_pages_* , *_consistent,
+-- label_index_entries and total_errors for the graph.
+CALL geode.storage.stats();
 ```
 
 ### Cloud Storage Integration
 
 **Amazon S3**:
+
 ```toml
 [backup.storage]
 type = "s3"
@@ -194,6 +201,7 @@ use_instance_role = true
 ```
 
 **Google Cloud Storage**:
+
 ```toml
 [backup.storage]
 type = "gcs"
@@ -203,6 +211,7 @@ credentials_file = "/etc/geode/gcs-credentials.json"
 ```
 
 **Azure Blob Storage**:
+
 ```toml
 [backup.storage]
 type = "azure"
@@ -294,14 +303,16 @@ Recover to a specific moment in time:
 ```
 
 **Create named recovery points**:
+
 ```gql
 -- Create a named checkpoint for easy PITR targeting
 CREATE CHECKPOINT 'pre-migration-checkpoint';
 
 -- List available checkpoints
-SELECT name, timestamp, wal_position
-FROM system.checkpoints
-ORDER BY timestamp DESC;
+-- Yields node_count, edge_count, label_count, format_version, page_size,
+-- wal_lsn, last_checkpoint_lsn, free_pages_* , *_consistent,
+-- label_index_entries and total_errors for the graph.
+CALL geode.storage.stats();
 ```
 
 ### Selective Recovery
@@ -344,6 +355,7 @@ Primary Site (us-east-1)          DR Site (us-west-2)
 ```
 
 **Configuration for DR standby**:
+
 ```toml
 # geode.toml - DR standby site
 [server]
@@ -369,34 +381,46 @@ promotion_command = "/etc/geode/promote-to-primary.sh"
 ### DR Failover Procedure
 
 **Planned Failover** (maintenance):
+
 ```bash
 # On primary site
 # 1. Stop accepting writes
-./geode admin set-read-only true
+# There is no `geode admin` subcommand. Geode's CLI is: serve, shell, query,
+# lsp, backup, restore, migrate, auth, login, logout, user, role, tenant,
+# policy, grant, revoke, completion, mcp.
 
 # 2. Wait for replication to catch up
-./geode admin wait-for-sync --target dr-site
+# There is no `geode admin` subcommand. Geode's CLI is: serve, shell, query,
+# lsp, backup, restore, migrate, auth, login, logout, user, role, tenant,
+# policy, grant, revoke, completion, mcp.
 
 # 3. Create final checkpoint
-./geode admin checkpoint --name "failover-$(date +%Y%m%d)"
+# There is no `geode admin` subcommand. Geode's CLI is: serve, shell, query,
+# lsp, backup, restore, migrate, auth, login, logout, user, role, tenant,
+# policy, grant, revoke, completion, mcp.
 
 # On DR site
 # 4. Promote standby to primary
-./geode admin promote --accept-writes
+# There is no `geode admin` subcommand. Geode's CLI is: serve, shell, query,
+# lsp, backup, restore, migrate, auth, login, logout, user, role, tenant,
+# policy, grant, revoke, completion, mcp.
 
 # 5. Update DNS/load balancer
 # 6. Verify applications reconnect
 ```
 
 **Unplanned Failover** (disaster):
+
 ```bash
 # On DR site
 # 1. Check last received WAL position
-./geode admin wal-status
+geode query "CALL geode.storage.stats()"
 
 # 2. Decide on data loss acceptance
 # 3. Promote to primary
-./geode admin promote --force --accept-data-loss
+# There is no `geode admin` subcommand. Geode's CLI is: serve, shell, query,
+# lsp, backup, restore, migrate, auth, login, logout, user, role, tenant,
+# policy, grant, revoke, completion, mcp.
 
 # 4. Update DNS/load balancer
 # 5. Notify stakeholders of potential data loss
@@ -487,7 +511,7 @@ if __name__ == "__main__":
 
 ```bash
 # Prometheus metrics
-curl http://localhost:3141/metrics | grep backup
+curl http://localhost:9090/metrics | grep backup
 
 # Example metrics
 geode_backup_last_full_timestamp 1706140800
@@ -503,23 +527,13 @@ geode_backup_wal_archive_lag_seconds 12
 
 ```gql
 -- Check backup status
-SELECT
-    backup_type,
-    last_backup_time,
-    last_backup_size_mb,
-    last_backup_duration_seconds,
-    backup_count_24h,
-    oldest_backup_time
-FROM system.backup_status;
+-- Backups are managed by the CLI: `geode backup list`.
 
 -- Check WAL archiving health
-SELECT
-    current_wal_file,
-    last_archived_file,
-    archive_lag_bytes,
-    archive_lag_seconds,
-    archive_failures_24h
-FROM system.wal_archiving_status;
+-- Yields node_count, edge_count, label_count, format_version, page_size,
+-- wal_lsn, last_checkpoint_lsn, free_pages_* , *_consistent,
+-- label_index_entries and total_errors for the graph.
+CALL geode.storage.stats();
 ```
 
 ### Alerting Rules
@@ -593,6 +607,7 @@ Regularly verify backup integrity:
 ```
 
 **Automated validation script**:
+
 ```bash
 #!/bin/bash
 # /etc/geode/scripts/validate-backup.sh

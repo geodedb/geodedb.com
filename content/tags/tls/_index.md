@@ -57,6 +57,7 @@ Client                                      Server
 ```
 
 Benefits of QUIC + TLS:
+
 - Single round-trip connection establishment
 - Encrypted transport from the first packet
 - Multiplexed streams without head-of-line blocking
@@ -542,11 +543,10 @@ geode serve --tls-key-password-file=/etc/geode/secrets/key-password
 
 ```yaml
 # Alert on certificate expiration
-monitoring:
-  alerts:
-    - name: cert_expiring_soon
-      condition: tls_certificate_expiry_days < 30
-      action: notify_ops
+# NOTE: `monitoring:` is not a configuration-file section — it is ignored.
+# The Prometheus listener is opt-in and env-only:
+#   GEODE_METRICS_PORT=9090   (serves /metrics and /health)
+#   GEODE_METRICS_BIND=127.0.0.1
 ```
 
 ### 4. Regular Security Audits
@@ -567,10 +567,10 @@ geode security-audit --component=tls
 
 ```yaml
 # Combine TLS with network security
-security:
-  tls:
-    enabled: true
-    require_client_certificates: true
+# NOTE: `security:` is not a configuration-file section — it is ignored.
+# KMS and encryption-at-rest are configured with environment variables:
+#   GEODE_KMS_URL, GEODE_KMS_ENDPOINT, GEODE_KMS_API_KEY
+#   GEODE_MASTER_KEY, GEODE_TDE_ENABLED, GEODE_ALLOW_LOCAL_KMS
 
   network:
     allowed_ips:

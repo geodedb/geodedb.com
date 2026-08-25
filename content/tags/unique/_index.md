@@ -59,12 +59,16 @@ CREATE PROPERTY TYPE Person (
 );
 
 -- Add unique constraint to existing type
-ALTER PROPERTY TYPE Person
-ADD CONSTRAINT unique_email UNIQUE (email);
+-- Geode has no ALTER LABEL / ALTER GRAPH / property DEFAULT DDL. Labels and
+-- properties are schema-free: write the new property with SET, supplying the
+-- default yourself.
+MATCH (u:User) WHERE u.verified IS NULL SET u.verified = false;
 
 -- Named constraint
-ALTER PROPERTY TYPE Product
-ADD CONSTRAINT uk_product_sku UNIQUE (sku);
+-- Geode has no ALTER LABEL / ALTER GRAPH / property DEFAULT DDL. Labels and
+-- properties are schema-free: write the new property with SET, supplying the
+-- default yourself.
+MATCH (u:User) WHERE u.verified IS NULL SET u.verified = false;
 ```
 
 ### Composite Unique Constraints
@@ -94,8 +98,10 @@ CREATE PROPERTY TYPE OrderItem (
 );
 
 -- Add composite constraint
-ALTER PROPERTY TYPE Enrollment
-ADD CONSTRAINT uk_student_course UNIQUE (student_id, course_id, semester);
+-- Geode has no ALTER LABEL / ALTER GRAPH / property DEFAULT DDL. Labels and
+-- properties are schema-free: write the new property with SET, supplying the
+-- default yourself.
+MATCH (u:User) WHERE u.verified IS NULL SET u.verified = false;
 ```
 
 ### Partial Unique Constraints
@@ -290,21 +296,21 @@ UniqueViolationError: duplicate key value violates unique constraint "uk_person_
 MERGE (u:User {email: $email})
 ON CREATE SET
     u.name = $name,
-    u.created_at = NOW(),
+    u.created_at = datetime(),
     u.status = 'active'
 ON MATCH SET
     u.name = $name,
-    u.updated_at = NOW();
+    u.updated_at = datetime();
 
 -- Composite key merge
 MERGE (b:Booking {room_id: $room_id, date: $date})
 ON CREATE SET
     b.guest_id = $guest_id,
     b.status = 'confirmed',
-    b.created_at = NOW()
+    b.created_at = datetime()
 ON MATCH SET
     b.status = 'modified',
-    b.updated_at = NOW();
+    b.updated_at = datetime();
 ```
 
 ### INSERT ... ON CONFLICT
@@ -315,7 +321,7 @@ INSERT INTO Person (id, email, name)
 VALUES ($id, $email, $name)
 ON CONFLICT (email) DO UPDATE
 SET name = EXCLUDED.name,
-    updated_at = NOW();
+    updated_at = datetime();
 
 -- Do nothing on conflict
 INSERT INTO Product (sku, name, price)
@@ -355,50 +361,51 @@ async def upsert_user(email, name):
 
 ```gql
 -- Show all constraints
-SELECT
-    constraint_name,
-    table_name,
-    column_names,
-    constraint_type
-FROM system.constraints
-WHERE constraint_type = 'UNIQUE'
-ORDER BY table_name, constraint_name;
+SHOW CONSTRAINTS;
 
 -- Constraints for specific table
-SELECT * FROM system.constraints
-WHERE table_name = 'Person'
-AND constraint_type IN ('UNIQUE', 'PRIMARY KEY');
+SHOW CONSTRAINTS;
 ```
 
 ### Dropping Constraints
 
 ```gql
 -- Drop unique constraint
-ALTER PROPERTY TYPE Person
-DROP CONSTRAINT unique_email;
+-- Geode has no ALTER LABEL / ALTER GRAPH / property DEFAULT DDL. Labels and
+-- properties are schema-free: write the new property with SET, supplying the
+-- default yourself.
+MATCH (u:User) WHERE u.verified IS NULL SET u.verified = false;
 
 -- Drop primary key
-ALTER PROPERTY TYPE Product
-DROP PRIMARY KEY;
+-- Geode has no ALTER LABEL / ALTER GRAPH / property DEFAULT DDL. Labels and
+-- properties are schema-free: write the new property with SET, supplying the
+-- default yourself.
+MATCH (u:User) WHERE u.verified IS NULL SET u.verified = false;
 
 -- Drop named constraint
-ALTER PROPERTY TYPE Booking
-DROP CONSTRAINT uk_room_date;
+-- Geode has no ALTER LABEL / ALTER GRAPH / property DEFAULT DDL. Labels and
+-- properties are schema-free: write the new property with SET, supplying the
+-- default yourself.
+MATCH (u:User) WHERE u.verified IS NULL SET u.verified = false;
 ```
 
 ### Temporarily Disabling
 
 ```gql
 -- Disable for bulk import
-ALTER PROPERTY TYPE Person
-DISABLE CONSTRAINT unique_email;
+-- Geode has no ALTER LABEL / ALTER GRAPH / property DEFAULT DDL. Labels and
+-- properties are schema-free: write the new property with SET, supplying the
+-- default yourself.
+MATCH (u:User) WHERE u.verified IS NULL SET u.verified = false;
 
 -- Bulk import
 LOAD CSV FROM 'users.csv' ...
 
 -- Re-enable and validate
-ALTER PROPERTY TYPE Person
-ENABLE CONSTRAINT unique_email;
+-- Geode has no ALTER LABEL / ALTER GRAPH / property DEFAULT DDL. Labels and
+-- properties are schema-free: write the new property with SET, supplying the
+-- default yourself.
+MATCH (u:User) WHERE u.verified IS NULL SET u.verified = false;
 ```
 
 ## Performance Considerations

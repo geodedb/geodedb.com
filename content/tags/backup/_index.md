@@ -191,8 +191,7 @@ Geode's MVCC architecture enables consistent backups without blocking database o
 
 ```gql
 -- Query backup status during backup
-SELECT backup_id, start_time, progress_percent, estimated_completion
-FROM system.active_backups;
+-- Backups are managed by the CLI: `geode backup list`.
 
 -- Monitor backup impact
 PROFILE
@@ -498,7 +497,7 @@ def generate_backup_compliance_report():
     cursor.execute("""
         SELECT
             AVG(size_bytes) as avg_size,
-            AVG(EXTRACT(EPOCH FROM (completed_at - started_at))) as avg_duration
+            AVG((completed_at - started_at) /* no EXTRACT(... FROM ...): subtract to get a Duration, or store epoch millis */) as avg_duration
         FROM backup_catalog
         WHERE created_at > NOW() - INTERVAL '30 days'
     """)

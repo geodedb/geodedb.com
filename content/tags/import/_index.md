@@ -42,6 +42,7 @@ geode import --format jsonl --input large_dataset.jsonl --stream --graph product
 ```
 
 **JSON Format**:
+
 ```json
 {
   "nodes": [
@@ -94,6 +95,7 @@ geode import --format csv --input data.tsv --delimiter "\t" --graph production
 ```
 
 **CSV Format**:
+
 ```csv
 id,name,email,age,city
 1,Alice Johnson,alice@example.com,30,San Francisco
@@ -135,11 +137,11 @@ CREATE (p:Person {
 LOAD CSV FROM '/data/products.csv'
 WITH HEADERS
 AS row
-WHERE row.price IS NOT NULL AND toDecimal(row.price) > 0
+WHERE row.price IS NOT NULL AND decimal(row.price) > 0
 CREATE (p:Product {
     id: row.id,
     name: row.name,
-    price: toDecimal(row.price),
+    price: decimal(row.price),
     category: row.category
 });
 
@@ -385,11 +387,11 @@ MERGE (p:Person {id: row.id})
 ON CREATE SET
     p.name = row.name,
     p.email = row.email,
-    p.created_at = NOW()
+    p.created_at = datetime()
 ON MATCH SET
     p.name = row.name,
     p.email = row.email,
-    p.updated_at = NOW();
+    p.updated_at = datetime();
 
 -- Skip duplicates
 LOAD CSV FROM '/data/products.csv'
@@ -401,7 +403,7 @@ WHERE NOT EXISTS {
 CREATE (p:Product {
     id: row.id,
     name: row.name,
-    price: toDecimal(row.price)
+    price: decimal(row.price)
 });
 ```
 
@@ -451,7 +453,7 @@ CREATE (p:Person {
     last_name: row.last_name,
     full_name: row.first_name || ' ' || row.last_name,
     birth_date: DATE(row.birth_date),
-    age: YEAR(NOW()) - YEAR(DATE(row.birth_date))
+    age: YEAR(datetime()) - YEAR(DATE(row.birth_date))
 });
 
 -- Lookup and link existing nodes
@@ -462,7 +464,7 @@ MATCH (user:User {id: row.user_id})
 MATCH (product:Product {id: row.product_id})
 CREATE (user)-[:PURCHASED {
     date: DATE(row.purchase_date),
-    amount: toDecimal(row.amount),
+    amount: decimal(row.amount),
     quantity: toInteger(row.quantity)
 }]->(product);
 ```

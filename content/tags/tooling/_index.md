@@ -40,7 +40,9 @@ geode serve --config /etc/geode/config.yaml
 geode serve --dev --watch
 
 # Initialize a new database
-geode init --path /var/lib/geode --graph production
+# There is no `geode init`. The server creates its data directory on
+# first start; TDE and FLE are always available.
+geode serve --data-dir ./data
 
 # Check server status
 geode status
@@ -290,7 +292,7 @@ curl http://localhost:6060/debug/pprof/goroutine > goroutines.txt
 
 ```bash
 # Prometheus metrics endpoint
-curl http://localhost:3141/metrics
+curl http://localhost:9090/metrics
 
 # JSON metrics
 curl http://localhost:3141/api/v1/metrics

@@ -36,7 +36,7 @@ By completing this tutorial, you will:
 
 Let's create a realistic e-commerce dataset:
 
-\`\`\`gql
+```gql
 -- Create customers
 CREATE (c1:Customer {
     id: 1,
@@ -106,7 +106,7 @@ CREATE (c)-[:PURCHASED {date: datetime('2023-04-05T15:30:00'), quantity: 5}]->(p
 -- Create product views
 MATCH (c:Customer {id: 3}), (p:Product {id: 101})
 CREATE (c)-[:VIEWED {timestamp: datetime('2023-04-10T08:20:00')}]->(p)
-\`\`\`
+```
 
 ## Part 1: Understanding Query Plans with EXPLAIN
 
@@ -114,12 +114,13 @@ CREATE (c)-[:VIEWED {timestamp: datetime('2023-04-10T08:20:00')}]->(p)
 
 Let's analyze a simple query without indexes:
 
-\`\`\`gql
+```gql
 EXPLAIN MATCH (c:Customer {email: 'alice@example.com'}) RETURN c
-\`\`\`
+```
 
 **Expected Output**:
-\`\`\`
+
+```text
 
 | plan              |
 |-------------------|
@@ -129,7 +130,7 @@ EXPLAIN MATCH (c:Customer {email: 'alice@example.com'}) RETURN c
 |   Filter          |
 | RETURN            |
 |   Project         |
-\`\`\`
+```
 
 **Analysis**:
 
@@ -141,18 +142,19 @@ EXPLAIN MATCH (c:Customer {email: 'alice@example.com'}) RETURN c
 
 Create an index on the email field:
 
-\`\`\`gql
+```gql
 CREATE INDEX ON :Customer(email)
-\`\`\`
+```
 
 Now re-run the EXPLAIN:
 
-\`\`\`gql
+```gql
 EXPLAIN MATCH (c:Customer {email: 'alice@example.com'}) RETURN c
-\`\`\`
+```
 
 **Improved Output**:
-\`\`\`
+
+```text
 
 | plan              |
 |-------------------|
@@ -161,7 +163,7 @@ EXPLAIN MATCH (c:Customer {email: 'alice@example.com'}) RETURN c
 |   IndexSeek       |
 | RETURN            |
 |   Project         |
-\`\`\`
+```
 
 **Analysis**:
 
@@ -173,19 +175,20 @@ EXPLAIN MATCH (c:Customer {email: 'alice@example.com'}) RETURN c
 
 Use PROFILE to measure actual execution:
 
-\`\`\`gql
+```gql
 PROFILE MATCH (c:Customer {email: 'alice@example.com'}) RETURN c
-\`\`\`
+```
 
 **Output**:
-\`\`\`
+
+```text
 
 | metric              | value |
 |---------------------|-------|
 | rows_returned       | 1     |
 | columns             | 1     |
 | execution_time_ms   | 1     |
-\`\`\`
+```
 
 **Interpretation**:
 
@@ -198,7 +201,7 @@ PROFILE MATCH (c:Customer {email: 'alice@example.com'}) RETURN c
 
 Create a composite index for complex queries:
 
-\`\`\`gql
+```gql
 -- Create composite index
 CREATE INDEX ON :Product(category, price)
 
@@ -207,10 +210,11 @@ EXPLAIN MATCH (p:Product)
 WHERE p.category = 'Electronics' AND p.price < 300
 RETURN p.name, p.price
 ORDER BY p.price
-\`\`\`
+```
 
 **Plan Analysis**:
-\`\`\`
+
+```text
 
 | plan              |
 |-------------------|
@@ -220,7 +224,7 @@ ORDER BY p.price
 | RETURN            |
 |   Project         |
 |   Sort            |  <-- Sort optimized by index ordering
-\`\`\`
+```
 
 **Benefits**:
 
@@ -233,44 +237,49 @@ ORDER BY p.price
 **When to Use B-tree Indexes**:
 
 1. **Equality Lookups**:
-\`\`\`gql
+
+```gql
 -- Excellent for B-tree
 MATCH (c:Customer {email: $email}) RETURN c
 MATCH (p:Product {id: $id}) RETURN p
-\`\`\`
+```
 
 2. **Range Queries**:
-\`\`\`gql
+
+```gql
 -- Excellent for B-tree
 MATCH (p:Product)
 WHERE p.price >= 50 AND p.price <= 200
 RETURN p
-\`\`\`
+```
 
 3. **Prefix Matching**:
-\`\`\`gql
+
+```gql
 -- Good for B-tree
 MATCH (c:Customer)
 WHERE c.name STARTS WITH 'Alice'
 RETURN c
-\`\`\`
+```
 
 4. **Sorting**:
-\`\`\`gql
+
+```gql
 -- B-tree index provides sorted access
 MATCH (p:Product)
 WHERE p.category = 'Electronics'
 RETURN p.name
 ORDER BY p.price  -- Uses index ordering
-\`\`\`
+```
 
 **When NOT to Use B-tree Indexes**:
 
 1. **Low Cardinality Fields**:
-\`\`\`gql
+
+```gql
 -- Don't index boolean or low-cardinality fields
 CREATE INDEX ON :Product(in_stock)  -- Only true/false values
-\`\`\`
+```
 
 2. **Frequently Updated Fields**:
 
@@ -287,11 +296,11 @@ CREATE INDEX ON :Product(in_stock)  -- Only true/false values
 
 Create a vector index for product embeddings:
 
-\`\`\`gql
+```gql
 CREATE VECTOR INDEX product_embeddings
 ON :Product(embedding)
 WITH (metric = 'cosine')
-\`\`\`
+```
 
 **Index Parameters**:
 
@@ -307,29 +316,31 @@ are reserved for a future release. Passing them returns an error.
 
 Find products similar to a query vector:
 
-\`\`\`gql
+```gql
 MATCH (p:Product)
 WHERE similarity(p.embedding, [0.15, 0.35, 0.45, 0.25, 0.75, 0.45, 0.55, 0.65], 'cosine') > 0.8
 RETURN p.name, p.description
 ORDER BY similarity(p.embedding, [0.15, 0.35, 0.45, 0.25, 0.75, 0.45, 0.55, 0.65], 'cosine') DESC
 LIMIT 5
-\`\`\`
+```
 
 ### Step 3: Choose the Right Metric
 
 **For Normalized Text/ML Embeddings (Recommendation Systems)**:
-\`\`\`gql
+
+```gql
 CREATE VECTOR INDEX product_embeddings_cosine
 ON :Product(embedding)
 WITH (metric = 'cosine')
-\`\`\`
+```
 
 **For Magnitude-Sensitive Embeddings (Image Features, Coordinates)**:
-\`\`\`gql
+
+```gql
 CREATE VECTOR INDEX product_embeddings_l2
 ON :Product(embedding)
 WITH (metric = 'euclidean')
-\`\`\`
+```
 
 **Performance Trade-offs**:
 
@@ -345,28 +356,32 @@ trade-off at query time instead:
 ### Step 4: Distance Metric Selection
 
 **Cosine Similarity** - Recommended for normalized embeddings:
-\`\`\`gql
+
+```gql
 -- Good for text embeddings, ML features
 distance: 'cosine'
-\`\`\`
+```
 
 **Euclidean Distance** - For absolute magnitude:
-\`\`\`gql
+
+```gql
 -- Good for spatial data, image features
 distance: 'euclidean'
-\`\`\`
+```
 
 **Dot Product** - For unnormalized vectors:
-\`\`\`gql
+
+```gql
 -- Good for recommendation scores
 distance: 'dot_product'
-\`\`\`
+```
 
 **Manhattan Distance** - For sparse vectors:
-\`\`\`gql
+
+```gql
 -- Good for high-dimensional sparse data
 distance: 'manhattan'
-\`\`\`
+```
 
 ## Part 4: Full-Text Search with BM25
 
@@ -374,7 +389,7 @@ distance: 'manhattan'
 
 Create a full-text index on product descriptions:
 
-\`\`\`gql
+```gql
 CREATE FULLTEXT INDEX product_search
 ON :Product(name, description)
 OPTIONS {
@@ -382,7 +397,7 @@ OPTIONS {
     k1: 1.2,
     b: 0.75
 }
-\`\`\`
+```
 
 **BM25 Parameters**:
 
@@ -394,57 +409,69 @@ OPTIONS {
 
 Search for products mentioning "wireless charging":
 
-\`\`\`gql
+```gql
 MATCH (p:Product)
-WHERE fulltext_search(p, 'wireless charging')
-RETURN p.name, p.description, fulltext_score(p, 'wireless charging') AS score
+CALL geode.fts.search('product_search', 'wireless charging')
+YIELD node, score
+MATCH (p:Product) WHERE id(p) = node
+RETURN p.name, p.description, score
 ORDER BY score DESC
 LIMIT 10
-\`\`\`
+```
 
 ### Step 3: Optimize BM25 Parameters
 
 **For Short Documents** (product names):
-\`\`\`gql
+
+```gql
 CREATE FULLTEXT INDEX product_names
 ON :Product(name)
 OPTIONS {
     k1: 2.0,    -- Higher for short documents
     b: 0.5      -- Less length normalization
 }
-\`\`\`
+```
 
 **For Long Documents** (descriptions, reviews):
-\`\`\`gql
+
+```gql
 CREATE FULLTEXT INDEX product_descriptions
 ON :Product(description)
 OPTIONS {
     k1: 1.2,    -- Standard value
     b: 0.75     -- Standard length normalization
 }
-\`\`\`
+```
 
-**For Exact Phrase Matching**:
-\`\`\`gql
-MATCH (p:Product)
-WHERE fulltext_search(p, '"noise cancellation"')  -- Exact phrase
+**For Exact Phrase Matching**: phrase search is its own procedure — quoting the
+terms inside `search` has no effect.
+
+```gql
+CALL geode.fts.phrase('product_search', 'noise cancellation')
+YIELD node, score
+MATCH (p:Product) WHERE id(p) = node
 RETURN p.name, p.description
-\`\`\`
+```
 
 ### Step 4: Multi-field Search
 
 Search across multiple fields with weights:
 
-\`\`\`gql
-MATCH (p:Product)
-WHERE fulltext_search(p.name, 'headphones', {boost: 2.0})
-   OR fulltext_search(p.description, 'headphones', {boost: 1.0})
-RETURN p.name,
-       fulltext_score(p.name, 'headphones') * 2.0 +
-       fulltext_score(p.description, 'headphones') AS total_score
+A single index already spans several properties — `product_search` covers both
+`name` and `description`, and a hit on either contributes to the score. Per-field
+boosts are not supported: there is no weighting argument, and the score is the
+sum of the per-term BM25 contributions.
+
+```gql
+CALL geode.fts.search('product_search', 'headphones', 10)
+YIELD node, score
+MATCH (p:Product) WHERE id(p) = node
+RETURN p.name, score AS total_score
 ORDER BY total_score DESC
-LIMIT 10
-\`\`\`
+```
+
+To weight one field more heavily, index it separately and combine the two
+searches client-side.
 
 ## Part 5: Spatial Indexes for Geographic Queries
 
@@ -452,7 +479,7 @@ LIMIT 10
 
 Create an R-tree spatial index for customer locations:
 
-\`\`\`gql
+```gql
 CREATE SPATIAL INDEX customer_locations
 ON :Customer(location)
 OPTIONS {
@@ -460,45 +487,46 @@ OPTIONS {
     min_entries: 4,
     max_entries: 16
 }
-\`\`\`
+```
 
 ### Step 2: Geographic Range Query
 
 Find customers within 50km of a point:
 
-\`\`\`gql
+```gql
 MATCH (c:Customer)
 WHERE distance(c.location, point({latitude: 37.7749, longitude: -122.4194})) < 50000  -- meters
 RETURN c.name, c.location,
        distance(c.location, point({latitude: 37.7749, longitude: -122.4194})) / 1000 AS distance_km
 ORDER BY distance_km
-\`\`\`
+```
 
 ### Step 3: Bounding Box Query
 
 Find customers in a geographic bounding box:
 
-\`\`\`gql
+```gql
 MATCH (c:Customer)
 WHERE c.location.latitude >= 37.0 AND c.location.latitude <= 38.0
   AND c.location.longitude >= -123.0 AND c.location.longitude <= -121.0
 RETURN c.name, c.location
-\`\`\`
+```
 
 ## Part 6: Index Maintenance and Monitoring
 
 ### Step 1: List All Indexes
 
-\`\`\`gql
+```gql
 SHOW INDEXES;
 
 -- Or through the introspection procedure
 CALL db.indexes() YIELD name, type, label, properties
 RETURN name, type, label, properties
-\`\`\`
+```
 
 **Output**:
-\`\`\`
+
+```text
 
 | name                  | type      | properties        | options              |
 |-----------------------|-----------|-------------------|----------------------|
@@ -507,30 +535,30 @@ RETURN name, type, label, properties
 | product_embeddings    | hnsw      | ["embedding"]     | {metric:'cosine'}    |
 | product_search        | fulltext  | ["name","description"]| {k1:1.2,b:0.75} |
 | customer_locations    | spatial   | ["location"]      | {dimensions:2}       |
-\`\`\`
+```
 
 ### Step 2: Analyze Index Usage
 
 Index hit counters are not maintained, so "is this index used?" is answered per
 statement, by reading the plan:
 
-\`\`\`gql
+```gql
 EXPLAIN MATCH (c:Customer) WHERE c.email = 'alice@example.com' RETURN c;
-\`\`\`
+```
 
-Walk your application's hot statements through \`EXPLAIN\` and treat any index
+Walk your application's hot statements through `EXPLAIN` and treat any index
 that never appears in a plan as a candidate for removal.
 
 ### Step 3: Rebuild Index
 
 Rebuild an index to improve performance:
 
-\`\`\`gql
+```gql
 -- Drop and recreate index
 DROP INDEX customer_email
 
 CREATE INDEX ON :Customer(email)
-\`\`\`
+```
 
 ### Step 4: Monitor Index Size
 
@@ -538,13 +566,13 @@ Per-index byte sizes are not published. Index data lives in the data directory
 alongside everything else, so measure it there, and track the number of indexed
 rows with a count:
 
-\`\`\`bash
+```bash
 du -sh /var/lib/geode/data
-\`\`\`
+```
 
-\`\`\`gql
+```gql
 MATCH (c:Customer) WHERE c.email IS NOT NULL RETURN count(c) AS indexed_rows;
-\`\`\`
+```
 
 ## Part 7: Advanced Optimization Techniques
 
@@ -552,7 +580,7 @@ MATCH (c:Customer) WHERE c.email IS NOT NULL RETURN count(c) AS indexed_rows;
 
 Create indexes that include all queried fields:
 
-\`\`\`gql
+```gql
 -- Create covering index
 CREATE INDEX ON :Product(category, name, price)
 
@@ -560,35 +588,35 @@ CREATE INDEX ON :Product(category, name, price)
 MATCH (p:Product)
 WHERE p.category = 'Electronics'
 RETURN p.name, p.price  -- All fields in index
-\`\`\`
+```
 
 ### Index Hints
 
 Force query planner to use specific index:
 
-\`\`\`gql
+```gql
 -- Use index hint
 MATCH (p:Product)
 USING INDEX product_category_price
 WHERE p.category = 'Electronics' AND p.price < 300
 RETURN p
-\`\`\`
+```
 
 ### Partial Indexes
 
 Create indexes with filter conditions (if supported):
 
-\`\`\`gql
+```gql
 -- Index only active products
 CREATE INDEX ON :Product(name)
 WHERE in_stock = true
-\`\`\`
+```
 
 ### Index-Only Scans
 
 Optimize queries to use index-only scans:
 
-\`\`\`gql
+```gql
 -- Before: Requires table access
 MATCH (p:Product)
 WHERE p.category = 'Electronics'
@@ -598,7 +626,7 @@ RETURN p  -- Returns all properties
 MATCH (p:Product)
 WHERE p.category = 'Electronics'
 RETURN p.name, p.category  -- Only indexed properties
-\`\`\`
+```
 
 ## Part 8: Performance Testing
 
@@ -606,7 +634,7 @@ RETURN p.name, p.category  -- Only indexed properties
 
 Create a benchmark dataset:
 
-\`\`\`bash
+```bash
 
 # Generate 100k customers
 
@@ -617,24 +645,26 @@ for i in {1..100000}; do
     name: 'User $i'
   })"
 done | geode query
-\`\`\`
+```
 
 ### Step 2: Measure Query Performance
 
 **Without Index**:
-\`\`\`gql
+
+```gql
 -- Measure time
 PROFILE MATCH (c:Customer {email: 'user50000@example.com'}) RETURN c
 -- execution_time_ms: ~150ms (full scan)
-\`\`\`
+```
 
 **With Index**:
-\`\`\`gql
+
+```gql
 CREATE INDEX ON :Customer(email)
 
 PROFILE MATCH (c:Customer {email: 'user50000@example.com'}) RETURN c
 -- execution_time_ms: ~2ms (index seek)
-\`\`\`
+```
 
 **Performance Improvement**: 75x faster
 
@@ -642,7 +672,7 @@ PROFILE MATCH (c:Customer {email: 'user50000@example.com'}) RETURN c
 
 Use a load testing tool to measure throughput:
 
-\`\`\`python
+```python
 import asyncio
 from geode_client import open_database
 import time
@@ -672,7 +702,7 @@ asyncio.run(benchmark_queries(db, 1000))
 
 # Output: Queries: 1000, Time: 2.15s, QPS: 465
 
-\`\`\`
+```
 
 ## Part 9: Common Pitfalls and Solutions
 
@@ -684,13 +714,13 @@ asyncio.run(benchmark_queries(db, 1000))
 The server keeps no per-query counters, so rank your statements where you
 issue them — application logs, or the audit trail:
 
-\`\`\`gql
+```gql
 CALL audit.get_recent_events(1000)
 YIELD event_id, timestamp, category, action, outcome
 RETURN action, count(*) AS executions
 ORDER BY executions DESC
 LIMIT 10;
-\`\`\`
+```
 
 Create indexes for the top statements only.
 
@@ -699,54 +729,57 @@ Create indexes for the top statements only.
 **Problem**: B-tree index for vector similarity
 
 **Solution**: Use appropriate index type
-\`\`\`gql
+
+```gql
 -- Wrong: B-tree for embeddings
 CREATE INDEX ON :Product(embedding)
 
 -- Correct: HNSW for embeddings
 CREATE VECTOR INDEX ON :Product(embedding)
 WITH (metric = 'cosine')
-\`\`\`
+```
 
 ### Pitfall 3: Unselective Indexes
 
 **Problem**: Index on low-cardinality field
 
 **Solution**: Check index selectivity
-\`\`\`gql
+
+```gql
 -- Check cardinality
 MATCH (p:Product)
 RETURN p.category, count(*) AS count
 ORDER BY count DESC
 
 -- If most values have high count, index is not useful
-\`\`\`
+```
 
 ### Pitfall 4: Assuming a Statistics Refresh Exists
 
-**Problem**: Reaching for an \`ANALYZE\`-style command that Geode does not have
+**Problem**: Reaching for an `ANALYZE`-style command that Geode does not have
 
 **Solution**: Index and catalog state is maintained by the engine as data
 changes — there is nothing to refresh. If a plan looks wrong, inspect it
 directly:
-\`\`\`gql
+
+```gql
 EXPLAIN MATCH (p:Product) WHERE p.category = 'Books' RETURN p;
-\`\`\`
+```
 
 ## Practice Exercises
 
 ### Exercise 1: E-commerce Search Optimization
 
 **Task**: Optimize this query:
-\`\`\`gql
+
+```gql
 MATCH (p:Product)
 WHERE p.category = 'Electronics'
   AND p.price >= 100 AND p.price <= 500
-  AND fulltext_search(p.description, 'wireless bluetooth')
-RETURN p.name, p.price, fulltext_score(p.description, 'wireless bluetooth') AS score
+RETURN p.name, p.price, score
 ORDER BY score DESC, p.price
 LIMIT 20
-\`\`\`
+```
 
 **Steps**:
 
@@ -756,29 +789,29 @@ LIMIT 20
 4. Measure with PROFILE
 
 **Solution**:
-\`\`\`gql
+
+```gql
 CREATE INDEX ON :Product(category, price)
 CREATE FULLTEXT INDEX ON :Product(description)
 
 EXPLAIN MATCH (p:Product)
 WHERE p.category = 'Electronics'
   AND p.price >= 100 AND p.price <= 500
-  AND fulltext_search(p.description, 'wireless bluetooth')
-RETURN p.name, p.price, fulltext_score(p.description, 'wireless bluetooth') AS score
+RETURN p.name, p.price, score
 ORDER BY score DESC, p.price
 LIMIT 20
-\`\`\`
+```
 
 ### Exercise 2: Geospatial Query Optimization
 
 **Task**: Find customers within 10km of stores
 
-\`\`\`gql
+```gql
 MATCH (c:Customer), (s:Store)
 WHERE distance(c.location, s.location) < 10000
 RETURN c.name, s.name, distance(c.location, s.location) AS distance_m
 ORDER BY distance_m
-\`\`\`
+```
 
 **Steps**:
 
@@ -787,7 +820,8 @@ ORDER BY distance_m
 3. Compare performance with/without indexes
 
 **Solution**:
-\`\`\`gql
+
+```gql
 CREATE SPATIAL INDEX ON :Customer(location)
 CREATE SPATIAL INDEX ON :Store(location)
 
@@ -795,13 +829,13 @@ PROFILE MATCH (c:Customer), (s:Store)
 WHERE distance(c.location, s.location) < 10000
 RETURN c.name, s.name, distance(c.location, s.location) AS distance_m
 ORDER BY distance_m
-\`\`\`
+```
 
 ### Exercise 3: Vector Similarity Optimization
 
 **Task**: Implement product recommendation based on embedding similarity
 
-\`\`\`gql
+```gql
 -- Given a product, find similar products
 MATCH (p:Product {id: 101})
 MATCH (similar:Product)
@@ -810,7 +844,7 @@ WHERE similar.id <> p.id
 RETURN similar.name, similarity(p.embedding, similar.embedding, 'cosine') AS similarity
 ORDER BY similarity DESC
 LIMIT 10
-\`\`\`
+```
 
 **Steps**:
 
@@ -819,7 +853,8 @@ LIMIT 10
 3. Tune the threshold and `LIMIT` for the recall/latency trade-off
 
 **Solution**:
-\`\`\`gql
+
+```gql
 CREATE VECTOR INDEX product_recommendations
 ON :Product(embedding)
 WITH (metric = 'cosine')
@@ -832,7 +867,7 @@ WHERE similar.id <> p.id
 RETURN similar.name, similarity(p.embedding, similar.embedding, 'cosine') AS similarity
 ORDER BY similarity DESC
 LIMIT 10
-\`\`\`
+```
 
 ## Quick Reference Card
 
@@ -840,12 +875,12 @@ LIMIT 10
 
 | Query Pattern | Index Type | Example |
 |---------------|------------|---------|
-| Equality lookup | B-tree | \`email = 'alice@example.com'\` |
-| Range query | B-tree | \`price BETWEEN 100 AND 200\` |
-| Text search | Full-text | \`fulltext_search(description, 'wireless')\` |
-| Vector similarity | HNSW | \`similarity(embedding, query_vector)\` |
-| Geographic range | Spatial | \`distance(location, point) < 10000\` |
-| Prefix matching | B-tree | \`name STARTS WITH 'Alice'\` |
+| Equality lookup | B-tree | `email = 'alice@example.com'` |
+| Range query | B-tree | `price BETWEEN 100 AND 200` |
+| Text search | Full-text | `CALL geode.fts.search('idx', 'wireless')` |
+| Vector similarity | HNSW | `similarity(embedding, query_vector)` |
+| Geographic range | Spatial | `distance(location, point) < 10000` |
+| Prefix matching | B-tree | `name STARTS WITH 'Alice'` |
 
 ### EXPLAIN Plan Operators
 

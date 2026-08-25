@@ -419,7 +419,9 @@ echo "=== Cross-Region Migration ==="
 
 # 1. Set up replication
 echo "Setting up replication..."
-geode admin replicate \
+# There is no `geode admin` subcommand. Geode's CLI is: serve, shell, query,
+# lsp, backup, restore, migrate, auth, login, logout, user, role, tenant,
+# policy, grant, revoke, completion, mcp.
   --source "$SOURCE_HOST" \
   --target "$TARGET_HOST" \
   --mode async
@@ -427,7 +429,7 @@ geode admin replicate \
 # 2. Wait for sync
 echo "Waiting for initial sync..."
 while true; do
-    LAG=$(geode admin replication-lag --target "$TARGET_HOST")
+    LAG=$(geode query "SHOW CLUSTER STATUS""$TARGET_HOST")
     echo "Replication lag: $LAG bytes"
     [ "$LAG" -lt 1000 ] && break
     sleep 30
@@ -435,7 +437,9 @@ done
 
 # 3. Stop writes to source
 echo "Stopping writes to source..."
-geode admin read-only --host "$SOURCE_HOST"
+# There is no `geode admin` subcommand. Geode's CLI is: serve, shell, query,
+# lsp, backup, restore, migrate, auth, login, logout, user, role, tenant,
+# policy, grant, revoke, completion, mcp.
 
 # 4. Final sync
 echo "Final synchronization..."
@@ -443,7 +447,9 @@ sleep 60
 
 # 5. Promote target
 echo "Promoting target..."
-geode admin promote --host "$TARGET_HOST"
+# There is no `geode admin` subcommand. Geode's CLI is: serve, shell, query,
+# lsp, backup, restore, migrate, auth, login, logout, user, role, tenant,
+# policy, grant, revoke, completion, mcp.
 
 # 6. Update DNS
 echo "Update DNS to point to $TARGET_HOST"
@@ -620,7 +626,7 @@ iconv -f ISO-8859-1 -t UTF-8 input.csv > input-utf8.csv
 
 ```bash
 # Check index status (indexes slow down writes)
-geode admin index-status
+geode query "SHOW INDEXES"
 
 # Temporarily drop indexes
 geode query "DROP INDEX person_email"

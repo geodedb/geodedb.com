@@ -304,7 +304,7 @@ MATCH (doc:Document)
 WHERE doc.abstract CONTAINS 'artificial intelligence'
   AND doc.keywords CONTAINS 'neural networks'
 RETURN doc.title,
-       bm25_score(doc.abstract, 'artificial intelligence neural networks') AS relevance
+       score AS relevance
 ORDER BY relevance DESC
 LIMIT 10
 ```
@@ -339,7 +339,7 @@ WHERE doc.text CONTAINS 'database'
   AND (doc.text CONTAINS 'graph' OR doc.text CONTAINS 'network')
   AND NOT doc.text CONTAINS 'relational'
 RETURN doc.title
-ORDER BY bm25_score(doc.text, 'database graph network') DESC
+ORDER BY score DESC
 ```
 
 ## Corpus-Aware Optimization
@@ -526,8 +526,8 @@ MATCH (article:Article)
 WHERE article.title CONTAINS 'graph database'
    OR article.content CONTAINS 'graph database'
 RETURN article.title,
-       bm25_score_weighted(article.title, 'graph database', 3.0) +
-       bm25_score_weighted(article.content, 'graph database', 1.0) AS score
+       score +
+       score AS score
 ORDER BY score DESC
 ```
 
@@ -626,7 +626,7 @@ MATCH (doc:Document)
 WHERE doc.content CONTAINS 'quarterly earnings report'
   AND doc.created_date > datetime('2025-01-01')
 RETURN doc.title, doc.author,
-       bm25_score(doc.content, 'quarterly earnings report') AS relevance
+       score AS relevance
 ORDER BY relevance DESC
 LIMIT 20
 ```
@@ -644,7 +644,7 @@ WHERE p.description CONTAINS 'wireless bluetooth headphones'
   AND p.price <= 150
   AND p.in_stock = true
 RETURN p.name, p.price, p.rating,
-       bm25_score(p.description, 'wireless bluetooth headphones') AS match_score
+       score AS match_score
 ORDER BY match_score DESC, p.rating DESC
 LIMIT 50
 ```
@@ -661,7 +661,7 @@ MATCH (article:KBArticle)
 WHERE article.content CONTAINS 'password reset authentication'
   AND article.status = 'published'
 RETURN article.title, article.category,
-       bm25_score(article.content, 'password reset authentication') AS relevance,
+       score AS relevance,
        article.helpful_votes
 ORDER BY relevance DESC, article.helpful_votes DESC
 LIMIT 10
@@ -703,7 +703,7 @@ CREATE (doc4:TestDoc {text: 'machine learning machine learning machine learning'
 -- Search and verify BM25 scoring
 MATCH (doc:TestDoc)
 WHERE doc.text CONTAINS 'machine learning'
-RETURN doc.text, bm25_score(doc.text, 'machine learning') AS score
+RETURN doc.text, score AS score
 ORDER BY score DESC
 
 -- Expected order:
@@ -783,7 +783,7 @@ RETURN doc.title,
        term_frequency(doc.content, 'unexpected') AS tf,
        document_frequency('unexpected') AS df,
        character_count(doc.content) AS doc_length,
-       bm25_score(doc.content, 'unexpected') AS score
+       score AS score
 ORDER BY score DESC
 ```
 
@@ -840,7 +840,7 @@ ORDER BY score DESC
    MATCH (doc:Document)
    WHERE doc.content CONTAINS 'search'
    RETURN doc.title
-   ORDER BY bm25_score(doc.content, 'search') DESC
+   ORDER BY score DESC
    LIMIT 100  -- ✅ Good
    ```
 
@@ -848,7 +848,7 @@ ORDER BY score DESC
 
    ```gql
    -- Use BM25 scores for ranking
-   RETURN doc.title, bm25_score(doc.content, query) AS relevance
+   RETURN doc.title, score AS relevance
    ORDER BY relevance DESC
    ```
 

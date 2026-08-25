@@ -41,12 +41,14 @@ Traditional databases often make security optional or add it as an afterthought.
 Geode **requires** TLS 1.3 for all network connections with **no plaintext fallback**:
 
 **Why TLS 1.3**:
+
 - **Strong cipher suites only**: No legacy weak ciphers (AES-GCM, ChaCha20)
 - **Forward secrecy**: Past sessions remain secure if keys are compromised
 - **Faster handshake**: 0-RTT resumption for returning clients
 - **Simplified configuration**: Removes insecure options
 
 **Server configuration**:
+
 ```bash
 # Generate self-signed certificate (development)
 openssl req -x509 -newkey rsa:4096 -nodes \
@@ -60,6 +62,7 @@ geode serve --listen 0.0.0.0:3141 \
 ```
 
 **Client connection (Python)**:
+
 ```python
 from geode_client import Client
 
@@ -83,6 +86,7 @@ async with client.connection() as conn:
 ```
 
 **Certificate management best practices**:
+
 - Use Let's Encrypt for public-facing servers (free, automated)
 - Use internal CA for private networks
 - Rotate certificates before expiration (automate with certbot)
@@ -93,6 +97,7 @@ async with client.connection() as conn:
 Geode supports multiple authentication mechanisms:
 
 **Built-in Username/Password**:
+
 ```gql
 -- Create user with password
 CREATE USER alice PASSWORD 'secure_password_here' REQUIRE SECURE TRANSPORT;
@@ -102,6 +107,7 @@ CREATE USER alice PASSWORD 'secure_password_here' REQUIRE SECURE TRANSPORT;
 ```
 
 **Python client authentication**:
+
 ```python
 from geode_client import AuthClient, Client
 
@@ -113,12 +119,14 @@ async with client.connection() as conn:
 ```
 
 **Password hashing** (server-side):
+
 - Uses **Argon2id** (winner of Password Hashing Competition)
 - Configurable time cost, memory cost, parallelism
 - Resistant to GPU/ASIC attacks
 - Automatically salted
 
 **Certificate-Based Authentication** (mTLS):
+
 ```bash
 # Server requires client certificates
 geode serve --listen 0.0.0.0:3141 \
@@ -142,6 +150,7 @@ async with client.connection() as conn:
 ```
 
 **LDAP/Active Directory Integration** (Enterprise):
+
 ```bash
 # Configure LDAP authentication
 geode serve --listen 0.0.0.0:3141 \
@@ -157,6 +166,7 @@ geode serve --listen 0.0.0.0:3141 \
 Geode implements fine-grained access control at multiple levels:
 
 **Database-Level Permissions**:
+
 ```gql
 -- Grant database access
 GRANT ACCESS ON DATABASE sales TO alice;
@@ -166,6 +176,7 @@ REVOKE ACCESS ON DATABASE sales FROM alice;
 ```
 
 **Label-Level Permissions**:
+
 ```gql
 -- Grant read access to specific node labels
 GRANT SELECT ON LABEL User TO alice;
@@ -179,6 +190,7 @@ GRANT SELECT ON ALL LABELS TO readonly_user;
 ```
 
 **Property-Level Permissions**:
+
 ```gql
 -- Grant access to specific properties only
 GRANT SELECT ON User(id, name, email) TO support_team;
@@ -195,26 +207,27 @@ RLS policies filter query results based on user context:
 
 ```gql
 -- Create RLS policy: Users can only see their own data
-CREATE POLICY user_isolation ON User
-FOR SELECT
-USING (id = current_user_id());
+-- User.id must equal the caller's 'user_id' principal attribute
+CALL geode.rls.add_attribute_policy('app', 'User', 'id', 'user_id');
 
 -- Create RLS policy: Managers can see their team's data
-CREATE POLICY team_visibility ON Employee
-FOR SELECT
-USING (
-    EXISTS {
-        MATCH (e:Employee)-[:REPORTS_TO]->(manager:Employee)
-        WHERE manager.user_id = current_user_id()
-    }
-);
+-- Not expressible as a Geode policy predicate (only `=` against a string
+-- literal compiles); precompute the decision into a property instead:
+CALL geode.rls.add_attribute_policy('app', 'Employee', 'access_tag', 'access_tag');
 
 -- Enable RLS on table
-ALTER LABEL User ENABLE ROW LEVEL SECURITY;
-ALTER LABEL Employee ENABLE ROW LEVEL SECURITY;
+-- Geode has no ALTER LABEL / ALTER GRAPH / property DEFAULT DDL. Labels and
+-- properties are schema-free: write the new property with SET, supplying the
+-- default yourself.
+MATCH (u:User) WHERE u.verified IS NULL SET u.verified = false;
+-- Geode has no ALTER LABEL / ALTER GRAPH / property DEFAULT DDL. Labels and
+-- properties are schema-free: write the new property with SET, supplying the
+-- default yourself.
+MATCH (u:User) WHERE u.verified IS NULL SET u.verified = false;
 ```
 
 **Python usage with RLS**:
+
 ```python
 from geode_client import AuthClient, Client
 
@@ -245,29 +258,27 @@ async with client.connection() as conn:
 **RLS Policy Examples**:
 
 Multi-tenant isolation:
+
 ```gql
-CREATE POLICY tenant_isolation ON ALL LABELS
-FOR ALL
-USING (tenant_id = current_tenant_id());
+-- Not expressible as a Geode policy predicate (only `=` against a string
+-- literal compiles); precompute the decision into a property instead:
+CALL geode.rls.add_attribute_policy('app', 'Label', 'access_tag', 'access_tag');
 ```
 
 Time-based access:
+
 ```gql
-CREATE POLICY business_hours ON SensitiveData
-FOR SELECT
-USING (extract_hour(current_timestamp()) BETWEEN 9 AND 17);
+-- Not expressible as a Geode policy predicate (only `=` against a string
+-- literal compiles); precompute the decision into a property instead:
+CALL geode.rls.add_attribute_policy('app', 'SensitiveData', 'access_tag', 'access_tag');
 ```
 
 Role-based filtering:
+
 ```gql
-CREATE POLICY role_based_access ON Document
-FOR SELECT
-USING (
-    security_level <= (
-        MATCH (u:User {id: current_user_id()})
-        RETURN u.clearance_level
-    )
-);
+-- Not expressible as a Geode policy predicate (only `=` against a string
+-- literal compiles); precompute the decision into a property instead:
+CALL geode.rls.add_attribute_policy('app', 'Document', 'access_tag', 'access_tag');
 ```
 
 ### Data Encryption at Rest
@@ -288,12 +299,14 @@ geode serve --listen 0.0.0.0:3141 \
 ```
 
 **Key characteristics**:
+
 - AES-256-GCM (authenticated encryption)
 - Per-page encryption (16KB blocks)
 - Low overhead (~5% performance impact)
 - Protects against physical theft, backup leaks
 
 **Key Management Service (KMS) Integration**:
+
 ```bash
 # Use AWS KMS for key management
 geode serve --listen 0.0.0.0:3141 \
@@ -344,6 +357,7 @@ async def get_user_ssn(user_id):
 ```
 
 **FLE vs TDE**:
+
 - **TDE**: Protects stored files, transparent to application, database can query
 - **FLE**: Protects specific fields, application-managed, database sees ciphertext
 
@@ -352,6 +366,7 @@ async def get_user_ssn(user_id):
 Comprehensive logging for compliance and forensics:
 
 **Enable audit logging**:
+
 ```bash
 geode serve --listen 0.0.0.0:3141 \
   --audit-log-enabled=true \
@@ -360,6 +375,7 @@ geode serve --listen 0.0.0.0:3141 \
 ```
 
 **Audit log format** (JSON Lines):
+
 ```json
 {
   "timestamp": "2026-01-24T14:32:45.123Z",
@@ -390,6 +406,7 @@ geode serve --listen 0.0.0.0:3141 \
 ```
 
 **Audit log analysis**:
+
 ```python
 import json
 
@@ -431,6 +448,7 @@ GRANT SELECT ON Product TO app_user;
 ### Secure Credential Management
 
 **Never hardcode credentials**:
+
 ```python
 # BAD: Hardcoded password
 client = Client("localhost", 3141, username="app", password="hardcoded_pass")
@@ -503,24 +521,28 @@ Layer multiple security controls:
 Geode's security features support compliance with:
 
 **GDPR** (General Data Protection Regulation):
+
 - RLS for data access control
 - Audit logging for data access tracking
 - Encryption at rest and in transit
 - Right to be forgotten (data deletion)
 
 **HIPAA** (Health Insurance Portability and Accountability Act):
+
 - Encryption of PHI (Protected Health Information)
 - Access controls and authentication
 - Audit trails for PHI access
 - Data integrity verification
 
 **PCI DSS** (Payment Card Industry Data Security Standard):
+
 - Strong access control measures
 - Network security (TLS 1.3)
 - Encryption of cardholder data
 - Logging and monitoring
 
 **SOC 2** (Service Organization Control 2):
+
 - Access controls and authentication
 - Encryption and secure data handling
 - Audit logging and monitoring
@@ -533,6 +555,7 @@ Geode's security features support compliance with:
 **Symptoms**: Connection refused or TLS errors
 
 **Diagnosis**:
+
 ```bash
 # Test TLS connection
 openssl s_client -connect localhost:3141 -tls1_3
@@ -542,6 +565,7 @@ openssl x509 -in server-cert.pem -text -noout
 ```
 
 **Solutions**:
+
 - Verify certificate hasn't expired
 - Ensure client trusts server certificate
 - Check TLS cipher suite compatibility
@@ -551,11 +575,13 @@ openssl x509 -in server-cert.pem -text -noout
 **Symptoms**: "Access denied" errors
 
 **Diagnosis**: Check audit logs:
+
 ```bash
 grep "authentication.*failure" /var/log/geode/audit.jsonl
 ```
 
 **Solutions**:
+
 - Verify username/password are correct
 - Check account isn't locked
 - Ensure user has database access
@@ -565,11 +591,13 @@ grep "authentication.*failure" /var/log/geode/audit.jsonl
 **Symptoms**: "Insufficient privileges" errors
 
 **Diagnosis**:
+
 ```gql
 SHOW GRANTS FOR alice;
 ```
 
 **Solutions**:
+
 - Grant necessary permissions
 - Check RLS policies aren't overly restrictive
 - Verify user is accessing correct database

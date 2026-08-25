@@ -366,18 +366,14 @@ GRANT SELECT, INSERT, UPDATE ON GRAPH social_network TO app_user;
 
 ```gql
 -- Multi-tenant isolation policy
-CREATE POLICY tenant_isolation ON User
-FOR ALL
-USING (user.organization_id = current_user_organization_id());
+-- Not expressible as a Geode policy predicate (only `=` against a string
+-- literal compiles); precompute the decision into a property instead:
+CALL geode.rls.add_attribute_policy('app', 'User', 'access_tag', 'access_tag');
 
 -- Data classification policy
-CREATE POLICY sensitive_data ON Document
-FOR SELECT
-USING (
-  document.classification = 'public'
-  OR document.classification = 'internal' AND current_user_role() IN ('employee', 'admin')
-  OR document.owner_id = current_user_id()
-);
+-- Not expressible as a Geode policy predicate (only `=` against a string
+-- literal compiles); precompute the decision into a property instead:
+CALL geode.rls.add_attribute_policy('app', 'Document', 'access_tag', 'access_tag');
 ```
 
 ### Network Security
@@ -711,7 +707,7 @@ locust -f load_test.py --host geode.example.com --users 1000 --spawn-rate 10 --r
 
 **Investigation**:
 
-1. Check active queries: `SELECT * FROM system.queries WHERE duration > 10s`
+1. Check active queries: `-- no running-query catalog; queries cannot be listed or cancelled WHERE duration > 10s`
 2. Profile slow queries: Use PROFILE command
 3. Check connection count: Monitor active_connections metric
 4. Review recent schema changes

@@ -464,15 +464,23 @@ networks:
 
 ```bash
 # Configure sharding in Geode
-geode admin configure-sharding \
+# There is no `geode admin` subcommand. Geode's CLI is: serve, shell, query,
+# lsp, backup, restore, migrate, auth, login, logout, user, role, tenant,
+# policy, grant, revoke, completion, mcp.
   --strategy consistent-hash \
   --replicas 3 \
   --rebalance-threshold 0.1
 
 # Assign shards to nodes
-geode admin assign-shard --node geode-node1 --shard A
-geode admin assign-shard --node geode-node2 --shard B
-geode admin assign-shard --node geode-node3 --shard C
+# There is no `geode admin` subcommand. Geode's CLI is: serve, shell, query,
+# lsp, backup, restore, migrate, auth, login, logout, user, role, tenant,
+# policy, grant, revoke, completion, mcp.
+# There is no `geode admin` subcommand. Geode's CLI is: serve, shell, query,
+# lsp, backup, restore, migrate, auth, login, logout, user, role, tenant,
+# policy, grant, revoke, completion, mcp.
+# There is no `geode admin` subcommand. Geode's CLI is: serve, shell, query,
+# lsp, backup, restore, migrate, auth, login, logout, user, role, tenant,
+# policy, grant, revoke, completion, mcp.
 ```
 
 **Range-Based Sharding**:
@@ -515,12 +523,14 @@ RETURN user.name, friend.name;
 
 ```bash
 # Initialize Raft cluster
-geode admin raft-init \
+# There is no `geode admin` subcommand. Geode's CLI is: serve, shell, query,
+# lsp, backup, restore, migrate, auth, login, logout, user, role, tenant,
+# policy, grant, revoke, completion, mcp.
   --node-id 1 \
   --peers geode-node1:9000,geode-node2:9000,geode-node3:9000
 
 # Check cluster status
-geode admin raft-status
+geode query "SHOW CLUSTER STATUS"
 
 # Example output:
 # Node ID: 1
@@ -577,13 +587,17 @@ server {
 
 ```bash
 # Configure automatic failover
-geode admin configure-ha \
+# There is no `geode admin` subcommand. Geode's CLI is: serve, shell, query,
+# lsp, backup, restore, migrate, auth, login, logout, user, role, tenant,
+# policy, grant, revoke, completion, mcp.
   --min-replicas 2 \
   --auto-promote true \
   --failover-timeout 30s
 
 # Manual failover (if needed)
-geode admin promote-node --node geode-node2
+# There is no `geode admin` subcommand. Geode's CLI is: serve, shell, query,
+# lsp, backup, restore, migrate, auth, login, logout, user, role, tenant,
+# policy, grant, revoke, completion, mcp.
 ```
 
 **Health Checks**:
@@ -607,10 +621,14 @@ healthcheck:
 docker-compose up -d --scale geode=5
 
 # Rebalance shards
-geode admin rebalance-shards --strategy least-loaded
+# There is no `geode admin` subcommand. Geode's CLI is: serve, shell, query,
+# lsp, backup, restore, migrate, auth, login, logout, user, role, tenant,
+# policy, grant, revoke, completion, mcp.
 
 # Verify distribution
-geode admin shard-distribution
+# There is no `geode admin` subcommand. Geode's CLI is: serve, shell, query,
+# lsp, backup, restore, migrate, auth, login, logout, user, role, tenant,
+# policy, grant, revoke, completion, mcp.
 ```
 
 **Vertical Scaling** (increase resources):
@@ -1006,7 +1024,7 @@ the index serve the ranking:
 
 ```gql
 -- Create the vector index for the metric you will query with
-CREATE VECTOR INDEX user_embeddings ON Person(embedding)
+CREATE INDEX user_embeddings ON Person(embedding) USING vector
   WITH (metric = 'euclidean');
 
 -- Nearest neighbours by Euclidean distance (lower = closer)
@@ -1561,7 +1579,9 @@ services:
 
 ```bash
 # Rotate database encryption keys
-geode admin rotate-encryption-key \
+# There is no `geode admin` subcommand. Geode's CLI is: serve, shell, query,
+# lsp, backup, restore, migrate, auth, login, logout, user, role, tenant,
+# policy, grant, revoke, completion, mcp.
   --old-key-id vault:geode/encryption/master_key \
   --new-key-id vault:geode/encryption/master_key_v2
 
@@ -1661,15 +1681,19 @@ sudo systemctl restart docker
 
 ```bash
 # Check Raft status on all nodes
-geode admin raft-status --node geode-node1
-geode admin raft-status --node geode-node2
-geode admin raft-status --node geode-node3
+geode query "SHOW CLUSTER STATUS"
+geode query "SHOW CLUSTER STATUS"
+geode query "SHOW CLUSTER STATUS"
 
 # Force leader election
-geode admin raft-force-election --node geode-node1
+# There is no `geode admin` subcommand. Geode's CLI is: serve, shell, query,
+# lsp, backup, restore, migrate, auth, login, logout, user, role, tenant,
+# policy, grant, revoke, completion, mcp.
 
 # Reset Raft state (DANGEROUS - data loss possible)
-geode admin raft-reset --force
+# There is no `geode admin` subcommand. Geode's CLI is: serve, shell, query,
+# lsp, backup, restore, migrate, auth, login, logout, user, role, tenant,
+# policy, grant, revoke, completion, mcp.
 ```
 
 ### Performance Issues
@@ -1678,7 +1702,7 @@ geode admin raft-reset --force
 
 ```bash
 # Enable query logging
-docker-compose exec geode geode admin set-log-level --query-log debug
+docker-compose exec geode geode query "SHOW CLUSTER STATUS"
 
 # Analyze slow queries
 docker-compose logs geode | grep "slow_query"
@@ -1694,7 +1718,9 @@ geode query "EXPLAIN MATCH (n:Person) RETURN n" --server geode:8443
 docker-compose exec geode ping -c 10 geode-node2
 
 # Verify QUIC performance
-geode admin network-diagnostics --peer geode-node2:8443
+# There is no `geode admin` subcommand. Geode's CLI is: serve, shell, query,
+# lsp, backup, restore, migrate, auth, login, logout, user, role, tenant,
+# policy, grant, revoke, completion, mcp.
 
 # Monitor metrics
 curl http://localhost:9090/api/v1/query?query=geode_query_duration_seconds
@@ -1707,7 +1733,9 @@ curl http://localhost:9090/api/v1/query?query=geode_query_duration_seconds
 docker-compose exec geode iostat -x 1 10
 
 # Enable I/O optimizations
-geode admin configure-io \
+# There is no `geode admin` subcommand. Geode's CLI is: serve, shell, query,
+# lsp, backup, restore, migrate, auth, login, logout, user, role, tenant,
+# policy, grant, revoke, completion, mcp.
   --async-io true \
   --io-threads 8 \
   --read-ahead 128k
@@ -1727,7 +1755,7 @@ docker-compose ps
 curl -k https://geode.local/health
 
 # Check cluster health
-geode admin cluster-health
+geode query "SHOW CLUSTER STATUS"
 
 # Example output:
 # Cluster: healthy
@@ -1740,16 +1768,22 @@ geode admin cluster-health
 
 ```bash
 # Run integrity check
-geode admin check-integrity
+geode query "CALL geode.storage.integrity()"
 
 # Vacuum database
-geode admin vacuum
+# There is no `geode admin` subcommand. Geode's CLI is: serve, shell, query,
+# lsp, backup, restore, migrate, auth, login, logout, user, role, tenant,
+# policy, grant, revoke, completion, mcp.
 
 # Analyze statistics
-geode admin analyze
+# There is no `geode admin` subcommand. Geode's CLI is: serve, shell, query,
+# lsp, backup, restore, migrate, auth, login, logout, user, role, tenant,
+# policy, grant, revoke, completion, mcp.
 
 # Reindex (if needed)
-geode admin reindex
+# There is no `geode admin` subcommand. Geode's CLI is: serve, shell, query,
+# lsp, backup, restore, migrate, auth, login, logout, user, role, tenant,
+# policy, grant, revoke, completion, mcp.
 ```
 
 ## Maintenance
@@ -1840,7 +1874,9 @@ docker volume prune
 find /var/log/geode -name "*.log" -mtime +30 -delete
 
 # Clean WAL archives (after backup)
-geode admin clean-wal-archive --before $(date -d "7 days ago" +%Y%m%d)
+# There is no `geode admin` subcommand. Geode's CLI is: serve, shell, query,
+# lsp, backup, restore, migrate, auth, login, logout, user, role, tenant,
+# policy, grant, revoke, completion, mcp.
 ```
 
 ## Production Checklist

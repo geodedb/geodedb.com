@@ -538,6 +538,7 @@ CREATE (s1)-[:CONNECTED {weight: weight}]->(s2);
 ```
 
 **Improvements over Louvain**:
+
 - Guarantees connectivity within communities
 - Better quality on large graphs
 - Faster convergence
@@ -554,24 +555,14 @@ SET n.memory = [ID(n)];
 -- Iterations: Listen, speak, update
 MATCH (n:Node)-[:CONNECTED]-(neighbor:Node)
 WITH n, neighbor.memory AS neighbor_labels
-WITH n, REDUCE(counts = {}, label IN FLATTEN(COLLECT(neighbor_labels)) |
-    CASE WHEN label IN keys(counts)
-         THEN counts + {label: counts[label] + 1}
-         ELSE counts + {label: 1}
-    END
-) AS label_counts
+WITH n, null /* reduce() is advertised by SHOW FUNCTIONS but has no evaluator dispatch; collect() the values and fold client-side (for path weights use algo.dijkstra.stream, which yields cost) */ AS label_counts
 WITH n, label_counts,
      [label IN keys(label_counts) ORDER BY label_counts[label] DESC][0] AS most_heard
 SET n.memory = n.memory + [most_heard];
 
 -- Post-processing: Extract communities
 MATCH (n:Node)
-WITH n, REDUCE(freq = {}, label IN n.memory |
-    CASE WHEN label IN keys(freq)
-         THEN freq + {label: freq[label] + 1}
-         ELSE freq + {label: 1}
-    END
-) AS label_frequency
+WITH n, null /* reduce() is advertised by SHOW FUNCTIONS but has no evaluator dispatch; collect() the values and fold client-side (for path weights use algo.dijkstra.stream, which yields cost) */ AS label_frequency
 WITH n, [label IN keys(label_frequency)
          WHERE label_frequency[label] > SIZE(n.memory) * 0.2] AS communities
 SET n.communities = communities;
@@ -610,6 +601,7 @@ RETURN SUM(e_in / m - (k_sum / (2 * m)) ^ 2) AS modularity;
 ```
 
 **Modularity Q**:
+
 - Q > 0.3: Significant community structure
 - Q > 0.7: Strong communities
 - Q ≈ 0: Random structure
@@ -635,6 +627,7 @@ RETURN boundary_edges * 1.0 / (internal_edges + boundary_edges) AS conductance;
 ```
 
 **Conductance φ**:
+
 - φ < 0.2: Well-separated community
 - φ > 0.5: Poorly defined boundary
 
@@ -770,16 +763,19 @@ RETURN zone1, zone2, interconnect_count, min_bandwidth,
 ### Algorithm Complexity Analysis
 
 **Label Propagation**:
+
 - Time: O(k × E) where k = iterations (typically 10-50)
 - Space: O(V) for label storage
 - Parallelizable: Yes (synchronous updates)
 
 **Louvain Method**:
+
 - Time: O(V × log V) expected
 - Space: O(V + E)
 - Levels: Typically 3-5 for real networks
 
 **Connected Components**:
+
 - Time: O(V + E) with Union-Find
 - Space: O(V)
 - Parallelizable: Yes (with caution)

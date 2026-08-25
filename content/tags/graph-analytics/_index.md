@@ -314,7 +314,7 @@ RETURN [n IN nodes(path) | n.name] AS path;
 MATCH path = shortestPath(
     (start:City {name: 'Austin'})-[:ROAD*..20]->(end:City {name: 'Seattle'})
 )
-WITH path, REDUCE(total = 0, r IN relationships(path) | total + r.distance) AS total_distance
+WITH path, null /* reduce() is advertised by SHOW FUNCTIONS but has no evaluator dispatch; collect() the values and fold client-side (for path weights use algo.dijkstra.stream, which yields cost) */ AS total_distance
 RETURN [n IN nodes(path) | n.name] AS route,
        total_distance
 ORDER BY total_distance
@@ -533,7 +533,7 @@ RETURN DISTINCT suspect.account_number,
 MATCH path = (a:Account)-[:TRANSFERRED*3..6]->(a)
 WHERE ALL(t IN relationships(path) WHERE t.amount > 5000)
 RETURN [n IN nodes(path) | n.account_number] AS ring,
-       REDUCE(total = 0, t IN relationships(path) | total + t.amount) AS ring_volume;
+       null /* reduce() is advertised by SHOW FUNCTIONS but has no evaluator dispatch; collect() the values and fold client-side (for path weights use algo.dijkstra.stream, which yields cost) */ AS ring_volume;
 ```
 
 ### Recommendation Engine
@@ -601,7 +601,7 @@ RETURN influencer.name,
 MATCH path = (supplier:Supplier)-[:SUPPLIES*]->(manufacturer:Manufacturer)
 WHERE supplier.product = 'Microchip'
   AND manufacturer.name = 'AutoCorp'
-WITH path, REDUCE(lead_time = 0, r IN relationships(path) | lead_time + r.lead_days) AS total_lead_time
+WITH path, null /* reduce() is advertised by SHOW FUNCTIONS but has no evaluator dispatch; collect() the values and fold client-side (for path weights use algo.dijkstra.stream, which yields cost) */ AS total_lead_time
 RETURN [n IN nodes(path) | n.name] AS supply_chain,
        total_lead_time
 ORDER BY total_lead_time;
@@ -727,7 +727,7 @@ async fn community_detection(client: &Client) -> Result<(), Box<dyn std::error::
 ### Performance Optimization
 
 - Index properties used in WHERE clauses
-- Use bounded path lengths (*1..5 instead of *)
+- Use bounded path lengths (`*1..5` instead of `*`)
 - Sample large graphs for approximate algorithms
 - Pre-compute and store centrality scores
 - Use batch updates for iterative algorithms

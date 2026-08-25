@@ -31,6 +31,7 @@ Geode exposes detailed metrics for monitoring database health and performance.
 ### Core Metrics
 
 **Query Performance:**
+
 ```
 geode_query_duration_seconds{quantile="0.50|0.95|0.99"}
 geode_query_count_total{status="success|error"}
@@ -38,6 +39,7 @@ geode_query_result_rows{quantile="0.50|0.95|0.99"}
 ```
 
 **Connection Pool:**
+
 ```
 geode_pool_connections_active
 geode_pool_connections_idle
@@ -46,6 +48,7 @@ geode_pool_wait_duration_seconds{quantile="0.95|0.99"}
 ```
 
 **Resource Utilization:**
+
 ```
 geode_memory_usage_bytes{type="heap|graph|index"}
 geode_cpu_usage_percent
@@ -53,6 +56,7 @@ geode_disk_usage_bytes{type="data|wal|index"}
 ```
 
 **Graph Statistics:**
+
 ```
 geode_nodes_total{label="User|Product|..."}
 geode_relationships_total{type="FRIENDS_WITH|PURCHASED|..."}
@@ -121,6 +125,7 @@ Pre-built Grafana dashboards provide visual monitoring.
 ### Key Dashboard Panels
 
 **Query Performance:**
+
 ```promql
 # P95 Query Latency
 histogram_quantile(0.95,
@@ -136,6 +141,7 @@ rate(geode_query_count_total[5m])
 ```
 
 **Resource Utilization:**
+
 ```promql
 # Memory Usage
 geode_memory_usage_bytes / geode_memory_limit_bytes * 100
@@ -148,6 +154,7 @@ geode_disk_usage_bytes / geode_disk_capacity_bytes * 100
 ```
 
 **Connection Pool Health:**
+
 ```promql
 # Pool Utilization
 geode_pool_connections_active / geode_pool_connections_total * 100
@@ -190,6 +197,7 @@ sample_rate = 0.1  # Trace 10% of requests
 Geode automatically propagates trace context from client libraries:
 
 **Go Client:**
+
 ```go
 import "go.opentelemetry.io/otel"
 
@@ -204,6 +212,7 @@ rows, err := db.QueryContext(ctx, `
 ```
 
 **Python Client:**
+
 ```python
 from opentelemetry import trace
 
@@ -270,6 +279,7 @@ export GEODE_LOG_LEVEL=info  # debug|info|warn|error
 Forward logs to aggregation services:
 
 **Loki:**
+
 ```yaml
 # promtail.yml
 clients:
@@ -286,6 +296,7 @@ scrape_configs:
 ```
 
 **ELK Stack:**
+
 ```bash
 # Forward to Elasticsearch
 ./geode serve --log-format json | \
@@ -440,7 +451,7 @@ Stream real-time metrics for operational dashboards.
 
 ```bash
 # Subscribe to real-time metrics
-wscat -c ws://localhost:3141/metrics/stream
+wscat -c ws://localhost:9090/metrics/stream
 
 # Receives JSON messages:
 {
@@ -456,7 +467,7 @@ wscat -c ws://localhost:3141/metrics/stream
 
 ```bash
 # HTTP endpoint for current metrics
-curl http://localhost:3141/metrics/current
+curl http://localhost:9090/metrics/current
 
 {
   "timestamp": "2026-01-24T14:30:00Z",
@@ -510,13 +521,19 @@ Logs queries exceeding threshold:
 
 ```bash
 # List active connections
-./geode admin connections list
+# There is no `geode admin` subcommand. Geode's CLI is: serve, shell, query,
+# lsp, backup, restore, migrate, auth, login, logout, user, role, tenant,
+# policy, grant, revoke, completion, mcp.
 
 # Connection details
-./geode admin connections show <connection-id>
+# There is no `geode admin` subcommand. Geode's CLI is: serve, shell, query,
+# lsp, backup, restore, migrate, auth, login, logout, user, role, tenant,
+# policy, grant, revoke, completion, mcp.
 
 # Kill stuck connection
-./geode admin connections kill <connection-id>
+# There is no `geode admin` subcommand. Geode's CLI is: serve, shell, query,
+# lsp, backup, restore, migrate, auth, login, logout, user, role, tenant,
+# policy, grant, revoke, completion, mcp.
 ```
 
 ### Query Debugging

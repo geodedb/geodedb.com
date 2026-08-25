@@ -37,16 +37,19 @@ Geode is a modern graph database designed for production workloads that require:
 ### Key Characteristics
 
 **Production Ready**:
+
 - 97.4% test coverage (1644/1688 tests passing)
 - 100% GQL compliance (see conformance profile)
 - Active development with rigorous governance
 
 **Modern Architecture**:
+
 - Written in Zig for memory safety and performance
 - QUIC + TLS 1.3 for secure, efficient communication
 - Native graph storage with index-free adjacency
 
 **Developer Friendly**:
+
 - Standard GQL query language
 - Comprehensive client libraries
 - Clear documentation and examples
@@ -59,6 +62,7 @@ Traditional relational databases store data in tables with rows and columns, req
 ### When Relationships Matter
 
 **Social Networks**:
+
 ```gql
 -- Find friends of friends in 2 hops
 MATCH (me:User {name: 'Alice'})-[:FRIEND]->(f1)-[:FRIEND]->(f2)
@@ -70,6 +74,7 @@ LIMIT 10;
 In a relational database, this requires multiple self-joins that become slower with each hop. In Geode, traversing relationships is constant-time regardless of depth.
 
 **Recommendation Engines**:
+
 ```gql
 -- Find products similar users bought
 MATCH (me:User {id: $user_id})-[:PURCHASED]->(p:Product)<-[:PURCHASED]-(similar:User)
@@ -81,12 +86,13 @@ LIMIT 20;
 ```
 
 **Fraud Detection**:
+
 ```gql
 -- Detect circular transaction patterns
 MATCH path = (a:Account)-[:TRANSFER*3..5]->(a)
 WHERE all(r IN relationships(path) WHERE r.amount > 10000)
   AND all(r IN relationships(path) WHERE r.timestamp >= CURRENT_DATE - DURATION 'P7D')
-RETURN path, reduce(sum = 0, r IN relationships(path) | sum + r.amount) AS total;
+RETURN path, null /* reduce() is advertised by SHOW FUNCTIONS but has no evaluator dispatch; collect() the values and fold client-side (for path weights use algo.dijkstra.stream, which yields cost) */ AS total;
 ```
 
 ## Why Geode?
@@ -96,6 +102,7 @@ RETURN path, reduce(sum = 0, r IN relationships(path) | sum + r.amount) AS total
 Geode implements the **ISO/IEC 39075:2024 GQL standard**, the international standard for graph query languages (like SQL is for relational databases).
 
 **Benefits**:
+
 - **No Vendor Lock-In**: Standard language works across compliant databases
 - **Future-Proof**: International standards evolve through consensus
 - **Familiar Syntax**: If you know SQL or Cypher, GQL will feel natural
@@ -124,10 +131,11 @@ COMMIT;
 ### Enterprise Security
 
 **Row-Level Security (RLS)**:
+
 ```gql
 -- Define access policy
-CREATE POLICY user_data_isolation ON User
-  USING (id = current_user_id());
+-- User.id must equal the caller's 'user_id' principal attribute
+CALL geode.rls.add_attribute_policy('app', 'User', 'id', 'user_id');
 
 -- Automatically enforced on all queries
 MATCH (u:User) RETURN u.name;  -- Only returns current user
@@ -143,6 +151,7 @@ All client connections use modern encryption by default.
 
 **QUIC Transport**:
 Geode uses QUIC (the protocol behind HTTP/3) for:
+
 - Reduced latency (0-RTT connection resumption)
 - Better performance over unreliable networks
 - Built-in encryption
@@ -250,6 +259,7 @@ geode shell
 ```
 
 In the shell:
+
 ```gql
 -- Test query
 RETURN 'Hello, Geode!' AS message;
@@ -283,6 +293,7 @@ INSERT (charlie)-[:KNOWS {since: DATE '2019-11-10'}]->
 ### 3. Query the Graph
 
 **Simple match**:
+
 ```gql
 -- Find all people
 MATCH (p:Person)
@@ -290,6 +301,7 @@ RETURN p.name, p.age, p.city;
 ```
 
 **Traversal**:
+
 ```gql
 -- Find Alice's friends
 MATCH (alice:Person {name: 'Alice'})-[:KNOWS]->(friend)
@@ -297,6 +309,7 @@ RETURN friend.name, friend.city;
 ```
 
 **Multi-hop**:
+
 ```gql
 -- Find friends of friends
 MATCH (alice:Person {name: 'Alice'})-[:KNOWS]->(friend)-[:KNOWS]->(fof)
@@ -305,6 +318,7 @@ RETURN fof.name AS friend_of_friend;
 ```
 
 **With filtering**:
+
 ```gql
 -- Find friends over 30
 MATCH (alice:Person {name: 'Alice'})-[:KNOWS]->(friend)
@@ -365,29 +379,34 @@ RETURN b.name, b.city;
 ### Clauses
 
 **MATCH**: Find patterns in the graph
+
 ```gql
 MATCH (p:Person {city: 'Austin'})
 RETURN p.name;
 ```
 
 **INSERT**: Create nodes and relationships
+
 ```gql
 INSERT (p:Person {name: 'Dave', age: 40});
 ```
 
 **SET**: Update properties
+
 ```gql
 MATCH (p:Person {name: 'Dave'})
 SET p.verified = true;
 ```
 
 **DELETE**: Remove nodes or relationships
+
 ```gql
 MATCH (p:Person {name: 'Dave'})
 DELETE p;
 ```
 
 **WHERE**: Filter results
+
 ```gql
 MATCH (p:Person)
 WHERE p.age >= 30 AND p.city = 'San Francisco'
@@ -395,6 +414,7 @@ RETURN p.name;
 ```
 
 **RETURN**: Specify output
+
 ```gql
 MATCH (p:Person)
 RETURN p.name AS name, p.age AS age
@@ -427,6 +447,7 @@ RETURN p.age, p.city;
 ```
 
 From client libraries:
+
 ```go
 // Go
 result, err := conn.Query("MATCH (p:Person {name: $name}) RETURN p.age",
@@ -576,8 +597,8 @@ CREATE INDEX person_name ON Person(name);
 CREATE INDEX person_email ON Person(email);
 
 -- Set up RLS if needed
-CREATE POLICY user_isolation ON User
-  USING (id = current_user_id());
+-- User.id must equal the caller's 'user_id' principal attribute
+CALL geode.rls.add_attribute_policy('app', 'User', 'id', 'user_id');
 ```
 
 ### Batch Loading
@@ -636,6 +657,7 @@ SHOW INDEXES;
 ### Common Errors
 
 **"Node not found"**: Use INSERT to create, not MATCH
+
 ```gql
 -- Wrong
 MATCH (p:Person {name: 'Alice'})  -- Error if doesn't exist
@@ -645,6 +667,7 @@ INSERT (p:Person {name: 'Alice'});
 ```
 
 **"Relationship requires both nodes"**: Create nodes first
+
 ```gql
 -- Create nodes
 INSERT (alice:Person {name: 'Alice'});

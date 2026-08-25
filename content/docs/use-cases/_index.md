@@ -44,12 +44,14 @@ This section explores common use cases with practical examples, schema designs, 
 ### Traditional Databases vs. Graph Databases
 
 **Relational Databases**:
+
 - Require complex JOINs for relationships
 - Performance degrades with deep traversals
 - Schema changes difficult for evolving relationships
 - NOT optimized for connected data queries
 
 **Graph Databases**:
+
 - ✅ Relationships are first-class citizens
 - ✅ Constant-time traversals regardless of depth
 - ✅ Flexible schema for evolving relationships
@@ -81,6 +83,7 @@ Choose graph databases when:
 Build rich social experiences with graph-native operations.
 
 **Key Capabilities**:
+
 - Friend-of-friend recommendations
 - Activity feed generation
 - Community detection
@@ -88,6 +91,7 @@ Build rich social experiences with graph-native operations.
 - Content sharing networks
 
 **Example Query**:
+
 ```gql
 -- Find mutual friends
 MATCH (me:Person {name: "Alice"})-[:KNOWS]->(friend)
@@ -106,6 +110,7 @@ ORDER BY mutual_friends DESC;
 Identify suspicious patterns and fraud rings in financial networks.
 
 **Key Capabilities**:
+
 - Transaction pattern analysis
 - Fraud ring detection
 - Anomaly detection
@@ -113,11 +118,12 @@ Identify suspicious patterns and fraud rings in financial networks.
 - Real-time alerts
 
 **Example Query**:
+
 ```gql
 -- Find suspicious transaction chains
 MATCH path = (a:Account)-[t:TRANSFER*2..5]->(b:Account)
 WHERE all(tx in t WHERE tx.amount > 10000)
-  AND duration.between(t[0].timestamp, t[-1].timestamp) < duration({hours: 1})
+  AND (t[-1].timestamp - t[0].timestamp) < duration({hours: 1})
 RETURN path, [tx in t | tx.amount] AS amounts;
 ```
 
@@ -130,6 +136,7 @@ RETURN path, [tx in t | tx.amount] AS amounts;
 Connect information across enterprise systems for semantic search and discovery.
 
 **Key Capabilities**:
+
 - Entity relationship mapping
 - Semantic search
 - Knowledge discovery
@@ -137,6 +144,7 @@ Connect information across enterprise systems for semantic search and discovery.
 - Question answering
 
 **Example Query**:
+
 ```gql
 -- Find experts on a topic
 MATCH (person:Person)-[:AUTHORED]->(doc:Document)
@@ -158,6 +166,7 @@ LIMIT 10;
 Generate personalized recommendations based on user behavior and item relationships.
 
 **Key Capabilities**:
+
 - Collaborative filtering
 - Content-based recommendations
 - Hybrid approaches
@@ -165,6 +174,7 @@ Generate personalized recommendations based on user behavior and item relationsh
 - Cold start handling
 
 **Example Query**:
+
 ```gql
 -- Recommend products based on similar users
 MATCH (me:User {id: $user_id})-[:PURCHASED]->(product)
@@ -187,6 +197,7 @@ LIMIT 10;
 Model and analyze complex supply networks for optimization and risk management.
 
 **Key Capabilities**:
+
 - Supplier network mapping
 - Logistics optimization
 - Disruption impact analysis
@@ -194,6 +205,7 @@ Model and analyze complex supply networks for optimization and risk management.
 - Inventory tracking
 
 **Example Query**:
+
 ```gql
 -- Find alternative suppliers
 MATCH path = (supplier:Supplier)-[:SUPPLIES*1..3]->(product:Product {id: $product_id})
@@ -201,7 +213,7 @@ WHERE supplier.status = 'active'
   AND all(r in relationships(path) WHERE r.lead_time < 30)
 RETURN supplier.name,
        length(path) AS supply_chain_depth,
-       reduce(time = 0, r in relationships(path) | time + r.lead_time) AS total_lead_time
+       null /* reduce() is advertised by SHOW FUNCTIONS but has no evaluator dispatch; collect() the values and fold client-side (for path weights use algo.dijkstra.stream, which yields cost) */ AS total_lead_time
 ORDER BY total_lead_time, supply_chain_depth;
 ```
 
@@ -260,6 +272,7 @@ Graph databases excel at different query patterns:
 ### Graph Database Advantages
 
 **Fast for**:
+
 - ✅ Multi-hop traversals (friend-of-friend)
 - ✅ Pattern matching (fraud patterns)
 - ✅ Relationship-heavy queries
@@ -274,6 +287,7 @@ Graph databases excel at different query patterns:
 ### Relational Database Advantages
 
 **Fast for**:
+
 - Tabular aggregations (SUM, AVG across rows)
 - Simple equality lookups with indexes
 - Set-based operations on single table
@@ -323,6 +337,7 @@ Graph databases excel at different query patterns:
 ### 1. Identify Graph Patterns
 
 Ask these questions:
+
 - What are the entities (nodes)?
 - How are they connected (relationships)?
 - What properties describe entities and relationships?

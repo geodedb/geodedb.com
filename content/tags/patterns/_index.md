@@ -412,9 +412,9 @@ ORDER BY e.timestamp;
 
 -- Time-based aggregation
 MATCH (o:Order)
-WHERE o.created_at > current_timestamp() - INTERVAL '30 days'
+WHERE o.created_at > current_timestamp() - duration('P30D')
 RETURN
-  date_trunc('day', o.created_at) as day,
+  $bucket_start /* no date_trunc(): bucket at write time or compare an explicit range */ as day,
   count(*) as order_count,
   sum(o.total) as revenue
 ORDER BY day;
@@ -426,7 +426,7 @@ ORDER BY day;
 -- Growth over time
 MATCH (u:User)
 RETURN
-  date_trunc('month', u.created_at) as month,
+  $bucket_start /* no date_trunc(): bucket at write time or compare an explicit range */ as month,
   count(*) as new_users
 ORDER BY month;
 ```
@@ -637,7 +637,7 @@ Advanced aggregation patterns:
 ```gql
 -- Multi-level aggregation (rollup pattern)
 MATCH (o:Order)-[:CONTAINS]->(item:OrderLineItem)-[:FOR_PRODUCT]->(p:Product)
-WHERE o.created_at >= datetime().minusDays(30)
+WHERE o.created_at >= datetime() - duration('P30D')
 RETURN
   p.category AS category,
   p.brand AS brand,
@@ -648,9 +648,9 @@ ORDER BY revenue DESC
 
 -- Compute subtotals at multiple levels
 MATCH (o:Order)
-WHERE o.created_at >= datetime().minusDays(30)
+WHERE o.created_at >= datetime() - duration('P30D')
 WITH
-  date_trunc('day', o.created_at) AS day,
+  $bucket_start /* no date_trunc(): bucket at write time or compare an explicit range */ AS day,
   o.status AS status,
   o.total AS amount
 RETURN
@@ -716,7 +716,7 @@ WITH c.name AS category,
      p.name AS product,
      p.price AS price,
      p.sales AS sales,
-     RANK() OVER (PARTITION BY c.name ORDER BY p.sales DESC) AS sales_rank
+     null /* Geode has no window functions and no OVER clause */ AS sales_rank
 WHERE sales_rank <= 10
 RETURN category, product, sales, sales_rank
 ORDER BY category, sales_rank
@@ -730,17 +730,14 @@ RETURN
   o.order_id,
   o.created_at,
   o.total,
-  SUM(o.total) OVER (
-    ORDER BY o.created_at
-    ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
-  ) AS running_total
+  SUM(o.total) AS running_total
 
 -- Percentile calculations
 MATCH (p:Product)
 WITH p.price AS price,
-     PERCENTILE_CONT(0.5) OVER () AS median_price,
-     PERCENTILE_CONT(0.25) OVER () AS q1_price,
-     PERCENTILE_CONT(0.75) OVER () AS q3_price
+     collect(0.5) /* percentile_cont/_disc parse but are never computed; sort client-side */ AS median_price,
+     collect(0.25) /* percentile_cont/_disc parse but are never computed; sort client-side */ AS q1_price,
+     collect(0.75) /* percentile_cont/_disc parse but are never computed; sort client-side */ AS q3_price
 RETURN DISTINCT median_price, q1_price, q3_price
 ```
 
@@ -795,7 +792,7 @@ WHERE u.email = $email
 RETURN u
 
 -- Full-text search optimization
-CREATE TEXT INDEX FOR (p:Post) ON (p.title, p.content);
+CREATE INDEX FOR (p:Post) ON (p.title, p.content) USING fulltext;
 MATCH (p:Post)
 WHERE p.content CONTAINS $search_term
 RETURN p

@@ -37,7 +37,7 @@ Geode exposes metrics in Prometheus format at the `/metrics` endpoint:
 
 ```bash
 # Access metrics endpoint
-curl http://localhost:3141/metrics
+curl http://localhost:9090/metrics
 
 # Sample metrics output
 geode_queries_total{status="success"} 12847
@@ -62,36 +62,42 @@ scrape_configs:
 ## Essential Metrics to Monitor
 
 **Query Performance Metrics**:
+
 - `geode_queries_total`: Total query count by status
 - `geode_query_duration_seconds`: Query latency histogram
 - `geode_query_execution_plan_cache_hits`: Query plan cache effectiveness
 - `geode_slow_queries_total`: Queries exceeding threshold
 
 **Transaction Metrics**:
+
 - `geode_transactions_total`: Transaction count by outcome (commit/rollback)
 - `geode_transaction_duration_seconds`: Transaction latency
 - `geode_transaction_conflicts_total`: Serialization conflicts
 - `geode_active_transactions`: Currently executing transactions
 
 **Connection Metrics**:
+
 - `geode_active_connections`: Current client connections
 - `geode_connection_errors_total`: Failed connection attempts
 - `geode_connection_pool_size`: Connection pool utilization
 - `geode_quic_streams_active`: Active QUIC streams
 
 **Memory Metrics**:
+
 - `geode_memory_used_bytes`: Total memory consumption
 - `geode_cache_size_bytes`: Query cache and buffer pool sizes
 - `geode_mvcc_versions_count`: MVCC version overhead
 - `geode_memory_allocations_total`: Allocation rate
 
 **Storage Metrics**:
+
 - `geode_disk_used_bytes`: Disk space consumption
 - `geode_wal_size_bytes`: Write-ahead log size
 - `geode_disk_io_operations_total`: I/O operations by type
 - `geode_checkpoint_duration_seconds`: Checkpoint performance
 
 **Index Metrics**:
+
 - `geode_index_size_bytes`: Index storage consumption
 - `geode_index_lookups_total`: Index usage frequency
 - `geode_index_build_duration_seconds`: Index creation time
@@ -127,6 +133,7 @@ rotate_count = 10
 ```
 
 **Log Categories**:
+
 - `query`: Query execution and planning
 - `transaction`: Transaction lifecycle events
 - `connection`: Client connections and disconnections
@@ -149,6 +156,7 @@ LIMIT 10;
 ```
 
 **Profile Output**:
+
 ```
 ┌────────────────────┬─────────┬─────────────┬───────────┐
 │ Operator           │ Rows    │ Time (ms)   │ Memory    │
@@ -174,6 +182,7 @@ RETURN u;
 Configure alerts for critical conditions:
 
 **High Error Rate**:
+
 ```yaml
 # Prometheus alerting rule
 groups:
@@ -189,6 +198,7 @@ groups:
 ```
 
 **Slow Query Detection**:
+
 ```yaml
 - alert: SlowQueriesIncreasing
   expr: |
@@ -199,6 +209,7 @@ groups:
 ```
 
 **Connection Pool Exhaustion**:
+
 ```yaml
 - alert: ConnectionPoolExhausted
   expr: |
@@ -209,6 +220,7 @@ groups:
 ```
 
 **Disk Space Low**:
+
 ```yaml
 - alert: DiskSpaceLow
   expr: |
@@ -219,6 +231,7 @@ groups:
 ```
 
 **Transaction Conflict Rate High**:
+
 ```yaml
 - alert: HighTransactionConflicts
   expr: |
@@ -233,6 +246,7 @@ groups:
 Create comprehensive Grafana dashboards for Geode monitoring:
 
 **Query Performance Dashboard**:
+
 ```json
 {
   "dashboard": {
@@ -275,6 +289,7 @@ sample_rate = 0.1  # Sample 10% of traces
 ```
 
 **Trace Example**:
+
 ```
 Trace: user_recommendation_flow
 ├─ http_request [200ms]
@@ -291,15 +306,16 @@ Implement health check endpoints for orchestration platforms:
 
 ```bash
 # Liveness probe (is Geode running?)
-curl http://localhost:3141/health/live
+curl http://localhost:9090/health/live
 # Returns: {"status": "ok"}
 
 # Readiness probe (can Geode serve traffic?)
-curl http://localhost:3141/health/ready
+curl http://localhost:9090/health/ready
 # Returns: {"status": "ready", "connections": 45, "queries_per_sec": 127}
 ```
 
 **Kubernetes Configuration**:
+
 ```yaml
 livenessProbe:
   httpGet:
@@ -321,54 +337,58 @@ readinessProbe:
 Use monitoring data to identify optimization opportunities:
 
 **Identify Hot Queries**:
+
 ```gql
 -- View query statistics
-SELECT query_text, execution_count, avg_duration_ms, max_duration_ms
-FROM system.query_stats
-WHERE execution_count > 1000
-ORDER BY avg_duration_ms DESC
-LIMIT 20;
+-- There is no query-statistics table, slow-query log or plan cache to
+-- query. Measure a specific statement with EXPLAIN / PROFILE, and scrape
+-- aggregate counters from the Prometheus endpoint (GEODE_METRICS_PORT).
 ```
 
 **Analyze Index Usage**:
+
 ```gql
 -- Find unused indexes
-SELECT index_name, table_name, usage_count
-FROM system.index_stats
-WHERE usage_count = 0
-  AND created_at < current_timestamp() - INTERVAL '7 days';
+-- SHOW INDEXES lists name, type, label and properties. Geode keeps no
+-- per-index usage counters, scan tallies or health scores.
+SHOW INDEXES;
 ```
 
 **Monitor Cache Effectiveness**:
+
 ```gql
 -- Check cache hit rates
-SELECT
-  cache_hits / (cache_hits + cache_misses) as hit_rate,
-  cache_evictions
-FROM system.cache_stats;
+-- Yields node_count, edge_count, label_count, format_version, page_size,
+-- wal_lsn, last_checkpoint_lsn, free_pages_* , *_consistent,
+-- label_index_entries and total_errors for the graph.
+CALL geode.storage.stats();
 ```
 
 ## Troubleshooting Common Issues
 
 **High Query Latency**:
+
 1. Check `PROFILE` output for slow operators
 2. Verify index usage with `EXPLAIN`
 3. Review concurrent query load
 4. Check memory pressure and cache hit rates
 
 **Connection Issues**:
+
 1. Monitor `geode_active_connections` vs. limits
 2. Check network latency between client and server
 3. Review authentication failures in logs
 4. Verify TLS certificate validity
 
 **Memory Growth**:
+
 1. Check MVCC version accumulation
 2. Review long-running transactions
 3. Analyze query result set sizes
 4. Monitor cache sizes
 
 **Disk Space Issues**:
+
 1. Check WAL size growth
 2. Review checkpoint frequency
 3. Analyze data growth rate

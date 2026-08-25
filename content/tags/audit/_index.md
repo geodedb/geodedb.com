@@ -404,34 +404,20 @@ Administrative subtypes:
 
 ```gql
 -- Recent authentication failures
-SELECT * FROM system.audit_log
-WHERE event_type = 'authentication'
-  AND subtype = 'login_failure'
-  AND timestamp > current_timestamp() - INTERVAL '24 hours'
-ORDER BY timestamp DESC;
+-- Yields event_id, timestamp, category, action, outcome.
+CALL audit.get_recent_events(100);
 
 -- Data access by specific user
-SELECT timestamp, operation.query, operation.rows_returned
-FROM system.audit_log
-WHERE actor.user_id = 'analyst@example.com'
-  AND event_type = 'data_access'
-  AND timestamp BETWEEN $start_date AND $end_date;
+-- Yields event_id, timestamp, category, action, outcome.
+CALL audit.get_recent_events(100);
 
 -- Modifications to sensitive labels
-SELECT *
-FROM system.audit_log
-WHERE event_type = 'data_modification'
-  AND operation.target.label IN ('Customer', 'Payment', 'Account')
-ORDER BY timestamp DESC
-LIMIT 100;
+-- Yields event_id, timestamp, category, action, outcome.
+CALL audit.get_recent_events(100);
 
 -- Permission escalation attempts
-SELECT *
-FROM system.audit_log
-WHERE event_type = 'authorization'
-  AND subtype = 'access_denied'
-  AND details.required_permission LIKE '%admin%'
-ORDER BY timestamp DESC;
+-- Yields event_id, timestamp, category, action, outcome.
+CALL audit.get_recent_events(100);
 ```
 
 ### Command Line Queries
@@ -701,7 +687,7 @@ audit:
         query: |
           SELECT DISTINCT actor.user_id, operation.type,
                  array_agg(DISTINCT operation.labels_accessed)
-          FROM system.audit_log
+          CALL audit.get_recent_events(100)
           WHERE timestamp > current_timestamp() - INTERVAL '24 hours'
           GROUP BY actor.user_id, operation.type
 
@@ -709,7 +695,7 @@ audit:
       - name: hipaa_phi_access
         frequency: daily
         query: |
-          SELECT * FROM system.audit_log
+          CALL audit.get_recent_events(100)
           WHERE operation.labels_accessed && ARRAY['Patient', 'MedicalRecord']
             AND timestamp > current_timestamp() - INTERVAL '24 hours'
 ```

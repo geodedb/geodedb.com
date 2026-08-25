@@ -272,7 +272,7 @@ WHERE target <> similar
 
 // Compute recency weight (exponential decay)
 WITH target, similar, r1, r2, i1,
-     EXP(-duration.between(r1.timestamp, datetime()).days / 30.0) AS recency_weight
+     EXP(-(datetime( - r1.timestamp)).days / 30.0) AS recency_weight
 WITH target, similar,
      SUM(r1.rating * r2.rating * recency_weight) /
      SUM(recency_weight) AS weighted_similarity
@@ -281,7 +281,7 @@ WHERE weighted_similarity > 0.5
 MATCH (similar)-[r3:RATED]->(candidate:Item)
 WHERE NOT (target)-[:RATED|PURCHASED]->(candidate)
 WITH candidate,
-     EXP(-duration.between(r3.timestamp, datetime()).days / 30.0) AS item_recency,
+     EXP(-(datetime( - r3.timestamp)).days / 30.0) AS item_recency,
      SUM(r3.rating * weighted_similarity * item_recency) /
      SUM(weighted_similarity * item_recency) AS predicted_rating
 ORDER BY predicted_rating DESC
@@ -341,7 +341,7 @@ Update similarities incrementally when new interactions arrive:
 ```gql
 // Update item similarities after new rating
 MATCH (u:User {user_id: $user_id})-[new_rating:RATED]->(i1:Item)
-WHERE new_rating.timestamp > datetime().minusHours(1)  // Recent rating
+WHERE new_rating.timestamp > datetime() - duration('PT1H')  // Recent rating
 
 // Find items co-rated by this user
 MATCH (u)-[other_rating:RATED]->(i2:Item)
@@ -447,7 +447,7 @@ INSERT (u)-[c:CLICKED_RECOMMENDATION {
 
 // Compute click-through rate by algorithm
 MATCH (e:RecommendationEvent)
-WHERE e.timestamp > datetime().minusDays(7)
+WHERE e.timestamp > datetime() - duration('P7D')
 WITH e.algorithm AS algorithm,
      COUNT(e) AS impressions,
      SIZE([id IN e.recommended_items WHERE (e)-[:CLICKED_RECOMMENDATION]->(:Item {item_id: id})]) AS clicks
@@ -538,9 +538,7 @@ MATCH (u:User {user_id: $user_id})
 MATCH (i:Item {item_id: $item_id})
 WHERE NOT EXISTS((u)-[:RATED]->(i))
 WITH u, i,
-     REDUCE(sum = 0, idx IN range(0, size(u.latent_factors) - 1) |
-         sum + u.latent_factors[idx] * i.latent_factors[idx]
-     ) AS predicted_rating
+     null /* reduce() is advertised by SHOW FUNCTIONS but has no evaluator dispatch; collect() the values and fold client-side (for path weights use algo.dijkstra.stream, which yields cost) */ AS predicted_rating
 WHERE predicted_rating > 3.5  // Filter low predictions
 RETURN i.item_id,
        i.title,
@@ -707,7 +705,7 @@ MATCH (other:User)-[r2:RATED]->(i)
 WHERE target <> other
 WITH target, other,
      SUM(r1.rating * r2.rating *
-         EXP(-duration.between(r1.timestamp, datetime()).days / 90.0)
+         EXP(-(datetime( - r1.timestamp)).days / 90.0)
      ) AS time_weighted_similarity,
      COUNT(i) AS common_items
 WHERE common_items >= 5
@@ -820,7 +818,7 @@ Cache recommendations for active users:
 ```gql
 -- Nightly batch: Generate recommendations for all active users
 MATCH (u:User)
-WHERE u.last_active > datetime().minusDays(30)
+WHERE u.last_active > datetime() - duration('P30D')
 CALL {
     WITH u
     // Run full recommendation pipeline
@@ -840,7 +838,7 @@ RETURN COUNT(u) AS users_cached;
 -- Online: Serve from cache with freshness filtering
 MATCH (u:User {user_id: $user_id})
 WITH u,
-     CASE WHEN u.recommendations_cached_at > datetime().minusHours(24)
+     CASE WHEN u.recommendations_cached_at > datetime() - duration('PT24H')
           THEN u.cached_recommendations
           ELSE null
      END AS cached_recs
@@ -881,7 +879,7 @@ LIMIT 10;
 
 -- "Based on your browsing history"
 MATCH (u:User {user_id: $user_id})-[v:VIEWED]->(viewed:Product)
-WHERE v.timestamp > datetime().minusDays(7)
+WHERE v.timestamp > datetime() - duration('P7D')
 WITH u, viewed
 ORDER BY v.timestamp DESC
 LIMIT 20
@@ -943,7 +941,7 @@ LIMIT 20;
 
 ```gql
 -- Discover Weekly-style recommendations
-MATCH (u:User {user_id: $user_id})-[l:LISTENED {timestamp > datetime().minusDays(30)}]->(track:Track)
+MATCH (u:User {user_id: $user_id})-[l:LISTENED {timestamp > datetime() - duration('P30D')}]->(track:Track)
 WITH u, track, SUM(l.play_count) AS total_plays
 ORDER BY total_plays DESC
 LIMIT 50
@@ -962,7 +960,7 @@ LIMIT 200
 MATCH (other)-[l2:LISTENED]->(discovery:Track)
 WHERE NOT discovery IN favorite_tracks
   AND NOT EXISTS((u)-[:LISTENED]->(discovery))
-  AND l2.timestamp > datetime().minusDays(30)
+  AND l2.timestamp > datetime() - duration('P30D')
 WITH discovery,
      COUNT(DISTINCT other) AS listeners,
      SUM(l2.play_count) AS total_plays
@@ -1021,18 +1019,12 @@ CALL {
     WITH rec, SUM(r.rating * s.similarity) / SUM(s.similarity) AS score
     ORDER BY score DESC
     LIMIT 20
-    RETURN COLLECT({item: rec, rank: row_number()}) AS recommendations
+    RETURN COLLECT({item: rec, rank: null /* Geode has no window functions and no OVER clause */}) AS recommendations
 }
 
 WITH test_items, recommendations,
-     REDUCE(dcg = 0.0, i IN range(0, size(recommendations) - 1) |
-         dcg + CASE WHEN recommendations[i].item IN [t.item FOR t IN test_items]
-                   THEN test_items[recommendations[i].item].rating / log(2 + i)
-                   ELSE 0.0 END
-     ) AS dcg,
-     REDUCE(idcg = 0.0, i IN range(0, size(test_items) - 1) |
-         idcg + test_items[i].rating / log(2 + i)
-     ) AS idcg
+     null /* reduce() is advertised by SHOW FUNCTIONS but has no evaluator dispatch; collect() the values and fold client-side (for path weights use algo.dijkstra.stream, which yields cost) */ AS dcg,
+     null /* reduce() is advertised by SHOW FUNCTIONS but has no evaluator dispatch; collect() the values and fold client-side (for path weights use algo.dijkstra.stream, which yields cost) */ AS idcg
 
 RETURN dcg / idcg AS ndcg;
 ```
@@ -1056,13 +1048,13 @@ MATCH (u:User {user_id: e.user_id})
 MATCH (i:Item {item_id: $clicked_item_id})
 WHERE i.item_id IN e.recommended_items
 INSERT (e)-[c:CLICKED {
-    position: indexOf(e.recommended_items, i.item_id),
+    position: null /* no indexOf(); use e.recommended_items CONTAINS i.item_id as a predicate */,
     timestamp: datetime()
 }]->(i);
 
 // Compute CTR by algorithm variant
 MATCH (e:RecommendationEvent)
-WHERE e.timestamp > datetime().minusDays(7)
+WHERE e.timestamp > datetime() - duration('P7D')
 WITH e.algorithm AS algorithm,
      COUNT(e) AS impressions,
      COUNT { (e)-[:CLICKED]->() } AS clicks

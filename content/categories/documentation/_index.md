@@ -130,24 +130,28 @@ Documentation available in multiple formats:
 ### By Audience
 
 **For Developers**:
+
 - Quick start guides and tutorials
 - Client library integration examples
 - GQL query patterns and best practices
 - Performance optimization techniques
 
 **For DBAs**:
+
 - Installation and deployment guides
 - Configuration references
 - Backup and recovery procedures
 - Monitoring and troubleshooting
 
 **For Architects**:
+
 - Architecture overviews and design patterns
 - Scalability and performance characteristics
 - Security models and compliance features
 - Integration patterns and ecosystem
 
 **For Contributors**:
+
 - Codebase architecture and organization
 - Development environment setup
 - Testing methodology and requirements
@@ -156,18 +160,21 @@ Documentation available in multiple formats:
 ### By Topic
 
 **Core Concepts**:
+
 - Graph data model (nodes, relationships, properties)
 - GQL query language fundamentals
 - Transaction semantics and ACID guarantees
 - Index types and query optimization
 
 **Advanced Features**:
+
 - Vector search and embeddings
 - Full-text search with BM25
 - Row-level security policies
 - Temporal queries and versioning
 
 **Operations**:
+
 - Deployment architectures (standalone, distributed)
 - Backup and disaster recovery
 - Monitoring and observability
@@ -292,6 +299,7 @@ Documented solutions for frequent problems:
 
 **Issue**: Slow queries on large graphs
 **Solution**: Create appropriate indexes
+
 ```gql
 CREATE INDEX person_name ON :Person(name);
 CREATE INDEX knows_since ON :KNOWS(since);
@@ -299,6 +307,7 @@ CREATE INDEX knows_since ON :KNOWS(since);
 
 **Issue**: Connection timeouts
 **Solution**: Adjust timeout settings
+
 ```toml
 [client]
 connect_timeout = "30s"
@@ -307,6 +316,7 @@ query_timeout = "5m"
 
 **Issue**: Out of memory errors
 **Solution**: Increase cache size or reduce batch sizes
+
 ```toml
 [storage]
 cache_size = "8GB"  -- Increase from default 4GB
@@ -325,8 +335,8 @@ GRANT SELECT ON GRAPH sales TO analyst;
 REVOKE UPDATE ON GRAPH sales FROM analyst;
 
 -- Row-level security documented
-CREATE POLICY department_access ON :Employee
-  USING (department = current_user_department());
+-- Employee.department must equal the caller's 'department' principal attribute
+CALL geode.rls.add_attribute_policy('app', 'Employee', 'department', 'department');
 ```
 
 ### Compliance Documentation
@@ -345,6 +355,7 @@ Documentation for regulatory requirements:
 Complete integration guides for each supported language:
 
 **Go Integration**:
+
 ```go
 // Database/sql driver documentation
 import (
@@ -356,6 +367,7 @@ db, err := sql.Open("geode", "quic://localhost:3141")
 ```
 
 **Python Integration**:
+
 ```python
 # Async client documentation
 from geode_client import Client
@@ -367,6 +379,7 @@ async with client.connection() as conn:
 ```
 
 **Rust Integration**:
+
 ```rust
 // Tokio integration documentation
 use geode_client::Client;

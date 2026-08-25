@@ -1421,7 +1421,9 @@ geode stats memory --detailed
 geode stats cache
 
 # Force garbage collection (if supported)
-geode admin gc
+# There is no `geode admin` subcommand. Geode's CLI is: serve, shell, query,
+# lsp, backup, restore, migrate, auth, login, logout, user, role, tenant,
+# policy, grant, revoke, completion, mcp.
 ```
 
 ### Connection Issues

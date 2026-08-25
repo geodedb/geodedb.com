@@ -244,20 +244,9 @@ Monitor query performance in production:
 
 ```gql
 // Query performance statistics
-SELECT
-  query_hash,
-  query_text,
-  execution_count,
-  avg_duration_ms,
-  p95_duration_ms,
-  p99_duration_ms,
-  max_duration_ms,
-  total_rows_examined,
-  avg_rows_returned
-FROM system.query_stats
-WHERE execution_count > 100
-ORDER BY p99_duration_ms DESC
-LIMIT 50;
+-- There is no query-statistics table, slow-query log or plan cache to
+-- query. Measure a specific statement with EXPLAIN / PROFILE, and scrape
+-- aggregate counters from the Prometheus endpoint (GEODE_METRICS_PORT).
 ```
 
 **Real-Time Monitoring**:
@@ -301,14 +290,9 @@ CREATE INDEX user_search_idx ON User(region, account_status, created_at);
 
 ```gql
 // Find queries missing indexes
-SELECT
-  query_text,
-  table_scans,
-  execution_count,
-  avg_duration_ms
-FROM system.query_stats
-WHERE table_scans > 0 AND execution_count > 50
-ORDER BY execution_count * avg_duration_ms DESC;
+-- There is no query-statistics table, slow-query log or plan cache to
+-- query. Measure a specific statement with EXPLAIN / PROFILE, and scrape
+-- aggregate counters from the Prometheus endpoint (GEODE_METRICS_PORT).
 ```
 
 ### Query Optimization
@@ -660,11 +644,10 @@ performance:
   index_cache_size: 10GB
   worker_threads: 16
 
-monitoring:
-  enable_metrics: true
-  metrics_port: 9090
-  enable_profiling: true
-  slow_query_threshold: 100ms
+# NOTE: `monitoring:` is not a configuration-file section — it is ignored.
+# The Prometheus listener is opt-in and env-only:
+#   GEODE_METRICS_PORT=9090   (serves /metrics and /health)
+#   GEODE_METRICS_BIND=127.0.0.1
 ```
 
 **Health Checks**:

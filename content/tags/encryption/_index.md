@@ -137,6 +137,7 @@ Master Key (HSM/KMS)
 ```
 
 This hierarchy provides:
+
 - **Key Rotation**: Rotate master key without re-encrypting all data
 - **Performance**: Data encryption keys cached in memory
 - **Isolation**: Different data types use different keys
@@ -245,13 +246,13 @@ Encrypt specific fields within the graph for additional security:
 INSERT (:Person {
   name: 'Alice Smith',
   email: 'alice@example.com',
-  ssn: encrypt('123-45-6789', 'ssn-encryption-key'),
-  salary: encrypt('95000', 'salary-encryption-key')
+  ssn: '123-45-6789' /* field-level encryption is configured with CALL geode.fle.configurefield(...), not a scalar encrypt() */,
+  salary: '95000' /* field-level encryption is configured with CALL geode.fle.configurefield(...), not a scalar encrypt() */
 });
 
 -- Decrypt on retrieval (requires permission)
 MATCH (p:Person {email: 'alice@example.com'})
-RETURN p.name, decrypt(p.ssn, 'ssn-encryption-key') AS ssn;
+RETURN p.name, p.ssn /* field-level encryption is configured with CALL geode.fle.configurefield(...), not a scalar decrypt() */ AS ssn;
 ```
 
 ### Deterministic vs Randomized Encryption
@@ -261,13 +262,13 @@ RETURN p.name, decrypt(p.ssn, 'ssn-encryption-key') AS ssn;
 ```gql
 -- Store with deterministic encryption for searchability
 INSERT (:Account {
-  account_number: encrypt_deterministic($account_num, 'account-key'),
-  balance: encrypt_random($balance, 'balance-key')
+  account_number: $account_num /* field-level encryption is configured with CALL geode.fle.configurefield(...), not a scalar encrypt_deterministic() */,
+  balance: /* FLE is CALL geode.fle.configurefield(...) */ ($balance, 'balance-key')
 });
 
 -- Can search deterministically encrypted fields
 MATCH (a:Account)
-WHERE a.account_number = encrypt_deterministic('1234567890', 'account-key')
+WHERE a.account_number = '1234567890' /* field-level encryption is configured with CALL geode.fle.configurefield(...), not a scalar encrypt_deterministic() */
 RETURN decrypt_random(a.balance, 'balance-key') AS balance;
 ```
 
@@ -277,8 +278,8 @@ RETURN decrypt_random(a.balance, 'balance-key') AS balance;
 -- Maximum security, no searchability
 INSERT (:MedicalRecord {
   patient_id: $patient_id,
-  diagnosis: encrypt_random($diagnosis, 'medical-key'),
-  notes: encrypt_random($notes, 'medical-key')
+  diagnosis: /* FLE is CALL geode.fle.configurefield(...) */ ($diagnosis, 'medical-key'),
+  notes: /* FLE is CALL geode.fle.configurefield(...) */ ($notes, 'medical-key')
 });
 ```
 
@@ -297,6 +298,7 @@ geode serve --transparent-encryption=enabled \
 ```
 
 With TDE enabled:
+
 - No application code changes required
 - All queries work normally
 - Encryption/decryption handled automatically
@@ -370,6 +372,7 @@ geode serve --encryption-cache-size=1GB \
 ```
 
 Typical performance impact:
+
 - Encryption at rest: 3-7% throughput reduction
 - Encryption in transit: 1-3% throughput reduction with TLS 1.3
 - Field-level encryption: 10-15% for encrypted fields only

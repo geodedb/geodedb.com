@@ -97,7 +97,9 @@ Enable TDE when creating a new database:
 
 ```bash
 # Generate or retrieve master encryption key from KMS
-$ geode init --enable-tde \
+# There is no `geode init`. The server creates its data directory on
+# first start; TDE and FLE are always available.
+geode serve --data-dir ./data
   --kms-provider aws-kms \
   --kms-key-id arn:aws:kms:us-east-1:123456789:key/abc-def-123 \
   --encryption-algorithm aes-256-gcm
@@ -107,7 +109,8 @@ For existing databases, enable TDE through encryption conversion:
 
 ```bash
 # Enable TDE on existing database (requires downtime)
-$ geode convert-to-tde \
+# There is no `geode convert-to-tde`: encryption at rest is always
+# available and needs no conversion step.
   --data-dir /var/lib/geode/data \
   --kms-provider vault \
   --kms-endpoint https://vault.example.com \
@@ -119,10 +122,10 @@ $ geode convert-to-tde \
 Configure TDE in `geode.yaml`:
 
 ```yaml
-security:
-  encryption:
-    enabled: true
-    algorithm: aes-256-gcm
+# NOTE: `security:` is not a configuration-file section — it is ignored.
+# KMS and encryption-at-rest are configured with environment variables:
+#   GEODE_KMS_URL, GEODE_KMS_ENDPOINT, GEODE_KMS_API_KEY
+#   GEODE_MASTER_KEY, GEODE_TDE_ENABLED, GEODE_ALLOW_LOCAL_KMS
 
     # Key Management Service configuration
     kms:
@@ -214,11 +217,10 @@ Meet encryption requirements for regulated industries:
 
 ```yaml
 # HIPAA-compliant TDE configuration
-security:
-  encryption:
-    enabled: true
-    algorithm: aes-256-gcm
-    fips_mode: true  # Use FIPS 140-2 validated crypto
+# NOTE: `security:` is not a configuration-file section — it is ignored.
+# KMS and encryption-at-rest are configured with environment variables:
+#   GEODE_KMS_URL, GEODE_KMS_ENDPOINT, GEODE_KMS_API_KEY
+#   GEODE_MASTER_KEY, GEODE_TDE_ENABLED, GEODE_ALLOW_LOCAL_KMS
 
     kms:
       provider: aws-kms
@@ -234,10 +236,10 @@ security:
 Isolate tenant data with per-tenant encryption:
 
 ```yaml
-security:
-  encryption:
-    enabled: true
-    per_tenant_keys: true  # Each tenant gets unique DEK
+# NOTE: `security:` is not a configuration-file section — it is ignored.
+# KMS and encryption-at-rest are configured with environment variables:
+#   GEODE_KMS_URL, GEODE_KMS_ENDPOINT, GEODE_KMS_API_KEY
+#   GEODE_MASTER_KEY, GEODE_TDE_ENABLED, GEODE_ALLOW_LOCAL_KMS
 
     kms:
       provider: vault
@@ -260,7 +262,6 @@ Protect data from cloud provider access:
 # Deploy to cloud with customer-managed keys
 $ geode deploy \
   --cloud aws \
-  --enable-tde \
   --kms-provider aws-kms \
   --customer-managed-key arn:aws:kms:us-east-1:MY_ACCOUNT:key/MY_KEY
 ```
@@ -468,15 +469,10 @@ Isolate tenant data with separate encryption keys:
 
 ```yaml
 # geode.yaml
-security:
-  encryption:
-    enabled: true
-    per_tenant_keys: true
-    tenant_key_mapping:
-      tenant-123:
-        kms_key_id: arn:aws:kms:us-east-1:111:key/tenant-123-key
-      tenant-456:
-        kms_key_id: arn:aws:kms:us-east-1:111:key/tenant-456-key
+# NOTE: `security:` is not a configuration-file section — it is ignored.
+# KMS and encryption-at-rest are configured with environment variables:
+#   GEODE_KMS_URL, GEODE_KMS_ENDPOINT, GEODE_KMS_API_KEY
+#   GEODE_MASTER_KEY, GEODE_TDE_ENABLED, GEODE_ALLOW_LOCAL_KMS
 ```
 
 Query with tenant context:
@@ -518,8 +514,8 @@ Benefits: Different security levels, independent key rotation, compliance segmen
 
 Rotate encryption keys while database remains online:
 
-Rotation is driven by the `tde.*` procedures, not a `geode admin` subcommand
-(there is no `admin` subcommand):
+Rotation is driven by the `tde.*` procedures, not a `geode query "SHOW CLUSTER STATUS"
+(there is no`admin` subcommand):
 
 ```gql
 -- Rotate now
@@ -552,10 +548,10 @@ Use hardware-backed key storage for maximum security:
 
 ```yaml
 # geode.yaml with PKCS#11 HSM
-security:
-  encryption:
-    enabled: true
-    algorithm: aes-256-gcm
+# NOTE: `security:` is not a configuration-file section — it is ignored.
+# KMS and encryption-at-rest are configured with environment variables:
+#   GEODE_KMS_URL, GEODE_KMS_ENDPOINT, GEODE_KMS_API_KEY
+#   GEODE_MASTER_KEY, GEODE_TDE_ENABLED, GEODE_ALLOW_LOCAL_KMS
 
     kms:
       provider: pkcs11
@@ -587,10 +583,10 @@ Optimize TDE for your hardware:
 
 ```yaml
 # geode.yaml performance tuning
-security:
-  encryption:
-    enabled: true
-    algorithm: aes-256-gcm
+# NOTE: `security:` is not a configuration-file section — it is ignored.
+# KMS and encryption-at-rest are configured with environment variables:
+#   GEODE_KMS_URL, GEODE_KMS_ENDPOINT, GEODE_KMS_API_KEY
+#   GEODE_MASTER_KEY, GEODE_TDE_ENABLED, GEODE_ALLOW_LOCAL_KMS
 
     # Performance optimizations
     use_aes_ni: true  # Use hardware AES acceleration
@@ -760,7 +756,7 @@ Recover a TDE-encrypted database:
 
 ```bash
 # Step 1: Start the server with TDE enabled
-geode serve --data-dir /var/lib/geode --enable-tde --tde-provider aws-kms
+geode serve --data-dir /var/lib/geode --tde-provider aws-kms
 
 # Step 2: Restore the backup into it
 geode restore /backups/geode-full-20260124.backup --yes

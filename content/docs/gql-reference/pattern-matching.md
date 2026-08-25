@@ -308,7 +308,7 @@ RETURN a.name, b.name;
 -- Aggregate over relationships
 MATCH (a)-[rels:TRANSACTION*1..5]->(b)
 RETURN a.id, b.id,
-       reduce(total = 0, r IN rels | total + r.amount) AS path_total;
+       null /* reduce() is advertised by SHOW FUNCTIONS but has no evaluator dispatch; collect() the values and fold client-side (for path weights use algo.dijkstra.stream, which yields cost) */ AS path_total;
 ```
 
 ## Shortest Path

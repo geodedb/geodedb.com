@@ -403,10 +403,10 @@ cluster:
 Monitor cluster health with Prometheus metrics:
 
 ```yaml
-monitoring:
-  prometheus:
-    enabled: true
-    listen_addr: "0.0.0.0:9090"
+# NOTE: `monitoring:` is not a configuration-file section — it is ignored.
+# The Prometheus listener is opt-in and env-only:
+#   GEODE_METRICS_PORT=9090   (serves /metrics and /health)
+#   GEODE_METRICS_BIND=127.0.0.1
 
     # Cluster-specific metrics
     metrics:

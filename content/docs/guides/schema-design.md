@@ -26,12 +26,14 @@ params:
 Designing an effective graph schema is critical for query performance, maintainability, and accurately representing your domain. This guide covers best practices for modeling data as property graphs in Geode.
 
 **Key Principles:**
+
 1. **Model the domain, not the data** - Think in relationships, not tables
 2. **Optimize for queries, not storage** - Denormalization is often beneficial
 3. **Use labels for types, properties for attributes** - Clear separation of concerns
 4. **Make relationships meaningful** - Every edge should represent a real connection
 
 **Quick Links:**
+
 - [Property Graph Fundamentals](#property-graph-fundamentals)
 - [Node Label Design](#node-label-design)
 - [Relationship Type Design](#relationship-type-design)
@@ -87,6 +89,7 @@ A **property graph** consists of:
 #### ✅ Good Labeling Patterns
 
 **1. Use Clear, Singular Nouns**
+
 ```gql
 -- GOOD
 Person, Company, Product, Order, Review
@@ -96,6 +99,7 @@ People, Companies, person_table, usr
 ```
 
 **2. Use Multi-Label for Subtypes**
+
 ```gql
 -- GOOD: Person with specific roles
 (alice:Person:Employee {name: "Alice"})
@@ -109,6 +113,7 @@ MATCH (p:Person:!Employee) RETURN p  -- People who aren't employees
 ```
 
 **3. Use Meaningful Hierarchies**
+
 ```gql
 -- GOOD: Product categories
 (laptop:Product:Electronics:Computer {brand: "Dell"})
@@ -122,6 +127,7 @@ MATCH (c:Computer) RETURN c          -- Just computers
 #### ❌ Bad Labeling Antipatterns
 
 **1. Encoding Values in Labels (Dynamic Labels)**
+
 ```gql
 -- BAD: Don't create labels from data
 (alice:Person:Age30:Female {name: "Alice"})
@@ -131,6 +137,7 @@ MATCH (c:Computer) RETURN c          -- Just computers
 ```
 
 **2. Too Many Labels**
+
 ```gql
 -- BAD: Label explosion
 (alice:Person:Employee:Engineer:Senior:FullStack:JavaScript:Remote)
@@ -147,6 +154,7 @@ MATCH (c:Computer) RETURN c          -- Just computers
 ```
 
 **3. Generic Labels**
+
 ```gql
 -- BAD: Too generic, hard to query
 (thing1:Entity {type: "person", name: "Alice"})
@@ -185,6 +193,7 @@ CREATE (li:LineItem {quantity: 5})
 #### ✅ Good Relationship Patterns
 
 **1. Use Active Verbs (Past or Present Tense)**
+
 ```gql
 -- GOOD: Clear, descriptive
 (alice:Person)-[:KNOWS]->(bob:Person)
@@ -195,6 +204,7 @@ CREATE (li:LineItem {quantity: 5})
 ```
 
 **2. Direction Matters**
+
 ```gql
 -- GOOD: Relationship direction is meaningful
 (parent:Person)-[:PARENT_OF]->(child:Person)
@@ -209,6 +219,7 @@ RETURN p.name AS parent, c.name AS child
 ```
 
 **3. Use Specific Types**
+
 ```gql
 -- GOOD: Specific relationship types
 (alice:Person)-[:MANAGES]->(team:Team)
@@ -222,6 +233,7 @@ RETURN p.name AS parent, c.name AS child
 #### ❌ Bad Relationship Antipatterns
 
 **1. Encoding Values in Type Names**
+
 ```gql
 -- BAD: Dynamic relationship types
 (alice)-[:KNOWS_SINCE_2020]->(bob)
@@ -233,6 +245,7 @@ RETURN p.name AS parent, c.name AS child
 ```
 
 **2. Bidirectional Relationships**
+
 ```gql
 -- BAD: Creating duplicate relationships
 (alice)-[:KNOWS]->(bob)
@@ -248,6 +261,7 @@ RETURN b.name
 ```
 
 **3. Missing Relationship Types**
+
 ```gql
 -- BAD: Properties on nodes instead of relationships
 (alice:Person {friendsWith: ["Bob", "Charlie"]})
@@ -299,6 +313,7 @@ RETURN b.name
 #### ✅ When to Use Properties
 
 1. **Attributes of the entity itself**
+
 ```gql
 (person:Person {
   name: "Alice",
@@ -309,6 +324,7 @@ RETURN b.name
 ```
 
 2. **Frequently filtered/sorted values**
+
 ```gql
 -- Create indexes for these
 (product:Product {
@@ -324,6 +340,7 @@ MATCH (p:Product) WHERE p.price < 50 RETURN p;
 ```
 
 3. **Temporal data**
+
 ```gql
 (event:Event {
   title: "Launch Party",
@@ -336,6 +353,7 @@ MATCH (p:Product) WHERE p.price < 50 RETURN p;
 #### ❌ When NOT to Use Properties
 
 **1. Relationships Disguised as Properties**
+
 ```gql
 -- BAD: Lists of related IDs
 (person:Person {
@@ -349,6 +367,7 @@ MATCH (p:Product) WHERE p.price < 50 RETURN p;
 ```
 
 **2. Computed/Aggregated Data (Usually)**
+
 ```gql
 -- BAD: Redundant computed values
 (person:Person {
@@ -384,6 +403,7 @@ Geode supports 50+ data types. Choose appropriate types:
 | `GeoPoint` | Geographic locations | `location: geopoint(37.7749, -122.4194)` |
 
 **Type Selection Tips**:
+
 - **Use specific types** for better validation and performance
 - **Avoid generic `Text`** when `Varchar(255)` suffices
 - **Use `Jsonb`** for flexible schemas (but index key properties separately)
@@ -432,6 +452,7 @@ Geode supports 50+ data types. Choose appropriate types:
 ```
 
 **Key Queries**:
+
 ```gql
 -- Find Alice's friends
 MATCH (alice:Person {name: "Alice"})-[:KNOWS]->(friend:Person)
@@ -499,6 +520,7 @@ LIMIT 10
 ```
 
 **Key Queries**:
+
 ```gql
 -- Find customer's order history
 MATCH (c:Customer {email: "[email protected]"})-[:PURCHASED]->(o:Order)
@@ -554,6 +576,7 @@ LIMIT 5
 ```
 
 **Key Queries**:
+
 ```gql
 -- Find related concepts (via vector similarity)
 MATCH (c:Concept {name: "Graph Databases"})
@@ -620,6 +643,7 @@ ORDER BY collaborations DESC
 ```
 
 **Fraud Detection Queries**:
+
 ```gql
 -- Find accounts using same device (account takeover)
 MATCH (a1:Account)-[:OWNS]->(d:Device)<-[:OWNS]-(a2:Account)
@@ -633,7 +657,7 @@ RETURN txn.id, txn.amount, ip.address, ip.country
 
 -- Detect unusual transaction patterns
 MATCH (account:Account)-[:INITIATED]->(txn:Transaction)
-WITH account, avg(txn.amount) AS avgAmount, stddev(txn.amount) AS stdDev
+WITH account, avg(txn.amount) AS avgAmount, collect(txn.amount) /* stddev/variance parse but are never computed; reduce client-side */ AS stdDev
 MATCH (account)-[:INITIATED]->(recent:Transaction)
 WHERE recent.timestamp > timestamp() - duration('PT24H')
   AND abs(recent.amount - avgAmount) > 3 * stdDev
@@ -699,12 +723,14 @@ REMOVE p.price
 ### ❌ Antipattern 1: Treating Graph Like Relational
 
 **Bad**:
+
 ```gql
 -- Treating nodes as relational tables with foreign keys
 (order:Order {id: 1, customerId: 42, productId: 101})
 ```
 
 **Good**:
+
 ```gql
 -- Use explicit relationships
 (customer:Customer {id: 42})-[:PURCHASED]->(order:Order {id: 1})
@@ -716,6 +742,7 @@ REMOVE p.price
 **Problem**: Nodes with millions of relationships cause performance issues.
 
 **Bad**:
+
 ```gql
 -- Every user connected to same "System" node
 (user1:User)-[:REGISTERED_IN]->(system:System)
@@ -724,6 +751,7 @@ REMOVE p.price
 ```
 
 **Good**:
+
 ```gql
 -- Partition by time/category
 (user1:User {registeredAt: timestamp()})
@@ -736,6 +764,7 @@ REMOVE p.price
 ### ❌ Antipattern 3: Over-Indexing
 
 **Bad**:
+
 ```gql
 -- Creating indexes on every property
 CREATE INDEX person_name ON Person(name);
@@ -748,6 +777,7 @@ CREATE INDEX person_created ON Person(createdAt);
 ```
 
 **Good**:
+
 ```gql
 -- Index only frequently queried/filtered properties
 CREATE INDEX person_email ON Person(email);  -- Unique lookups
@@ -761,6 +791,7 @@ CREATE INDEX person_name ON Person(name);    -- Search by name
 **Problem**: Not considering relationship cardinality.
 
 **Bad**:
+
 ```gql
 -- Many-to-many without intermediate node
 (student:Student)-[:ENROLLED_IN {grade: "A"}]->(course:Course)
@@ -768,6 +799,7 @@ CREATE INDEX person_name ON Person(name);    -- Search by name
 ```
 
 **Good**:
+
 ```gql
 -- Use intermediate node for many-to-many
 (student:Student)-[:HAS]->(enrollment:Enrollment {
@@ -784,6 +816,7 @@ CREATE INDEX person_name ON Person(name);    -- Search by name
 ### Indexing Strategy
 
 **Index properties used in**:
+
 1. **Exact matches**: `WHERE p.email = '[email protected]'`
 2. **Range queries**: `WHERE p.age > 30`
 3. **Sorting**: `ORDER BY p.name`
@@ -791,9 +824,9 @@ CREATE INDEX person_name ON Person(name);    -- Search by name
 ```gql
 -- Create appropriate index types
 CREATE INDEX person_email ON Person(email);           -- B-tree for exact/range
-CREATE FULLTEXT INDEX person_bio ON Person(bio);     -- Full-text search
-CREATE VECTOR INDEX doc_embed ON Document(embedding); -- Vector similarity
-CREATE SPATIAL INDEX loc_coords ON Location(coords);  -- Geo queries
+CREATE INDEX person_bio ON Person(bio) USING fulltext;     -- Full-text search
+CREATE INDEX doc_embed ON Document(embedding) USING vector; -- Vector similarity
+CREATE INDEX loc_coords ON Location(coords) USING spatial;  -- Geo queries
 ```
 
 ### Query Optimization

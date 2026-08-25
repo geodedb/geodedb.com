@@ -325,11 +325,10 @@ tls:
   min_version: "1.3"
   client_auth: "optional"  # none, optional, required
 
-security:
-  # Require TLS for all connections
-  require_tls: true
-  # Reject plaintext connections
-  allow_plaintext: false
+# NOTE: `security:` is not a configuration-file section — it is ignored.
+# KMS and encryption-at-rest are configured with environment variables:
+#   GEODE_KMS_URL, GEODE_KMS_ENDPOINT, GEODE_KMS_API_KEY
+#   GEODE_MASTER_KEY, GEODE_TDE_ENABLED, GEODE_ALLOW_LOCAL_KMS
 ```
 
 ### Cipher Suites

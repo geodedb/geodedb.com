@@ -1454,10 +1454,14 @@ tests:
 
 ```bash
 # Reset database between test runs
-geode admin reset-database --confirm
+# There is no `geode admin` subcommand. Geode's CLI is: serve, shell, query,
+# lsp, backup, restore, migrate, auth, login, logout, user, role, tenant,
+# policy, grant, revoke, completion, mcp.
 
 # Truncate specific graph
-geode admin truncate-graph --graph test_graph
+# There is no `geode admin` subcommand. Geode's CLI is: serve, shell, query,
+# lsp, backup, restore, migrate, auth, login, logout, user, role, tenant,
+# policy, grant, revoke, completion, mcp.
 
 # Delete test data
 geode query "MATCH (n:TestNode) DETACH DELETE n"

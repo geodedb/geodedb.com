@@ -28,6 +28,7 @@ The **API and Technical Reference** category provides authoritative, detailed do
 Geode implements ISO/IEC 39075:2024 Graph Query Language aligned to the full GQL conformance profile. The GQL syntax includes:
 
 **Data Manipulation Language (DML)**:
+
 - `MATCH` - Pattern matching to find graph elements
 - `CREATE` - Create new nodes and relationships
 - `SET` - Update properties and labels
@@ -38,6 +39,7 @@ Geode implements ISO/IEC 39075:2024 Graph Query Language aligned to the full GQL
 - `WITH` - Pipeline query parts
 
 **Data Definition Language (DDL)**:
+
 - `CREATE INDEX` - Create property indexes
 - `DROP INDEX` - Remove indexes
 - `CREATE CONSTRAINT` - Define data constraints
@@ -45,6 +47,7 @@ Geode implements ISO/IEC 39075:2024 Graph Query Language aligned to the full GQL
 - `ANALYZE` - Update statistics
 
 **Transaction Control**:
+
 - `BEGIN` - Start transaction
 - `COMMIT` - Commit transaction
 - `ROLLBACK` - Abort transaction
@@ -52,12 +55,14 @@ Geode implements ISO/IEC 39075:2024 Graph Query Language aligned to the full GQL
 - `RELEASE` - Release savepoint
 
 **Query Analysis**:
+
 - `EXPLAIN` - Show execution plan
 - `PROFILE` - Execute with performance metrics
 
 ### Pattern Syntax
 
 **Node Patterns**:
+
 ```gql
 ()                              -- Anonymous node
 (n)                             -- Node bound to variable n
@@ -68,6 +73,7 @@ Geode implements ISO/IEC 39075:2024 Graph Query Language aligned to the full GQL
 ```
 
 **Relationship Patterns**:
+
 ```gql
 -[r]->                         -- Directed relationship
 -[r]-                          -- Undirected relationship
@@ -82,6 +88,7 @@ Geode implements ISO/IEC 39075:2024 Graph Query Language aligned to the full GQL
 ```
 
 **Path Patterns**:
+
 ```gql
 path = (a)-[*]->(b)            -- Bind entire path
 SHORTEST (a)-[*]->(b)          -- Shortest path
@@ -91,6 +98,7 @@ ALL SHORTEST (a)-[*]->(b)      -- All shortest paths
 ### Data Types
 
 **Primitive Types**:
+
 - `BOOLEAN` - true/false values
 - `INTEGER` - 64-bit signed integers (-2^63 to 2^63-1)
 - `FLOAT` - 64-bit IEEE 754 floating point
@@ -98,24 +106,29 @@ ALL SHORTEST (a)-[*]->(b)      -- All shortest paths
 - `NULL` - Absence of value
 
 **Temporal Types**:
+
 - `DATE` - Calendar date (YYYY-MM-DD)
 - `TIME` - Time of day with timezone
 - `TIMESTAMP` - Date and time with timezone
 - `DURATION` - Time interval (ISO 8601 format)
 
 **Structured Types**:
+
 - `LIST` - Ordered collection: `[1, 2, 3]`
 - `MAP` - Key-value pairs: `{name: 'Alice', age: 30}`
 
 **Graph Types**:
+
 - `NODE` - Graph node
 - `RELATIONSHIP` - Graph edge
 - `PATH` - Sequence of nodes and relationships
 
 **Spatial Types** (extension):
+
 - `POINT` - Geographic or Cartesian coordinate
 
 **Vector Types** (extension):
+
 - `VECTOR` - Fixed-dimension numeric array for embeddings
 
 ### Built-in Functions
@@ -337,8 +350,7 @@ geode serve [OPTIONS]
 
 Options:
   --listen <ADDR>              Listen address [default: 127.0.0.1:3141]
-  --data-dir <PATH>            Data directory [default: ./data]
-  --wal-dir <PATH>             WAL directory [default: <data-dir>/wal]
+  --data-dir <PATH>            Data directory [default: ./data]             WAL directory [default: <data-dir>/wal]
   --log-level <LEVEL>          Log level: error|warn|info|debug|trace
   --max-connections <N>        Maximum concurrent connections [default: 1000]
   --query-timeout <DURATION>   Default query timeout [default: 30s]
@@ -382,14 +394,10 @@ cache:
   data_cache_size: "8GB"
   query_plan_cache_size: "256MB"
 
-security:
-  tls:
-    enabled: true
-    cert: "/etc/geode/tls/cert.pem"
-    key: "/etc/geode/tls/key.pem"
-  audit_log:
-    enabled: true
-    path: "/var/log/geode/audit.log"
+# NOTE: `security:` is not a configuration-file section — it is ignored.
+# KMS and encryption-at-rest are configured with environment variables:
+#   GEODE_KMS_URL, GEODE_KMS_ENDPOINT, GEODE_KMS_API_KEY
+#   GEODE_MASTER_KEY, GEODE_TDE_ENABLED, GEODE_ALLOW_LOCAL_KMS
 
 performance:
   checkpoint_interval: "5m"
@@ -408,24 +416,31 @@ metrics:
 
 ```gql
 -- View all indexes
-SELECT * FROM system.indexes;
+-- SHOW INDEXES lists name, type, label and properties. Geode keeps no
+-- per-index usage counters, scan tallies or health scores.
+SHOW INDEXES;
 
 -- View index statistics
-SELECT * FROM system.index_statistics;
+-- SHOW INDEXES lists name, type, label and properties. Geode keeps no
+-- per-index usage counters, scan tallies or health scores.
+SHOW INDEXES;
 
 -- View query log
-SELECT * FROM system.query_log
-ORDER BY execution_time_ms DESC
-LIMIT 20;
+-- Yields event_id, timestamp, category, action, outcome.
+CALL audit.get_recent_events(100);
 
 -- View cache statistics
-SELECT * FROM system.cache_statistics;
+-- Yields node_count, edge_count, label_count, format_version, page_size,
+-- wal_lsn, last_checkpoint_lsn, free_pages_* , *_consistent,
+-- label_index_entries and total_errors for the graph.
+CALL geode.storage.stats();
 
 -- View active sessions
-SELECT * FROM system.sessions;
+-- Geode exposes no session catalog.
 
 -- View transaction status
-SELECT * FROM system.transactions;
+-- Geode exposes no transaction catalog: running transactions cannot be
+-- listed, inspected or cancelled from GQL.
 ```
 
 ## Error Codes

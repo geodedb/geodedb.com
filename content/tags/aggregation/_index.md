@@ -47,6 +47,7 @@ Aggregation functions operate on sets of values and return a single computed res
 The COUNT function is the most commonly used aggregation, counting the number of rows or non-NULL values.
 
 **Basic Syntax**:
+
 ```gql
 -- Count all matched rows
 COUNT(*)
@@ -59,6 +60,7 @@ COUNT(DISTINCT expression)
 ```
 
 **Example: Counting Nodes and Relationships**:
+
 ```gql
 -- Count all users in the database
 MATCH (u:User)
@@ -74,6 +76,7 @@ RETURN COUNT(DISTINCT u.country) AS unique_countries;
 ```
 
 **Example: Counting Relationships**:
+
 ```gql
 -- Count followers per user
 MATCH (u:User)<-[:FOLLOWS]-(follower)
@@ -87,6 +90,7 @@ RETURN COUNT(DISTINCT mutual) AS mutual_friends;
 ```
 
 **Example: Conditional Counting**:
+
 ```gql
 -- Count with conditions using CASE
 MATCH (p:Product)
@@ -101,12 +105,14 @@ RETURN
 The SUM function calculates the total of numeric values.
 
 **Basic Syntax**:
+
 ```gql
 SUM(numeric_expression)
 SUM(DISTINCT numeric_expression)
 ```
 
 **Example: Summing Values**:
+
 ```gql
 -- Calculate total revenue
 MATCH (o:Order)-[:CONTAINS]->(i:OrderItem)
@@ -119,6 +125,7 @@ ORDER BY category_value DESC;
 ```
 
 **Example: Summing with Grouping**:
+
 ```gql
 -- Monthly sales totals
 MATCH (o:Order)
@@ -131,6 +138,7 @@ ORDER BY year, month;
 ```
 
 **Example: Running Totals with WITH**:
+
 ```gql
 -- Calculate customer lifetime value
 MATCH (c:Customer)-[:PLACED]->(o:Order)
@@ -145,12 +153,14 @@ ORDER BY lifetime_value DESC;
 The AVG function calculates the arithmetic mean of numeric values.
 
 **Basic Syntax**:
+
 ```gql
 AVG(numeric_expression)
 AVG(DISTINCT numeric_expression)
 ```
 
 **Example: Basic Averages**:
+
 ```gql
 -- Average product price
 MATCH (p:Product)
@@ -163,6 +173,7 @@ ORDER BY avg_rating DESC;
 ```
 
 **Example: Weighted Averages**:
+
 ```gql
 -- Weighted average rating (by number of helpful votes)
 MATCH (p:Product)<-[r:REVIEWED]-(u:User)
@@ -173,6 +184,7 @@ ORDER BY weighted_avg_rating DESC;
 ```
 
 **Example: Comparing to Average**:
+
 ```gql
 -- Find products priced above average
 MATCH (p:Product)
@@ -188,12 +200,14 @@ ORDER BY p.price DESC;
 MIN and MAX functions find the smallest and largest values respectively.
 
 **Basic Syntax**:
+
 ```gql
 MIN(expression)
 MAX(expression)
 ```
 
 **Example: Finding Extreme Values**:
+
 ```gql
 -- Price range
 MATCH (p:Product)
@@ -205,6 +219,7 @@ RETURN MIN(e.date) AS first_event, MAX(e.date) AS last_event;
 ```
 
 **Example: Min/Max with Grouping**:
+
 ```gql
 -- Price range by category
 MATCH (p:Product)-[:IN_CATEGORY]->(c:Category)
@@ -217,6 +232,7 @@ ORDER BY price_spread DESC;
 ```
 
 **Example: Finding Records with Min/Max Values**:
+
 ```gql
 -- Find the most expensive product
 MATCH (p:Product)
@@ -237,12 +253,14 @@ LIMIT 1;
 The COLLECT function aggregates values into a list, preserving individual elements.
 
 **Basic Syntax**:
+
 ```gql
 COLLECT(expression)
 COLLECT(DISTINCT expression)
 ```
 
 **Example: Collecting Related Entities**:
+
 ```gql
 -- Collect all products purchased by a user
 MATCH (u:User {name: 'Alice'})-[:PURCHASED]->(p:Product)
@@ -254,6 +272,7 @@ RETURN u.name, COLLECT(DISTINCT c.name) AS categories_shopped;
 ```
 
 **Example: Collecting Complex Structures**:
+
 ```gql
 -- Collect maps of product details
 MATCH (u:User)-[:PURCHASED]->(p:Product)
@@ -265,6 +284,7 @@ RETURN u.name, COLLECT({
 ```
 
 **Example: Using COLLECT with Other Aggregations**:
+
 ```gql
 -- Summary with collected details
 MATCH (c:Customer)-[:PLACED]->(o:Order)-[:CONTAINS]->(p:Product)
@@ -329,7 +349,7 @@ MATCH path = shortestPath((a:City {name: 'NYC'})-[:CONNECTED_TO*]-(b:City {name:
 WITH path, [r IN relationships(path) | r.distance] AS distances
 RETURN
     [n IN nodes(path) | n.name] AS route,
-    REDUCE(total = 0, d IN distances | total + d) AS total_distance;
+    null /* reduce() is advertised by SHOW FUNCTIONS but has no evaluator dispatch; collect() the values and fold client-side (for path weights use algo.dijkstra.stream, which yields cost) */ AS total_distance;
 ```
 
 ### Grouping Sets
@@ -355,6 +375,7 @@ RETURN NULL AS category, NULL AS product, SUM(s.amount) AS sales;
 ### Performance Optimization
 
 1. **Filter Before Aggregating**: Apply WHERE clauses before aggregation to reduce the data set
+
 ```gql
 -- Good: Filter first
 MATCH (o:Order)
@@ -365,6 +386,7 @@ RETURN COUNT(*) AS recent_orders;
 ```
 
 2. **Use Indexes for Grouping Keys**: Ensure properties used in implicit grouping are indexed
+
 ```gql
 CREATE INDEX category_name ON Category(name);
 
@@ -373,6 +395,7 @@ RETURN c.name, COUNT(p);  -- Uses index for grouping
 ```
 
 3. **Limit COLLECT Size**: When collecting large datasets, consider limiting results
+
 ```gql
 MATCH (u:User)-[:PURCHASED]->(p:Product)
 WITH u, COLLECT(p.name)[0..10] AS recent_products
@@ -380,10 +403,11 @@ RETURN u.name, recent_products;
 ```
 
 4. **Avoid Redundant Aggregations**: Compute aggregations once and reuse with WITH
+
 ```gql
 -- Good: Compute once
 MATCH (p:Product)
-WITH AVG(p.price) AS avg, STDEV(p.price) AS stddev
+WITH AVG(p.price) AS avg, collect(p.price) /* stddev/variance parse but are never computed; reduce client-side */ AS stddev
 MATCH (p:Product)
 WHERE p.price > avg + 2 * stddev
 RETURN p.name AS outlier;
@@ -392,6 +416,7 @@ RETURN p.name AS outlier;
 ### NULL Handling
 
 1. **COUNT(*) vs COUNT(expression)**: Use COUNT(*) to count rows including NULLs
+
 ```gql
 -- Count all users
 MATCH (u:User)
@@ -399,6 +424,7 @@ RETURN COUNT(*) AS all_users, COUNT(u.email) AS users_with_email;
 ```
 
 2. **COALESCE for Default Values**: Handle NULLs in calculations
+
 ```gql
 MATCH (p:Product)
 RETURN AVG(COALESCE(p.discount, 0)) AS avg_discount;
@@ -407,6 +433,7 @@ RETURN AVG(COALESCE(p.discount, 0)) AS avg_discount;
 ### Readability and Maintenance
 
 1. **Use Meaningful Aliases**: Name aggregated columns descriptively
+
 ```gql
 RETURN
     COUNT(*) AS total_transactions,
@@ -415,6 +442,7 @@ RETURN
 ```
 
 2. **Break Complex Aggregations into Steps**: Use WITH for clarity
+
 ```gql
 -- Multi-step aggregation
 MATCH (c:Customer)-[:PLACED]->(o:Order)

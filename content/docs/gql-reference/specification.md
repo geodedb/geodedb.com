@@ -419,9 +419,10 @@ Geode provides extensions not in the ISO standard:
 
 ```gql
 -- BM25 full-text search (Geode extension)
-MATCH (d:Document)
-WHERE fulltext_match(d.content, 'graph database')
-RETURN d.title, bm25_score(d.content, 'graph database') AS score
+CALL geode.fts.search('document_content', 'graph database')
+YIELD node, score
+MATCH (d:Document) WHERE id(d) = node
+RETURN d.title, score AS score
 ORDER BY score DESC;
 ```
 
@@ -440,8 +441,8 @@ LIMIT 10;
 ```gql
 -- Geographic queries (Geode extension)
 MATCH (s:Store)
-WHERE geo_distance(s.location, $user_location) < 5000
-RETURN s.name, geo_distance(s.location, $user_location) AS meters;
+WHERE st_distance(s.location, $user_location) < 5000
+RETURN s.name, st_distance(s.location, $user_location) AS meters;
 ```
 
 ### Query Hints

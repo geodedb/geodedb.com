@@ -556,13 +556,13 @@ CREATE INDEX person_age ON Person(age);
 CREATE INDEX person_name ON Person(name);
 
 -- For full-text search
-CREATE FULLTEXT INDEX person_bio ON Person(bio);
+CREATE INDEX person_bio ON Person(bio) USING fulltext;
 
 -- For spatial queries
-CREATE SPATIAL INDEX location_coords ON Location(coordinates);
+CREATE INDEX location_coords ON Location(coordinates) USING spatial;
 
 -- For vector similarity
-CREATE VECTOR INDEX doc_embedding ON Document(embedding);
+CREATE INDEX doc_embedding ON Document(embedding) USING vector;
 
 -- Verify indexes exist
 SHOW INDEXES;
@@ -706,13 +706,11 @@ SET stats.count = stats.count + 1
 
 ```gql
 -- Use materialized views (if available)
-CREATE MATERIALIZED VIEW person_stats AS
-  MATCH (p:Person)
-  RETURN count(p) AS total,
-         avg(p.age) AS avg_age,
-         min(p.age) AS min_age,
-         max(p.age) AS max_age
-REFRESH COMPLETE;
+-- Materialized views are not reachable from GQL: the grammar has no
+-- MATERIALIZED keyword. Precompute the aggregate onto nodes instead:
+MATCH (u:User)-[:PURCHASED]->(p:Product)
+WITH p, count(*) AS purchases
+SET p.purchase_count = purchases;
 
 -- Query the view
 SELECT * FROM person_stats;

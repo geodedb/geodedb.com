@@ -32,6 +32,7 @@ A property graph consists of nodes (vertices) and relationships (edges), where b
 ### Core Elements
 
 **Nodes** represent entities:
+
 ```gql
 (p:Person {
   id: 'u123',
@@ -43,6 +44,7 @@ A property graph consists of nodes (vertices) and relationships (edges), where b
 ```
 
 **Relationships** connect nodes with direction and type:
+
 ```gql
 (alice)-[:WORKS_AT {
   since: DATE '2022-03-01',
@@ -52,6 +54,7 @@ A property graph consists of nodes (vertices) and relationships (edges), where b
 ```
 
 **Properties** store data on both nodes and relationships:
+
 ```gql
 -- Node properties
 {name: 'Alice', age: 30, verified: true}
@@ -61,6 +64,7 @@ A property graph consists of nodes (vertices) and relationships (edges), where b
 ```
 
 **Labels** categorize nodes:
+
 ```gql
 -- Single label
 (p:Person)
@@ -143,12 +147,14 @@ RETURN p.name, p.email;  -- email is NULL for Bob and Charlie
 ### Entity Identification
 
 **When to use nodes**:
+
 - Thing exists independently
 - Referenced by multiple entities
 - Has its own relationships
 - Queried directly
 
 **When to use properties**:
+
 - Simple attribute value
 - Not queried independently
 - Unique to single entity
@@ -355,8 +361,9 @@ MATCH (p:Person {tenant_id: 'company_a'})
 RETURN p.name;
 
 -- Or use Row-Level Security
-CREATE POLICY tenant_isolation ON ALL
-USING (tenant_id = current_tenant());
+-- Not expressible as a Geode policy predicate (only `=` against a string
+-- literal compiles); precompute the decision into a property instead:
+CALL geode.rls.add_attribute_policy('app', 'Label', 'access_tag', 'access_tag');
 
 -- Now all queries automatically filter by tenant
 MATCH (p:Person) RETURN p.name;  -- Only returns current tenant's people
@@ -367,22 +374,26 @@ MATCH (p:Person) RETURN p.name;  -- Only returns current tenant's people
 ### Supported Types in Geode
 
 **Primitive Types**:
+
 - `INTEGER`: Whole numbers
 - `FLOAT`: Decimal numbers
 - `STRING`: Text
 - `BOOLEAN`: true/false
 
 **Temporal Types**:
+
 - `DATE`: Calendar dates
 - `TIME`: Time of day
 - `TIMESTAMP`: Point in time
 - `DURATION`: Time intervals
 
 **Complex Types**:
+
 - `LIST`: Arrays of values
 - `MAP`: Nested key-value structures
 
 **Special**:
+
 - `NULL`: Absence of value
 
 ```gql
@@ -573,8 +584,9 @@ INSERT (user)-[:PURCHASED {date: CURRENT_DATE, amount: 1299}]->(product);
 COMMIT;
 
 -- Query with RLS
-CREATE POLICY user_purchases ON PURCHASED
-USING (source.id = current_user_id());
+-- Not expressible as a Geode policy predicate (only `=` against a string
+-- literal compiles); precompute the decision into a property instead:
+CALL geode.rls.add_attribute_policy('app', 'Label', 'access_tag', 'access_tag');
 
 MATCH (u:User)-[p:PURCHASED]->(prod:Product)
 RETURN prod.name;  -- Only returns current user's purchases

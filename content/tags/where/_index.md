@@ -537,7 +537,7 @@ Filter by time differences.
 ```gql
 -- Age calculation
 MATCH (e:Event)
-WHERE duration.between(e.created_at, datetime()).days > 30
+WHERE (datetime( - e.created_at)).days > 30
 RETURN e.name AS old_event;
 
 -- Activity window
@@ -602,8 +602,9 @@ MATCH (p:Person)
 WHERE p.bio CONTAINS 'engineer'  -- Full text search needed
 RETURN p;
 -- Better: Use full-text index
-MATCH (p:Person)
-WHERE text_search(p.bio, 'engineer')
+CALL geode.fts.search('person_bio', 'engineer')
+YIELD node, score
+MATCH (p:Person) WHERE id(p) = node
 RETURN p;
 ```
 
@@ -612,12 +613,14 @@ RETURN p;
 ### Readability
 
 1. **Use Parentheses for Clarity**: Make operator precedence explicit
+
 ```gql
 WHERE (a AND b) OR (c AND d)  -- Clear
 WHERE a AND b OR c AND d      -- Ambiguous to readers
 ```
 
 2. **Break Complex Conditions**: Use multiple lines
+
 ```gql
 WHERE p.active = true
 AND p.verified = true
@@ -626,6 +629,7 @@ AND p.created_at > $since
 ```
 
 3. **Use Meaningful Comparisons**: Be explicit about intent
+
 ```gql
 -- Clear intent
 WHERE p.inventory > 0
@@ -636,16 +640,19 @@ WHERE p.inventory  -- Truthy check
 ### Common Patterns
 
 1. **Optional with Default**: Handle missing values
+
 ```gql
 WHERE COALESCE(p.discount, 0) >= $min_discount
 ```
 
 2. **Safe Navigation**: Check existence before accessing
+
 ```gql
 WHERE p.settings IS NOT NULL AND p.settings.notifications = true
 ```
 
 3. **Range Queries**: Use consistent ordering
+
 ```gql
 WHERE $min <= p.price AND p.price <= $max
 ```
@@ -653,6 +660,7 @@ WHERE $min <= p.price AND p.price <= $max
 ### Avoiding Pitfalls
 
 1. **NULL Awareness**: Remember NULL != FALSE
+
 ```gql
 -- This excludes NULLs
 WHERE p.active = true
@@ -662,6 +670,7 @@ WHERE p.active = true OR p.active IS NULL
 ```
 
 2. **Type Mismatches**: Ensure compatible types
+
 ```gql
 -- String vs number comparison
 WHERE p.price > 100  -- Good
@@ -669,6 +678,7 @@ WHERE p.price > '100'  -- Type mismatch risk
 ```
 
 3. **Case Sensitivity**: Be explicit about case handling
+
 ```gql
 -- Explicit case handling
 WHERE toLower(u.email) = toLower($email)

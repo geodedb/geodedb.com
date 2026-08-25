@@ -286,9 +286,8 @@ Row-Level Security (RLS) policies enforce fine-grained access control:
 
 ```gql
 -- Create access policy
-CREATE POLICY user_data_access ON Person
-FOR SELECT
-USING (owner_id = current_user_id());
+-- Person.owner_id must equal the caller's 'user_id' principal attribute
+CALL geode.rls.add_attribute_policy('app', 'Person', 'owner_id', 'user_id');
 
 -- Enable policy
 ALTER TABLE Person ENABLE ROW LEVEL SECURITY;

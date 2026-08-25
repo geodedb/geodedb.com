@@ -102,7 +102,7 @@ CREATE PROPERTY TYPE Person (
 
     -- Age calculation (always current)
     VIRTUAL age INTEGER AS (
-        DATEDIFF(YEAR, birth_date, CURRENT_DATE)
+        (CURRENT_DATE - birth_date) /* Duration; no DATEDIFF(): store epoch millis to get an integer */
     ),
 
     VIRTUAL is_adult BOOLEAN AS (
@@ -206,7 +206,7 @@ CREATE PROPERTY TYPE User (
 
     VIRTUAL engagement_rate DECIMAL AS (
         CAST(follower_count + post_count * 10 AS DECIMAL) /
-        NULLIF(DATEDIFF(DAY, created_at, NOW()), 0)
+        NULLIF((datetime( - created_at) /* Duration; no DATEDIFF(): store epoch millis to get an integer */), 0)
     ),
 
     -- List properties
@@ -227,7 +227,7 @@ CREATE PROPERTY TYPE User (
     VIRTUAL is_following_anyone BOOLEAN AS (following_count > 0),
     VIRTUAL is_active BOOLEAN AS (
         post_count > 0 AND
-        DATEDIFF(DAY, created_at, NOW()) > 30
+        (datetime( - created_at) /* Duration; no DATEDIFF(): store epoch millis to get an integer */) > 30
     )
 );
 ```
@@ -246,25 +246,25 @@ CREATE PROPERTY TYPE Order (
 
     -- Time since events
     VIRTUAL days_since_created INTEGER AS (
-        DATEDIFF(DAY, created_at, NOW())
+        (datetime( - created_at) /* Duration; no DATEDIFF(): store epoch millis to get an integer */)
     ),
 
     VIRTUAL hours_since_updated INTEGER AS (
-        DATEDIFF(HOUR, updated_at, NOW())
+        (datetime( - updated_at) /* Duration; no DATEDIFF(): store epoch millis to get an integer */)
     ),
 
     -- Time periods
     VIRTUAL is_recent BOOLEAN AS (days_since_created <= 7),
     VIRTUAL is_this_month BOOLEAN AS (
-        MONTH(created_at) = MONTH(NOW()) AND
-        YEAR(created_at) = YEAR(NOW())
+        created_at.month = MONTH(datetime()) AND
+        created_at.year = YEAR(datetime())
     ),
 
     -- Processing times
     VIRTUAL processing_time_hours INTEGER AS (
         CASE
             WHEN shipped_at IS NOT NULL
-                THEN DATEDIFF(HOUR, created_at, shipped_at)
+                THEN (shipped_at - created_at) /* Duration; no DATEDIFF(): store epoch millis to get an integer */
             ELSE NULL
         END
     ),
@@ -272,7 +272,7 @@ CREATE PROPERTY TYPE Order (
     VIRTUAL delivery_time_hours INTEGER AS (
         CASE
             WHEN delivered_at IS NOT NULL AND shipped_at IS NOT NULL
-                THEN DATEDIFF(HOUR, shipped_at, delivered_at)
+                THEN (delivered_at - shipped_at) /* Duration; no DATEDIFF(): store epoch millis to get an integer */
             ELSE NULL
         END
     ),
@@ -280,7 +280,7 @@ CREATE PROPERTY TYPE Order (
     VIRTUAL total_time_hours INTEGER AS (
         CASE
             WHEN delivered_at IS NOT NULL
-                THEN DATEDIFF(HOUR, created_at, delivered_at)
+                THEN (delivered_at - created_at) /* Duration; no DATEDIFF(): store epoch millis to get an integer */
             ELSE NULL
         END
     ),
@@ -435,29 +435,29 @@ CREATE PROPERTY TYPE UserProfile (
     -- Membership duration
     VIRTUAL member_since STRING AS (
         CASE
-            WHEN DATEDIFF(DAY, joined_date, NOW()) < 30
-                THEN 'Joined ' || CAST(DATEDIFF(DAY, joined_date, NOW()) AS STRING) || ' days ago'
-            WHEN DATEDIFF(MONTH, joined_date, NOW()) < 12
-                THEN 'Member for ' || CAST(DATEDIFF(MONTH, joined_date, NOW()) AS STRING) || ' months'
-            ELSE 'Member for ' || CAST(DATEDIFF(YEAR, joined_date, NOW()) AS STRING) || ' years'
+            WHEN (datetime( - joined_date) /* Duration; no DATEDIFF(): store epoch millis to get an integer */) < 30
+                THEN 'Joined ' || CAST((datetime( - joined_date) /* Duration; no DATEDIFF(): store epoch millis to get an integer */) AS STRING) || ' days ago'
+            WHEN (datetime( - joined_date) /* Duration; no DATEDIFF(): store epoch millis to get an integer */) < 12
+                THEN 'Member for ' || CAST((datetime( - joined_date) /* Duration; no DATEDIFF(): store epoch millis to get an integer */) AS STRING) || ' months'
+            ELSE 'Member for ' || CAST((datetime( - joined_date) /* Duration; no DATEDIFF(): store epoch millis to get an integer */) AS STRING) || ' years'
         END
     ),
 
     -- Activity status
     VIRTUAL activity_status STRING AS (
         CASE
-            WHEN DATEDIFF(MINUTE, last_active_at, NOW()) < 5 THEN 'Online'
-            WHEN DATEDIFF(HOUR, last_active_at, NOW()) < 1 THEN 'Active recently'
-            WHEN DATEDIFF(DAY, last_active_at, NOW()) < 1 THEN 'Active today'
-            WHEN DATEDIFF(DAY, last_active_at, NOW()) < 7 THEN 'Active this week'
+            WHEN (datetime( - last_active_at) /* Duration; no DATEDIFF(): store epoch millis to get an integer */) < 5 THEN 'Online'
+            WHEN (datetime( - last_active_at) /* Duration; no DATEDIFF(): store epoch millis to get an integer */) < 1 THEN 'Active recently'
+            WHEN (datetime( - last_active_at) /* Duration; no DATEDIFF(): store epoch millis to get an integer */) < 1 THEN 'Active today'
+            WHEN (datetime( - last_active_at) /* Duration; no DATEDIFF(): store epoch millis to get an integer */) < 7 THEN 'Active this week'
             ELSE 'Inactive'
         END
     ),
 
     VIRTUAL status_badge_color STRING AS (
         CASE
-            WHEN DATEDIFF(MINUTE, last_active_at, NOW()) < 5 THEN 'green'
-            WHEN DATEDIFF(HOUR, last_active_at, NOW()) < 1 THEN 'yellow'
+            WHEN (datetime( - last_active_at) /* Duration; no DATEDIFF(): store epoch millis to get an integer */) < 5 THEN 'green'
+            WHEN (datetime( - last_active_at) /* Duration; no DATEDIFF(): store epoch millis to get an integer */) < 1 THEN 'yellow'
             ELSE 'gray'
         END
     ),
@@ -526,15 +526,15 @@ CREATE PROPERTY TYPE Account (
 
     -- Account age
     VIRTUAL account_age_years DECIMAL AS (
-        DATEDIFF(DAY, opened_date, CURRENT_DATE) / 365.25
+        (CURRENT_DATE - opened_date) /* Duration; no DATEDIFF(): store epoch millis to get an integer */ / 365.25
     ),
 
     VIRTUAL account_age_display STRING AS (
         CASE
-            WHEN DATEDIFF(DAY, opened_date, CURRENT_DATE) < 30
-                THEN CAST(DATEDIFF(DAY, opened_date, CURRENT_DATE) AS STRING) || ' days old'
-            WHEN DATEDIFF(MONTH, opened_date, CURRENT_DATE) < 12
-                THEN CAST(DATEDIFF(MONTH, opened_date, CURRENT_DATE) AS STRING) || ' months old'
+            WHEN (CURRENT_DATE - opened_date) /* Duration; no DATEDIFF(): store epoch millis to get an integer */ < 30
+                THEN CAST((CURRENT_DATE - opened_date) /* Duration; no DATEDIFF(): store epoch millis to get an integer */ AS STRING) || ' days old'
+            WHEN (CURRENT_DATE - opened_date) /* Duration; no DATEDIFF(): store epoch millis to get an integer */ < 12
+                THEN CAST((CURRENT_DATE - opened_date) /* Duration; no DATEDIFF(): store epoch millis to get an integer */ AS STRING) || ' months old'
             ELSE CAST(FLOOR(account_age_years) AS STRING) || ' years old'
         END
     ),
@@ -688,12 +688,12 @@ type User struct {
 }
 
 func (u *User) FollowerCount() int {
-    if time.Now().Before(u.followerCountExpiry) {
+    if datetime().Before(u.followerCountExpiry) {
         return u.followerCountCache
     }
     count := u.calculateFollowerCount()
     u.followerCountCache = count
-    u.followerCountExpiry = time.Now().Add(5 * time.Minute)
+    u.followerCountExpiry = datetime().Add(5 * time.Minute)
     return count
 }
 ```

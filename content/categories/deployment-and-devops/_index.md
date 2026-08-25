@@ -433,15 +433,10 @@ groups:
 
 ```yaml
 # geode config for structured logging
-monitoring:
-  logging:
-    level: "info"
-    format: "json"
-    output: "/var/log/geode/geode.log"
-    rotation:
-      max_size_mb: 100
-      max_files: 10
-      compress: true
+# NOTE: `monitoring:` is not a configuration-file section — it is ignored.
+# The Prometheus listener is opt-in and env-only:
+#   GEODE_METRICS_PORT=9090   (serves /metrics and /health)
+#   GEODE_METRICS_BIND=127.0.0.1
 ```
 
 Collect logs with Fluentd/Fluent Bit:
@@ -497,7 +492,6 @@ geode restore \
 # Or restore to specific point in time using WAL
 geode restore \
   --from /backups/geode/backup-20250124-120000.tar.gz \
-  --wal-dir /backups/geode/wal \
   --target-time "2025-01-24T14:30:00Z"
 ```
 

@@ -508,21 +508,9 @@ Monitor network performance metrics:
 
 ```gql
 -- Query network statistics
-SELECT
-  metric_name,
-  metric_value,
-  timestamp
-FROM system.network_metrics
-WHERE metric_name IN (
-  'connections_active',
-  'connections_total',
-  'bytes_sent',
-  'bytes_received',
-  'packets_lost',
-  'rtt_average'
-)
-ORDER BY timestamp DESC
-LIMIT 100;
+-- There is no query-statistics table, slow-query log or plan cache to
+-- query. Measure a specific statement with EXPLAIN / PROFILE, and scrape
+-- aggregate counters from the Prometheus endpoint (GEODE_METRICS_PORT).
 ```
 
 Prometheus metrics:
@@ -548,19 +536,27 @@ Diagnose connection issues:
 
 ```bash
 # Show active connections
-geode admin connections list
+# There is no `geode admin` subcommand. Geode's CLI is: serve, shell, query,
+# lsp, backup, restore, migrate, auth, login, logout, user, role, tenant,
+# policy, grant, revoke, completion, mcp.
 
 # Show connection details
-geode admin connection show --id=conn-12345
+# There is no `geode admin` subcommand. Geode's CLI is: serve, shell, query,
+# lsp, backup, restore, migrate, auth, login, logout, user, role, tenant,
+# policy, grant, revoke, completion, mcp.
 
 # Test connectivity
-geode admin ping --host=geode.example.com:3141
+geode query "SHOW CLUSTER STATUS"
 
 # Trace route with QUIC
-geode admin traceroute --host=geode.example.com:3141
+# There is no `geode admin` subcommand. Geode's CLI is: serve, shell, query,
+# lsp, backup, restore, migrate, auth, login, logout, user, role, tenant,
+# policy, grant, revoke, completion, mcp.
 
 # Network throughput test
-geode admin benchmark network \
+# There is no `geode admin` subcommand. Geode's CLI is: serve, shell, query,
+# lsp, backup, restore, migrate, auth, login, logout, user, role, tenant,
+# policy, grant, revoke, completion, mcp.
   --host=geode.example.com:3141 \
   --duration=60s \
   --packet-size=64KB
@@ -587,10 +583,14 @@ nc -vzu geode.example.com 3141
 nmap -sU -p 3141 geode.example.com
 
 # Check QUIC connectivity
-geode admin diagnose network --host=geode.example.com:3141
+# There is no `geode admin` subcommand. Geode's CLI is: serve, shell, query,
+# lsp, backup, restore, migrate, auth, login, logout, user, role, tenant,
+# policy, grant, revoke, completion, mcp.
 
 # Verify TLS certificate
-geode admin tls verify --host=geode.example.com:3141
+# There is no `geode admin` subcommand. Geode's CLI is: serve, shell, query,
+# lsp, backup, restore, migrate, auth, login, logout, user, role, tenant,
+# policy, grant, revoke, completion, mcp.
 
 # Check firewall rules
 sudo iptables -L -n -v | grep 3141
@@ -601,16 +601,20 @@ sudo ufw status | grep 3141
 
 ```bash
 # Monitor network latency
-geode admin monitor network --interval=1s --duration=60s
+# There is no `geode admin` subcommand. Geode's CLI is: serve, shell, query,
+# lsp, backup, restore, migrate, auth, login, logout, user, role, tenant,
+# policy, grant, revoke, completion, mcp.
 
 # Identify slow connections
-geode admin connections list --sort-by=latency --limit=10
+# There is no `geode admin` subcommand. Geode's CLI is: serve, shell, query,
+# lsp, backup, restore, migrate, auth, login, logout, user, role, tenant,
+# policy, grant, revoke, completion, mcp.
 
 # Check packet loss
-geode admin stats network --metric=packet_loss --interval=5m
+geode query "CALL geode.storage.stats()"
 
 # Bandwidth utilization
-geode admin stats network --metric=bandwidth --interval=1m
+geode query "CALL geode.storage.stats()"
 ```
 
 ### Debugging QUIC Issues

@@ -601,9 +601,10 @@ RETURN u2.name;
 Track shard health and performance:
 
 ```yaml
-monitoring:
-  shard_metrics:
-    enabled: true
+# NOTE: `monitoring:` is not a configuration-file section — it is ignored.
+# The Prometheus listener is opt-in and env-only:
+#   GEODE_METRICS_PORT=9090   (serves /metrics and /health)
+#   GEODE_METRICS_BIND=127.0.0.1
 
     metrics:
       # Per-shard metrics

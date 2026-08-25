@@ -276,7 +276,7 @@ CREATE (u:User {
     email: $email,
     created_at: datetime()
 })
-RETURN u.name AS name, elementId(u) AS id;
+RETURN u.name AS name, id(u) AS id;
 
 -- Return created relationship
 MATCH (a:Person {name: 'Alice'}), (b:Person {name: 'Bob'})
@@ -397,6 +397,7 @@ ON MATCH SET u.last_seen = datetime();
 ### Data Integrity
 
 1. **Use Constraints**: Define uniqueness constraints before bulk creation
+
 ```gql
 -- Create constraint first
 CREATE CONSTRAINT user_email_unique ON (u:User) ASSERT u.email IS UNIQUE;
@@ -407,6 +408,7 @@ ON CREATE SET u.name = $name;
 ```
 
 2. **Validate Data**: Check data before creating
+
 ```gql
 -- Create only if valid
 MATCH (u:User {id: $user_id})
@@ -417,6 +419,7 @@ CREATE (u)-[:PERFORMED]->(a:Action {type: $action_type, timestamp: datetime()});
 ### Performance Optimization
 
 1. **Batch Creations**: Group multiple creates into transactions
+
 ```gql
 -- More efficient than individual queries
 UNWIND range(1, 1000) AS i
@@ -424,6 +427,7 @@ CREATE (n:TestNode {index: i});
 ```
 
 2. **Index Before Bulk Load**: Create indexes before loading data
+
 ```gql
 CREATE INDEX user_email ON User(email);
 CREATE INDEX product_sku ON Product(sku);
@@ -431,6 +435,7 @@ CREATE INDEX product_sku ON Product(sku);
 ```
 
 3. **Use Parameters**: Parameterized queries are cached and reused
+
 ```gql
 -- Query plan is cached
 CREATE (u:User {name: $name, email: $email});
@@ -439,6 +444,7 @@ CREATE (u:User {name: $name, email: $email});
 ### Modeling Best Practices
 
 1. **Meaningful Labels**: Use descriptive, singular label names
+
 ```gql
 -- Good
 CREATE (p:Product), (c:Customer), (o:Order);
@@ -448,6 +454,7 @@ CREATE (p:Products), (c:Cust), (o:Ord);
 ```
 
 2. **Descriptive Relationship Types**: Use verb phrases in UPPER_CASE
+
 ```gql
 -- Good
 CREATE (a)-[:PURCHASED]->(b);
@@ -460,6 +467,7 @@ CREATE (a)-[:connection]->(b);
 ```
 
 3. **Property Naming**: Use consistent naming conventions
+
 ```gql
 -- Consistent snake_case
 CREATE (p:Product {

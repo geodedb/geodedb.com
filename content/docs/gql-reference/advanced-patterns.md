@@ -452,7 +452,7 @@ RETURN p.name,
          company: c.name,
          from: r.start_date,
          to: r.end_date,
-         duration: duration.between(r.start_date, r.end_date)
+         duration: (r.end_date - r.start_date)
        }] AS work_history;
 ```
 
@@ -527,7 +527,7 @@ RETURN [n IN nodes(path) | n.name] AS dependency_chain;
 
 -- Critical path
 MATCH path = (start:Task {name: 'Start'})-[:DEPENDS_ON*]->(end:Task {name: 'End'})
-WITH path, REDUCE(total = 0, t IN nodes(path) | total + t.duration) AS path_duration
+WITH path, null /* reduce() is advertised by SHOW FUNCTIONS but has no evaluator dispatch; collect() the values and fold client-side (for path weights use algo.dijkstra.stream, which yields cost) */ AS path_duration
 RETURN path, path_duration
 ORDER BY path_duration DESC
 LIMIT 1;

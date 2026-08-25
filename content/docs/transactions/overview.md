@@ -93,6 +93,7 @@ COMMIT;
 ```
 
 **Use cases**:
+
 - Error recovery within complex transactions
 - Partial rollback without losing all work
 - Implementing application-level "undo" functionality
@@ -123,6 +124,7 @@ COMMIT;
 ```
 
 **Failure scenarios**:
+
 - Constraint violation → entire transaction rolled back
 - Disk I/O error → transaction rolled back
 - Server crash during transaction → WAL replay recovers consistent state
@@ -149,6 +151,7 @@ COMMIT;  -- Returns error, no changes applied
 **Isolation level**: **Serializable Snapshot Isolation (SSI)**
 
 **What this means**:
+
 - Transactions see a consistent snapshot of the database
 - Concurrent transactions are serializable (equivalent to some serial execution)
 - No dirty reads, no non-repeatable reads, no phantom reads
@@ -187,6 +190,7 @@ See **Isolation Model** section below for MVCC + SSI details.
 **Guarantee**: Once `COMMIT` returns success, changes are durable (written to WAL on disk).
 
 **Recovery**:
+
 - On startup, Geode replays WAL to recover committed transactions
 - Uncommitted transactions are rolled back
 
@@ -199,6 +203,7 @@ From `ENHANCED_TRANSACTION_ISOLATION.md`:
 **MVCC** maintains multiple versions of data to allow concurrent readers and writers.
 
 **How it works**:
+
 1. Each transaction sees a **snapshot** of the database at transaction start
 2. Writes create **new versions** without blocking readers
 3. Readers see old versions until writers commit
@@ -233,6 +238,7 @@ t9    | MATCH (p:Person {id: 1})     |
 **SSI** prevents anomalies by detecting **conflicts** between concurrent transactions.
 
 **Conflict types**:
+
 - **Read-Write conflict**: T1 reads X, T2 modifies X
 - **Write-Write conflict**: T1 modifies X, T2 modifies X
 - **Dependency cycle**: T1 → T2 → T3 → T1 (serialization impossible)
@@ -301,6 +307,7 @@ From `SESSION_MANAGEMENT.md`:
 - **Session variables**: User-defined variables (future)
 
 **Session lifetime**:
+
 - Created on first connection
 - Persists across queries until disconnected
 - Automatically cleaned up on disconnect or timeout
@@ -391,11 +398,11 @@ t9: Recovery complete (Alice visible, Bob not)
 # Restore from backup + replay WAL to timestamp
 geode restore \
   --from s3://backups/geode-2024-01-15.tar.gz \
-  --wal-dir /var/lib/geode/wal \
   --until "2024-01-15T14:30:00Z"
 ```
 
 **Use cases**:
+
 - Recover from accidental data deletion
 - Audit historical state
 - Clone database at specific point
@@ -424,6 +431,7 @@ HINT: This may indicate disk corruption. Restore from backup.
 ## Constraints and Integrity (Current Status)
 
 **Implemented**:
+
 - `UNIQUE` - Unique constraint on property
 - `NOT NULL` - Property must have value
 - `CHECK` - Custom predicate constraint
@@ -442,6 +450,7 @@ CREATE CONSTRAINT positive_balance ON Account(balance) CHECK (balance >= 0);
 ```
 
 **Planned** (per ISO standard):
+
 - Foreign key constraints (relationship cardinality)
 - Pattern constraints (e.g., "Person must have at least one EMAIL relationship")
 - Existence constraints (e.g., "Person must have 'age' property")
@@ -478,6 +487,7 @@ SSI may abort transactions due to conflicts. **Retry** with exponential backoff.
 
 {{< tabs >}}
 {{< tab "Go" >}}
+
 ```go
 func transferMoney(ctx context.Context, db *sql.DB, fromID, toID string, amount int) error {
     for attempt := 0; attempt < maxRetries; attempt++ {
@@ -515,8 +525,10 @@ func transferMoney(ctx context.Context, db *sql.DB, fromID, toID string, amount 
     return fmt.Errorf("max retries exceeded")
 }
 ```
+
 {{< /tab >}}
 {{< tab "Python" >}}
+
 ```python
 async def transfer_money(client, from_id, to_id, amount):
     for attempt in range(MAX_RETRIES):
@@ -539,8 +551,10 @@ async def transfer_money(client, from_id, to_id, amount):
                     raise
                 await asyncio.sleep(2 ** attempt)
 ```
+
 {{< /tab >}}
 {{< tab "Rust" >}}
+
 ```rust
 async fn transfer_money(conn: &mut Connection, from_id: &str, to_id: &str, amount: i64) -> Result<()> {
     for attempt in 0..MAX_RETRIES {
@@ -580,8 +594,10 @@ async fn transfer_money(conn: &mut Connection, from_id: &str, to_id: &str, amoun
     Err("max retries exceeded".into())
 }
 ```
+
 {{< /tab >}}
 {{< tab "Node.js" >}}
+
 ```typescript
 async function transferMoney(fromId: string, toId: string, amount: number) {
     for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
@@ -612,8 +628,10 @@ async function transferMoney(fromId: string, toId: string, amount: number) {
     }
 }
 ```
+
 {{< /tab >}}
 {{< tab "Zig" >}}
+
 ```zig
 fn transferMoney(client: *GeodeClient, allocator: std.mem.Allocator, from_id: []const u8, to_id: []const u8, amount: i64) !void {
     var attempt: usize = 0;
@@ -655,6 +673,7 @@ fn transferMoney(client: *GeodeClient, allocator: std.mem.Allocator, from_id: []
     return error.MaxRetriesExceeded;
 }
 ```
+
 {{< /tab >}}
 {{< /tabs >}}
 
@@ -689,6 +708,7 @@ COMMIT;
 ### 4. Monitor Transaction Metrics
 
 **Key metrics** (from Prometheus):
+
 - `geode_transactions_active` - Active transactions (should be low)
 - `geode_transactions_committed` - Successful commits
 - `geode_transactions_aborted` - Serialization errors (retry rate)

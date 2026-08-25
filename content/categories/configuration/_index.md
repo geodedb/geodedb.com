@@ -63,35 +63,16 @@ query:
   query_cache_size_mb: 512
 
 # Security configuration
-security:
-  authentication:
-    enabled: true
-    provider: "ldap"
-    ldap_url: "ldap://ldap.example.com"
-  authorization:
-    enabled: true
-    default_role: "reader"
-  encryption:
-    tde:
-      enabled: true
-      algorithm: "aes-256-gcm"
-      key_rotation_days: 90
-    fle:
-      enabled: true
+# NOTE: `security:` is not a configuration-file section — it is ignored.
+# KMS and encryption-at-rest are configured with environment variables:
+#   GEODE_KMS_URL, GEODE_KMS_ENDPOINT, GEODE_KMS_API_KEY
+#   GEODE_MASTER_KEY, GEODE_TDE_ENABLED, GEODE_ALLOW_LOCAL_KMS
 
 # Monitoring configuration
-monitoring:
-  metrics:
-    enabled: true
-    prometheus_port: 9090
-    export_interval_seconds: 15
-  logging:
-    level: "info"
-    format: "json"
-    output: "/var/log/geode/geode.log"
-    rotation:
-      max_size_mb: 100
-      max_files: 10
+# NOTE: `monitoring:` is not a configuration-file section — it is ignored.
+# The Prometheus listener is opt-in and env-only:
+#   GEODE_METRICS_PORT=9090   (serves /metrics and /health)
+#   GEODE_METRICS_BIND=127.0.0.1
 
 # Distributed configuration (if running in distributed mode)
 distributed:
@@ -348,9 +329,10 @@ query:
 ### Authentication
 
 ```yaml
-security:
-  authentication:
-    enabled: true
+# NOTE: `security:` is not a configuration-file section — it is ignored.
+# KMS and encryption-at-rest are configured with environment variables:
+#   GEODE_KMS_URL, GEODE_KMS_ENDPOINT, GEODE_KMS_API_KEY
+#   GEODE_MASTER_KEY, GEODE_TDE_ENABLED, GEODE_ALLOW_LOCAL_KMS
 
     # Provider: local, ldap, oauth2, or saml
     provider: "local"
@@ -389,14 +371,10 @@ security:
 ### Encryption
 
 ```yaml
-security:
-  encryption:
-    # Transparent Data Encryption (TDE)
-    tde:
-      enabled: true
-      algorithm: "aes-256-gcm"
-      key_file: "/etc/geode/keys/tde-key.bin"
-      key_rotation_days: 90
+# NOTE: `security:` is not a configuration-file section — it is ignored.
+# KMS and encryption-at-rest are configured with environment variables:
+#   GEODE_KMS_URL, GEODE_KMS_ENDPOINT, GEODE_KMS_API_KEY
+#   GEODE_MASTER_KEY, GEODE_TDE_ENABLED, GEODE_ALLOW_LOCAL_KMS
 
     # Field-Level Encryption (FLE)
     fle:
@@ -412,11 +390,10 @@ security:
 ### Metrics and Prometheus
 
 ```yaml
-monitoring:
-  metrics:
-    enabled: true
-    prometheus_port: 9090
-    export_interval_seconds: 15
+# NOTE: `monitoring:` is not a configuration-file section — it is ignored.
+# The Prometheus listener is opt-in and env-only:
+#   GEODE_METRICS_PORT=9090   (serves /metrics and /health)
+#   GEODE_METRICS_BIND=127.0.0.1
 
     # Metric categories to enable
     categories:
@@ -542,10 +519,10 @@ storage:
   wal:
     sync_mode: "async"
 
-monitoring:
-  logging:
-    level: "debug"
-    format: "text"
+# NOTE: `monitoring:` is not a configuration-file section — it is ignored.
+# The Prometheus listener is opt-in and env-only:
+#   GEODE_METRICS_PORT=9090   (serves /metrics and /health)
+#   GEODE_METRICS_BIND=127.0.0.1
 ```
 
 ## Best Practices
@@ -561,25 +538,20 @@ monitoring:
 ### Security Hardening
 
 ```yaml
-security:
-  authentication:
-    enabled: true
-  authorization:
-    enabled: true
-  encryption:
-    tde:
-      enabled: true
-    fle:
-      enabled: true
+# NOTE: `security:` is not a configuration-file section — it is ignored.
+# KMS and encryption-at-rest are configured with environment variables:
+#   GEODE_KMS_URL, GEODE_KMS_ENDPOINT, GEODE_KMS_API_KEY
+#   GEODE_MASTER_KEY, GEODE_TDE_ENABLED, GEODE_ALLOW_LOCAL_KMS
 
 server:
   tls:
     enabled: true
     min_version: "1.3"
 
-monitoring:
-  logging:
-    level: "info"  # Avoid debug in production (leaks data)
+# NOTE: `monitoring:` is not a configuration-file section — it is ignored.
+# The Prometheus listener is opt-in and env-only:
+#   GEODE_METRICS_PORT=9090   (serves /metrics and /health)
+#   GEODE_METRICS_BIND=127.0.0.1
 ```
 
 ### Resource Allocation

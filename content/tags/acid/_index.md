@@ -49,7 +49,7 @@ SET to.balance = to.balance + 100;
 
 -- If this fails, everything rolls back
 INSERT (:AuditLog {
-  timestamp: now(),
+  timestamp: datetime(),
   from: $fromId,
   to: $toId,
   amount: 100
@@ -233,7 +233,7 @@ SET account3.balance = account3.balance + $amount1 + $amount2;
 
 INSERT (:Transaction {
   id: $txId,
-  timestamp: now(),
+  timestamp: datetime(),
   accounts: [$account1, $account2, $account3],
   amounts: [$amount1, $amount2]
 });
@@ -260,7 +260,7 @@ INSERT (order:Order {
   id: $orderId,
   customer: $customerId,
   total: $total,
-  timestamp: now()
+  timestamp: datetime()
 });
 
 -- Create line items
@@ -291,19 +291,19 @@ BEGIN TRANSACTION ISOLATION LEVEL SERIALIZABLE;
 
 -- Update patient record
 MATCH (patient:Patient {mrn: $mrn})
-SET patient.lastVisit = now(),
+SET patient.lastVisit = datetime(),
     patient.primaryPhysician = $physicianId;
 
 -- Add diagnosis
 INSERT (patient)-[:DIAGNOSED_WITH {
-  date: now(),
+  date: datetime(),
   physician: $physicianId,
   icd10: $icd10Code
 }]->(:Condition {name: $conditionName});
 
 -- Log access for HIPAA compliance
 INSERT (:AuditLog {
-  timestamp: now(),
+  timestamp: datetime(),
   user: $userId,
   action: 'UPDATE_PATIENT_RECORD',
   patient: $mrn
@@ -372,7 +372,7 @@ Design operations to be idempotent when possible:
 ```gql
 -- Idempotent: Can safely retry
 MERGE (user:User {email: $email})
-SET user.lastLogin = now();
+SET user.lastLogin = datetime();
 
 -- Not idempotent: Creates duplicates on retry
 INSERT (:User {email: $email});

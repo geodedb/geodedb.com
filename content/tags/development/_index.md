@@ -107,8 +107,10 @@ storage:
   data_dir: "./data/dev"
   wal_dir: "./data/wal"
 
-security:
-  tls_enabled: false  # Disable for local dev only
+# NOTE: `security:` is not a configuration-file section — it is ignored.
+# KMS and encryption-at-rest are configured with environment variables:
+#   GEODE_KMS_URL, GEODE_KMS_ENDPOINT, GEODE_KMS_API_KEY
+#   GEODE_MASTER_KEY, GEODE_TDE_ENABLED, GEODE_ALLOW_LOCAL_KMS
 
 performance:
   query_timeout: 30s

@@ -194,7 +194,7 @@ COMMIT;
 SET TRANSACTION ISOLATION LEVEL LINEARIZABLE;
 BEGIN;
 -- Guaranteed real-time ordering
-CREATE (:Order {timestamp: now()});
+CREATE (:Order {timestamp: datetime()});
 COMMIT;
 ```
 
@@ -236,7 +236,7 @@ SET p.age = 31;
 CREATE (:AuditLog {
   action: 'UPDATE',
   user: 'admin',
-  timestamp: now()
+  timestamp: datetime()
 });
 
 -- 3. Commit or rollback
@@ -255,6 +255,7 @@ CREATE (:Person {name: 'Alice'});
 ```
 
 Equivalent to:
+
 ```gql
 BEGIN;
 CREATE (:Person {name: 'Alice'});
@@ -301,6 +302,7 @@ COMMIT;
 ```
 
 **Use Cases**:
+
 - Partial rollback on errors
 - Nested transaction simulation
 - Complex multi-step operations
@@ -378,7 +380,7 @@ MATCH (p:Person)
 WHERE p.processed = false
 WITH p LIMIT 1000
 SET p.processed = true,
-    p.processed_at = now();
+    p.processed_at = datetime();
 
 COMMIT;
 
@@ -465,13 +467,14 @@ Geode automatically detects and resolves deadlocks.
 
 ```gql
 -- Check active transactions
-SELECT * FROM system.active_transactions;
+-- Geode exposes no transaction catalog: running transactions cannot be listed.
 
 -- Check transaction conflicts
-SELECT * FROM system.transaction_conflicts;
+-- Geode reports no per-conflict history; serialization failures surface as
+-- errors on the failing statement.
 
 -- Average transaction duration
-SELECT avg(duration) FROM system.completed_transactions;
+-- Geode exposes no transaction history table.
 ```
 
 ## Best Practices
@@ -526,7 +529,7 @@ CREATE (:Transaction {
   from: $from_account,
   to: $to_account,
   amount: $amount,
-  timestamp: now()
+  timestamp: datetime()
 });
 
 COMMIT;
@@ -547,7 +550,7 @@ CREATE (o:Order {
   order_id: $order_id,
   product_sku: $product_sku,
   quantity: $quantity,
-  created_at: now()
+  created_at: datetime()
 });
 
 -- Link to customer

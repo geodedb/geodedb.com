@@ -542,7 +542,9 @@ CREATE INDEX ON User(email);
 ALTER TABLE Product ADD PROPERTY discount FLOAT;
 
 -- Statistics updates trigger re-planning
-ANALYZE User;
+-- Geode has no ANALYZE / VACUUM / REINDEX. Statistics are maintained by
+-- the engine, freed pages are reused automatically, and an index is
+-- rebuilt by dropping and recreating it.
 ```
 
 ### Monitoring Cache Effectiveness
@@ -577,14 +579,12 @@ RETURN u;
 
 -- Disable specific optimization
 MATCH (a:User)-[:KNOWS]->(b:User)
-OPTION (HASH_JOIN=OFF)
 WHERE a.country = b.country
 RETURN a, b;
 
 -- Force join order
 MATCH (small:Product {category: 'Rare'}),
       (large:User)
-OPTION (JOIN_ORDER=FIXED)
 WHERE (large)-[:PURCHASED]->(small)
 RETURN large, small;
 ```

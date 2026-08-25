@@ -50,12 +50,13 @@ Geode's BM25 implementation provides production-grade full-text search with rele
 
 ```gql
 // Create a full-text index
-CREATE TEXT INDEX doc_content ON :Document(content)
+CREATE INDEX doc_content ON :Document(content) USING fulltext
 
 // Search with BM25 ranking
-MATCH (d:Document)
-WHERE text_search(d.content, 'graph database performance')
-RETURN d.title, bm25_score(d.content, 'graph database performance') AS relevance
+CALL geode.fts.search('document_content', 'graph database performance')
+YIELD node, score
+MATCH (d:Document) WHERE id(d) = node
+RETURN d.title, score AS relevance
 ORDER BY relevance DESC
 LIMIT 20
 ```
@@ -72,12 +73,12 @@ from geode_client import Client
 client = Client(host="localhost", port=3141)
 
 async with client.connection() as conn:
-    # Create a security policy
-    await conn.execute("""
-        CREATE POLICY user_data_access ON :UserData
-        USING (node.user_id = current_user_id())
-        WITH CHECK (node.user_id = current_user_id())
-    """)
+    # Create a security policy: UserData.user_id must equal the caller's
+    # 'user_id' principal attribute. This filters reads; Geode has no
+    # WITH CHECK enforcement on writes.
+    await conn.execute(
+        "CALL geode.rls.add_attribute_policy('app', 'UserData', 'user_id', 'user_id')"
+    )
 
     # Queries automatically respect RLS policies
     # Users only see their own data
@@ -149,14 +150,16 @@ Geode's MVCC (Multi-Version Concurrency Control) implementation enables time-tra
 ```gql
 // Query data as it existed at a specific time
 MATCH (u:User)-[:PURCHASED]->(p:Product)
-AS OF TIMESTAMP '2025-01-01T00:00:00Z'
+-- Geode has no AS OF / time-travel syntax: MVCC snapshots are not
+-- addressable from GQL. Model history explicitly with versioned nodes.
 RETURN u.name, p.title
 
 // Query all versions of a node
 MATCH (u:User {id: $user_id})
-FOR ALL VERSIONS
-RETURN u.name, u.email, version_timestamp()
-ORDER BY version_timestamp()
+-- Geode has no AS OF / time-travel syntax: MVCC snapshots are not
+-- addressable from GQL. Model history explicitly with versioned nodes.
+RETURN u.name, u.email, null /* MVCC versions are not addressable from GQL */
+ORDER BY null /* MVCC versions are not addressable from GQL */
 ```
 
 Time-travel queries are useful for auditing, debugging, and analyzing historical trends without maintaining separate audit tables.
@@ -183,7 +186,7 @@ the current graph and yields one `(nodeId, community)` row per node.
 ```gql
 // Calculate PageRank centrality
 MATCH (n:WebPage)
-WITH graph.algorithms.pagerank(n, {
+WITH algo.pagerank.stream(n, {
   iterations: 20,
   dampingFactor: 0.85
 }) AS rank
@@ -202,7 +205,7 @@ MATCH path = shortestPath(
   (a)-[:ROUTE*]-(b),
   {weightProperty: 'distance'}
 )
-RETURN path, reduce(d = 0, r IN relationships(path) | d + r.distance) AS total_distance
+RETURN path, null /* reduce() is advertised by SHOW FUNCTIONS but has no evaluator dispatch; collect() the values and fold client-side (for path weights use algo.dijkstra.stream, which yields cost) */ AS total_distance
 ```
 
 ## Performance Optimization Features
@@ -355,10 +358,13 @@ Combine full-text and vector search for powerful semantic + keyword search:
 
 ```gql
 // Hybrid search with score fusion
-MATCH (d:Document)
-WHERE text_search(d.content, $query_text)
+-- NOTE: geode.fts.search takes string literals only; a $parameter
+-- is rejected. Interpolate the term client-side before sending.
+CALL geode.fts.search('document_content', '<search terms>')
+YIELD node, score
+MATCH (d:Document) WHERE id(d) = node
 WITH d,
-  bm25_score(d.content, $query_text) AS text_score,
+  score AS text_score,
   similarity(d.embedding, $query_vector) AS vector_score
 RETURN d.title,
   (0.7 * text_score + 0.3 * vector_score) AS combined_score
@@ -558,30 +564,32 @@ async def authenticate_with_mfa(username, password, totp_code):
 
 ### Attribute-Based Access Control (ABAC)
 
+Geode's ABAC is a per-row equality between a node property and an attribute on
+the calling principal. Clearance ranges, ownership traversal and group
+membership cannot be expressed inside a policy, so resolve them at write time
+into a single tag that one equality can test:
+
 ```gql
--- Define ABAC policy
-CREATE POLICY document_access ON :Document
-USING (
-    // Allow access if user has clearance level >= document classification
-    EXISTS {
-        MATCH (current_user:User {id: current_user_id()})
-        WHERE current_user.clearance_level >= node.classification_level
-    }
-    OR
-    // Or if user is document owner
-    EXISTS {
-        MATCH (current_user:User {id: current_user_id()})
-              -[:OWNS]->(node)
-    }
-    OR
-    // Or if user is in authorized group
-    EXISTS {
-        MATCH (current_user:User {id: current_user_id()})
-              -[:MEMBER_OF]->(:Group)
-              <-[:AUTHORIZED]-(node)
-    }
-)
+-- Set each user's access tag once
+CALL geode.auth.user_set_attribute('alice', 'access_tag', 'confidential');
+
+-- Document.access_tag must equal the caller's 'access_tag' attribute
+CALL geode.rls.add_attribute_policy('app', 'Document', 'access_tag', 'access_tag');
 ```
+
+Recompute `access_tag` on the document whenever ownership, group membership or
+classification changes:
+
+```gql
+MATCH (u:User {id: $user_id})-[:OWNS]->(d:Document)
+SET d.access_tag = u.access_tag;
+```
+
+{{< callout type="warning" >}}
+Writing the traversal directly into a policy — `USING (EXISTS { MATCH … })` —
+compiles to nothing and silently denies every row. Only `=` against a string
+literal is supported; see the [`USING` subset](/tags/rls/#the-using-expression-subset).
+{{< /callout >}}
 
 ### Audit Trail Implementation
 
@@ -701,7 +709,6 @@ RETURN u
 
 -- Disable certain optimizations
 MATCH (a:Node)-[r]-(b:Node)
-OPTION (hash_join=off)
 RETURN a, b
 ```
 

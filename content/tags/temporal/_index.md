@@ -160,7 +160,7 @@ RETURN o.id,
 -- Day of week (1=Monday, 7=Sunday)
 MATCH (e:Event)
 RETURN e.name,
-       dayOfWeek(e.event_date) AS weekday,
+       null /* no dayOfWeek(); derive it in the client */ AS weekday,
        dayOfYear(e.event_date) AS day_of_year;
 
 -- Week and quarter
@@ -198,19 +198,19 @@ SET t.due_date = t.created_at + DURATION 'P7D';  -- 7 days later
 -- Truncate to start of period
 MATCH (e:Event)
 RETURN e.name,
-       date_trunc('month', e.event_date) AS month_start,
-       date_trunc('year', e.event_date) AS year_start,
-       date_trunc('week', e.event_date) AS week_start;
+       $bucket_start /* no date_trunc(): bucket at write time or compare an explicit range */ AS month_start,
+       $bucket_start /* no date_trunc(): bucket at write time or compare an explicit range */ AS year_start,
+       $bucket_start /* no date_trunc(): bucket at write time or compare an explicit range */ AS week_start;
 
 -- Truncate datetime
 MATCH (l:LoginEvent)
-RETURN date_trunc('hour', l.timestamp) AS hour,
+RETURN $bucket_start /* no date_trunc(): bucket at write time or compare an explicit range */ AS hour,
        COUNT(*) AS login_count
 ORDER BY hour;
 
 -- Round to nearest interval
 MATCH (m:Measurement)
-RETURN date_trunc('minute', m.recorded_at) AS minute,
+RETURN $bucket_start /* no date_trunc(): bucket at write time or compare an explicit range */ AS minute,
        AVG(m.value) AS avg_value
 ORDER BY minute;
 ```
@@ -266,7 +266,7 @@ ORDER BY order_date;
 -- Hourly traffic analysis
 MATCH (v:PageView)
 WHERE v.timestamp >= datetime() - DURATION 'P1D'
-RETURN date_trunc('hour', v.timestamp) AS hour,
+RETURN $bucket_start /* no date_trunc(): bucket at write time or compare an explicit range */ AS hour,
        COUNT(v) AS views
 ORDER BY hour;
 
@@ -321,7 +321,7 @@ Track when events occur with immutable timestamps:
 ```gql
 -- Audit trail pattern
 CREATE (al:AuditLog {
-    id: randomUUID(),
+    id: uuid_v4(),
     entity_type: 'User',
     entity_id: $user_id,
     action: 'UPDATE',
@@ -448,7 +448,7 @@ ORDER BY r.timestamp;
 -- Downsampled aggregation (hourly averages)
 MATCH (s:Sensor {id: $sensor_id})-[:RECORDED]->(r:SensorReading)
 WHERE r.timestamp >= datetime() - DURATION 'P7D'
-RETURN date_trunc('hour', r.timestamp) AS hour,
+RETURN $bucket_start /* no date_trunc(): bucket at write time or compare an explicit range */ AS hour,
        AVG(r.temperature) AS avg_temp,
        MIN(r.temperature) AS min_temp,
        MAX(r.temperature) AS max_temp,

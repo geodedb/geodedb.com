@@ -166,8 +166,10 @@ CREATE INDEX article_content_idx ON Article(content) USING fulltext;
 
 -- Full-text search with ranking
 MATCH (a:Article)
-WHERE fulltext_match(a.content, "graph database performance")
-RETURN a.title, bm25_score(a.content, "graph database performance") AS score
+CALL geode.fts.search('article_content', 'graph database performance')
+YIELD node, score
+MATCH (a:Article) WHERE id(a) = node
+RETURN a.title, score
 ORDER BY score DESC
 LIMIT 10;
 ```
@@ -194,14 +196,14 @@ CREATE INDEX store_location_idx ON Store(location) USING spatial;
 
 -- Find stores within 5km
 MATCH (s:Store)
-WHERE geo_distance(s.location, latlon(40.7128, -74.0060)) < 5000
-RETURN s.name, geo_distance(s.location, latlon(40.7128, -74.0060)) AS meters
+WHERE st_distance(s.location, latlon(40.7128, -74.0060)) < 5000
+RETURN s.name, st_distance(s.location, latlon(40.7128, -74.0060)) AS meters
 ORDER BY meters
 LIMIT 5;
 
 -- Bounding box query
 MATCH (s:Store)
-WHERE geo_within_box(s.location, latlon(40.7, -74.1), latlon(40.8, -74.0))
+WHERE geobox_contains(s.location, latlon(40.7, -74.1), latlon(40.8, -74.0))
 RETURN s.name;
 ```
 
@@ -397,13 +399,15 @@ Where:
 CREATE INDEX article_content_idx ON Article(content) USING fulltext;
 
 MATCH (a:Article)
-WHERE fulltext_match(a.content, "graph database")
-RETURN a.title, bm25_score(a.content, "graph database") AS score
+CALL geode.fts.search('article_content', 'graph database')
+YIELD node, score
+MATCH (a:Article) WHERE id(a) = node
+RETURN a.title, score
 ORDER BY score DESC
 LIMIT 10;
 ```
 
-**Optimizer integration**: When `ORDER BY bm25_score(...)` is present, the optimizer selects full-text index automatically.
+**Full-text access**: the fulltext index is reached only through `CALL geode.fts.search|phrase|proximity(...) YIELD node, score`, which returns hits already ranked by BM25. There is no scoring scalar the optimizer can key on.
 
 ## Performance Checklist
 

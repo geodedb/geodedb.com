@@ -31,6 +31,7 @@ Production deployment patterns, infrastructure stacks, backup strategies, and cl
 ### Single Node
 
 **Best for**:
+
 - Development and testing
 - Small-scale production (<100K nodes)
 - Proof-of-concept
@@ -73,11 +74,13 @@ sudo systemctl start geode
 ### Distributed Cluster
 
 **Best for**:
+
 - High availability
 - Large-scale datasets (>1M nodes)
 - Federated query coordination
 
 **Architecture**:
+
 - Multiple Geode instances (shards)
 - Distributed query coordinator
 - Shared KMS (Vault) for encryption keys
@@ -99,6 +102,7 @@ make docker-up-distributed
 From `deployment/DEPLOYMENT.md`:
 
 **Full production stack** includes:
+
 - **Geode**: Graph database instances
 - **Vault**: KMS for TDE/FLE keys
 - **MinIO**: S3-compatible object storage for backups
@@ -121,6 +125,7 @@ docker-compose ps
 ```
 
 **Service endpoints**:
+
 - Geode: `https://localhost:3141` (QUIC+TLS)
 - Grafana: `http://localhost:3000` (admin/admin)
 - Prometheus: `http://localhost:9090`
@@ -168,11 +173,10 @@ storage:
   page_size: 8192
   page_cache_size: '1GB'
 
-security:
-  # Authentication
-  password_policy:
-    min_length: 16
-    expiration_days: 90
+# NOTE: `security:` is not a configuration-file section — it is ignored.
+# KMS and encryption-at-rest are configured with environment variables:
+#   GEODE_KMS_URL, GEODE_KMS_ENDPOINT, GEODE_KMS_API_KEY
+#   GEODE_MASTER_KEY, GEODE_TDE_ENABLED, GEODE_ALLOW_LOCAL_KMS
 
   # TDE
   tde:
@@ -196,12 +200,10 @@ logging:
   level: 'info'  # debug/info/warn/error
   format: 'json'  # text/json
 
-monitoring:
-  metrics:
-    enabled: true
-    listen: '127.0.0.1:8080'
-  health:
-    enabled: true
+# NOTE: `monitoring:` is not a configuration-file section — it is ignored.
+# The Prometheus listener is opt-in and env-only:
+#   GEODE_METRICS_PORT=9090   (serves /metrics and /health)
+#   GEODE_METRICS_BIND=127.0.0.1
 ```
 
 ### Environment Variable Overrides
@@ -275,11 +277,11 @@ crontab -e
 ```bash
 ./geode restore \
   --source s3://my-bucket/geode-backups/geode-20240115.tar.gz \
-  --wal-dir /var/lib/geode/wal \
   --until "2024-01-15T14:30:00Z"
 ```
 
 **Use cases**:
+
 - Recover from accidental deletion
 - Audit historical state
 - Clone database at specific point
@@ -421,6 +423,7 @@ func main() {
 ```
 
 **Features**:
+
 - `database/sql` driver
 - Prepared statements
 - Transaction support
@@ -452,6 +455,7 @@ async with client.connection() as conn:
 ```
 
 **Features**:
+
 - Async/await with aioquic
 - Connection pooling
 - Query builders
@@ -498,6 +502,7 @@ async fn main() -> geode_client::Result<()> {
 ```
 
 **Features**:
+
 - Tokio async runtime
 - Type-safe query builders
 - Zero-cost abstractions

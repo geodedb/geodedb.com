@@ -27,6 +27,7 @@ Geode provides comprehensive Unicode support for international text processing w
 ### Features
 
 **Core Capabilities**:
+
 - **NFC Normalization**: Canonical composition for consistent text representation
 - **Case Folding**: Locale-independent case-insensitive comparisons
 - **UTF-8 ↔ UTF-16**: Bidirectional encoding conversion
@@ -41,6 +42,7 @@ Geode provides comprehensive Unicode support for international text processing w
 **Unicode** is a universal character encoding standard that provides a unique number (code point) for every character across all writing systems, modern and historic.
 
 **Key Concepts**:
+
 - **Code Point**: Numeric value representing a character (U+0041 = 'A')
 - **UTF-8**: Variable-length encoding (1-4 bytes per character)
 - **UTF-16**: Variable-length encoding (2 or 4 bytes per character)
@@ -61,6 +63,7 @@ With NFC normalization: Both become the same canonical form
 ```
 
 **Impact on Graph Databases**:
+
 - Unique constraints may fail incorrectly
 - Full-text search misses matches
 - Case-insensitive comparisons fail
@@ -79,10 +82,12 @@ pub fn nfcNormalize(alloc: std.mem.Allocator, s: []const u8) ![]u8
 ```
 
 **Parameters**:
+
 - `alloc`: Memory allocator
 - `s`: UTF-8 encoded input string
 
 **Returns**:
+
 - Normalized UTF-8 string (caller owns memory)
 - `error.InvalidUtf8` if input is not valid UTF-8
 - `error.OutOfMemory` if allocation fails
@@ -90,6 +95,7 @@ pub fn nfcNormalize(alloc: std.mem.Allocator, s: []const u8) ![]u8
 ### Examples
 
 **Basic Normalization**:
+
 ```zig
 const unicode = @import("geode").unicode;
 const allocator = std.heap.page_allocator;
@@ -102,6 +108,7 @@ defer allocator.free(normalized);
 ```
 
 **Full-Text Search**:
+
 ```zig
 // Normalize before indexing
 const text = "Zürich naïve résumé";
@@ -111,6 +118,7 @@ try fulltext_index.add(normalized);
 ```
 
 **Unique Constraints**:
+
 ```zig
 // Normalize before uniqueness check
 const email = "user@exämple.com";
@@ -124,6 +132,7 @@ if (isEmailTaken(normalized_email)) {
 ### Use Cases
 
 1. **Full-Text Search**:
+
    ```gql
    -- Automatic normalization in search
    MATCH (doc:Document)
@@ -133,6 +142,7 @@ if (isEmailTaken(normalized_email)) {
    ```
 
 2. **Unique Key Enforcement**:
+
    ```gql
    -- Create constraint with normalization
    CREATE CONSTRAINT unique_email ON User (email)
@@ -140,6 +150,7 @@ if (isEmailTaken(normalized_email)) {
    ```
 
 3. **ORDER BY Determinism**:
+
    ```gql
    -- Consistent ordering regardless of composition
    MATCH (p:Person)
@@ -160,16 +171,19 @@ pub fn foldCase(alloc: std.mem.Allocator, s: []const u8) ![]u8
 ```
 
 **Parameters**:
+
 - `alloc`: Memory allocator
 - `s`: UTF-8 encoded input string
 
 **Returns**:
+
 - Case-folded UTF-8 string (caller owns memory)
 - `error.InvalidUtf8` if input is not valid UTF-8
 
 ### Mappings
 
 **Supported Case Foldings**:
+
 - **German ß**: ß → ss (U+00DF → U+0073 U+0073)
 - **Greek Σ**: Σ → σ (uppercase sigma → lowercase sigma)
 - **Basic Latin**: A-Z → a-z (U+0041-U+005A → U+0061-U+007A)
@@ -178,6 +192,7 @@ pub fn foldCase(alloc: std.mem.Allocator, s: []const u8) ![]u8
 ### Examples
 
 **Basic Folding**:
+
 ```zig
 const folded = try unicode.foldCase(allocator, "Straße");
 // Result: "strasse" (ß → ss)
@@ -187,6 +202,7 @@ const greek = try unicode.foldCase(allocator, "ΣΕΛΛΑΣ");
 ```
 
 **Case-Insensitive Search**:
+
 ```zig
 // Fold both search term and indexed text
 const query = try unicode.foldCase(allocator, "CAFÉ");
@@ -195,6 +211,7 @@ const document = try unicode.foldCase(allocator, "café");
 ```
 
 **Username Comparison**:
+
 ```zig
 // Case-insensitive username lookup
 const input = try unicode.foldCase(allocator, "Müller");
@@ -207,10 +224,11 @@ if (std.mem.eql(u8, input, stored)) {
 ### Use Cases
 
 1. **Full-Text Search**:
+
    ```gql
    -- Case-insensitive search (automatic)
    CREATE INDEX doc_text_idx ON Document (text) USING fulltext
-   
+
    MATCH (doc:Document)
    WHERE doc.text CONTAINS 'Straße'
    RETURN doc.title
@@ -218,6 +236,7 @@ if (std.mem.eql(u8, input, stored)) {
    ```
 
 2. **Case-Insensitive Constraints**:
+
    ```gql
    -- Username uniqueness (case-insensitive)
    CREATE CONSTRAINT unique_username ON User (username)
@@ -225,6 +244,7 @@ if (std.mem.eql(u8, input, stored)) {
    ```
 
 3. **Comparisons**:
+
    ```gql
    -- Case-insensitive WHERE clause
    MATCH (u:User)
@@ -237,24 +257,29 @@ if (std.mem.eql(u8, input, stored)) {
 ### UTF-8 to UTF-16
 
 **API**:
+
 ```zig
 pub fn utf8ToUtf16Alloc(ally: std.mem.Allocator, s: []const u8) ![]u16
 ```
 
 **Parameters**:
+
 - `ally`: Memory allocator
 - `s`: UTF-8 encoded string
 
 **Returns**:
+
 - UTF-16LE encoded string as `[]u16` (caller owns)
 - `error.InvalidUtf8` if input is invalid
 
 **Use Cases**:
+
 - Windows API interoperability
 - Java/C# string compatibility
 - UTF-16 based protocols
 
 **Example**:
+
 ```zig
 const utf8_str = "Hello 世界";
 const utf16 = try unicode.utf8ToUtf16Alloc(allocator, utf8_str);
@@ -265,24 +290,29 @@ defer allocator.free(utf16);
 ### UTF-16 to UTF-8
 
 **API**:
+
 ```zig
 pub fn utf16ToUtf8Alloc(ally: std.mem.Allocator, units: []const u16) ![]u8
 ```
 
 **Parameters**:
+
 - `ally`: Memory allocator
 - `units`: UTF-16LE code units
 
 **Returns**:
+
 - UTF-8 encoded string (caller owns)
 - Allocation errors only (UTF-16 validation handled by stdlib)
 
 **Use Cases**:
+
 - Processing Windows filenames
 - Importing data from UTF-16 sources
 - Interoperability with .NET applications
 
 **Example**:
+
 ```zig
 const utf16_data: []const u16 = getWindowsString();
 const utf8 = try unicode.utf16ToUtf8Alloc(allocator, utf16_data);
@@ -293,11 +323,13 @@ defer allocator.free(utf8);
 ### Round-Trip Safety
 
 **Guaranteed Properties**:
+
 - UTF-8 → UTF-16 → UTF-8 preserves original (if valid UTF-8)
 - UTF-16 → UTF-8 → UTF-16 preserves original (if valid UTF-16)
 - Surrogates handled correctly
 
 **Test**:
+
 ```zig
 // Round-trip test
 const original = "Hello 世界 🚀";
@@ -319,16 +351,19 @@ pub fn wtf8LossyToUtf8Alloc(ally: std.mem.Allocator, bytes: []const u8) ![]u8
 ```
 
 **Parameters**:
+
 - `ally`: Memory allocator
 - `bytes`: Potentially ill-formed UTF-8/WTF-8 data
 
 **Returns**:
+
 - Valid UTF-8 string with replacements (caller owns)
 - Only allocation errors (never fails on invalid input)
 
 ### Use Cases
 
 **Robust File Processing**:
+
 ```zig
 // Read file with unknown encoding
 const file_data = try readFile("unknown.txt");
@@ -337,6 +372,7 @@ const valid_utf8 = try unicode.wtf8LossyToUtf8Alloc(allocator, file_data);
 ```
 
 **User Input Sanitization**:
+
 ```zig
 // Handle potentially malformed user input
 const user_input = getFormData();
@@ -345,6 +381,7 @@ const sanitized = try unicode.wtf8LossyToUtf8Alloc(allocator, user_input);
 ```
 
 **Legacy Data Migration**:
+
 ```zig
 // Import data from legacy system with encoding issues
 const legacy_data = importFromLegacyDB();
@@ -357,12 +394,14 @@ const clean_data = try unicode.wtf8LossyToUtf8Alloc(allocator, legacy_data);
 **U+FFFD**: � (Replacement Character)
 
 **Replacement Rules**:
+
 - Invalid UTF-8 sequences → U+FFFD
 - Unpaired surrogates → U+FFFD
 - Overlong encodings → U+FFFD
 - Out-of-range code points → U+FFFD
 
 **Example**:
+
 ```zig
 const invalid = &[_]u8{0xFF, 0xFE, 0x41};  // Invalid bytes + 'A'
 const fixed = try unicode.wtf8LossyToUtf8Alloc(allocator, invalid);
@@ -374,6 +413,7 @@ const fixed = try unicode.wtf8LossyToUtf8Alloc(allocator, invalid);
 ### Full-Text Search
 
 **Automatic Normalization**:
+
 ```gql
 -- Index creation normalizes text
 CREATE INDEX article_idx ON Article (content) USING fulltext
@@ -389,6 +429,7 @@ RETURN a
 ```
 
 **Implementation**:
+
 ```zig
 // FTS analyzer pipeline
 fn analyzeText(text: []const u8) ![]Token {
@@ -404,6 +445,7 @@ fn analyzeText(text: []const u8) ![]Token {
 ### Unique Constraints
 
 **Normalized Keys**:
+
 ```gql
 CREATE CONSTRAINT unique_email ON User (email)
 
@@ -414,6 +456,7 @@ INSERT (u2:User {email: "user@exa\u0308mple.com"})  -- Decomposed
 ```
 
 **Implementation**:
+
 ```zig
 fn checkUniqueConstraint(key: []const u8) !void {
     const normalized = try unicode.nfcNormalize(allocator, key);
@@ -426,6 +469,7 @@ fn checkUniqueConstraint(key: []const u8) !void {
 ### ORDER BY Determinism
 
 **Consistent Ordering**:
+
 ```gql
 MATCH (p:Person)
 RETURN p.name
@@ -440,6 +484,7 @@ ORDER BY p.name
 ### Expression Comparison
 
 **NFC Comparison**:
+
 ```gql
 MATCH (u:User)
 WHERE u.name = 'Müller'
@@ -455,12 +500,14 @@ RETURN u.email
 ### Current Scope
 
 **Implemented**:
+
 - ✅ NFC normalization (subset)
 - ✅ Case folding (targeted mappings)
 - ✅ UTF-8 ↔ UTF-16 conversion
 - ✅ WTF-8 lossy decoding
 
 **Not Yet Implemented**:
+
 - ❌ Full canonical combining class ordering
 - ❌ Complete composition table
 - ❌ Locale-sensitive collation
@@ -471,11 +518,13 @@ RETURN u.email
 ### Subset Coverage
 
 **Normalization**:
+
 - Selected decompositions only
 - Common Latin, Greek, Cyrillic characters
 - Full table generation via `zig build unicode-gen`
 
 **Case Folding**:
+
 - Sharp S (ß → ss)
 - Greek sigma variants (Σ/ς/σ)
 - Basic Latin (A-Z → a-z)
@@ -484,6 +533,7 @@ RETURN u.email
 ### Future Enhancements
 
 **Planned Features**:
+
 - Full canonical combining class support
 - Complete composition tables
 - Locale-sensitive collation (ICU integration)
@@ -496,22 +546,26 @@ RETURN u.email
 ### Benchmarks
 
 **NFC Normalization**:
+
 - ASCII-only text: <100ns (fast path)
 - Optimized for common Latin characters
 - Handles complex scripts
 - Memory overhead varies by input
 
 **Case Folding**:
+
 - Fast path for ASCII-only strings
 - Handles German ß expansion
 - Correct Greek sigma handling
 
 **UTF-8 ↔ UTF-16**:
+
 - Efficient ASCII conversion
 - Full multi-byte support
 - Surrogate pair handling for rare characters
 
 **WTF-8 Lossy**:
+
 - Valid UTF-8: <100ns overhead
 - Invalid sequences: ~500ns per replacement
 - Memory: 1.1x input size
@@ -519,6 +573,7 @@ RETURN u.email
 ### Optimization Tips
 
 **Reuse Allocations**:
+
 ```zig
 // Use arena allocator for batch processing
 var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
@@ -533,6 +588,7 @@ for (texts) |text| {
 ```
 
 **Cache Results**:
+
 ```zig
 // Cache normalized strings
 var cache = std.StringHashMap([]const u8).init(allocator);
@@ -558,6 +614,7 @@ fn getNormalized(text: []const u8) ![]const u8 {
 - `TestCANARY_REQ_GQL_UNICODE_014_Wtf8Lossy`
 
 **Test Cases**:
+
 - Round-trip conversions
 - Invalid sequence handling
 - Surrogate pair processing
@@ -645,13 +702,13 @@ const normalized = try unicode.nfcNormalize(allocator, text);
 ### Standards
 
 - **Unicode Standard 15.0**: Character encoding and normalization
-  - https://unicode.org/versions/Unicode15.0.0/
+  - <https://unicode.org/versions/Unicode15.0.0/>
 
 - **UAX #15**: Unicode Normalization Forms
-  - https://unicode.org/reports/tr15/
+  - <https://unicode.org/reports/tr15/>
 
 - **UAX #21**: Case Mappings
-  - https://unicode.org/reports/tr21/
+  - <https://unicode.org/reports/tr21/>
 
 ### Implementation
 
@@ -668,16 +725,19 @@ const normalized = try unicode.nfcNormalize(allocator, text);
 ## Next Steps
 
 **For New Users**:
+
 - [Data Types](/docs/data-types/_index/) - String type fundamentals
 - [Full-Text Search](/docs/query/full-text-search/) - Search with Unicode
 - [GQL Guide](/docs/gql/guide/) - Query language basics
 
 **For Developers**:
+
 - [Type Conversion](/docs/reference/type-conversion/) - String conversions
 - [API Reference](/docs/reference/api-reference-complete/) - Complete function list
 - [Testing](/docs/guides/testing-strategies/) - Text processing tests
 
 **For Advanced Users**:
+
 - [Performance Tuning](/docs/query/performance-tuning/) - Text query optimization
 - [Indexing](/docs/query/indexing-and-optimization/) - Full-text index configuration
 

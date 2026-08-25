@@ -189,7 +189,7 @@ If the version changed, the WHERE clause fails, signaling a conflict.
    ```gql
    -- Good: Short transaction
    BEGIN;
-   MATCH (p:Person {id: $id}) SET p.last_login = now();
+   MATCH (p:Person {id: $id}) SET p.last_login = datetime();
    COMMIT;
 
    -- Bad: Long-running transaction
@@ -489,7 +489,8 @@ MVCC enables querying historical database states:
 ```gql
 -- Query database as it existed at specific time
 BEGIN TRANSACTION
-    AS OF SYSTEM TIME '2025-01-01T00:00:00Z';
+-- Geode has no AS OF / time-travel syntax: MVCC snapshots are not
+-- addressable from GQL. Model history explicitly with versioned nodes.
 
 MATCH (account:Account {id: 'acc_123'})
 RETURN account.balance AS balance_at_jan1;
@@ -505,13 +506,11 @@ UNWIND [
     '2025-03-01T00:00:00Z'
 ] AS timestamp
 WITH account_id, timestamp
-CALL {
-    BEGIN TRANSACTION AS OF SYSTEM TIME timestamp;
-    MATCH (account:Account {id: account_id})
-    RETURN account.balance AS balance;
-    COMMIT;
-}
-RETURN timestamp, balance
+-- Geode has no AS OF / time-travel: an MVCC snapshot is not addressable from
+-- GQL. Model history explicitly and read it back with an ordinary MATCH.
+MATCH (account:Account {id: account_id})-[:HAS_BALANCE]->(b:BalanceSnapshot)
+WHERE b.as_of <= timestamp
+RETURN timestamp, b.balance AS balance
 ORDER BY timestamp;
 ```
 
@@ -524,11 +523,13 @@ async def historical_balance_report(account_id, start_date, end_date):
 
     balances = []
     for ts in timestamps:
+        # No AS OF / time travel: read the explicitly-modelled history instead.
         result, _ = await client.query("""
-            BEGIN TRANSACTION AS OF SYSTEM TIME $timestamp;
-            MATCH (account:Account {id: $account_id})
-            RETURN account.balance AS balance;
-            COMMIT;
+            MATCH (a:Account {id: $account_id})-[:HAS_BALANCE]->(b:BalanceSnapshot)
+            WHERE b.as_of <= $timestamp
+            RETURN b.balance AS balance
+            ORDER BY b.as_of DESC
+            LIMIT 1
         """, {'account_id': account_id, 'timestamp': ts})
 
         row = result.rows[0] if result.rows else None

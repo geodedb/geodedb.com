@@ -26,12 +26,14 @@ params:
 This guide teaches you how to analyze and optimize query performance in Geode using EXPLAIN, PROFILE, indexes, and the cost-based optimizer. You'll learn to diagnose slow queries, understand execution plans, and apply optimization strategies.
 
 **Performance Tuning Process:**
+
 1. **Measure** - Use PROFILE to identify slow queries
 2. **Analyze** - Use EXPLAIN to understand execution plans
 3. **Optimize** - Apply indexes, rewrite queries, tune configuration
 4. **Verify** - Re-measure to confirm improvements
 
 **Quick Links:**
+
 - [Using EXPLAIN](#using-explain)
 - [Using PROFILE](#using-profile)
 - [Index Optimization](#index-optimization)
@@ -69,11 +71,13 @@ EXPLAIN output shows **logical operators** Geode will use:
 ### EXPLAIN Examples
 
 **Example 1: Simple Node Scan**
+
 ```gql
 EXPLAIN MATCH (p:Person) RETURN p.name;
 ```
 
 **Output:**
+
 ```
 | plan              |
 |-------------------|
@@ -89,11 +93,13 @@ EXPLAIN MATCH (p:Person) RETURN p.name;
 ---
 
 **Example 2: Filtered Query**
+
 ```gql
 EXPLAIN MATCH (p:Person) WHERE p.age > 25 RETURN p.name, p.age;
 ```
 
 **Output:**
+
 ```
 | plan              |
 |-------------------|
@@ -110,12 +116,14 @@ EXPLAIN MATCH (p:Person) WHERE p.age > 25 RETURN p.name, p.age;
 ---
 
 **Example 3: Relationship Traversal**
+
 ```gql
 EXPLAIN MATCH (p:Person)-[:WORKS_FOR]->(c:Company)
 RETURN p.name, c.name;
 ```
 
 **Output:**
+
 ```
 | plan                    |
 |-------------------------|
@@ -132,6 +140,7 @@ RETURN p.name, c.name;
 ---
 
 **Example 4: Complex Query with Aggregation**
+
 ```gql
 EXPLAIN MATCH (p:Person)-[:WORKS_FOR]->(c:Company)
 WHERE p.age > 25
@@ -141,6 +150,7 @@ LIMIT 10;
 ```
 
 **Output:**
+
 ```
 | plan                    |
 |-------------------------|
@@ -163,12 +173,14 @@ LIMIT 10;
 ### Reading EXPLAIN Output
 
 **🚩 Red Flags (Slow Patterns)**:
+
 - `NodeScan` without subsequent `Filter` on large graphs
 - `Sort` on large result sets
 - Multiple `ExpandRelationships` without indexes
 - `Aggregate` on unindexed properties
 
 **✅ Good Patterns (Fast)**:
+
 - `IndexSeek` for direct lookups
 - `Filter` early in the plan (before expensive operations)
 - `Limit` without `Sort` for large datasets
@@ -197,11 +209,13 @@ PROFILE <statement>
 ### PROFILE Examples
 
 **Example 1: Measure Simple Query**
+
 ```gql
 PROFILE MATCH (p:Person) RETURN p.name;
 ```
 
 **Output:**
+
 ```
 | metric              | value |
 |---------------------|-------|
@@ -215,11 +229,13 @@ PROFILE MATCH (p:Person) RETURN p.name;
 ---
 
 **Example 2: Measure Query with Filter**
+
 ```gql
 PROFILE MATCH (p:Person) WHERE p.age > 30 RETURN p.name, p.age;
 ```
 
 **Output:**
+
 ```
 | metric              | value |
 |---------------------|-------|
@@ -235,11 +251,13 @@ PROFILE MATCH (p:Person) WHERE p.age > 30 RETURN p.name, p.age;
 **Example 3: Before/After Optimization**
 
 **Before (no index):**
+
 ```gql
 PROFILE MATCH (p:Person) WHERE p.email = '[email protected]' RETURN p;
 ```
 
 **Output:**
+
 ```
 | metric              | value |
 |---------------------|-------|
@@ -248,16 +266,19 @@ PROFILE MATCH (p:Person) WHERE p.email = '[email protected]' RETURN p;
 ```
 
 **Create Index:**
+
 ```gql
 CREATE INDEX person_email ON Person(email);
 ```
 
 **After (with index):**
+
 ```gql
 PROFILE MATCH (p:Person) WHERE p.email = '[email protected]' RETURN p;
 ```
 
 **Output:**
+
 ```
 | metric              | value |
 |---------------------|-------|
@@ -272,6 +293,7 @@ PROFILE MATCH (p:Person) WHERE p.email = '[email protected]' RETURN p;
 ### Performance Measurement Workflow
 
 **Step 1: Establish Baseline**
+
 ```gql
 PROFILE MATCH (p:Person)-[:KNOWS]->(friend:Person)
 WHERE p.age > 30
@@ -280,6 +302,7 @@ ORDER BY friend_count DESC;
 ```
 
 **Step 2: Analyze with EXPLAIN**
+
 ```gql
 EXPLAIN MATCH (p:Person)-[:KNOWS]->(friend:Person)
 WHERE p.age > 30
@@ -288,11 +311,13 @@ ORDER BY friend_count DESC;
 ```
 
 **Step 3: Apply Optimization** (add index, rewrite query)
+
 ```gql
 CREATE INDEX person_age ON Person(age);
 ```
 
 **Step 4: Re-measure with PROFILE**
+
 ```gql
 PROFILE MATCH (p:Person)-[:KNOWS]->(friend:Person)
 WHERE p.age > 30
@@ -301,6 +326,7 @@ ORDER BY friend_count DESC;
 ```
 
 **Step 5: Compare Results**
+
 - Before: execution_time_ms = 150
 - After: execution_time_ms = 20
 - **Speedup: 7.5x** ✅
@@ -322,6 +348,7 @@ ORDER BY friend_count DESC;
 ### Creating Indexes
 
 **B-tree Index (Default)**
+
 ```gql
 -- For exact matches and range queries
 CREATE INDEX person_age ON Person(age);
@@ -333,6 +360,7 @@ MATCH (prod:Product) WHERE prod.price < 100 RETURN prod;
 ```
 
 **Hash Index**
+
 ```gql
 -- For exact lookups only (faster than B-tree for equality)
 CREATE INDEX person_email ON Person(email) USING hash;
@@ -343,23 +371,25 @@ MATCH (p:Person) WHERE p.email = '[email protected]' RETURN p;
 ```
 
 **Fulltext Index (BM25-Optimized)**
+
 ```gql
 -- For text search with relevance ranking
-CREATE FULLTEXT INDEX article_content ON Article(content);
-CREATE FULLTEXT INDEX doc_abstract ON Document(abstract);
+CREATE INDEX article_content ON Article(content) USING fulltext;
+CREATE INDEX doc_abstract ON Document(abstract) USING fulltext;
 
 -- Use for queries like:
 MATCH (a:Article) WHERE a.content CONTAINS 'graph database' RETURN a;
 MATCH (d:Document)
 WHERE d.abstract CONTAINS 'machine learning'
-RETURN d.title, bm25_score(d.abstract, 'machine learning') AS relevance
+RETURN d.title, score AS relevance
 ORDER BY relevance DESC;
 ```
 
 **Spatial Index**
+
 ```gql
 -- For geographic queries
-CREATE SPATIAL INDEX location_coords ON Location(coordinates);
+CREATE INDEX location_coords ON Location(coordinates) USING spatial;
 
 -- Use for queries like:
 MATCH (loc:Location)
@@ -369,9 +399,10 @@ ORDER BY dist;
 ```
 
 **Vector Index (HNSW)**
+
 ```gql
 -- For similarity search (embeddings)
-CREATE VECTOR INDEX doc_embedding ON Document(embedding);
+CREATE INDEX doc_embedding ON Document(embedding) USING vector;
 
 -- Use for queries like:
 MATCH (doc:Document)
@@ -384,25 +415,30 @@ LIMIT 10;
 ### When to Create Indexes
 
 **✅ Create Indexes For:**
+
 1. **Frequently filtered properties**
+
    ```gql
    -- Queries like WHERE p.status = 'active' are common
    CREATE INDEX user_status ON User(status);
    ```
 
 2. **Properties used in ORDER BY**
+
    ```gql
    -- Queries like ORDER BY created_at DESC
    CREATE INDEX post_created ON Post(created_at);
    ```
 
 3. **Properties in JOIN conditions**
+
    ```gql
    -- Foreign-key-like lookups
    CREATE INDEX order_customer_id ON Order(customer_id);
    ```
 
 4. **Unique identifiers**
+
    ```gql
    -- Email, username, SKU, etc.
    CREATE INDEX user_email ON User(email) USING hash;
@@ -410,6 +446,7 @@ LIMIT 10;
    ```
 
 **❌ Don't Create Indexes For:**
+
 1. **Rarely queried properties** - Index overhead not worth it
 2. **High-cardinality properties with rare lookups** - E.g., free-text descriptions
 3. **Properties that change frequently** - Index maintenance overhead
@@ -451,6 +488,7 @@ score(q,d) = Σ IDF(qi) × f(qi,d) × (k1 + 1) / (f(qi,d) + k1 × (1 - b + b × 
 ```
 
 **Where:**
+
 - `IDF(qi)` = Inverse document frequency (rare terms score higher)
 - `f(qi,d)` = Term frequency in document
 - `|d|` = Document length in words
@@ -461,9 +499,10 @@ score(q,d) = Σ IDF(qi) × f(qi,d) × (k1 + 1) / (f(qi,d) + k1 × (1 - b + b × 
 ### BM25 Optimization Examples
 
 **Example 1: Simple Text Search**
+
 ```gql
 -- Create fulltext index
-CREATE FULLTEXT INDEX article_content ON Article(content);
+CREATE INDEX article_content ON Article(content) USING fulltext;
 
 -- Query automatically uses BM25
 MATCH (a:Article)
@@ -473,6 +512,7 @@ ORDER BY a.relevance_score DESC;
 ```
 
 **Optimizer Behavior:**
+
 - **Base cost**: 25.0 (vs 20.0 for standard fulltext)
 - **Query complexity**: 1.0 + (3 terms - 1) × 0.3 = 1.6x multiplier
 - **Corpus scaling**: Logarithmic with document count
@@ -481,17 +521,19 @@ ORDER BY a.relevance_score DESC;
 ---
 
 **Example 2: Multi-Term Search with Ranking**
+
 ```gql
 MATCH (doc:Document)
 WHERE doc.abstract CONTAINS 'artificial intelligence'
   AND doc.keywords CONTAINS 'neural networks'
 RETURN doc.title,
-       bm25_score(doc.abstract, 'artificial intelligence neural networks') AS relevance
+       score AS relevance
 ORDER BY relevance DESC
 LIMIT 10;
 ```
 
 **Performance:**
+
 - BM25 considers document length and term frequency
 - Shorter documents with exact matches score higher
 - Longer documents are penalized unless terms are frequent
@@ -543,6 +585,7 @@ ORDER BY post.timestamp DESC;
 ### Pattern 1: Push Filters Early
 
 **❌ Bad (Filter Late)**:
+
 ```gql
 MATCH (p:Person)-[:KNOWS]->(friend:Person)
 WHERE p.age > 30 AND friend.age > 25
@@ -550,6 +593,7 @@ RETURN p.name, friend.name;
 ```
 
 **✅ Good (Filter Early)**:
+
 ```gql
 MATCH (p:Person {age: 30})  -- Filter immediately
 MATCH (p)-[:KNOWS]->(friend:Person)
@@ -564,6 +608,7 @@ RETURN p.name, friend.name;
 ### Pattern 2: Avoid Cartesian Products
 
 **❌ Bad (Cartesian Product)**:
+
 ```gql
 MATCH (p:Person)
 MATCH (c:Company)
@@ -573,6 +618,7 @@ RETURN p.name, c.name;
 ```
 
 **✅ Good (Connected Pattern)**:
+
 ```gql
 MATCH (p:Person)-[:WORKS_AT]->(c:Company)
 RETURN p.name, c.name;
@@ -586,6 +632,7 @@ RETURN p.name, c.name;
 ### Pattern 3: Use Limits Early
 
 **❌ Bad (Limit After Sort)**:
+
 ```gql
 MATCH (p:Person)
 RETURN p.name, p.age
@@ -594,6 +641,7 @@ ORDER BY p.age DESC;  -- Sorts ALL people
 ```
 
 **✅ Good (Limit in Query)**:
+
 ```gql
 MATCH (p:Person)
 RETURN p.name, p.age
@@ -608,6 +656,7 @@ LIMIT 10;  -- Database returns only 10
 ### Pattern 4: Denormalize for Read Performance
 
 **❌ Bad (Join on Every Query)**:
+
 ```gql
 MATCH (order:Order)-[:CONTAINS]->(:LineItem)-[:OF_PRODUCT]->(product:Product)
 WHERE order.id = 12345
@@ -616,6 +665,7 @@ RETURN sum(product.price) AS total;
 ```
 
 **✅ Good (Precompute Total)**:
+
 ```gql
 -- Store total on Order when creating
 MATCH (order:Order {id: 12345})
@@ -633,6 +683,7 @@ SET order.total = sum(li.subtotal);
 ### Pattern 5: Use OPTIONAL MATCH Sparingly
 
 **❌ Bad (Multiple OPTIONAL)**:
+
 ```gql
 MATCH (p:Person)
 OPTIONAL MATCH (p)-[:WORKS_AT]->(c:Company)
@@ -643,6 +694,7 @@ RETURN p, c, city, school;
 ```
 
 **✅ Good (Filter Required First)**:
+
 ```gql
 -- If most people work somewhere, make it required
 MATCH (p:Person)-[:WORKS_AT]->(c:Company)
@@ -661,12 +713,14 @@ RETURN p, c, city;
 **Symptom**: Queries slow on large graphs, EXPLAIN shows `NodeScan`.
 
 **Example**:
+
 ```gql
 MATCH (p:Person) WHERE p.email = '[email protected]' RETURN p;
 -- EXPLAIN shows: NodeScan → Filter
 ```
 
 **Solution**: Create index on filtered property.
+
 ```gql
 CREATE INDEX person_email ON Person(email);
 -- Now EXPLAIN shows: IndexSeek
@@ -681,6 +735,7 @@ CREATE INDEX person_email ON Person(email);
 **Symptom**: Queries with ORDER BY are slow, high memory usage.
 
 **Example**:
+
 ```gql
 MATCH (p:Person)
 RETURN p.name, p.created_at
@@ -689,12 +744,14 @@ ORDER BY p.created_at DESC;
 ```
 
 **Solution 1**: Create index on sort property.
+
 ```gql
 CREATE INDEX person_created ON Person(created_at);
 -- Index provides sorted iteration
 ```
 
 **Solution 2**: Add LIMIT if you don't need all results.
+
 ```gql
 MATCH (p:Person)
 RETURN p.name, p.created_at
@@ -711,6 +768,7 @@ LIMIT 100;  -- Only sort top 100
 **Symptom**: Queries traversing high-degree nodes are slow.
 
 **Example**:
+
 ```gql
 -- "Popular" node with 1,000,000 followers
 MATCH (celebrity:Person {name: "Celebrity"})-[:FOLLOWED_BY]->(follower:Person)
@@ -719,6 +777,7 @@ RETURN follower.name;
 ```
 
 **Solution 1**: Add LIMIT and pagination.
+
 ```gql
 MATCH (celebrity:Person {name: "Celebrity"})-[:FOLLOWED_BY]->(follower:Person)
 RETURN follower.name
@@ -728,12 +787,14 @@ LIMIT 100;
 ```
 
 **Solution 2**: Denormalize with cached counts.
+
 ```gql
 MATCH (celebrity:Person {name: "Celebrity"})
 RETURN celebrity.follower_count;  -- Precomputed property
 ```
 
 **Solution 3**: Partition relationships.
+
 ```gql
 -- Instead of one celebrity node with 1M edges:
 -- Create follower buckets
@@ -750,6 +811,7 @@ RETURN celebrity.follower_count;  -- Precomputed property
 **Symptom**: COUNT, SUM, AVG queries are slow.
 
 **Example**:
+
 ```gql
 MATCH (p:Person)
 RETURN count(p);
@@ -757,6 +819,7 @@ RETURN count(p);
 ```
 
 **Solution 1**: Maintain counts in metadata node.
+
 ```gql
 MATCH (stats:Statistics {type: "Person"})
 RETURN stats.total_count;
@@ -767,6 +830,7 @@ SET stats.total_count = stats.total_count + 1;
 ```
 
 **Solution 2**: Use index-backed aggregation (if supported).
+
 ```gql
 CREATE INDEX person_label ON Person(label);
 -- Future: Optimizer uses index stats for count
@@ -781,6 +845,7 @@ CREATE INDEX person_label ON Person(label);
 **Symptom**: Queries joining on properties without indexes are slow.
 
 **Example**:
+
 ```gql
 MATCH (order:Order), (customer:Customer)
 WHERE order.customer_id = customer.id
@@ -789,12 +854,14 @@ RETURN order.id, customer.name;
 ```
 
 **Solution 1**: Use explicit relationships.
+
 ```gql
 MATCH (order:Order)-[:PLACED_BY]->(customer:Customer)
 RETURN order.id, customer.name;
 ```
 
 **Solution 2**: If relationships don't exist, create indexes.
+
 ```gql
 CREATE INDEX order_customer_id ON Order(customer_id);
 CREATE INDEX customer_id ON Customer(id);
@@ -869,6 +936,7 @@ def get_company_employees(company_name):
 Instead of N queries, use one batched query:
 
 **❌ Bad (N+1 Query Problem)**:
+
 ```python
 for order_id in order_ids:  # 1000 orders
     result = db.query("MATCH (o:Order {id: $id}) RETURN o", {"id": order_id})
@@ -876,6 +944,7 @@ for order_id in order_ids:  # 1000 orders
 ```
 
 **✅ Good (Batch Query)**:
+
 ```python
 result = db.query(
     "MATCH (o:Order) WHERE o.id IN $ids RETURN o",

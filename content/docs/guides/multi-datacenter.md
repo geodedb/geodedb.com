@@ -54,12 +54,14 @@ Federation distributes queries across multiple shards without data replication. 
 ```
 
 **Characteristics**:
+
 - Data partitioned across shards
 - Queries distributed and results merged
 - No replication (each record exists once)
 - Best for read-heavy workloads
 
 **Configuration**:
+
 ```yaml
 federation:
   enabled: true
@@ -111,12 +113,14 @@ Primary datacenter handles all traffic. Secondary datacenter replicates via CDC 
 ```
 
 **Characteristics**:
+
 - One writable primary datacenter
 - Asynchronous replication to standby
 - Manual or automatic failover
 - Best for disaster recovery
 
 **Configuration**:
+
 ```yaml
 # Primary datacenter (us-east-1)
 cdc:
@@ -169,12 +173,14 @@ Both datacenters accept writes. Bidirectional CDC keeps them synchronized.
 ```
 
 **Characteristics**:
+
 - Both datacenters accept writes
 - Bidirectional asynchronous replication
 - Conflict resolution required
 - Best for global low-latency writes
 
 **Configuration**:
+
 ```yaml
 # Datacenter 1 (us-east-1)
 cdc:
@@ -233,6 +239,7 @@ Region: US-EAST                    Region: US-WEST
 ```
 
 **Characteristics**:
+
 - Data partitioned by region (sharding)
 - Local replication for HA within region
 - Cross-region federation for global queries
@@ -561,7 +568,7 @@ ssh geode-coord1.dc1.internal "systemctl start geode"
 
 ```bash
 # 1. Detect primary failure
-curl -f https://geode-primary.dc1.internal:3141/health || echo "Primary down"
+curl -f https://geode-primary.dc1.internal:9090/health || echo "Primary down"
 
 # 2. Promote replica to primary
 ssh geode-replica.dc2.internal
@@ -724,6 +731,7 @@ curl -X POST \
 ```
 
 **Dashboard Panels**:
+
 - Replication lag per datacenter
 - CDC event throughput
 - Cross-datacenter network latency
@@ -879,11 +887,13 @@ federation:
 **Symptoms**: `geode_cdc_replication_lag_seconds` growing
 
 **Causes**:
+
 1. Network congestion
 2. Kafka throughput insufficient
 3. Consumer too slow
 
 **Solutions**:
+
 ```bash
 # Check network bandwidth
 iperf3 -c kafka.dc2.internal
@@ -902,6 +912,7 @@ cdc_consumer:
 **Symptoms**: Multiple nodes claim to be primary
 
 **Solutions**:
+
 ```bash
 # 1. Identify nodes in each partition
 geode-admin cluster-status --all
@@ -923,11 +934,13 @@ geode-admin resync-cluster \
 **Symptoms**: Missing data in replica
 
 **Causes**:
+
 1. Kafka retention expired
 2. Consumer offset reset
 3. Network partition during write
 
 **Solutions**:
+
 ```bash
 # Check Kafka retention
 kafka-topics --describe --topic geode-cdc-events

@@ -25,704 +25,272 @@ params:
 
 <!-- CANARY: REQ=REQ-DOCS-001; FEATURE="Docs"; ASPECT=Documentation; STATUS=TESTED; OWNER=docs; UPDATED=2026-01-28 -->
 
-Row-Level Security (RLS) enables fine-grained access control by automatically filtering data based on user context and policy rules. Unlike traditional authorization that controls access to entire tables or labels, RLS controls access to individual rows (nodes and relationships), ensuring users only see data they are permitted to access.
+Row-Level Security (RLS) in Geode restricts which nodes a query can observe, based on the calling principal. Geode ships **two distinct mechanisms**, and they have very different capabilities. Choosing the wrong one is the single most common way to end up with a policy that silently denies everything — or one that silently protects nothing.
 
-## Understanding Row-Level Security
+{{< callout type="warning" >}}
+**Read this before writing a policy.** Geode's `CREATE POLICY … USING (…)` expression compiler implements only a **small subset** of predicate syntax (see [The `USING` expression subset](#the-using-expression-subset)). An expression outside that subset is **accepted at DDL time without error**, stored uncompiled, and then **never grants access** — the policy fails closed and the protected graph appears empty. There is no warning at `CREATE POLICY` time. Verify every policy with `SHOW POLICIES` and a read-back query as shown in [Verifying a policy actually works](#verifying-a-policy-actually-works).
+{{< /callout >}}
 
-RLS works by applying security predicates to queries automatically. When a user executes a query, Geode evaluates RLS policies and filters results to include only rows matching the policy conditions. This filtering is transparent to the application and cannot be bypassed.
+## Choosing a mechanism
 
-### How RLS Works
+| Need | Use | Granularity |
+|------|-----|-------------|
+| Per-row filtering on a property (ownership, tenant tag, department) | `CALL geode.rls.add_attribute_policy(…)` | **Per row**, compares a row property to a principal attribute |
+| Deny a label outright to a user | `CALL geode.rls.add_deny_policy(…)` | Per (graph, label, user) |
+| Coarse allow/deny on a whole graph, optionally conditioned on *who* or *which tenant* is calling | `CREATE POLICY … ON GRAPH … USING (…)` | Per graph, literal comparison only |
 
-```
-User Query:
-  MATCH (c:Customer) RETURN c.name
+The per-row mechanism is the one most people mean by "row-level security". `CREATE POLICY` is a graph-scoped authorization gate, not a row filter.
 
-Without RLS:
-  Returns all 10,000 customers
+## Per-row filtering (attribute policies)
 
-With RLS Policy (tenant isolation):
-  USING (c.tenant_id = current_user_property('tenant_id'))
-
-Result for User in Tenant 'acme':
-  Returns only 500 customers belonging to 'acme'
-```
-
-### RLS vs Traditional Authorization
-
-| Aspect | Traditional Authorization | Row-Level Security |
-|--------|--------------------------|-------------------|
-| Granularity | Label/Table level | Individual row level |
-| Filtering | All or nothing | Dynamic per-row |
-| Context-Aware | Limited | Full user context |
-| Application Changes | Required for filtering | Transparent |
-| Performance | Manual optimization | Automatic optimization |
-
-## Creating RLS Policies
-
-### Basic Policy Syntax
+This is the real per-row ABAC path. It installs a **restrictive** policy that admits a row only when a named row property equals a named attribute on the calling principal.
 
 ```gql
-CREATE POLICY policy_name ON :LabelName
-  FOR operation_type
-  TO role_or_user
-  USING (predicate_expression);
+CALL geode.rls.add_attribute_policy('social', 'Customer', 'tenant_id', 'tenant');
 ```
 
-### Policy Components
+The four arguments are `(graph, label, row_property, attribute_key)`. The policy this installs is equivalent to the predicate:
 
-- **policy_name**: Unique identifier for the policy
-- **LabelName**: Node or relationship label to protect
-- **operation_type**: SELECT, INSERT, UPDATE, DELETE, or ALL
-- **role_or_user**: Target role or specific user
-- **predicate_expression**: Boolean expression that must be true for access
-
-### Basic Examples
-
-```gql
--- Tenant isolation: Users see only their tenant's data
-CREATE POLICY tenant_isolation ON :Customer
-  FOR ALL
-  TO application_user
-  USING (tenant_id = current_user_property('tenant_id'));
-
--- Manager sees only their team's data
-CREATE POLICY manager_team_access ON :Employee
-  FOR SELECT
-  TO manager
-  USING (department = current_user_property('department'));
-
--- Users can only modify their own records
-CREATE POLICY self_edit ON :UserProfile
-  FOR UPDATE
-  TO authenticated_user
-  USING (user_id = current_user_id());
+```
+row.tenant_id = principal.attribute.tenant
 ```
 
-## Operation-Specific Policies
-
-### SELECT Policies
-
-Control which rows users can read:
+Attributes are set per user, and are what the policy resolves against at query time:
 
 ```gql
--- Classification-based access
-CREATE POLICY classification_access ON :Document
-  FOR SELECT
-  TO employee
-  USING (classification_level <= current_user_property('clearance_level'));
-
--- Geographic restriction
-CREATE POLICY regional_data ON :CustomerData
-  FOR SELECT
-  TO regional_analyst
-  USING (region = current_user_property('assigned_region'));
-
--- Time-based visibility
-CREATE POLICY current_records ON :Contract
-  FOR SELECT
-  TO standard_user
-  USING (end_date >= current_date() OR end_date IS NULL);
+CALL geode.auth.user_set_attribute('alice', 'tenant', 'acme');
+CALL geode.auth.user_set_attribute('bob',   'tenant', 'globex');
 ```
 
-### INSERT Policies
+With that in place, `MATCH (c:Customer) RETURN c.name` returns only `acme` rows for `alice` and only `globex` rows for `bob`, with no change to the query.
 
-Control which rows users can create:
+Because the policy is restrictive, a principal with **no** value for the attribute key matches nothing — the mechanism fails closed rather than falling back to "see everything".
+
+To remove a policy, pass the same four arguments:
 
 ```gql
--- Tenant must match for new records
-CREATE POLICY tenant_insert ON :Order
-  FOR INSERT
-  TO application_user
-  USING (tenant_id = current_user_property('tenant_id'));
-
--- Department restriction on creation
-CREATE POLICY dept_create ON :Ticket
-  FOR INSERT
-  TO support_agent
-  USING (assigned_department = current_user_property('department'));
-
--- Validate ownership on creation
-CREATE POLICY owner_insert ON :Note
-  FOR INSERT
-  TO user
-  USING (created_by = current_user_id());
+CALL geode.rls.remove_attribute_policy('social', 'Customer', 'tenant_id', 'tenant');
+CALL geode.rls.policy_count();
 ```
 
-### UPDATE Policies
+### Ownership filtering
 
-Control which rows users can modify:
+The same shape covers per-user ownership. Store the owner on the row, and give each user an attribute holding their own identifier:
 
 ```gql
--- Only modify own records
-CREATE POLICY self_update ON :UserSettings
-  FOR UPDATE
-  TO authenticated_user
-  USING (user_id = current_user_id());
-
--- Manager can update team's records
-CREATE POLICY manager_update ON :Employee
-  FOR UPDATE
-  TO manager
-  USING (department = current_user_property('department')
-         AND employee_id != current_user_property('employee_id'));
-
--- Prevent modification of closed records
-CREATE POLICY open_records_only ON :Ticket
-  FOR UPDATE
-  TO support_agent
-  USING (status != 'CLOSED');
+CALL geode.auth.user_set_attribute('alice', 'employee_id', 'E-1001');
+CALL geode.rls.add_attribute_policy('hr', 'UserProfile', 'owner_id', 'employee_id');
 ```
 
-### DELETE Policies
+`MATCH (p:UserProfile) RETURN p` now yields only rows whose `owner_id` is `E-1001` for `alice`.
 
-Control which rows users can delete:
+{{< callout type="info" >}}
+`geode.rls.add_attribute_policy` compares **one property to one attribute, for equality**. It cannot express ranges, `OR` branches, relationship traversal, or subqueries. Model those as a precomputed property that a single equality can test — for example, write a `visibility_bucket` property at ingest time instead of comparing a clearance level at read time. Richer predicates are available, but only over the client API — see [The expression-RLS grammar](#the-expression-rls-grammar).
+{{< /callout >}}
+
+### The expression-RLS grammar
+
+`add_attribute_policy` is a convenience wrapper: it builds the predicate
+`row.<property> = principal.attribute.<key>` and hands it to the expression-RLS
+engine. That engine accepts a **richer** grammar than the `CREATE POLICY … USING`
+compiler described below, but from GQL there is no procedure that takes an
+arbitrary expression — the wrapper is the only entry point. A raw predicate can be
+supplied through a client's RLS-policy API (for example `RLSPolicy(using_expression=…)`
+in the Python client):
+
+```
+or_     := and_ ( "OR"  and_ )*
+and_    := cmp  ( "AND" cmp  )*
+cmp     := unary ( ( "=" | "<>" | "!=" | "<=" | ">=" | "<" | ">" ) unary )?
+unary   := "NOT" unary | primary
+primary := "(" or_ ")" | "TRUE" | "FALSE" | "NULL"
+         | "row." <ident> | "principal.attribute." <ident>
+         | "current_user" | "'" <string> "'" | <integer>
+```
+
+Note that here `current_user` is a **bare keyword with no parentheses** — unlike the
+`current_user()` call form used by `CREATE POLICY … USING`. The two mechanisms have
+separate, incompatible expression languages; a predicate written for one will not
+work in the other.
+
+```python
+# Python client: an ownership predicate the wrapper cannot express
+RLSPolicy(name="own_or_public", table="Document", graph="app",
+          using_expression="row.owner = current_user OR row.visibility = 'public'")
+```
+
+### Denying a label to a user
 
 ```gql
--- Users can delete their own temporary data
-CREATE POLICY self_delete ON :TempFile
-  FOR DELETE
-  TO user
+CALL geode.rls.add_deny_policy('social', 'AuditRecord', 'contractor');
+CALL geode.rls.list_deny_policies('social');
+CALL geode.rls.remove_deny_policy('social', 'AuditRecord', 'contractor');
+```
+
+## Graph-scoped policies (`CREATE POLICY`)
+
+`CREATE POLICY` scopes to a **graph**, not a label, and its real grammar is:
+
+```gql
+CREATE POLICY <name> ON GRAPH (<graph_name> | *)
+  FOR <action>[, <action> …]
+  [USING <expression>];
+```
+
+Valid actions are exactly `READ`, `WRITE`, `MATCH`, `CREATE`, `UPDATE`, `DELETE` and `SCHEMA`. `SELECT`, `INSERT` and `ALL` are **not** accepted and will fail to parse.
+
+```gql
+-- Unconditional allow on one graph
+CREATE POLICY analytics_read ON GRAPH analytics FOR READ, MATCH USING true;
+
+-- Scope to every graph
+CREATE POLICY schema_lockdown ON GRAPH * FOR SCHEMA USING true;
+```
+
+{{< callout type="warning" >}}
+A `TO ROLE …` clause parses but is **discarded** — it does not restrict the policy to that role. Do not rely on it to target a policy at a subset of users.
+{{< /callout >}}
+
+### The `USING` expression subset
+
+The expression compiler accepts only this grammar:
+
+```
+expr   ::= or_expr
+or_    ::= and_ ( "OR" and_ )*
+and_   ::= atom ( "AND" atom )*
+atom   ::= "(" expr ")"
+         | "true"
+         | "current_user()"    "=" string_literal
+         | "current_tenant()"  "=" string_literal
+         | "current_graph()"   "=" string_literal
+         | "resource.label"    "=" string_literal
+         | "principal.attributes." <key> "=" string_literal
+```
+
+Every comparison must have a **string literal** on the right-hand side, and comparisons are case-sensitive. `AND` binds tighter than `OR`.
+
+```gql
+-- Compiles: literal comparisons combined with AND / OR
+CREATE POLICY acme_customers ON GRAPH sales FOR READ, MATCH
+  USING (current_tenant() = 'acme' AND resource.label = 'Customer');
+
+CREATE POLICY oncall_access ON GRAPH ops FOR READ
+  USING (current_user() = 'alice' OR current_user() = 'bob');
+
+CREATE POLICY analyst_attr ON GRAPH sales FOR READ
+  USING (principal.attributes.department = 'finance');
+```
+
+These do **not** compile, and each silently produces a deny-everything policy:
+
+```gql
+-- WRONG: right-hand side is a row property, not a string literal.
+CREATE POLICY bad_owner ON GRAPH sales FOR READ
+  USING (current_user() = n.owner);
+
+-- WRONG: current_user_id() and current_user_property() do not exist anywhere
+-- in Geode — not as policy accessors and not as GQL functions.
+CREATE POLICY bad_fn ON GRAPH sales FOR READ
   USING (owner_id = current_user_id());
 
--- Admins can delete within their tenant
-CREATE POLICY tenant_delete ON :AuditRecord
-  FOR DELETE
-  TO tenant_admin
-  USING (tenant_id = current_user_property('tenant_id')
-         AND created_at < current_timestamp() - INTERVAL '7 years');
-
--- Prevent deletion of linked records
-CREATE POLICY no_delete_linked ON :Customer
-  FOR DELETE
-  TO admin
-  USING (NOT EXISTS(
-    MATCH (this)-[:HAS_ORDER]->(:Order)
-    WHERE Order.status != 'CANCELLED'
-  ));
+-- WRONG: no comparison operator other than "=", no NOT, no EXISTS, no subquery.
+CREATE POLICY bad_cmp ON GRAPH docs FOR READ
+  USING (classification_level <= '3');
 ```
 
-## Policy Predicates
+{{< callout type="danger" >}}
+Each of the three statements above **succeeds** at DDL time. The compiler returns an error, the error is discarded, and the policy is stored with no compiled expression. At evaluation time an uncompiled, non-`true` policy never contributes an ALLOW, so the graph reads as empty for every principal the policy covers. Always confirm behaviour with a read-back query.
+{{< /callout >}}
 
-### Using User Context
+`current_user()`, `current_tenant()`, `current_graph()` and `resource.label` are **policy accessors only**. They are not GQL scalar functions — `RETURN current_user()` is not a valid query.
 
-```gql
--- Current user ID
-USING (owner_id = current_user_id())
+## Verifying a policy actually works
 
--- User property
-USING (region = current_user_property('assigned_region'))
-
--- User roles
-USING (classification IN current_user_roles())
-
--- Session attribute
-USING (project_id = current_session_property('active_project'))
-```
-
-### Complex Predicates
+Because a malformed predicate fails closed and silently, treat a read-back as mandatory:
 
 ```gql
--- Multiple conditions with AND
-CREATE POLICY combined_access ON :SalesData
-  FOR SELECT
-  TO sales_rep
-  USING (
-    region = current_user_property('region')
-    AND fiscal_year = current_user_property('active_year')
-    AND is_confidential = false
-  );
-
--- OR conditions
-CREATE POLICY flexible_access ON :Project
-  FOR SELECT
-  TO employee
-  USING (
-    owner_id = current_user_id()
-    OR team_id = current_user_property('team_id')
-    OR is_public = true
-  );
-
--- Subqueries
-CREATE POLICY manager_hierarchy ON :Employee
-  FOR SELECT
-  TO manager
-  USING (
-    manager_id IN (
-      SELECT employee_id FROM :Employee
-      WHERE manager_id = current_user_id()
-    )
-    OR employee_id = current_user_id()
-  );
-```
-
-### Graph Pattern Predicates
-
-```gql
--- Access based on relationship existence
-CREATE POLICY project_member ON :ProjectDocument
-  FOR SELECT
-  TO employee
-  USING (
-    EXISTS(
-      MATCH (this)<-[:BELONGS_TO]-(:Project)<-[:MEMBER_OF]-(u:User)
-      WHERE u.id = current_user_id()
-    )
-  );
-
--- Access based on graph traversal
-CREATE POLICY org_hierarchy ON :Report
-  FOR SELECT
-  TO manager
-  USING (
-    EXISTS(
-      MATCH (this)<-[:AUTHORED_BY]-(author:Employee)
-      MATCH (author)-[:REPORTS_TO*0..3]->(mgr:Employee)
-      WHERE mgr.id = current_user_id()
-    )
-  );
-```
-
-## Multi-Tenant Isolation
-
-### Complete Tenant Isolation
-
-```gql
--- Apply to all labels
-CREATE POLICY tenant_isolation_customer ON :Customer
-  FOR ALL TO application USING (tenant_id = current_tenant());
-
-CREATE POLICY tenant_isolation_order ON :Order
-  FOR ALL TO application USING (tenant_id = current_tenant());
-
-CREATE POLICY tenant_isolation_product ON :Product
-  FOR ALL TO application USING (tenant_id = current_tenant());
-
--- Helper function for cleaner policies
-CREATE FUNCTION current_tenant() RETURNS STRING AS $$
-  SELECT current_user_property('tenant_id')
-$$;
-```
-
-### Cross-Tenant Access for Admins
-
-```gql
--- Super admin sees all tenants
-CREATE POLICY super_admin_access ON :Customer
-  FOR SELECT
-  TO super_admin
-  USING (true);  -- No restriction
-
--- Tenant admin sees only their tenant
-CREATE POLICY tenant_admin_access ON :Customer
-  FOR ALL
-  TO tenant_admin
-  USING (tenant_id = current_tenant());
-
--- Support can view but not modify across tenants
-CREATE POLICY support_view ON :Customer
-  FOR SELECT
-  TO support_team
-  USING (true);
-```
-
-### Shared Resources
-
-```gql
--- Some data is shared across tenants
-CREATE POLICY shared_templates ON :Template
-  FOR SELECT
-  TO application
-  USING (
-    is_shared = true
-    OR tenant_id = current_tenant()
-  );
-
--- Global reference data
-CREATE POLICY reference_data ON :Country
-  FOR SELECT
-  TO application
-  USING (true);  -- Everyone can read
-```
-
-## Hierarchical Data Access
-
-### Organizational Hierarchy
-
-```gql
--- Employees see peers and downward
-CREATE POLICY org_hierarchy ON :Employee
-  FOR SELECT
-  TO employee
-  USING (
-    -- Can see self
-    employee_id = current_user_property('employee_id')
-    -- Can see peers in same department
-    OR (department = current_user_property('department')
-        AND level <= current_user_property('level'))
-    -- Can see direct reports (recursively)
-    OR EXISTS(
-      MATCH (this)-[:REPORTS_TO*1..10]->(mgr:Employee)
-      WHERE mgr.employee_id = current_user_property('employee_id')
-    )
-  );
-
--- Executives see everyone
-CREATE POLICY executive_access ON :Employee
-  FOR SELECT
-  TO executive
-  USING (true);
-```
-
-### Geographic Hierarchy
-
-```gql
--- Regional managers see their region
-CREATE POLICY regional_access ON :Store
-  FOR ALL
-  TO regional_manager
-  USING (region = current_user_property('region'));
-
--- Country managers see all regions in country
-CREATE POLICY country_access ON :Store
-  FOR ALL
-  TO country_manager
-  USING (country = current_user_property('country'));
-
--- Global sees everything
-CREATE POLICY global_access ON :Store
-  FOR ALL
-  TO global_admin
-  USING (true);
-```
-
-## Data Classification
-
-### Classification-Based Access
-
-```gql
--- Define classification levels
--- PUBLIC = 0, INTERNAL = 1, CONFIDENTIAL = 2, SECRET = 3
-
--- Users see data at or below their clearance
-CREATE POLICY classification_policy ON :Document
-  FOR SELECT
-  TO employee
-  USING (classification_level <= current_user_property('clearance'));
-
--- Writing requires exact level match or higher clearance
-CREATE POLICY classification_write ON :Document
-  FOR INSERT
-  TO employee
-  USING (classification_level <= current_user_property('clearance'));
-
--- Cannot downgrade classification
-CREATE POLICY no_downgrade ON :Document
-  FOR UPDATE
-  TO employee
-  USING (
-    NEW.classification_level >= OLD.classification_level
-    OR current_user_has_role('classification_admin')
-  );
-```
-
-### Category-Based Access
-
-```gql
--- Users have list of accessible categories
-CREATE POLICY category_access ON :ResearchData
-  FOR SELECT
-  TO researcher
-  USING (
-    category = ANY(current_user_property('authorized_categories'))
-  );
-```
-
-## Time-Based Policies
-
-### Temporal Access Control
-
-```gql
--- Business hours only
-CREATE POLICY business_hours ON :ProductionData
-  FOR ALL
-  TO standard_user
-  USING (
-    EXTRACT(HOUR FROM current_timestamp()) BETWEEN 8 AND 18
-    AND EXTRACT(DOW FROM current_timestamp()) BETWEEN 1 AND 5
-  );
-
--- Emergency override for on-call
-CREATE POLICY emergency_access ON :ProductionData
-  FOR ALL
-  TO on_call_engineer
-  USING (true);
-
--- Historical data access window
-CREATE POLICY historical_window ON :AuditLog
-  FOR SELECT
-  TO auditor
-  USING (
-    log_date BETWEEN current_user_property('audit_start_date')
-                 AND current_user_property('audit_end_date')
-  );
-```
-
-### Record Lifecycle
-
-```gql
--- Only access active records
-CREATE POLICY active_records ON :Contract
-  FOR SELECT
-  TO user
-  USING (
-    status = 'ACTIVE'
-    OR (status = 'EXPIRED' AND current_user_has_role('archive_viewer'))
-  );
-
--- Soft delete visibility
-CREATE POLICY soft_delete ON :Customer
-  FOR SELECT
-  TO application
-  USING (
-    deleted_at IS NULL
-    OR current_user_has_role('admin')
-  );
-```
-
-## Policy Management
-
-### Viewing Policies
-
-```gql
--- Show all policies
 SHOW POLICIES;
-
--- Show policies for specific label
-SHOW POLICIES ON :Customer;
-
--- Show policies for a role
-SHOW POLICIES FOR ROLE analyst;
-
--- Detailed policy information
-SELECT * FROM system.rls_policies
-WHERE label_name = 'Customer';
 ```
 
-### Modifying Policies
+Then confirm the policy admits what you expect, as the principal it targets:
 
 ```gql
--- Update policy predicate
-ALTER POLICY tenant_isolation ON :Customer
-  USING (tenant_id = current_tenant() AND is_active = true);
-
--- Change policy target
-ALTER POLICY manager_access ON :Employee
-  TO senior_manager;
-
--- Rename policy
-ALTER POLICY old_name ON :Customer
-  RENAME TO new_name;
+MATCH (c:Customer) RETURN count(c) AS visible;
 ```
 
-### Disabling and Dropping Policies
+If `visible` is `0` where you expected rows, the predicate almost certainly failed to compile. Re-check it against [the supported subset](#the-using-expression-subset) — the most common cause is a non-literal right-hand side.
+
+From the shell, the same catalog is reachable over the CLI:
+
+```bash
+geode policy list
+geode policy show acme_customers
+```
+
+## Managing policies
 
 ```gql
--- Temporarily disable policy
-ALTER POLICY tenant_isolation ON :Customer DISABLE;
+-- Enable / disable without dropping
+ALTER POLICY acme_customers SET ENABLED false;
+ALTER POLICY acme_customers SET ENABLED true;
 
--- Re-enable policy
-ALTER POLICY tenant_isolation ON :Customer ENABLE;
+-- Rename
+ALTER POLICY acme_customers RENAME TO tenant_acme_customers;
 
--- Drop policy
-DROP POLICY tenant_isolation ON :Customer;
-
--- Drop if exists
-DROP POLICY IF EXISTS old_policy ON :Customer;
+-- Drop
+DROP POLICY tenant_acme_customers;
+DROP POLICY IF EXISTS stale_policy;
 ```
 
-## Policy Bypass
+Policy DDL persists durably and survives restart. `ALTER POLICY … SET ENABLED` and `RENAME TO` are the only two `ALTER` forms; there is no `ALTER POLICY … USING …` to swap a predicate — drop the policy and recreate it.
 
-### Bypassing RLS for Administration
+```bash
+geode policy create tenant_acme
+geode policy delete tenant_acme
+```
+
+## Multi-tenant isolation
+
+For tenant isolation, prefer the per-row attribute policy — it scales to any number of tenants without a policy per tenant:
 
 ```gql
--- Grant bypass ability to specific role
-GRANT BYPASS RLS ON :Customer TO dba;
-
--- Session-level bypass (requires privilege)
-SET SESSION bypass_rls = true;
-
--- Run query without RLS
-MATCH (c:Customer) RETURN count(c);
-
--- Re-enable RLS
-SET SESSION bypass_rls = false;
+CALL geode.rls.add_attribute_policy('sales', 'Customer', 'tenant_id', 'tenant');
+CALL geode.rls.add_attribute_policy('sales', 'Order',    'tenant_id', 'tenant');
+CALL geode.auth.user_set_attribute('alice', 'tenant', 'acme');
 ```
 
-### Audit Access Without Filtering
+A graph-scoped policy would need one `CREATE POLICY … USING (current_tenant() = '<literal>')` per tenant, since the tenant value must be a literal. That is workable for a handful of fixed tenants and unworkable beyond that.
+
+{{< callout type="warning" >}}
+Geode is **single-tenant recommended** for production. Multi-tenant deployments carry documented residuals and require operator review. Never run production with `--insecure-allow-all`: it bypasses tenant isolation, RLS and field-level encryption authorization for every request.
+{{< /callout >}}
+
+## Indexing for RLS
+
+An attribute policy adds an equality test on the row property to every scan of that label. Index it:
 
 ```gql
--- Auditors need to see everything for compliance
-CREATE ROLE compliance_auditor;
-GRANT BYPASS RLS ON GRAPH * TO compliance_auditor;
-
--- All audit queries logged even with bypass
+CREATE INDEX customer_tenant FOR (c:Customer) ON (c.tenant_id);
+CREATE INDEX profile_owner  FOR (p:UserProfile) ON (p.owner_id);
 ```
 
-## Performance Optimization
-
-### Indexing for RLS
+Confirm the index is used with the planner:
 
 ```gql
--- Create index on commonly filtered columns
-CREATE INDEX tenant_idx ON :Customer(tenant_id);
-CREATE INDEX department_idx ON :Employee(department);
-CREATE INDEX region_idx ON :Store(region);
-
--- Composite index for multi-condition policies
-CREATE INDEX tenant_status_idx ON :Order(tenant_id, status);
+EXPLAIN MATCH (c:Customer) WHERE c.tenant_id = 'acme' RETURN c;
 ```
 
-### Policy Optimization Tips
+## What Geode does not provide
 
-```gql
--- GOOD: Simple equality checks are fast
-USING (tenant_id = current_tenant())
+These appear in other databases' RLS documentation and have **no** Geode equivalent:
 
--- GOOD: Indexed column lookups
-USING (department = current_user_property('department'))
-
--- AVOID: Complex subqueries if possible
--- Consider caching user permissions
-
--- GOOD: Pre-computed access lists
-USING (id = ANY(current_user_property('accessible_ids')))
-```
-
-### Analyzing Policy Performance
-
-```gql
--- Explain query with RLS
-EXPLAIN MATCH (c:Customer) RETURN c.name;
-
--- Shows:
--- Filter: (c.tenant_id = current_user_property('tenant_id'))
--- Index Scan: tenant_idx
-
--- Profile with RLS overhead
-PROFILE MATCH (c:Customer) RETURN c;
-```
-
-## Testing RLS Policies
-
-### Test as Different Users
-
-```gql
--- Switch user context for testing
-SET SESSION AUTHORIZATION 'test_user';
-SET SESSION PROPERTY 'tenant_id' = 'acme';
-
--- Run query to test policy
-MATCH (c:Customer) RETURN count(c);
-
--- Reset to original user
-RESET SESSION AUTHORIZATION;
-```
-
-### Policy Verification Queries
-
-```gql
--- Verify no cross-tenant leakage
-SELECT tenant_id, count(*) as count
-FROM Customer
-GROUP BY tenant_id;
--- Should only show current tenant
-
--- Verify all expected data is accessible
-SELECT count(*) FROM Customer
-WHERE tenant_id = current_tenant();
--- Compare with admin bypass count
-```
-
-## Integration with Other Security Features
-
-### RLS with RBAC
-
-```gql
--- RBAC controls CAN you access the label
-GRANT SELECT ON :Customer TO analyst;
-
--- RLS controls WHICH rows you can see
-CREATE POLICY analyst_region ON :Customer
-  FOR SELECT
-  TO analyst
-  USING (region = current_user_property('region'));
-
--- Both must pass for access
-```
-
-### RLS with Property-Level Security
-
-```gql
--- RLS filters rows
-CREATE POLICY tenant_filter ON :Customer
-  FOR SELECT
-  USING (tenant_id = current_tenant());
-
--- Property security hides columns
-DENY SELECT(ssn, credit_score) ON :Customer TO analyst;
-
--- Result: Analyst sees only tenant customers, without sensitive fields
-```
-
-## Best Practices
-
-### 1. Always Use Indexes
-
-```gql
--- Create indexes for RLS predicate columns
-CREATE INDEX tenant_idx ON :Customer(tenant_id);
--- Dramatically improves RLS performance
-```
-
-### 2. Keep Policies Simple
-
-```gql
--- Simple policies are faster and easier to audit
-CREATE POLICY simple_tenant ON :Data
-  USING (tenant_id = current_tenant());
-
--- Avoid complex nested subqueries when possible
-```
-
-### 3. Test Thoroughly
-
-```gql
--- Test positive cases (should see)
--- Test negative cases (should NOT see)
--- Test edge cases (null values, missing properties)
--- Test performance under load
-```
-
-### 4. Document Policies
-
-```gql
--- Use descriptive policy names
-CREATE POLICY tenant_isolation_for_compliance ON :Customer
-  FOR ALL
-  TO application
-  USING (tenant_id = current_tenant());
-
--- Maintain external documentation for complex policies
-```
-
-### 5. Regular Audits
-
-```gql
--- Periodically verify RLS effectiveness
--- Check for bypass grants
--- Review policy predicates
--- Test with sample user contexts
-```
+- `current_user_id()`, `current_user_property()`, `current_user_roles()`, `current_session_property()` — none exist.
+- Predicates over relationships, `EXISTS { … }` subqueries, or variable-length traversal inside a policy.
+- Comparison operators other than `=` inside `USING`.
+- `WITH CHECK` enforcement on writes — the clause parses but is discarded.
+- `GRANT BYPASS RLS` — there is no bypass privilege. Remove or disable the policy instead.
+- Per-policy performance counters or a policy-cost report.
 
 ## Related Topics
 

@@ -32,15 +32,18 @@ The preferred approach uses RLS policies to automatically filter data by tenant:
 CREATE CONSTRAINT tenant_required ON (n:Customer) ASSERT EXISTS(n.tenant_id);
 
 -- Create RLS policy for tenant isolation
-CREATE POLICY tenant_isolation ON Customer
-FOR ALL
-USING (tenant_id = current_setting('app.tenant_id'));
+-- Customer.tenant_id must equal the caller's 'tenant' principal attribute
+CALL geode.rls.add_attribute_policy('app', 'Customer', 'tenant_id', 'tenant');
 
 -- Enable RLS
-ALTER LABEL Customer ENABLE ROW LEVEL SECURITY;
+-- Geode has no ALTER LABEL / ALTER GRAPH / property DEFAULT DDL. Labels and
+-- properties are schema-free: write the new property with SET, supplying the
+-- default yourself.
+MATCH (u:User) WHERE u.verified IS NULL SET u.verified = false;
 ```
 
 **Setting tenant context**:
+
 ```python
 from geode_client import Client
 
@@ -82,8 +85,12 @@ Maximum isolation with separate databases:
 
 ```bash
 # Create per-tenant databases
-geode admin create-database --name tenant_acme
-geode admin create-database --name tenant_globex
+# There is no `geode admin` subcommand. Geode's CLI is: serve, shell, query,
+# lsp, backup, restore, migrate, auth, login, logout, user, role, tenant,
+# policy, grant, revoke, completion, mcp.
+# There is no `geode admin` subcommand. Geode's CLI is: serve, shell, query,
+# lsp, backup, restore, migrate, auth, login, logout, user, role, tenant,
+# policy, grant, revoke, completion, mcp.
 ```
 
 ## Choosing an Approach
@@ -99,6 +106,7 @@ geode admin create-database --name tenant_globex
 ## Implementation Patterns
 
 **Tenant-aware connection middleware**:
+
 ```python
 class TenantMiddleware:
     def __init__(self, client):
@@ -114,6 +122,7 @@ class TenantMiddleware:
 ```
 
 **Cross-tenant queries (admin only)**:
+
 ```gql
 -- Bypass RLS for administrative queries
 SET ROLE admin_bypass_rls;

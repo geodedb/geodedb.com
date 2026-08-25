@@ -239,10 +239,10 @@ logging:
   level: 'info'
   format: 'json'
 
-security:
-  tde:
-    enabled: true
-    key_hex: '0123456789abcdef...'  # 32-byte hex key for AES-256-GCM
+# NOTE: `security:` is not a configuration-file section — it is ignored.
+# KMS and encryption-at-rest are configured with environment variables:
+#   GEODE_KMS_URL, GEODE_KMS_ENDPOINT, GEODE_KMS_API_KEY
+#   GEODE_MASTER_KEY, GEODE_TDE_ENABLED, GEODE_ALLOW_LOCAL_KMS
 ```
 
 ## Connect and Run Your First Query

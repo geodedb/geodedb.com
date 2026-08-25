@@ -268,7 +268,7 @@ MATCH (n:User)
 WHERE random() < 0.01  // 1% sample
 WITH COUNT(n) AS sample_size,
      AVG(degree(n)) AS avg_degree,
-     STDDEV(degree(n)) AS stddev_degree
+     collect(degree(n) /* stddev/variance parse but are never computed; reduce client-side */) AS stddev_degree
 RETURN sample_size * 100 AS estimated_total,
        avg_degree,
        stddev_degree
@@ -501,7 +501,7 @@ MATCH path = SHORTEST (start:Location {name: $origin})
                       (end:Location {name: $destination})
 WHERE ALL (r IN relationships(path) WHERE r.capacity >= $required_capacity)
 RETURN path,
-       REDUCE(cost = 0, r IN relationships(path) | cost + r.distance) AS total_distance
+       null /* reduce() is advertised by SHOW FUNCTIONS but has no evaluator dispatch; collect() the values and fold client-side (for path weights use algo.dijkstra.stream, which yields cost) */ AS total_distance
 ```
 
 ### Cybersecurity: Attack Graph Analysis

@@ -125,6 +125,7 @@ Hash Ring:
 ```
 
 When nodes join or leave:
+
 - Only keys between affected nodes move
 - Minimal disruption to cluster
 - Automatic rebalancing
@@ -157,11 +158,10 @@ Geode supports multiple replication approaches:
 
 ```gql
 -- Configure replication for a graph
-ALTER GRAPH social SET REPLICATION (
-    mode: synchronous,
-    factor: 3,
-    min_acks: 2
-);
+-- Geode has no ALTER LABEL / ALTER GRAPH / property DEFAULT DDL. Labels and
+-- properties are schema-free: write the new property with SET, supplying the
+-- default yourself.
+MATCH (u:User) WHERE u.verified IS NULL SET u.verified = false;
 ```
 
 ### Leader Election
@@ -184,11 +184,12 @@ Distribute read load across replicas:
 SET READ PREFERENCE NEAREST;
 
 MATCH (u:User)
-WHERE u.created > NOW() - INTERVAL '1 day'
+WHERE u.created > datetime() - duration('P1D')
 RETURN COUNT(u);
 ```
 
 Read preferences:
+
 - **Primary** - Always read from leader
 - **Nearest** - Read from geographically closest replica
 - **Any** - Read from any replica (eventual consistency)
@@ -200,11 +201,13 @@ Read preferences:
 Geode uses 2PC for distributed transactions:
 
 **Phase 1 - Prepare**
+
 - Coordinator asks participants to prepare
 - Participants vote yes (prepared) or no (abort)
 - Participants write prepare record to log
 
 **Phase 2 - Commit**
+
 - If all voted yes, coordinator commits
 - If any voted no, coordinator aborts
 - Participants apply decision and acknowledge
@@ -249,6 +252,7 @@ Geode implements Raft for distributed consensus:
 **Safety** - Ensure consistency across replicas
 
 Raft guarantees:
+
 - Election safety: at most one leader per term
 - Leader append-only: leaders never overwrite logs
 - Log matching: identical logs up to same index
@@ -265,11 +269,10 @@ Ensure consistency through quorums:
 
 ```gql
 -- Configure quorum settings
-ALTER GRAPH social SET QUORUM (
-    write: 2,
-    read: 2,
-    nodes: 3
-);
+-- Geode has no ALTER LABEL / ALTER GRAPH / property DEFAULT DDL. Labels and
+-- properties are schema-free: write the new property with SET, supplying the
+-- default yourself.
+MATCH (u:User) WHERE u.verified IS NULL SET u.verified = false;
 ```
 
 ## Fault Tolerance
@@ -344,12 +347,11 @@ Monitor cluster health and performance:
 
 ```gql
 -- Query cluster status
-SELECT node_id, status, lag, last_heartbeat
-FROM SYSTEM.cluster_nodes
-WHERE status != 'healthy';
+SHOW CLUSTER STATUS;
 ```
 
 Key metrics:
+
 - Replication lag
 - Node health status
 - Network latency between nodes
@@ -365,6 +367,7 @@ Trace requests across cluster:
 **Causal Relationships** - Parent-child spans
 
 Distributed tracing reveals:
+
 - Request path through cluster
 - Per-node latency breakdown
 - Cross-shard coordination overhead
@@ -394,11 +397,13 @@ Optimize data distribution:
 Choose appropriate tradeoffs:
 
 **Strong Consistency When:**
+
 - Financial transactions
 - Inventory management
 - User authentication
 
 **Eventual Consistency When:**
+
 - Social feeds
 - View counts
 - Analytics data
@@ -473,11 +478,13 @@ cluster:
 ```
 
 **Benefits**:
+
 - Low latency for global users
 - Disaster recovery across regions
 - Compliance with data residency requirements
 
 **Challenges**:
+
 - Cross-region network latency (50-200ms)
 - Consistency vs. availability tradeoffs
 - Complex failover scenarios
@@ -515,16 +522,26 @@ Rolling upgrade strategy:
 ```bash
 # Upgrade script
 for node in observer1 observer2; do
-  geode admin upgrade $node --version 0.1.4
+  # There is no `geode admin` subcommand. Geode's CLI is: serve, shell, query,
+  # lsp, backup, restore, migrate, auth, login, logout, user, role, tenant,
+  # policy, grant, revoke, completion, mcp.
 done
 
 for node in follower1 follower2; do
-  geode admin upgrade $node --version 0.1.4
-  geode admin wait-for-sync $node
+  # There is no `geode admin` subcommand. Geode's CLI is: serve, shell, query,
+  # lsp, backup, restore, migrate, auth, login, logout, user, role, tenant,
+  # policy, grant, revoke, completion, mcp.
+  # There is no `geode admin` subcommand. Geode's CLI is: serve, shell, query,
+  # lsp, backup, restore, migrate, auth, login, logout, user, role, tenant,
+  # policy, grant, revoke, completion, mcp.
 done
 
-geode admin failover leader1 --to follower1
-geode admin upgrade leader1 --version 0.1.4
+# There is no `geode admin` subcommand. Geode's CLI is: serve, shell, query,
+# lsp, backup, restore, migrate, auth, login, logout, user, role, tenant,
+# policy, grant, revoke, completion, mcp.
+# There is no `geode admin` subcommand. Geode's CLI is: serve, shell, query,
+# lsp, backup, restore, migrate, auth, login, logout, user, role, tenant,
+# policy, grant, revoke, completion, mcp.
 ```
 
 ## Advanced Consensus Patterns
@@ -590,7 +607,7 @@ Use timestamps to resolve conflicts:
 -- Update with timestamp
 MATCH (u:User {id: 123})
 SET u.name = 'Alice',
-    u.updated_at = NOW();
+    u.updated_at = datetime();
 
 -- On conflict, keep latest timestamp
 MERGE ON (u:User {id: 123})
@@ -662,11 +679,10 @@ cluster:
 Distribute across availability zones:
 
 ```gql
-ALTER GRAPH social SET REPLICATION (
-    zones: ['us-east-1a', 'us-east-1b', 'us-east-1c'],
-    replicas_per_zone: 1,
-    leader_preference: 'us-east-1a'
-);
+-- Geode has no ALTER LABEL / ALTER GRAPH / property DEFAULT DDL. Labels and
+-- properties are schema-free: write the new property with SET, supplying the
+-- default yourself.
+MATCH (u:User) WHERE u.verified IS NULL SET u.verified = false;
 ```
 
 Ensures cluster survives zone failures.
@@ -694,7 +710,7 @@ client = Client(
 
 ```bash
 # Backup cluster state
-geode admin backup \
+geode backup create \
   --include-config \
   --include-wal \
   --output /backups/cluster-state-$(date +%Y%m%d).tar.gz
@@ -710,7 +726,7 @@ geode admin backup \
 
 ```bash
 # Restore cluster
-geode admin restore \
+geode restore \
   --from /backups/cluster-state-20260124.tar.gz \
   --target-cluster new-cluster \
   --verify-integrity
@@ -726,6 +742,7 @@ geode admin restore \
 ### Failover Scenarios
 
 **Leader Failure**:
+
 1. Followers detect missing heartbeats (5s timeout)
 2. Election timer expires (random 150-300ms)
 3. Candidate requests votes
@@ -733,12 +750,14 @@ geode admin restore \
 5. Clients automatically reconnect to new leader
 
 **Majority Partition Failure**:
+
 1. Minority partition cannot elect leader
 2. Minority rejects all writes
 3. Majority partition continues operating
 4. When partition heals, minority syncs from majority
 
 **Full Cluster Failure**:
+
 1. Restore from backup or cold storage
 2. Replay WAL to latest state
 3. Verify data integrity
@@ -797,17 +816,20 @@ storage:
 ### Sizing Clusters
 
 **Small Cluster** (Development/Testing):
+
 - 3 nodes
 - 4 cores, 16GB RAM per node
 - 500GB SSD per node
 - Throughput: ~10,000 queries/sec
 
 **Medium Cluster** (Production):
+
 - 5-7 nodes
 - 16 cores, 64GB RAM per node
 - 2TB NVMe SSD per node
 
 **Large Cluster** (Enterprise):
+
 - 9+ nodes across 3 regions
 - 32 cores, 256GB RAM per node
 - 10TB NVMe SSD per node
@@ -817,18 +839,11 @@ storage:
 Monitor cluster utilization:
 
 ```gql
-SELECT
-    node_id,
-    cpu_utilization,
-    memory_utilization,
-    disk_utilization,
-    query_latency_p99
-FROM SYSTEM.cluster_metrics
-WHERE timestamp > NOW() - INTERVAL '7 days'
-ORDER BY timestamp;
+SHOW CLUSTER STATUS;
 ```
 
 Add nodes when:
+
 - CPU > 70% sustained
 - Memory > 80% sustained
 - Disk > 75% utilized

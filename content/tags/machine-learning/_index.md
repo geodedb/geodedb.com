@@ -95,7 +95,7 @@ WITH user,
      COUNT(action) AS total_purchases,
      SUM(action.amount) AS total_spent,
      AVG(action.amount) AS avg_purchase,
-     STDDEV(action.amount) AS purchase_variance,
+     collect(action.amount) /* stddev/variance parse but are never computed; reduce client-side */ AS purchase_variance,
      COUNT(DISTINCT DATE(action.timestamp)) AS active_days
 RETURN user.id,
        total_purchases,
@@ -350,10 +350,10 @@ WITH user,
      [a IN COLLECT(action) ORDER BY a.timestamp | a.timestamp] AS timestamps
 WITH user,
      [i IN RANGE(1, SIZE(timestamps) - 1) |
-      DURATION.BETWEEN(timestamps[i-1], timestamps[i]).days] AS inter_event_times
+      (timestamps[i] - timestamps[i-1]).days] AS inter_event_times
 RETURN user.id,
        AVG(inter_event_times) AS avg_inter_event_days,
-       STDDEV(inter_event_times) AS inter_event_variance,
+       collect(inter_event_times) /* stddev/variance parse but are never computed; reduce client-side */ AS inter_event_variance,
        SIZE(timestamps) AS total_events;
 ```
 
@@ -573,7 +573,7 @@ WITH user,
      avg_friend_activity,
      avg_post_likes,
      avg_post_length,
-     DURATION.BETWEEN(last_action_time, CURRENT_TIMESTAMP).days AS days_since_last_action
+     (CURRENT_TIMESTAMP - last_action_time).days AS days_since_last_action
 
 RETURN user.id,
        total_actions,

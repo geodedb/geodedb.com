@@ -98,6 +98,7 @@ High availability within a single region:
 ```
 
 **Characteristics**:
+
 - RTO: < 1 minute
 - RPO: < 1 second (sync replication)
 - Protects against: Server failure, zone failure
@@ -134,6 +135,7 @@ Cross-region disaster recovery:
 ```
 
 **Characteristics**:
+
 - RTO: 15-60 minutes (manual failover)
 - RPO: < 5 minutes (async replication)
 - Protects against: Region failure, DC failure
@@ -159,6 +161,7 @@ Global deployment with bidirectional replication:
 ```
 
 **Characteristics**:
+
 - RTO: 0 (automatic)
 - RPO: Conflict resolution dependent
 - Protects against: Regional failures
@@ -257,6 +260,7 @@ high_availability:
 ```
 
 The system automatically:
+
 1. Detects primary failure (missed health checks)
 2. Elects new primary from replicas
 3. Updates routing configuration
@@ -281,11 +285,11 @@ echo "To: $DR_REGION"
 
 # 1. Verify DR site is ready
 echo "Checking DR site status..."
-DR_STATUS=$(geode admin status --host geode-dr.us-west.example.com)
+DR_STATUS=$(geode query "SHOW CLUSTER STATUS"
 echo "$DR_STATUS"
 
 # 2. Check replication lag
-LAG=$(geode admin replication-lag --host geode-dr.us-west.example.com)
+LAG=$(geode query "SHOW CLUSTER STATUS"
 echo "Replication lag: $LAG"
 
 if [ "$LAG" -gt 300 ]; then  # > 5 minutes
@@ -296,7 +300,9 @@ fi
 
 # 3. Stop writes to primary (if accessible)
 echo "Stopping writes to primary..."
-geode admin read-only --host geode-primary.us-east.example.com 2>/dev/null || true
+# There is no `geode admin` subcommand. Geode's CLI is: serve, shell, query,
+# lsp, backup, restore, migrate, auth, login, logout, user, role, tenant,
+# policy, grant, revoke, completion, mcp.
 
 # 4. Wait for replication to catch up
 echo "Waiting for replication to synchronize..."
@@ -304,11 +310,13 @@ sleep 30
 
 # 5. Promote DR to primary
 echo "Promoting DR site to primary..."
-geode admin promote --host geode-dr.us-west.example.com
+# There is no `geode admin` subcommand. Geode's CLI is: serve, shell, query,
+# lsp, backup, restore, migrate, auth, login, logout, user, role, tenant,
+# policy, grant, revoke, completion, mcp.
 
 # 6. Verify promotion
 echo "Verifying promotion..."
-geode admin status --host geode-dr.us-west.example.com
+geode query "SHOW CLUSTER STATUS"
 
 # 7. Update DNS/load balancer
 echo "Updating DNS..."
@@ -339,18 +347,20 @@ echo "WARNING: Primary is unavailable. Data loss may occur."
 
 # 1. Check DR status
 echo "Checking DR site..."
-geode admin status --host $DR_HOST
+geode query "SHOW CLUSTER STATUS"
 
 # 2. Get last known state
-LAST_WAL=$(geode admin last-wal --host $DR_HOST)
+LAST_WAL=$(geode query "SHOW CLUSTER STATUS"
 echo "Last WAL received: $LAST_WAL"
 
 # 3. Force promote (no wait for sync)
 echo "Force promoting DR site..."
-geode admin promote --force --host $DR_HOST
+# There is no `geode admin` subcommand. Geode's CLI is: serve, shell, query,
+# lsp, backup, restore, migrate, auth, login, logout, user, role, tenant,
+# policy, grant, revoke, completion, mcp.
 
 # 4. Verify
-geode admin status --host $DR_HOST
+geode query "SHOW CLUSTER STATUS"
 
 # 5. Update routing
 echo "Updating DNS/routing..."
@@ -466,7 +476,7 @@ sudo systemctl start geode
 
 # 7. Health check
 sleep 10
-geode admin status
+geode query "SHOW CLUSTER STATUS"
 
 echo "=== Restore Complete ==="
 ```
@@ -619,22 +629,26 @@ log "=== DR Drill Complete ==="
 1. **Verify failure**
    ```bash
    ping geode-primary.example.com
-   geode admin status --host geode-primary.example.com
+   geode query "SHOW CLUSTER STATUS"
    ```
 
 2. **Check replica status**
+
    ```bash
-   geode admin status --host geode-replica-1.example.com
-   geode admin status --host geode-replica-2.example.com
+   geode query "SHOW CLUSTER STATUS"
+   geode query "SHOW CLUSTER STATUS"
    ```
 
 3. **Automatic failover should occur**
    - If auto-failover enabled, new primary elected within 30s
-   - Verify: `geode admin cluster-status`
+   - Verify: `geode query "SHOW CLUSTER STATUS"
 
 4. **If auto-failover fails**
+
    ```bash
-   geode admin promote --host geode-replica-1.example.com
+   # There is no `geode admin` subcommand. Geode's CLI is: serve, shell, query,
+   # lsp, backup, restore, migrate, auth, login, logout, user, role, tenant,
+   # policy, grant, revoke, completion, mcp.
    ```
 
 5. **Update monitoring**
@@ -642,10 +656,12 @@ log "=== DR Drill Complete ==="
    - Create incident ticket
 
 ## Recovery
+
 1. Investigate root cause
 2. Repair/replace failed server
 3. Rejoin as replica
 4. Conduct post-incident review
+
 ```
 
 ### Runbook: Data Corruption
@@ -662,15 +678,19 @@ log "=== DR Drill Complete ==="
 
 1. **Stop writes**
    ```bash
-   geode admin read-only
+   # There is no `geode admin` subcommand. Geode's CLI is: serve, shell, query,
+   # lsp, backup, restore, migrate, auth, login, logout, user, role, tenant,
+   # policy, grant, revoke, completion, mcp.
    ```
 
 2. **Identify corruption scope**
+
    ```bash
    geode verify --data-dir /var/lib/geode/data --verbose
    ```
 
 3. **Check backup status**
+
    ```bash
    geode backup --list --dest s3://geode-backups
    ```
@@ -680,15 +700,18 @@ log "=== DR Drill Complete ==="
    - Or PITR to before corruption
 
 5. **Perform recovery**
+
    ```bash
    ./pitr-recovery.sh "2026-01-28 09:00:00"
    ```
 
 ## Post-Recovery
+
 1. Validate data integrity
 2. Resume writes
 3. Investigate root cause
 4. Review and enhance monitoring
+
 ```
 
 ## Best Practices

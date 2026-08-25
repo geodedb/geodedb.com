@@ -23,6 +23,7 @@ Events represent facts about things that happened:
 **Threshold Crossed** - Inventory below minimum
 
 Events are:
+
 - **Immutable** - Cannot be changed after creation
 - **Timestamped** - When did it happen
 - **Attributed** - Who/what caused it
@@ -52,7 +53,7 @@ EXECUTE GQL
   INSERT (n:Notification {
     type: 'welcome',
     user_id: NEW.id,
-    created: NOW()
+    created: datetime()
   });
 
 -- Handle relationship creation
@@ -63,7 +64,7 @@ EXECUTE GQL
     type: 'friendship_created',
     user1_id: NEW.from_id,
     user2_id: NEW.to_id,
-    timestamp: NOW()
+    timestamp: datetime()
   });
 ```
 
@@ -78,23 +79,23 @@ class EventProcessor:
     def __init__(self, client):
         self.client = client
         self.handlers = {}
-    
+
     def register_handler(self, event_type, handler):
         '''Register event handler'''
         if event_type not in self.handlers:
             self.handlers[event_type] = []
         self.handlers[event_type].append(handler)
-    
+
     async def process_events(self):
         '''Process events from stream'''
         async with self.client.subscribe_events() as stream:
             async for event in stream:
                 await self.dispatch_event(event)
-    
+
     async def dispatch_event(self, event):
         '''Dispatch event to handlers'''
         event_type = event['type']
-        
+
         if event_type in self.handlers:
             for handler in self.handlers[event_type]:
                 try:
@@ -132,7 +133,7 @@ INSERT INTO account_events VALUES (
     'AccountCreated',
     {'owner': 'alice', 'initial_balance': 1000},
     1,
-    NOW()
+    datetime()
 );
 
 INSERT INTO account_events VALUES (
@@ -140,7 +141,7 @@ INSERT INTO account_events VALUES (
     'DepositMade',
     {'amount': 500, 'source': 'transfer'},
     2,
-    NOW()
+    datetime()
 );
 ```
 
@@ -155,23 +156,23 @@ class AccountProjection:
         self.balance = 0
         self.owner = None
         self.transactions = []
-    
+
     async def rebuild(self, client):
         '''Rebuild state from events'''
         events = await client.query(
             "SELECT * FROM account_events WHERE aggregate_id = $1 ORDER BY version",
             [self.account_id]
         )
-        
+
         for event in events:
             self.apply_event(event)
-    
+
     def apply_event(self, event):
         '''Apply event to update state'''
         if event['event_type'] == 'AccountCreated':
             self.owner = event['event_data']['owner']
             self.balance = event['event_data']['initial_balance']
-        
+
         elif event['event_type'] == 'DepositMade':
             self.balance += event['event_data']['amount']
             self.transactions.append({
@@ -179,7 +180,7 @@ class AccountProjection:
                 'amount': event['event_data']['amount'],
                 'timestamp': event['timestamp']
             })
-        
+
         elif event['event_type'] == 'WithdrawalMade':
             self.balance -= event['event_data']['amount']
             self.transactions.append({
@@ -199,7 +200,7 @@ Handle writes (commands):
 class AccountCommandHandler:
     def __init__(self, client):
         self.client = client
-    
+
     async def handle_create_account(self, command):
         '''Handle account creation command'''
         event = {
@@ -212,19 +213,19 @@ class AccountCommandHandler:
             'version': 1,
             'timestamp': datetime.now()
         }
-        
+
         await self.client.append_event('account_events', event)
         await self.publish_event(event)
-    
+
     async def handle_deposit(self, command):
         '''Handle deposit command'''
         # Validate
         if command['amount'] <= 0:
             raise ValueError("Amount must be positive")
-        
+
         # Get current version
         version = await self.get_current_version(command['account_id'])
-        
+
         # Create event
         event = {
             'aggregate_id': command['account_id'],
@@ -236,7 +237,7 @@ class AccountCommandHandler:
             'version': version + 1,
             'timestamp': datetime.now()
         }
-        
+
         await self.client.append_event('account_events', event)
         await self.publish_event(event)
 ```
@@ -250,35 +251,35 @@ class AccountQueryHandler:
     def __init__(self, client):
         self.client = client
         self.cache = {}
-    
+
     async def get_account_balance(self, account_id):
         '''Query account balance'''
         if account_id in self.cache:
             return self.cache[account_id]['balance']
-        
+
         # Rebuild from events
         projection = AccountProjection(account_id)
         await projection.rebuild(self.client)
-        
+
         # Cache result
         self.cache[account_id] = {
             'balance': projection.balance,
             'owner': projection.owner
         }
-        
+
         return projection.balance
-    
+
     async def get_transaction_history(self, account_id, limit=100):
         '''Query transaction history'''
         events = await self.client.query(
-            '''SELECT * FROM account_events 
-               WHERE aggregate_id = $1 
+            '''SELECT * FROM account_events
+               WHERE aggregate_id = $1
                AND event_type IN ('DepositMade', 'WithdrawalMade')
                ORDER BY timestamp DESC
                LIMIT $2''',
             [account_id, limit]
         )
-        
+
         return [
             {
                 'type': event['event_type'],
@@ -297,26 +298,26 @@ Coordinate distributed transactions:
 class OrderSaga:
     def __init__(self, client):
         self.client = client
-    
+
     async def execute(self, order_id):
         '''Execute order saga'''
         try:
             # Step 1: Reserve inventory
             await self.reserve_inventory(order_id)
             await self.publish_event('inventory_reserved', {'order_id': order_id})
-            
+
             # Step 2: Process payment
             await self.process_payment(order_id)
             await self.publish_event('payment_processed', {'order_id': order_id})
-            
+
             # Step 3: Ship order
             await self.ship_order(order_id)
             await self.publish_event('order_shipped', {'order_id': order_id})
-            
+
         except Exception as e:
             # Compensating transactions
             await self.compensate(order_id, e)
-    
+
     async def compensate(self, order_id, error):
         '''Roll back completed steps'''
         await self.cancel_shipment(order_id)
@@ -331,6 +332,7 @@ class OrderSaga:
 ## Best Practices
 
 ### Event Design
+
 - Events represent facts that happened
 - Use past tense for event names
 - Include all relevant context
@@ -338,6 +340,7 @@ class OrderSaga:
 - Version event schemas
 
 ### Processing Guarantees
+
 - Design idempotent handlers
 - Handle duplicate events
 - Implement proper error handling
@@ -345,6 +348,7 @@ class OrderSaga:
 - Monitor processing lag
 
 ### Performance
+
 - Batch event processing
 - Use async/await patterns
 - Implement caching strategically
@@ -425,7 +429,7 @@ Store events as source of truth:
 class EventStore:
     def __init__(self, client):
         self.client = client
-    
+
     async def append_event(self, aggregate_id, event_type, event_data, expected_version=None):
         """Append event with optimistic concurrency"""
         async with self.client.connection() as conn:
@@ -471,7 +475,7 @@ class EventStore:
             except Exception:
                 await conn.rollback()
                 raise
-    
+
     async def get_events(self, aggregate_id, from_version=0):
         """Get events for aggregate"""
         async with self.client.connection() as conn:
@@ -496,7 +500,7 @@ class SagaOrchestrator:
     def __init__(self, client):
         self.client = client
         self.compensations = []
-    
+
     async def execute_saga(self, saga_id, steps):
         """Execute saga with compensation on failure"""
         async with self.client.connection() as conn:
@@ -540,7 +544,7 @@ class SagaOrchestrator:
                 )
                 await conn.commit()
                 raise
-    
+
     async def execute_step(self, conn, saga_id, step_num, step):
         """Execute single saga step"""
         # Record step
@@ -558,20 +562,20 @@ class SagaOrchestrator:
             "step_num": step_num,
             "action": step['action']
         })
-        
+
         # Execute step action
         execute_fn = step['execute']
         await execute_fn(conn)
-        
+
         # Store compensation
         self.compensations.append(step.get('compensate'))
-        
+
         # Mark step complete
         await conn.execute("""
             MATCH (step:SagaStep {saga_id: $saga_id, step_num: $step_num})
             SET step.status = 'completed'
         """, {"saga_id": saga_id, "step_num": step_num})
-    
+
     async def compensate(self, conn, saga_id):
         """Execute compensating transactions"""
         for compensate in reversed(self.compensations):
@@ -588,23 +592,23 @@ class RealTimeEventProcessor:
     def __init__(self, client):
         self.client = client
         self.handlers = {}
-    
+
     def register_handler(self, event_type, handler):
         """Register event handler"""
         if event_type not in self.handlers:
             self.handlers[event_type] = []
         self.handlers[event_type].append(handler)
-    
+
     async def process_stream(self):
         """Process event stream in real-time"""
         async for event in self.client.subscribe_events():
             # Dispatch to handlers
             await self.dispatch(event)
-    
+
     async def dispatch(self, event):
         """Dispatch event to registered handlers"""
         event_type = event['type']
-        
+
         if event_type in self.handlers:
             # Execute handlers in parallel
             tasks = [

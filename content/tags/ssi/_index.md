@@ -185,7 +185,7 @@ MATCH (to:Account {id: $toId})
 SET to.balance = to.balance + $amount;
 
 INSERT (:AuditLog {
-  timestamp: now(),
+  timestamp: datetime(),
   from: $fromId,
   to: $toId,
   amount: $amount
@@ -211,7 +211,7 @@ INSERT (:Order {
   product_sku: $sku,
   quantity: $orderQty,
   customer: $customerId,
-  timestamp: now()
+  timestamp: datetime()
 });
 
 COMMIT;
@@ -470,7 +470,7 @@ async def check_abort_rate(client):
                 COUNT(*) FILTER (WHERE status = 'aborted') AS aborted,
                 COUNT(*) FILTER (WHERE status = 'committed') AS committed,
                 COUNT(*) FILTER (WHERE status = 'aborted') * 100.0 / COUNT(*) AS abort_rate
-            FROM system.transaction_log
+            -- no transaction-log table
             WHERE timestamp > now() - interval '1 hour'
             """
         )
@@ -483,6 +483,7 @@ async def check_abort_rate(client):
 ```
 
 **Solutions**:
+
 - Reduce transaction duration
 - Access data in consistent order
 - Partition hotspot data
@@ -494,15 +495,8 @@ Identify conflicting transactions:
 
 ```gql
 -- Find transactions with frequent conflicts
-SELECT
-    t1.transaction_id AS tx1,
-    t2.transaction_id AS tx2,
-    COUNT(*) AS conflict_count
-FROM system.transaction_conflicts
-WHERE timestamp > now() - interval '1 hour'
-GROUP BY t1.transaction_id, t2.transaction_id
-ORDER BY conflict_count DESC
-LIMIT 20;
+-- Geode reports no per-conflict history; serialization failures surface as
+-- errors on the failing statement.
 ```
 
 ### Performance Degradation
@@ -521,7 +515,7 @@ async def plot_commit_latency(client):
                 AVG(commit_duration_ms) AS avg_latency,
                 MAX(commit_duration_ms) AS max_latency,
                 PERCENTILE_CONT(0.95) WITHIN GROUP (ORDER BY commit_duration_ms) AS p95_latency
-            FROM system.transaction_log
+            -- no transaction-log table
             WHERE timestamp > now() - interval '1 hour'
               AND status = 'committed'
             GROUP BY minute

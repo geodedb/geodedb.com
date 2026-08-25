@@ -176,13 +176,13 @@ RETURN p.name + " <" + p.email + ">" AS display;
 
 ```gql
 -- Explicit type constructors
-RETURN int8(127) AS i8;
-RETURN int16(32000) AS i16;
-RETURN int32(2000000) AS i32;
-RETURN int64(9000000000) AS i64;
+RETURN int(127) AS i8;
+RETURN int(32000) AS i16;
+RETURN int(2000000) AS i32;
+RETURN int(9000000000) AS i64;
 
-RETURN float32(3.14) AS f32;
-RETURN float64(3.14159265359) AS f64;
+RETURN double(3.14) AS f32;
+RETURN double(3.14159265359) AS f64;
 
 RETURN decimal('123.456789') AS dec;
 ```
@@ -337,13 +337,13 @@ CREATE (:Location {
 -- GeoPoint (more general geographic point)
 CREATE (:Place {
   name: "Statue of Liberty",
-  location: geopoint(40.6892, -74.0445)
+  location: st_point(40.6892, -74.0445)
 });
 
 -- Distance queries
 MATCH (l:Location)
-WHERE geo_distance(l.coords, latlon(40.7580, -73.9855)) < 5000  -- 5km
-RETURN l.name, geo_distance(l.coords, latlon(40.7580, -73.9855)) AS meters;
+WHERE st_distance(l.coords, latlon(40.7580, -73.9855)) < 5000  -- 5km
+RETURN l.name, st_distance(l.coords, latlon(40.7580, -73.9855)) AS meters;
 ```
 
 **Indexing**: R-tree spatial indexing for efficient geographic queries
@@ -373,7 +373,7 @@ CREATE (:Device {
 
 -- IP containment queries
 MATCH (s:Server), (n:Network)
-WHERE subnet_contains(n.subnet, s.ip)
+WHERE ip_contains(n.subnet, s.ip)
 RETURN s.hostname, n.name;
 ```
 
@@ -386,7 +386,7 @@ RETURN s.hostname, n.name;
 ```gql
 -- UUID (version 4)
 CREATE (:User {
-  id: gen_random_uuid(),
+  id: uuid_v4(),
   name: "Alice"
 });
 
@@ -408,8 +408,8 @@ CREATE (:File {
 
 ```gql
 -- Numeric
-int8(127), int16(32000), int32(2000000), int64(9000000000)
-float32(3.14), float64(3.14159265359)
+int(127), int(32000), int(2000000), int(9000000000)
+double(3.14), double(3.14159265359)
 decimal('123.456789')
 
 -- Temporal
@@ -431,7 +431,7 @@ vectori32('[1, 2, 3]')
 
 -- Geographic
 latlon(40.7128, -74.0060)
-geopoint(40.6892, -74.0445)
+st_point(40.6892, -74.0445)
 
 -- Network
 '192.168.1.100'::ipaddr
@@ -439,7 +439,7 @@ geopoint(40.6892, -74.0445)
 '00:1A:2B:3C:4D:5E'::macaddr
 
 -- Cryptographic
-gen_random_uuid()
+uuid_v4()
 '550e8400-e29b-41d4-a716-446655440000'::uuid
 ```
 
@@ -530,7 +530,7 @@ USE ECommerce;
 
 -- Users with various types
 CREATE (:User {
-  id: gen_random_uuid(),
+  id: uuid_v4(),
   email: "[email protected]",
   created_at: timestamp(),
   verified: true,
@@ -549,7 +549,7 @@ CREATE (:Product {
 
 -- Orders with temporal data
 CREATE (:Order {
-  id: gen_random_uuid(),
+  id: uuid_v4(),
   order_date: timestamp(),
   ship_by: date('2024-01-20'),
   total: decimal('1499.98')

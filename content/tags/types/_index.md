@@ -220,11 +220,11 @@ CREATE (:Post {
 
 // Current timestamp
 CREATE (:Event {timestamp: CURRENT_TIMESTAMP})
-CREATE (:Event {timestamp: NOW()})  // Alias
+CREATE (:Event {timestamp: datetime()})  // Alias
 
 // DateTime arithmetic
 MATCH (p:Post)
-WHERE p.created_at > DATETIME() - DURATION('P7D')  // Last 7 days
+WHERE p.created_at > DATETIME() - duration('P7D')  // Last 7 days
 RETURN p
 
 // Extract components
@@ -245,9 +245,9 @@ Time intervals:
 ```gql
 // Duration literals (ISO 8601)
 CREATE (:Task {
-  estimated: DURATION('PT2H30M'),    // 2 hours 30 minutes
-  actual: DURATION('P1DT6H'),        // 1 day 6 hours
-  timeout: DURATION('PT30S')         // 30 seconds
+  estimated: duration('PT2H30M'),    // 2 hours 30 minutes
+  actual: duration('P1DT6H'),        // 1 day 6 hours
+  timeout: duration('PT30S')         // 30 seconds
 })
 
 // Duration components
@@ -259,7 +259,7 @@ RETURN t.estimated.days AS days,
 
 // Duration arithmetic
 MATCH (e:Event)
-SET e.end_time = e.start_time + DURATION('PT1H')
+SET e.end_time = e.start_time + duration('PT1H')
 RETURN e.start_time, e.end_time
 ```
 
@@ -514,7 +514,7 @@ CREATE INDEX FOR (p:Product) ON (p.price)    // Numeric index
 CREATE INDEX FOR (u:User) ON (u.id)
 
 // Text indexes for string search
-CREATE TEXT INDEX FOR (p:Post) ON (p.content)
+CREATE INDEX FOR (p:Post) ON (p.content) USING fulltext
 ```
 
 ### Type-Aware Storage

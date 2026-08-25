@@ -36,6 +36,7 @@ ORDER BY p.price DESC
 ```
 
 Output shows:
+
 - Execution plan operators
 - Index usage
 - Estimated cardinalities
@@ -55,6 +56,7 @@ LIMIT 10
 ```
 
 Profile provides:
+
 - Actual execution times per operator
 - Actual vs. estimated row counts
 - Memory usage
@@ -88,7 +90,7 @@ async def debug_slow_query(client, query, params=None):
         print(f"  {idx['name']}: {idx['columns']}")
 
     # Step 4: Check statistics freshness
-    stats, _ = await client.query("SELECT * FROM system.statistics")
+    stats, _ = await client.query("CALL geode.storage.stats()")
     if is_stale(stats):
         print("WARNING: Statistics may be outdated")
         print("Run: ANALYZE")
@@ -221,28 +223,25 @@ except geode_client.AuthError as e:
 
 ```gql
 -- View slow queries
-SELECT
-    query_id,
-    query_text,
-    execution_time_ms,
-    rows_returned
-FROM system.query_log
-WHERE execution_time_ms > 1000
-ORDER BY execution_time_ms DESC
-LIMIT 20
+-- Yields event_id, timestamp, category, action, outcome.
+CALL audit.get_recent_events(100);
 ```
 
 **Check resource usage**:
 
 ```gql
 -- Cache hit rates
-SELECT * FROM system.cache_statistics
+-- Yields node_count, edge_count, label_count, format_version, page_size,
+-- wal_lsn, last_checkpoint_lsn, free_pages_* , *_consistent,
+-- label_index_entries and total_errors for the graph.
+CALL geode.storage.stats();
 
 -- Active connections
-SELECT COUNT(*) FROM system.sessions WHERE active = true
+-- Geode exposes no session catalog.
 
 -- Lock contention
-SELECT * FROM system.locks WHERE waiting = true
+-- Geode exposes no lock table. The write lock is taken by the mutating
+-- statement and held to commit.
 ```
 
 ### Memory Issues
@@ -414,6 +413,7 @@ logging:
 ```
 
 **Log categories**:
+
 - `query`: Query execution
 - `transaction`: Transaction lifecycle
 - `storage`: Storage operations
@@ -483,36 +483,36 @@ Systematic performance analysis:
 class QueryDebugger:
     def __init__(self, client):
         self.client = client
-    
+
     async def analyze_query(self, query, params=None):
         """Comprehensive query analysis"""
         report = {}
-        
+
         # 1. Get explain plan
         explain, _ = await self.client.query(f"EXPLAIN {query}", params)
         report['explain'] = self.parse_explain(explain)
-        
+
         # 2. Profile execution
         profile, _ = await self.client.query(f"PROFILE {query}", params)
         report['profile'] = self.parse_profile(profile)
-        
+
         # 3. Check index usage
         indexes, _ = await self.client.query("SHOW INDEXES")
         report['indexes_used'] = self.find_used_indexes(explain, indexes)
         report['indexes_missing'] = self.suggest_indexes(explain, indexes)
-        
+
         # 4. Analyze cardinality
         report['cardinality'] = await self.analyze_cardinality(query, params)
-        
+
         # 5. Check for anti-patterns
         report['anti_patterns'] = self.detect_anti_patterns(query)
-        
+
         return report
-    
+
     def detect_anti_patterns(self, query):
         """Detect common query anti-patterns"""
         issues = []
-        
+
         # Cartesian product
         if 'MATCH' in query and query.count('MATCH') > 1 and 'WHERE' not in query:
             issues.append({
@@ -520,7 +520,7 @@ class QueryDebugger:
                 'severity': 'high',
                 'message': 'Multiple MATCH clauses without WHERE may cause cartesian product'
             })
-        
+
         # Unbounded variable-length path
         if re.search(r'\[\*\]', query):
             issues.append({
@@ -528,7 +528,7 @@ class QueryDebugger:
                 'severity': 'critical',
                 'message': 'Unbounded variable-length path can cause performance issues'
             })
-        
+
         # Missing LIMIT
         if 'RETURN' in query and 'LIMIT' not in query:
             issues.append({
@@ -536,19 +536,19 @@ class QueryDebugger:
                 'severity': 'medium',
                 'message': 'Query without LIMIT may return unbounded results'
             })
-        
+
         return issues
-    
+
     async def analyze_cardinality(self, query, params):
         """Analyze result set cardinality"""
         # Extract pattern from query
         pattern = self.extract_pattern(query)
-        
+
         # Estimate cardinality
         estimate, _ = await self.client.query(f"""
             EXPLAIN {query}
         """, params)
-        
+
         return {
             'estimated_rows': estimate.get('estimated_rows'),
             'pattern_selectivity': estimate.get('selectivity')
@@ -620,7 +620,7 @@ class TransactionDebugger:
     def __init__(self, client):
         self.client = client
         self.logger = logging.getLogger(__name__)
-    
+
     async def debug_transaction(self, operation):
         """Debug transaction execution with detailed logging."""
         async with self.client.connection() as conn:
@@ -648,30 +648,30 @@ import psutil
 class MemoryProfiler:
     def __init__(self):
         self.snapshots = []
-    
+
     async def profile_query(self, client, query, params=None):
         """Profile memory usage during query execution"""
         # Start tracing
         tracemalloc.start()
         process = psutil.Process()
-        
+
         # Initial snapshot
         mem_before = process.memory_info().rss / 1024 / 1024  # MB
         snapshot_before = tracemalloc.take_snapshot()
-        
+
         # Execute query
         result, _ = await client.query(query, params)
-        
+
         # Final snapshot
         mem_after = process.memory_info().rss / 1024 / 1024  # MB
         snapshot_after = tracemalloc.take_snapshot()
-        
+
         # Calculate differences
         top_stats = snapshot_after.compare_to(snapshot_before, 'lineno')
-        
+
         # Stop tracing
         tracemalloc.stop()
-        
+
         return {
             'memory_used_mb': mem_after - mem_before,
             'top_allocations': [
@@ -701,7 +701,7 @@ async def traced_operation(client):
     """Operation with distributed tracing"""
     with tracer.start_as_current_span("user_registration") as span:
         span.set_attribute("user.email", "alice@example.com")
-        
+
         # Database operation is automatically traced
         result, _ = await client.query("""
             CREATE (u:User {
@@ -710,13 +710,13 @@ async def traced_operation(client):
             })
             RETURN u.id
         """, {"name": "Alice", "email": "alice@example.com"})
-        
+
         span.set_attribute("user.id", result.rows[0]['u.id'])
-        
+
         # Additional span for email sending
         with tracer.start_as_current_span("send_welcome_email"):
             await send_email(result.rows[0]['u.id'])
-        
+
         return result
 ```
 
@@ -733,27 +733,27 @@ class ErrorAnalyzer:
             'SyntaxError': self.handle_syntax_error,
             'ConnectionError': self.handle_connection_error
         }
-    
+
     async def analyze_error(self, error, context):
         """Analyze and provide remediation for errors"""
         error_type = type(error).__name__
-        
+
         if error_type in self.error_patterns:
             handler = self.error_patterns[error_type]
             return await handler(error, context)
-        
+
         return {
             'type': 'unknown',
             'message': str(error),
             'suggestion': 'Check server logs for details'
         }
-    
+
     async def handle_unique_violation(self, error, context):
         """Handle unique constraint violations"""
         # Extract violated constraint
         constraint = error.constraint_name
         value = error.violated_value
-        
+
         return {
             'type': 'UniqueConstraintViolation',
             'constraint': constraint,
@@ -761,7 +761,7 @@ class ErrorAnalyzer:
             'suggestion': f'Value "{value}" already exists. Use MERGE instead of CREATE, or change the value.',
             'query_fix': f'MERGE (n:Node {{key: $value}}) ON CREATE SET n.created_at = datetime()'
         }
-    
+
     async def handle_serialization_failure(self, error, context):
         """Handle serialization failures"""
         return {

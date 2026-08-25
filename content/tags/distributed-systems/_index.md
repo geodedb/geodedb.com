@@ -51,18 +51,21 @@ Geode addresses these challenges through intelligent data placement, distributed
 A Geode cluster consists of multiple node types working together:
 
 **Leader Node**: Coordinates cluster state and manages consensus
+
 - Handles schema changes and DDL operations
 - Coordinates distributed transactions
 - Manages cluster membership
 - Performs global query planning
 
 **Data Nodes**: Store and serve graph data
+
 - Host data partitions (shards)
 - Execute local query operations
 - Participate in consensus for writes
 - Maintain local indexes
 
 **Query Coordinators**: Route and aggregate queries
+
 - Parse and plan distributed queries
 - Coordinate cross-shard operations
 - Aggregate results from multiple nodes
@@ -114,6 +117,7 @@ When starting a Geode cluster, nodes discover each other and elect a leader:
 ```
 
 **Formation Process**:
+
 1. Nodes connect to seed addresses
 2. Cluster state is synchronized
 3. Leader election occurs via Raft
@@ -134,15 +138,10 @@ Geode uses the Raft consensus protocol for leader election and log replication:
 
 ```gql
 -- View cluster consensus status
-SELECT node_id, role, term, commit_index, last_applied
-FROM system.consensus_status;
+SHOW CLUSTER STATUS;
 
 -- Check replication lag
-SELECT
-    follower_id,
-    leader_commit_index - follower_commit_index AS lag,
-    last_heartbeat
-FROM system.replication_status;
+SHOW CLUSTER STATUS;
 ```
 
 **Consensus Configuration**:
@@ -186,6 +185,7 @@ COMMIT;
 ```
 
 **Transaction Flow**:
+
 1. **Prepare Phase**: Coordinator asks all involved shards to prepare
 2. **Vote**: Each shard votes commit or abort
 3. **Commit Phase**: If all vote commit, coordinator broadcasts commit
@@ -228,11 +228,13 @@ CREATE GRAPH TYPE social_network (
 ```
 
 **Advantages**:
+
 - Even data distribution
 - Predictable shard location
 - Simple implementation
 
 **Disadvantages**:
+
 - Range queries span all shards
 - No locality for related data
 
@@ -259,11 +261,13 @@ CREATE GRAPH TYPE event_log (
 ```
 
 **Advantages**:
+
 - Efficient range queries
 - Time-based data lifecycle management
 - Partition pruning for queries
 
 **Disadvantages**:
+
 - Potential hotspots on recent partitions
 - Requires partition management
 
@@ -286,11 +290,13 @@ CREATE GRAPH TYPE content_graph (
 ```
 
 **Advantages**:
+
 - Minimal cross-shard traversals
 - Better query performance
 - Reduced network overhead
 
 **Disadvantages**:
+
 - Requires careful data modeling
 - May cause uneven distribution
 
@@ -298,23 +304,11 @@ CREATE GRAPH TYPE content_graph (
 
 ```gql
 -- Check shard balance
-SELECT
-    shard_id,
-    node_count,
-    edge_count,
-    data_size_mb,
-    primary_node
-FROM system.shard_statistics
-ORDER BY data_size_mb DESC;
+SHOW CLUSTER STATUS;
 
 -- Identify cross-shard relationships
-SELECT
-    relationship_type,
-    COUNT(*) as total,
-    SUM(CASE WHEN source_shard != target_shard THEN 1 ELSE 0 END) as cross_shard,
-    ROUND(100.0 * SUM(CASE WHEN source_shard != target_shard THEN 1 ELSE 0 END) / COUNT(*), 2) as cross_shard_pct
-FROM system.relationship_distribution
-GROUP BY relationship_type;
+-- There is no distribution catalog; aggregate it with a MATCH:
+-- MATCH ()-[r]->() RETURN type(r) AS type, count(r) AS n ORDER BY n DESC
 ```
 
 ## Distributed Query Execution
@@ -333,6 +327,7 @@ LIMIT 100;
 ```
 
 **Execution Plan**:
+
 ```
 DistributedQueryPlan:
   1. ScatterGather: Filter User nodes (country = 'USA')
@@ -351,6 +346,7 @@ Estimated Cost: 12,450
 ### Query Routing Strategies
 
 **Scatter-Gather**: Send query to all relevant shards, aggregate results
+
 ```gql
 -- Scatter-gather for aggregation
 MATCH (p:Product)
@@ -360,6 +356,7 @@ GROUP BY p.category;
 ```
 
 **Directed Query**: Route to specific shard based on filter
+
 ```gql
 -- Directed query with shard key
 MATCH (u:User {id: 'user-123'})
@@ -368,6 +365,7 @@ RETURN u;
 ```
 
 **Broadcast Query**: Send to all shards for global operations
+
 ```gql
 -- Broadcast for schema operations
 CREATE INDEX user_email ON User(email);
@@ -395,6 +393,7 @@ async def efficient_traversal():
 ```
 
 **Optimization Techniques**:
+
 - **Batch Remote Fetches**: Collect all needed remote node IDs, fetch in batches
 - **Prefetch Hints**: Predict likely traversal paths, prefetch data
 - **Query Caching**: Cache frequently traversed paths
@@ -407,6 +406,7 @@ async def efficient_traversal():
 Geode automatically detects and recovers from node failures:
 
 **Failure Detection**:
+
 ```toml
 [cluster.health]
 # Failure detection settings
@@ -416,6 +416,7 @@ failure_detection_threshold = 3  # Missed heartbeats before suspected
 ```
 
 **Automatic Failover**:
+
 1. Failure detected via missed heartbeats
 2. Leader marks node as unavailable
 3. Replicas promoted to primary for affected shards
@@ -424,24 +425,10 @@ failure_detection_threshold = 3  # Missed heartbeats before suspected
 
 ```gql
 -- Monitor node health
-SELECT
-    node_id,
-    status,
-    last_heartbeat,
-    shard_count,
-    is_leader
-FROM system.cluster_nodes;
+SHOW CLUSTER STATUS;
 
 -- View failover history
-SELECT
-    timestamp,
-    event_type,
-    affected_node,
-    affected_shards,
-    recovery_time_ms
-FROM system.failover_events
-ORDER BY timestamp DESC
-LIMIT 20;
+SHOW CLUSTER STATUS;
 ```
 
 ### Network Partition Handling
@@ -485,13 +472,7 @@ read_preference = "primary"  # primary, secondary, or nearest
 
 ```gql
 -- Check replication status
-SELECT
-    shard_id,
-    primary_node,
-    replica_nodes,
-    replication_lag_ms,
-    last_sync
-FROM system.shard_replication;
+SHOW CLUSTER STATUS;
 ```
 
 ## Monitoring Distributed Operations
@@ -501,8 +482,10 @@ FROM system.shard_replication;
 Key metrics for monitoring distributed Geode deployments:
 
 ```bash
-# Prometheus metrics endpoint
-curl http://coordinator:3141/metrics
+# Prometheus metrics endpoint. Opt-in: start the server with
+# GEODE_METRICS_PORT=9090 (env only, there is no CLI flag). It is a
+# separate listener, not the QUIC client port 3141.
+curl http://coordinator:9090/metrics
 
 # Key distributed metrics
 geode_cluster_nodes_total{status="healthy"} 5
@@ -610,6 +593,7 @@ replication_buffer_mb = 512
 ### Deployment Topology
 
 **Three-Node Cluster** (Minimum for HA):
+
 ```
 Node 1: Leader + Data (Shard 1-5 primary, 11-16 replica)
 Node 2: Data (Shard 6-10 primary, 1-5 replica)
@@ -617,12 +601,14 @@ Node 3: Data (Shard 11-16 primary, 6-10 replica)
 ```
 
 **Five-Node Cluster** (Better fault tolerance):
+
 ```
 Node 1: Leader + Coordinator
 Node 2-5: Data nodes (4 shards primary each, 2 replicas)
 ```
 
 **Production Cluster** (Dedicated roles):
+
 ```
 Coordinators: 2 nodes (active-passive)
 Data Nodes: 6+ nodes (3 replicas per shard)

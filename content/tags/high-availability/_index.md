@@ -44,6 +44,7 @@ This guide covers HA architecture, configuration, monitoring, and best practices
 | 99.999% (five 9s) | 5.26 minutes | 26.3 seconds | 6.05 seconds |
 
 **Recovery Objectives**:
+
 - **RTO (Recovery Time Objective)**: Maximum acceptable downtime
 - **RPO (Recovery Point Objective)**: Maximum acceptable data loss
 
@@ -80,6 +81,7 @@ One primary node handles all traffic; standby nodes remain synchronized for fail
 ```
 
 **Configuration**:
+
 ```toml
 # geode.toml - Primary node
 [cluster]
@@ -121,6 +123,7 @@ Multiple nodes handle traffic simultaneously with synchronization:
 ```
 
 **Configuration**:
+
 ```toml
 # geode.toml - Active node
 [cluster]
@@ -165,6 +168,7 @@ Geode uses Raft consensus for leader election and strong consistency:
 ```
 
 **Configuration**:
+
 ```toml
 [cluster]
 mode = "distributed"
@@ -283,6 +287,7 @@ max_lag_ms = 5000
 Geode detects failures through multiple mechanisms:
 
 **Heartbeat Monitoring**:
+
 ```toml
 [health.heartbeat]
 interval_ms = 100
@@ -291,6 +296,7 @@ failure_count = 3  # 3 missed = failure
 ```
 
 **TCP Connection Health**:
+
 ```toml
 [health.connection]
 keepalive_interval_ms = 10000
@@ -299,6 +305,7 @@ keepalive_timeout_ms = 5000
 ```
 
 **Application-Level Health Checks**:
+
 ```toml
 [health.checks]
 enabled = true
@@ -330,16 +337,8 @@ When a node failure is detected:
 
 ```gql
 -- Monitor failover events
-SELECT
-    timestamp,
-    event_type,
-    source_node,
-    target_node,
-    duration_ms,
-    data_loss_bytes
-FROM system.failover_log
-ORDER BY timestamp DESC
-LIMIT 20;
+-- Yields event_id, timestamp, category, action, outcome.
+CALL audit.get_recent_events(100);
 ```
 
 ### Failover Configuration
@@ -371,6 +370,7 @@ catch_up_mode = "streaming"
 ### Client Failover Handling
 
 **Python Client**:
+
 ```python
 from geode_client import Client, FailoverConfig
 
@@ -405,6 +405,7 @@ async def resilient_query():
 ```
 
 **Go Client**:
+
 ```go
 import (
     "database/sql"
@@ -457,6 +458,7 @@ healthy_threshold = 2
 ### External Load Balancer Configuration
 
 **HAProxy Example**:
+
 ```haproxy
 frontend geode_frontend
     bind *:3141
@@ -474,6 +476,7 @@ backend geode_backend
 ```
 
 **Kubernetes Service**:
+
 ```yaml
 apiVersion: v1
 kind: Service
@@ -509,6 +512,7 @@ max_staleness_ms = 100
 ```
 
 **Client-Side Routing**:
+
 ```python
 from geode_client import Client, ReadPreference
 
@@ -536,7 +540,7 @@ async def update_user(user_id, name):
 
 ```bash
 # Prometheus metrics for HA monitoring
-curl http://node1:3141/metrics | grep -E "geode_cluster|geode_replication|geode_failover"
+curl http://node1:9090/metrics | grep -E "geode_cluster|geode_replication|geode_failover"
 
 # Example output
 geode_cluster_nodes_total{status="healthy"} 3
@@ -552,15 +556,15 @@ geode_failover_duration_seconds_sum 3.45
 
 ```bash
 # Liveness probe - is the process running?
-curl http://node1:3141/health/live
+curl http://node1:9090/health/live
 # Response: {"status": "ok", "uptime_seconds": 86400}
 
 # Readiness probe - can it serve traffic?
-curl http://node1:3141/health/ready
+curl http://node1:9090/health/ready
 # Response: {"status": "ready", "role": "leader", "replicas_synced": 2}
 
 # Cluster health - overall cluster status
-curl http://node1:3141/health/cluster
+curl http://node1:9090/health/cluster
 # Response: {
 #   "status": "healthy",
 #   "nodes": {"total": 3, "healthy": 3, "unhealthy": 0},
@@ -673,7 +677,7 @@ Verify HA behavior by intentionally causing failures:
 docker stop geode-node2
 
 # Verify cluster continues operating
-curl http://node1:3141/health/cluster
+curl http://node1:9090/health/cluster
 
 # Verify queries still work
 ./geode shell --host node1:3141 -c "MATCH (n) RETURN count(n)"
@@ -682,10 +686,11 @@ curl http://node1:3141/health/cluster
 docker start geode-node2
 
 # Verify node rejoined and synced
-curl http://node1:3141/health/cluster
+curl http://node1:9090/health/cluster
 ```
 
 **Automated HA Test Script**:
+
 ```python
 import asyncio
 import subprocess
@@ -723,7 +728,7 @@ async def test_failover():
     # Verify full recovery
     async with client.connection() as conn:
         result, _ = await conn.query(
-            "SELECT * FROM system.cluster_nodes WHERE status = 'healthy'"
+            "SHOW CLUSTER STATUS WHERE status = 'healthy'"
         )
         assert len(result.rows) == 3
         print("Full cluster recovered")

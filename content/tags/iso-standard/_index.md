@@ -35,6 +35,7 @@ ISO/IEC 39075:2024 is the international standard for GQL (Graph Query Language),
 **Working Group**: ISO/IEC JTC 1/SC 32/WG 3 (Database Languages)
 
 **Related Standards**:
+
 - ISO/IEC 9075 (SQL) - Aligns with SQL patterns
 - ISO/IEC 13249 (SQL Multimedia) - Spatial types
 - ISO/IEC 19075 (SQL Technical Reports) - Extensions
@@ -99,6 +100,7 @@ Based on labeled property graph model:
 Defines overall architecture, terminology, and concepts.
 
 **Key Sections**:
+
 - §1: Scope and normative references
 - §2: Terms and definitions
 - §3: Symbols and conventions
@@ -109,6 +111,7 @@ Defines overall architecture, terminology, and concepts.
 Core GQL language specification.
 
 **Key Sections**:
+
 - §5: Lexical elements (keywords, identifiers, literals)
 - §6: Data types (scalar, temporal, collection)
 - §7: Graph patterns (nodes, relationships, paths)
@@ -124,6 +127,7 @@ Core GQL language specification.
 Extended functionality beyond core language.
 
 **Key Sections**:
+
 - §14: Subqueries (EXISTS, COUNT)
 - §15: CASE expressions
 - §16: List comprehensions
@@ -169,8 +173,8 @@ REMOVE n:Label
 
 // MERGE
 MERGE (n:Label {key: value})
-ON CREATE SET n.created = NOW()
-ON MATCH SET n.updated = NOW()
+ON CREATE SET n.created = datetime()
+ON MATCH SET n.updated = datetime()
 ```
 
 ### Query Clauses (§9)
@@ -373,6 +377,7 @@ Geode implements **Full** conformance.
 ### Conformance Claims
 
 Implementations must document:
+
 - Which features are supported
 - Test results from ISO test suite
 - Deviations or extensions
@@ -392,6 +397,7 @@ ISO/IEC JTC 1/SC 32/WG 3 is considering:
 ### Vendor Extensions
 
 While compliant, implementations may add:
+
 - Additional index types (vector, full-text)
 - Custom functions
 - Performance optimizations
@@ -420,6 +426,7 @@ While compliant, implementations may add:
 ## Implementation in Geode
 
 Geode provides:
+
 - **100% compliance**: Documented scope and diagnostics
 - **Standards Documentation**: ISO section references throughout
 - **Test Verification**: Continuous profile-based testing
@@ -596,26 +603,17 @@ MATCH (sale:Sale)
 WHERE sale.date >= date('2025-01-01')
 RETURN sale.date,
        sale.amount,
-       sum(sale.amount) OVER (
-           ORDER BY sale.date
-           ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
-       ) AS running_total,
-       avg(sale.amount) OVER (
-           ORDER BY sale.date
-           ROWS BETWEEN 6 PRECEDING AND CURRENT ROW
-       ) AS moving_avg_7day
+       sum(sale.amount) AS running_total,
+       avg(sale.amount) AS moving_avg_7day
 ORDER BY sale.date;
 
 -- Ranking functions
 MATCH (product:Product)
 RETURN product.name,
        product.sales,
-       rank() OVER (ORDER BY product.sales DESC) AS sales_rank,
-       dense_rank() OVER (
-           PARTITION BY product.category
-           ORDER BY product.sales DESC
-       ) AS category_rank,
-       percent_rank() OVER (ORDER BY product.sales) AS percentile;
+       null /* Geode has no window functions and no OVER clause */ AS sales_rank,
+       null /* Geode has no window functions and no OVER clause */ AS category_rank,
+       null /* Geode has no window functions and no OVER clause */ AS percentile;
 ```
 
 ### Common Table Expressions (CTEs)
@@ -822,12 +820,15 @@ for warning in warnings:
 
 ### Proposed Extensions (Under Discussion)
 
+These are **not implemented** in Geode and will not parse; they are listed only
+to show the direction of the standard.
+
 ```gql
--- Temporal graph queries (proposed for ISO amendment)
-MATCH (p:Person)
-FOR SYSTEM_TIME AS OF '2025-01-01T00:00:00Z'
-WHERE p.status = 'active'
-RETURN p.name;
+-- Temporal graph queries (proposed for ISO amendment; NOT implemented)
+-- MATCH (p:Person)
+-- FOR SYSTEM_TIME AS OF '2025-01-01T00:00:00Z'
+-- WHERE p.status = 'active'
+-- RETURN p.name;
 
 -- Graph pattern matching with quantification
 MATCH (user:User)

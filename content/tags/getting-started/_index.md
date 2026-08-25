@@ -676,10 +676,8 @@ GRANT ALL ON GRAPH * TO admin;
 
 ```gql
 -- Multi-tenant data isolation
-CREATE POLICY tenant_isolation ON :Document
-FOR ALL
-TO analyst
-USING (tenant_id = current_user_property('tenant_id'));
+-- Document.tenant_id must equal the caller's 'tenant_id' principal attribute
+CALL geode.rls.add_attribute_policy('app', 'Document', 'tenant_id', 'tenant_id');
 ```
 
 **Enable Audit Logging**: Track all database operations:

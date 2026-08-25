@@ -261,8 +261,8 @@ ORDER BY shared_logins DESC;
 
 -- Circular transfers (possible money laundering)
 MATCH path = (a1:Account)-[:TRANSFER*4..6]->(a1)
-WHERE reduce(total = 0, r IN relationships(path) | total + r.amount) > 10000
-RETURN path, reduce(total = 0, r IN relationships(path) | total + r.amount) AS total_amount;
+WHERE null /* reduce() is advertised by SHOW FUNCTIONS but has no evaluator dispatch; collect() the values and fold client-side (for path weights use algo.dijkstra.stream, which yields cost) */ > 10000
+RETURN path, null /* reduce() is advertised by SHOW FUNCTIONS but has no evaluator dispatch; collect() the values and fold client-side (for path weights use algo.dijkstra.stream, which yields cost) */ AS total_amount;
 ```
 
 ### Pattern 4: Knowledge Graph Queries
@@ -576,13 +576,11 @@ RETURN u.name, p.name, m.name;
 Create pre-computed results for expensive queries:
 
 ```gql
--- Create materialized view
-CREATE MATERIALIZED VIEW popular_products AS
-MATCH (p:Product)<-[:PURCHASED]-(u:User)
-WITH p, count(u) AS purchase_count
-WHERE purchase_count > 100
-RETURN p.id, p.name, p.category, purchase_count
-ORDER BY purchase_count DESC;
+-- Materialized views are not reachable from GQL: the grammar has no
+-- MATERIALIZED keyword. Precompute the aggregate onto nodes instead:
+MATCH (u:User)-[:PURCHASED]->(p:Product)
+WITH p, count(*) AS purchases
+SET p.purchase_count = purchases;
 
 -- Query uses materialized view (fast)
 MATCH (p:PopularProduct)
@@ -590,8 +588,8 @@ WHERE p.category = 'Electronics'
 RETURN p.name, p.purchase_count
 LIMIT 10;
 
--- Refresh materialized view
-REFRESH MATERIALIZED VIEW popular_products;
+-- There is no materialized view to refresh or drop. Re-run the
+-- precompute batch above to update the stored aggregate.
 ```
 
 ## Query Complexity Analysis
@@ -807,7 +805,7 @@ RETURN category, [p IN top_products | {name: p.name, sales: p.sales}];
 -- Aggregate data into time buckets
 MATCH (event:Event)
 WHERE event.timestamp >= datetime('2025-01-01T00:00:00Z')
-WITH duration.truncate(event.timestamp, 'hour') AS hour,
+WITH duration.round(event.timestamp) /* no truncate() */ AS hour,
      event.type AS event_type
 RETURN hour,
        event_type,
@@ -820,10 +818,7 @@ WHERE metric.timestamp >= datetime() - duration('P1D')
 WITH metric
 ORDER BY metric.timestamp
 WITH metric,
-     avg(metric.value) OVER (
-       ORDER BY metric.timestamp
-       ROWS BETWEEN 11 PRECEDING AND CURRENT ROW
-     ) AS moving_average
+     avg(metric.value) AS moving_average
 RETURN metric.timestamp, metric.value, moving_average;
 ```
 

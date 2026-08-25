@@ -39,34 +39,40 @@ Deploy Geode on Google Compute Engine VMs for maximum control and performance.
 **Recommended Machine Types**:
 
 **General Purpose (Development/Testing)**:
+
 - **E2 Series**: Cost-effective for small workloads
   - e2-standard-4: 4 vCPUs, 16 GB RAM
   - e2-standard-8: 8 vCPUs, 32 GB RAM
   - e2-standard-16: 16 vCPUs, 64 GB RAM
 
 **Balanced (Production)**:
+
 - **N2 Series**: Balanced price/performance
   - n2-standard-8: 8 vCPUs, 32 GB RAM
   - n2-standard-16: 16 vCPUs, 64 GB RAM
   - n2-standard-32: 32 vCPUs, 128 GB RAM
 
 **Memory Optimized**:
+
 - **N2-highmem Series**: High memory-to-CPU ratio for graph workloads
   - n2-highmem-8: 8 vCPUs, 64 GB RAM
   - n2-highmem-16: 16 vCPUs, 128 GB RAM
   - n2-highmem-32: 32 vCPUs, 256 GB RAM
 
 **M2-ultramem Series**: Ultra-high memory (4TB+) for massive graphs
-  - m2-ultramem-208: 208 vCPUs, 5.7 TB RAM
-  - m2-ultramem-416: 416 vCPUs, 11.8 TB RAM
+
+- m2-ultramem-208: 208 vCPUs, 5.7 TB RAM
+- m2-ultramem-416: 416 vCPUs, 11.8 TB RAM
 
 **Compute Optimized**:
+
 - **C2 Series**: High CPU performance for query-intensive workloads
   - c2-standard-8: 8 vCPUs, 32 GB RAM (3.8 GHz)
   - c2-standard-16: 16 vCPUs, 64 GB RAM
   - c2-standard-30: 30 vCPUs, 120 GB RAM
 
 **Local SSD**:
+
 - **N2-highmem with Local SSD**: Ultra-low latency storage
   - Each instance supports up to 24 x 375 GB Local SSDs
   - Up to 9 TB of Local SSD per instance
@@ -77,6 +83,7 @@ Deploy Geode on Google Compute Engine VMs for maximum control and performance.
 Deploy Geode on GKE for automatic scaling, rolling updates, and orchestration.
 
 **Benefits**:
+
 - Managed Kubernetes control plane (free)
 - Auto-scaling (HPA, VPA, and Cluster Autoscaler)
 - Multi-zone and regional clusters for HA
@@ -85,6 +92,7 @@ Deploy Geode on GKE for automatic scaling, rolling updates, and orchestration.
 - Automatic node repairs and upgrades
 
 **GKE Cluster Configuration**:
+
 ```bash
 # Create GKE cluster with Autopilot (recommended)
 gcloud container clusters create-auto geode-cluster \
@@ -114,6 +122,7 @@ gcloud container clusters create geode-cluster \
 ```
 
 **Add Node Pool for Geode**:
+
 ```bash
 gcloud container node-pools create geode-pool \
   --cluster=geode-cluster \
@@ -156,6 +165,7 @@ gcloud run deploy geode \
 ### Single-Instance Setup
 
 **1. Create VPC Network**:
+
 ```bash
 # Create VPC
 gcloud compute networks create geode-network \
@@ -169,6 +179,7 @@ gcloud compute networks subnets create geode-subnet \
 ```
 
 **2. Create Firewall Rules**:
+
 ```bash
 # Allow QUIC (3141/udp)
 gcloud compute firewall-rules create allow-geode-quic \
@@ -199,6 +210,7 @@ gcloud compute firewall-rules create allow-internal \
 ```
 
 **3. Create Persistent Disk**:
+
 ```bash
 # Create SSD Persistent Disk
 gcloud compute disks create geode-data-disk \
@@ -215,6 +227,7 @@ gcloud compute disks create geode-data-disk \
 ```
 
 **4. Create Compute Engine Instance**:
+
 ```bash
 gcloud compute instances create geode-vm-01 \
   --zone=us-central1-a \
@@ -244,6 +257,7 @@ gcloud compute instances create geode-vm-01 \
 ```
 
 **5. Reserve Static IP**:
+
 ```bash
 # Create static external IP
 gcloud compute addresses create geode-ip \
@@ -259,6 +273,7 @@ gcloud compute instances add-access-config geode-vm-01 \
 ### High-Availability Deployment
 
 **1. Create Instance Template**:
+
 ```bash
 gcloud compute instance-templates create geode-template \
   --machine-type=n2-highmem-16 \
@@ -272,6 +287,7 @@ gcloud compute instance-templates create geode-template \
 ```
 
 **2. Create Managed Instance Group**:
+
 ```bash
 gcloud compute instance-groups managed create geode-mig \
   --base-instance-name=geode \
@@ -283,6 +299,7 @@ gcloud compute instance-groups managed create geode-mig \
 ```
 
 **3. Create Health Check**:
+
 ```bash
 gcloud compute health-checks create https geode-health-check \
   --port=8443 \
@@ -294,6 +311,7 @@ gcloud compute health-checks create https geode-health-check \
 ```
 
 **4. Create Load Balancer**:
+
 ```bash
 # Create backend service
 gcloud compute backend-services create geode-backend \
@@ -320,6 +338,7 @@ gcloud compute forwarding-rules create geode-lb \
 ### Kubernetes Manifests
 
 **Namespace and ConfigMap**:
+
 ```yaml
 # namespace.yaml
 apiVersion: v1
@@ -341,6 +360,7 @@ data:
 ```
 
 **StatefulSet with Persistent Disks**:
+
 ```yaml
 # statefulset.yaml
 apiVersion: apps/v1
@@ -425,6 +445,7 @@ spec:
 ```
 
 **Service (Internal Load Balancer)**:
+
 ```yaml
 # service.yaml
 apiVersion: v1
@@ -448,6 +469,7 @@ spec:
 ```
 
 **HorizontalPodAutoscaler**:
+
 ```yaml
 # hpa.yaml
 apiVersion: autoscaling/v2
@@ -491,6 +513,7 @@ spec:
 ```
 
 **Deploy to GKE**:
+
 ```bash
 # Get GKE credentials
 gcloud container clusters get-credentials geode-cluster \
@@ -514,30 +537,35 @@ kubectl describe statefulset geode -n geode
 ### Persistent Disks
 
 **Standard Persistent Disk (pd-standard)**:
+
 - Up to 64 TB per disk
 - 0.75 IOPS per GB (read/write)
 - 0.12 MB/s per GB throughput
 - Best for: Development, archival, backups
 
 **SSD Persistent Disk (pd-ssd)**:
+
 - Up to 64 TB per disk
 - 30 IOPS per GB (read/write)
 - 0.48 MB/s per GB throughput
 - Best for: Production workloads, transaction processing
 
 **Balanced Persistent Disk (pd-balanced)**:
+
 - Up to 64 TB per disk
 - 6 IOPS per GB
 - 0.28 MB/s per GB throughput
 - Best for: Cost-effective production workloads
 
 **Extreme Persistent Disk (pd-extreme)**:
+
 - Up to 64 TB per disk
 - Provisioned IOPS up to 120,000 per disk
 - Provisioned throughput up to 2,400 MB/s
 - Best for: Highest performance requirements
 
 **Create Extreme Disk**:
+
 ```bash
 gcloud compute disks create geode-extreme-disk \
   --size=1000GB \
@@ -552,6 +580,7 @@ gcloud compute disks create geode-extreme-disk \
 Ultra-low latency local storage:
 
 **Create Instance with Local SSD**:
+
 ```bash
 gcloud compute instances create geode-local-ssd \
   --zone=us-central1-a \
@@ -570,6 +599,7 @@ gcloud compute instances create geode-local-ssd \
 ```
 
 **Characteristics**:
+
 - 375 GB per Local SSD
 - Up to 24 Local SSDs per instance (9 TB total)
 - Sub-millisecond latency
@@ -617,6 +647,7 @@ gsutil lifecycle set lifecycle.json gs://geode-backups/
 ### Cloud Monitoring (Stackdriver)
 
 **Enable Cloud Operations**:
+
 ```bash
 # Install Ops Agent on Compute Engine
 curl -sSO https://dl.google.com/cloudagents/add-google-cloud-ops-agent-repo.sh
@@ -654,6 +685,7 @@ sudo systemctl restart google-cloud-ops-agent
 ```
 
 **Create Custom Dashboard**:
+
 ```bash
 # dashboard.json
 cat > dashboard.json <<'EOF'
@@ -687,6 +719,7 @@ gcloud monitoring dashboards create --config-from-file=dashboard.json
 ```
 
 **Custom Metrics from Geode**:
+
 ```python
 # Python client with Cloud Monitoring
 from google.cloud import monitoring_v3
@@ -715,6 +748,7 @@ async with client.connection() as conn:
 ### Cloud Logging
 
 **Log-based Metrics**:
+
 ```bash
 # Create log-based metric for query errors
 gcloud logging metrics create geode_query_errors \
@@ -726,6 +760,7 @@ gcloud logging metrics create geode_query_errors \
 ```
 
 **Export Logs to BigQuery**:
+
 ```bash
 # Create BigQuery dataset
 bq mk --dataset geode_logs
@@ -808,6 +843,7 @@ gcloud secrets add-iam-policy-binding geode-admin-password \
 ```
 
 **Access from Kubernetes**:
+
 ```yaml
 # Use GKE Workload Identity
 apiVersion: v1
@@ -966,6 +1002,7 @@ gsutil cp backup.tar.gz gs://geode-backups-nearline/
 Google Cloud Platform provides excellent infrastructure for deploying Geode graph database at any scale. From simple Compute Engine VMs to sophisticated GKE clusters with auto-scaling, GCP's managed services, global network (100+ points of presence), and powerful data analytics integration make it an outstanding choice for Geode deployments.
 
 Key advantages of GCP for Geode:
+
 - Best-in-class networking with premium tier
 - Powerful managed Kubernetes (GKE Autopilot)
 - Exceptional performance with Local SSD and Extreme Persistent Disks

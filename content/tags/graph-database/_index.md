@@ -56,10 +56,12 @@ Graph databases are based on mathematical graph theory, which has been studied f
 ### Mathematical Definition
 
 A graph G is defined as G = (V, E) where:
+
 - V is a set of vertices (nodes)
 - E is a set of edges (relationships)
 
 In property graphs (like Geode), we extend this to:
+
 - Each vertex has properties: v = {label, {k₁: v₁, k₂: v₂, ...}}
 - Each edge has type and properties: e = {type, {k₁: v₁, k₂: v₂, ...}}
 
@@ -183,7 +185,7 @@ LIMIT 20;
 MATCH path = (a:Account)-[:TRANSFER*3..5]->(a)
 WHERE all(r IN relationships(path) WHERE r.amount > 10000)
   AND all(r IN relationships(path) WHERE r.timestamp >= CURRENT_DATE - DURATION 'P7D')
-RETURN path, reduce(total = 0, r IN relationships(path) | total + r.amount) AS total_amount
+RETURN path, null /* reduce() is advertised by SHOW FUNCTIONS but has no evaluator dispatch; collect() the values and fold client-side (for path weights use algo.dijkstra.stream, which yields cost) */ AS total_amount
 ORDER BY total_amount DESC;
 ```
 
@@ -249,6 +251,7 @@ For time-series data or analytics without relationship traversal, specialized da
 Stores graph structure using adjacency lists or similar graph-native formats (Geode, Neo4j).
 
 Advantages:
+
 - Optimized for traversals
 - Index-free adjacency (no joins needed)
 - High performance for graph queries
@@ -258,10 +261,12 @@ Advantages:
 Uses relational or document storage underneath with graph abstraction layer.
 
 Advantages:
+
 - Leverages existing database infrastructure
 - Familiar backup/recovery tools
 
 Disadvantages:
+
 - Slower traversals (requires joins)
 - Limited scalability for deep queries
 
@@ -283,6 +288,7 @@ RETURN path;
 **Index Usage**
 
 Graph databases use indexes for:
+
 - Finding starting nodes (e.g., by property value)
 - Filtering during traversal
 - Accelerating aggregations
@@ -303,6 +309,7 @@ RETURN friend.name;
 ISO/IEC 39075:2024 standard implemented by Geode.
 
 **Advantages**:
+
 - International standard (like SQL for relational)
 - Vendor-neutral
 - Modern design (learned from SQL, Cypher, SPARQL)

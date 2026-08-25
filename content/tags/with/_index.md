@@ -330,7 +330,7 @@ RETURN u.name, friend_count;
 -- Collect maps
 MATCH (o:Order)-[:CONTAINS]->(i:OrderItem)-[:OF_PRODUCT]->(p:Product)
 WITH o, collect({product: p.name, qty: i.quantity, price: i.price}) AS items
-RETURN o.id, items, reduce(total = 0, item IN items | total + item.qty * item.price) AS order_total;
+RETURN o.id, items, null /* reduce() is advertised by SHOW FUNCTIONS but has no evaluator dispatch; collect() the values and fold client-side (for path weights use algo.dijkstra.stream, which yields cost) */ AS order_total;
 ```
 
 ### UNWIND with WITH
@@ -481,6 +481,7 @@ RETURN buyer.name AS widget_only;
 ### Performance Considerations
 
 1. **Reduce Data Early**: Filter and limit early in the pipeline
+
 ```gql
 -- Good: Filter early
 MATCH (u:User)
@@ -498,6 +499,7 @@ RETURN u.name, posts;
 ```
 
 2. **Aggregate Appropriately**: Don't over-aggregate
+
 ```gql
 -- Good: Aggregate what you need
 MATCH (u:User)-[:ORDERED]->(o:Order)
@@ -513,6 +515,7 @@ RETURN u.name;
 ```
 
 3. **Minimize Variables**: Pass only needed variables
+
 ```gql
 -- Good: Minimal scope
 MATCH (a)-[r]->(b)-[s]->(c)
@@ -524,6 +527,7 @@ RETURN b.name, c.name, d.name;
 ### Readability
 
 1. **Use Meaningful Names**: Clear variable names improve maintainability
+
 ```gql
 MATCH (c:Customer)-[:PLACED]->(o:Order)
 WITH c AS customer, count(o) AS total_orders, sum(o.amount) AS lifetime_value
@@ -532,6 +536,7 @@ RETURN customer.name, total_orders, lifetime_value;
 ```
 
 2. **Document Complex Pipelines**: Add comments for clarity
+
 ```gql
 -- Step 1: Get active users
 MATCH (u:User)
@@ -548,6 +553,7 @@ RETURN u.name, posts, total_likes;
 ```
 
 3. **Break Into Stages**: Use WITH to create logical stages
+
 ```gql
 -- Find, filter, aggregate, return
 MATCH (p:Product)
@@ -586,7 +592,7 @@ ORDER BY t.date
 WITH collect(t) AS transactions
 UNWIND range(0, size(transactions)-1) AS i
 WITH transactions[i] AS t, transactions[0..i+1] AS running
-RETURN t.date, t.amount, reduce(sum = 0, tx IN running | sum + tx.amount) AS balance;
+RETURN t.date, t.amount, null /* reduce() is advertised by SHOW FUNCTIONS but has no evaluator dispatch; collect() the values and fold client-side (for path weights use algo.dijkstra.stream, which yields cost) */ AS balance;
 ```
 
 ### Pivot-like Transformation

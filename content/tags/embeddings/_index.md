@@ -87,13 +87,13 @@ Geode uses Hierarchical Navigable Small World (HNSW) graphs for approximate near
 
 ```gql
 // Create HNSW index on product embeddings
-CREATE VECTOR INDEX product_embedding_idx
+CREATE INDEX product_embedding_idx
 ON :Product(embedding)
 USING HNSW
 WITH (metric = 'cosine');
 
 // Create index for document text embeddings
-CREATE VECTOR INDEX document_text_idx
+CREATE INDEX document_text_idx
 ON :Document(text_embedding)
 USING HNSW
 WITH (metric = 'cosine');

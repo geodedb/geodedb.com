@@ -99,15 +99,10 @@ From `USER_AUTH.md`:
 **Example configuration** (`geode.yaml`):
 
 ```yaml
-security:
-  password_policy:
-    min_length: 16
-    require_uppercase: true
-    require_lowercase: true
-    require_digits: true
-    require_special: true
-    expiration_days: 90
-    history_count: 5
+# NOTE: `security:` is not a configuration-file section — it is ignored.
+# KMS and encryption-at-rest are configured with environment variables:
+#   GEODE_KMS_URL, GEODE_KMS_ENDPOINT, GEODE_KMS_API_KEY
+#   GEODE_MASTER_KEY, GEODE_TDE_ENABLED, GEODE_ALLOW_LOCAL_KMS
 ```
 
 ### Password Hashing: Argon2id
@@ -165,9 +160,8 @@ REVOKE WRITE ON GRAPH SocialNetwork.Person FROM analyst;
 
 ```gql
 -- Policy: Users can only see data from their department
-CREATE POLICY department_isolation ON Person
-FOR SELECT
-USING (department = current_user_department());
+-- Person.department must equal the caller's 'department' principal attribute
+CALL geode.rls.add_attribute_policy('app', 'Person', 'department', 'department');
 ```
 
 ### Enhanced Row-Level Security (RLS)
@@ -187,26 +181,21 @@ From `ADVANCED_SECURITY_FEATURES_OCTOBER_2025.md`:
 
 ```gql
 -- Create RLS policy: users see only their tenant's data
-CREATE POLICY tenant_isolation ON Person
-FOR SELECT
-USING (tenant_id = current_user_tenant_id());
+-- Person.tenant_id must equal the caller's 'tenant' principal attribute
+CALL geode.rls.add_attribute_policy('app', 'Person', 'tenant_id', 'tenant');
 
 -- Create RLS policy: prevent cross-tenant updates
-CREATE POLICY tenant_update_policy ON Person
-FOR UPDATE
-USING (tenant_id = current_user_tenant_id());
+-- Person.tenant_id must equal the caller's 'tenant' principal attribute
+CALL geode.rls.add_attribute_policy('app', 'Person', 'tenant_id', 'tenant');
 ```
 
 **Example: Data classification**:
 
 ```gql
 -- Policy: only analysts can see PII
-CREATE POLICY pii_access ON Person
-FOR SELECT
-USING (
-  has_role('analyst') OR
-  pii_classification = 'public'
-);
+-- Not expressible as a Geode policy predicate (only `=` against a string
+-- literal compiles); precompute the decision into a property instead:
+CALL geode.rls.add_attribute_policy('app', 'Person', 'access_tag', 'access_tag');
 ```
 
 **Policy evaluation**:
@@ -234,10 +223,10 @@ From `DESIGN_TDE_KMS.md` and `KMS_PROVIDER_SYSTEM.md`:
 **Configuration**:
 
 ```yaml
-security:
-  tde:
-    enabled: true
-    provider: vault  # or 'env', 'aws-kms'
+# NOTE: `security:` is not a configuration-file section — it is ignored.
+# KMS and encryption-at-rest are configured with environment variables:
+#   GEODE_KMS_URL, GEODE_KMS_ENDPOINT, GEODE_KMS_API_KEY
+#   GEODE_MASTER_KEY, GEODE_TDE_ENABLED, GEODE_ALLOW_LOCAL_KMS
 ```
 
 **KMS Providers**:
@@ -254,26 +243,19 @@ export GEODE_TDE_KEY="0123456789abcdef0123456789abcdef0123456789abcdef0123456789
 #### 2. HashiCorp Vault (Recommended)
 
 ```yaml
-security:
-  tde:
-    enabled: true
-    provider: vault
-    vault:
-      address: "https://vault.example.com:8200"
-      token: "s.VAULT_TOKEN"
-      key_path: "secret/geode/tde-key"
+# NOTE: `security:` is not a configuration-file section — it is ignored.
+# KMS and encryption-at-rest are configured with environment variables:
+#   GEODE_KMS_URL, GEODE_KMS_ENDPOINT, GEODE_KMS_API_KEY
+#   GEODE_MASTER_KEY, GEODE_TDE_ENABLED, GEODE_ALLOW_LOCAL_KMS
 ```
 
 #### 3. AWS KMS
 
 ```yaml
-security:
-  tde:
-    enabled: true
-    provider: aws-kms
-    aws_kms:
-      region: "us-east-1"
-      key_id: "arn:aws:kms:us-east-1:123456789012:key/12345678-1234-1234-1234-123456789012"
+# NOTE: `security:` is not a configuration-file section — it is ignored.
+# KMS and encryption-at-rest are configured with environment variables:
+#   GEODE_KMS_URL, GEODE_KMS_ENDPOINT, GEODE_KMS_API_KEY
+#   GEODE_MASTER_KEY, GEODE_TDE_ENABLED, GEODE_ALLOW_LOCAL_KMS
 ```
 
 **Key rotation**: Online key rotation supported (re-encrypts pages with new key).
@@ -317,7 +299,7 @@ CREATE TABLE users (
 
 -- Insert (encryption transparent)
 CREATE (:User {
-  id: gen_random_uuid(),
+  id: uuid_v4(),
   name: "Alice",
   email: "[email protected]",  -- Encrypted before storage
   ssn: "123-45-6789"  -- Encrypted + blind index created
@@ -391,15 +373,10 @@ From `AUDIT_LOGGING.md`:
 **Configuration**:
 
 ```yaml
-security:
-  audit:
-    enabled: true
-    log_path: "/var/log/geode/audit.jsonl"
-    syslog:
-      enabled: true
-      address: "syslog.example.com:514"
-      format: "CEF"  # Common Event Format
-    retention_days: 365
+# NOTE: `security:` is not a configuration-file section — it is ignored.
+# KMS and encryption-at-rest are configured with environment variables:
+#   GEODE_KMS_URL, GEODE_KMS_ENDPOINT, GEODE_KMS_API_KEY
+#   GEODE_MASTER_KEY, GEODE_TDE_ENABLED, GEODE_ALLOW_LOCAL_KMS
 ```
 
 **Syslog/CEF integration**: Forward logs to SIEM for centralized monitoring.
@@ -438,9 +415,10 @@ ALTER USER admin SET PASSWORD 'new-strong-password-789';
 **Enforce expiration** in `geode.yaml`:
 
 ```yaml
-security:
-  password_policy:
-    expiration_days: 90
+# NOTE: `security:` is not a configuration-file section — it is ignored.
+# KMS and encryption-at-rest are configured with environment variables:
+#   GEODE_KMS_URL, GEODE_KMS_ENDPOINT, GEODE_KMS_API_KEY
+#   GEODE_MASTER_KEY, GEODE_TDE_ENABLED, GEODE_ALLOW_LOCAL_KMS
 ```
 
 ### 3. Logging Destinations
@@ -448,11 +426,10 @@ security:
 **Centralized logging** for audit trails:
 
 ```yaml
-security:
-  audit:
-    syslog:
-      enabled: true
-      address: "siem.example.com:514"
+# NOTE: `security:` is not a configuration-file section — it is ignored.
+# KMS and encryption-at-rest are configured with environment variables:
+#   GEODE_KMS_URL, GEODE_KMS_ENDPOINT, GEODE_KMS_API_KEY
+#   GEODE_MASTER_KEY, GEODE_TDE_ENABLED, GEODE_ALLOW_LOCAL_KMS
 ```
 
 ### 4. KMS Integration
@@ -460,12 +437,10 @@ security:
 **Use external KMS** for production:
 
 ```yaml
-security:
-  tde:
-    provider: vault  # Not 'env'
-    vault:
-      address: "https://vault.example.com:8200"
-      token_path: "/var/run/secrets/vault-token"
+# NOTE: `security:` is not a configuration-file section — it is ignored.
+# KMS and encryption-at-rest are configured with environment variables:
+#   GEODE_KMS_URL, GEODE_KMS_ENDPOINT, GEODE_KMS_API_KEY
+#   GEODE_MASTER_KEY, GEODE_TDE_ENABLED, GEODE_ALLOW_LOCAL_KMS
 ```
 
 ### 5. Network Isolation

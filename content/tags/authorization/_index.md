@@ -291,19 +291,14 @@ Control execution of stored procedures and functions:
 GRANT EXECUTE ON PROCEDURE calculate_recommendations TO recommendation_engine;
 
 -- Grant with elevated privileges
-CREATE PROCEDURE admin_task()
-  SECURITY DEFINER  -- Runs with creator's privileges
-  AS $$
-    MATCH (u:User) WHERE u.inactive FOR '365 days'
-    DETACH DELETE u
-  $$;
+-- Geode has no user-defined functions, aggregates or procedures: the
+-- grammar has no CREATE FUNCTION / AGGREGATE / PROCEDURE. Inline the
+-- logic into the query, or compute it in the client.
 
 -- Grant to run procedures with caller's privileges
-CREATE PROCEDURE user_report(user_id: STRING)
-  SECURITY INVOKER  -- Runs with caller's privileges
-  AS $$
-    MATCH (u:User {id: $user_id}) RETURN u
-  $$;
+-- Geode has no user-defined functions, aggregates or procedures: the
+-- grammar has no CREATE FUNCTION / AGGREGATE / PROCEDURE. Inline the
+-- logic into the query, or compute it in the client.
 ```
 
 ## Dynamic Authorization
@@ -312,22 +307,18 @@ Authorization decisions that depend on runtime context:
 
 ```gql
 -- Time-based access control
-CREATE POLICY business_hours_only ON :Transaction
-  FOR ALL
-  TO standard_user
-  USING (EXTRACT(HOUR FROM current_timestamp()) BETWEEN 9 AND 17);
+-- Not expressible as a Geode policy predicate (only `=` against a string
+-- literal compiles); precompute the decision into a property instead:
+CALL geode.rls.add_attribute_policy('app', 'Transaction', 'access_tag', 'access_tag');
 
 -- Location-based access
-CREATE POLICY regional_access ON :Customer
-  FOR SELECT
-  TO regional_manager
-  USING (c.region = current_user_property('assigned_region'));
+-- Customer.region must equal the caller's 'assigned_region' principal attribute
+CALL geode.rls.add_attribute_policy('app', 'Customer', 'region', 'assigned_region');
 
 -- Data classification-based access
-CREATE POLICY classification_access ON :Document
-  FOR SELECT
-  TO analyst
-  USING (d.classification_level <= current_user_property('clearance_level'));
+-- Not expressible as a Geode policy predicate (only `=` against a string
+-- literal compiles); precompute the decision into a property instead:
+CALL geode.rls.add_attribute_policy('app', 'Document', 'access_tag', 'access_tag');
 ```
 
 ## Authorization Inheritance
@@ -386,16 +377,15 @@ SHOW EFFECTIVE GRANTS FOR bob;
 
 ```gql
 -- View all permission grants
-SELECT * FROM system.privileges
-WHERE grantee = 'analyst';
+SHOW GRANTS;
 
 -- View role memberships
-SELECT * FROM system.role_members
-WHERE member = 'alice';
+-- Role membership is reported per user by
+-- CALL geode.auth.user_show('<user>') / SHOW PERMISSIONS.
+SHOW ROLES;
 
 -- View all deny rules
-SELECT * FROM system.privileges
-WHERE is_deny = true;
+SHOW GRANTS;
 ```
 
 ## Authorization Best Practices
@@ -441,16 +431,10 @@ DENY SELECT ON :ExecutiveCompensation TO analyst;
 
 ```gql
 -- Find users with admin privileges
-SELECT grantee FROM system.privileges
-WHERE privilege = 'ADMIN';
+SHOW GRANTS;
 
 -- Find unused permissions
-SELECT p.grantee, p.privilege, p.object_name
-FROM system.privileges p
-LEFT JOIN system.access_log a
-  ON p.grantee = a.username AND p.object_name = a.object_name
-WHERE a.last_access IS NULL
-  OR a.last_access < current_timestamp() - INTERVAL '90 days';
+SHOW GRANTS;
 ```
 
 ### 5. Separate Development and Production
@@ -514,9 +498,7 @@ SHOW GRANTS FOR current_user();
 SHOW EFFECTIVE GRANTS FOR alice;
 
 -- Check for deny rules
-SELECT * FROM system.privileges
-WHERE grantee IN (SELECT role FROM system.role_members WHERE member = 'alice')
-  AND is_deny = true;
+SHOW GRANTS;
 ```
 
 ### Debugging Authorization
@@ -545,27 +527,22 @@ geode serve --authorization-debug=true
 
 ```gql
 -- Isolate tenant data
-CREATE POLICY tenant_isolation ON :*
-  FOR ALL
-  TO application
-  USING (tenant_id = current_user_property('tenant_id'));
+-- Not expressible as a Geode policy predicate (only `=` against a string
+-- literal compiles); precompute the decision into a property instead:
+CALL geode.rls.add_attribute_policy('app', 'Label', 'access_tag', 'access_tag');
 
 -- Tenant admins see their own tenant only
-CREATE POLICY tenant_admin_access ON :User
-  FOR ALL
-  TO tenant_admin
-  USING (tenant_id = current_user_property('tenant_id'));
+-- User.tenant_id must equal the caller's 'tenant_id' principal attribute
+CALL geode.rls.add_attribute_policy('app', 'User', 'tenant_id', 'tenant_id');
 ```
 
 ### Hierarchical Data Access
 
 ```gql
 -- Manager sees direct reports
-CREATE POLICY manager_sees_reports ON :Employee
-  FOR SELECT
-  TO manager
-  USING (manager_id = current_user_property('employee_id')
-         OR employee_id = current_user_property('employee_id'));
+-- Not expressible as a Geode policy predicate (only `=` against a string
+-- literal compiles); precompute the decision into a property instead:
+CALL geode.rls.add_attribute_policy('app', 'Employee', 'access_tag', 'access_tag');
 
 -- Executive sees entire organization
 GRANT SELECT ON :Employee TO executive;
@@ -579,10 +556,9 @@ GRANT SELECT ON :AuditData TO auditor
   VALID UNTIL '2026-03-31';
 
 -- Audit-period access
-CREATE POLICY audit_window ON :FinancialRecord
-  FOR SELECT
-  TO auditor
-  USING (record_date BETWEEN '2025-01-01' AND '2025-12-31');
+-- Not expressible as a Geode policy predicate (only `=` against a string
+-- literal compiles); precompute the decision into a property instead:
+CALL geode.rls.add_attribute_policy('app', 'FinancialRecord', 'access_tag', 'access_tag');
 ```
 
 ## Related Topics

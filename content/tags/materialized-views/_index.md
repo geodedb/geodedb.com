@@ -52,6 +52,7 @@ Materialized views transform query execution:
 ### When to Use Materialized Views
 
 **Ideal Scenarios**:
+
 - Complex aggregations across millions of rows
 - Multi-table joins with expensive computations
 - Frequently accessed reports and dashboards
@@ -59,6 +60,7 @@ Materialized views transform query execution:
 - OLAP cubes and dimensional analytics
 
 **Not Recommended For**:
+
 - Transactional queries requiring real-time data
 - Infrequently accessed queries
 - Simple single-table lookups
@@ -69,22 +71,11 @@ Materialized views transform query execution:
 ### Basic Syntax
 
 ```gql
--- Create materialized view for user statistics
-CREATE MATERIALIZED VIEW user_stats AS
-SELECT
-    u.id AS user_id,
-    u.name AS user_name,
-    u.email,
-    COUNT(DISTINCT p.id) AS post_count,
-    COUNT(DISTINCT c.id) AS comment_count,
-    COUNT(DISTINCT l.id) AS like_count,
-    MAX(p.created_at) AS last_post_date,
-    MIN(u.join_date) AS join_date
-FROM User u
-LEFT JOIN Post p ON u.id = p.author_id
-LEFT JOIN Comment c ON u.id = c.author_id
-LEFT JOIN Like l ON u.id = l.user_id
-GROUP BY u.id, u.name, u.email;
+-- Materialized views are not reachable from GQL: the grammar has no
+-- MATERIALIZED keyword. Precompute the aggregate onto nodes instead:
+MATCH (u:User)-[:PURCHASED]->(p:Product)
+WITH p, count(*) AS purchases
+SET p.purchase_count = purchases;
 
 -- Query materialized view (fast!)
 SELECT * FROM user_stats
@@ -96,21 +87,11 @@ LIMIT 10;
 ### With Indexes for Performance
 
 ```gql
-CREATE MATERIALIZED VIEW product_sales_summary AS
-SELECT
-    p.id AS product_id,
-    p.name AS product_name,
-    p.category,
-    COUNT(DISTINCT o.id) AS order_count,
-    SUM(oi.quantity) AS total_units_sold,
-    SUM(oi.quantity * oi.unit_price) AS total_revenue,
-    AVG(oi.unit_price) AS avg_price,
-    MAX(o.created_at) AS last_sold_date
-FROM Product p
-LEFT JOIN OrderItem oi ON p.id = oi.product_id
-LEFT JOIN Order o ON oi.order_id = o.id
-WHERE o.status = 'completed'
-GROUP BY p.id, p.name, p.category;
+-- Materialized views are not reachable from GQL: the grammar has no
+-- MATERIALIZED keyword. Precompute the aggregate onto nodes instead:
+MATCH (u:User)-[:PURCHASED]->(p:Product)
+WITH p, count(*) AS purchases
+SET p.purchase_count = purchases;
 
 -- Add indexes for common query patterns
 CREATE INDEX idx_product_sales_category ON product_sales_summary(category);
@@ -132,15 +113,16 @@ Explicitly refresh when needed:
 
 ```gql
 -- Full refresh (recompute everything)
-REFRESH MATERIALIZED VIEW user_stats;
+-- There is no materialized view to refresh or drop. Re-run the
+-- precompute batch above to update the stored aggregate.
 
 -- Concurrent refresh (non-blocking, allows queries during refresh)
-REFRESH MATERIALIZED VIEW CONCURRENTLY user_stats;
+-- There is no materialized view to refresh or drop. Re-run the
+-- precompute batch above to update the stored aggregate.
 
 -- Check last refresh time
-SELECT view_name, last_refresh, row_count
-FROM system.materialized_views
-WHERE view_name = 'user_stats';
+-- Materialized views are not reachable from GQL: the grammar has no
+-- MATERIALIZED keyword and there is no view catalog to query.
 ```
 
 ### Automatic Scheduled Refresh
@@ -149,30 +131,18 @@ Configure automatic refresh schedules:
 
 ```gql
 -- Refresh daily at 1 AM
-CREATE MATERIALIZED VIEW daily_revenue AS
-SELECT
-    DATE(o.created_at) AS order_date,
-    COUNT(*) AS order_count,
-    SUM(o.total) AS total_revenue,
-    AVG(o.total) AS avg_order_value,
-    COUNT(DISTINCT o.customer_id) AS unique_customers
-FROM Order o
-WHERE o.status = 'completed'
-GROUP BY DATE(o.created_at)
-WITH REFRESH SCHEDULE '0 1 * * *';  -- Cron syntax
+-- Materialized views are not reachable from GQL: the grammar has no
+-- MATERIALIZED keyword. Precompute the aggregate onto nodes instead:
+MATCH (u:User)-[:PURCHASED]->(p:Product)
+WITH p, count(*) AS purchases
+SET p.purchase_count = purchases;  -- Cron syntax
 
 -- Refresh every hour
-CREATE MATERIALIZED VIEW hourly_metrics AS
-SELECT
-    DATE_TRUNC('hour', timestamp) AS hour,
-    metric_name,
-    AVG(value) AS avg_value,
-    MAX(value) AS max_value,
-    MIN(value) AS min_value,
-    COUNT(*) AS sample_count
-FROM metrics
-GROUP BY DATE_TRUNC('hour', timestamp), metric_name
-WITH REFRESH SCHEDULE '0 * * * *';  -- Every hour on the hour
+-- Materialized views are not reachable from GQL: the grammar has no
+-- MATERIALIZED keyword. Precompute the aggregate onto nodes instead:
+MATCH (u:User)-[:PURCHASED]->(p:Product)
+WITH p, count(*) AS purchases
+SET p.purchase_count = purchases;  -- Every hour on the hour
 ```
 
 ### Incremental Refresh
@@ -180,33 +150,15 @@ WITH REFRESH SCHEDULE '0 * * * *';  -- Every hour on the hour
 Update only changed data for efficiency:
 
 ```gql
-CREATE MATERIALIZED VIEW product_inventory
-WITH INCREMENTAL REFRESH AS
-SELECT
-    p.id AS product_id,
-    p.name,
-    p.stock_quantity,
-    COALESCE(SUM(
-        CASE
-            WHEN oi.order_status = 'pending' THEN oi.quantity
-            ELSE 0
-        END
-    ), 0) AS reserved_quantity,
-    p.stock_quantity - COALESCE(SUM(
-        CASE
-            WHEN oi.order_status = 'pending' THEN oi.quantity
-            ELSE 0
-        END
-    ), 0) AS available_quantity,
-    COUNT(DISTINCT CASE
-        WHEN oi.order_status = 'pending' THEN oi.order_id
-    END) AS pending_orders
-FROM Product p
-LEFT JOIN OrderItem oi ON p.id = oi.product_id
-GROUP BY p.id, p.name, p.stock_quantity;
+-- Materialized views are not reachable from GQL: the grammar has no
+-- MATERIALIZED keyword. Precompute the aggregate onto nodes instead:
+MATCH (u:User)-[:PURCHASED]->(p:Product)
+WITH p, count(*) AS purchases
+SET p.purchase_count = purchases;
 
 -- Incremental refresh only updates changed products
-REFRESH MATERIALIZED VIEW INCREMENTALLY product_inventory;
+-- There is no materialized view to refresh or drop. Re-run the
+-- precompute batch above to update the stored aggregate.
 ```
 
 ### Refresh on Write (Eager Materialization)
@@ -214,20 +166,11 @@ REFRESH MATERIALIZED VIEW INCREMENTALLY product_inventory;
 Automatically refresh when source data changes:
 
 ```gql
-CREATE MATERIALIZED VIEW current_inventory
-WITH REFRESH ON WRITE AS
-SELECT
-    p.id,
-    p.name,
-    p.stock_quantity,
-    p.stock_quantity - COALESCE(reserved.qty, 0) AS available
-FROM Product p
-LEFT JOIN (
-    SELECT product_id, SUM(quantity) AS qty
-    FROM OrderItem
-    WHERE order_status = 'pending'
-    GROUP BY product_id
-) reserved ON p.id = reserved.product_id;
+-- Materialized views are not reachable from GQL: the grammar has no
+-- MATERIALIZED keyword. Precompute the aggregate onto nodes instead:
+MATCH (u:User)-[:PURCHASED]->(p:Product)
+WITH p, count(*) AS purchases
+SET p.purchase_count = purchases;
 
 -- View automatically updates when:
 -- - Product stock_quantity changes
@@ -243,74 +186,43 @@ Create hierarchical time aggregations:
 
 ```gql
 -- Hourly rollup (base level)
-CREATE MATERIALIZED VIEW metrics_hourly AS
-SELECT
-    DATE_TRUNC('hour', timestamp) AS hour,
-    sensor_id,
-    metric_type,
-    AVG(value) AS avg_value,
-    MIN(value) AS min_value,
-    MAX(value) AS max_value,
-    STDDEV(value) AS stddev_value,
-    COUNT(*) AS sample_count
-FROM sensor_readings
-GROUP BY DATE_TRUNC('hour', timestamp), sensor_id, metric_type
-WITH REFRESH SCHEDULE '5 * * * *';  -- 5 minutes past each hour
+-- Materialized views are not reachable from GQL: the grammar has no
+-- MATERIALIZED keyword. Precompute the aggregate onto nodes instead:
+MATCH (u:User)-[:PURCHASED]->(p:Product)
+WITH p, count(*) AS purchases
+SET p.purchase_count = purchases;  -- 5 minutes past each hour
 
 -- Daily rollup (aggregates hourly data)
-CREATE MATERIALIZED VIEW metrics_daily AS
-SELECT
-    DATE_TRUNC('day', hour) AS day,
-    sensor_id,
-    metric_type,
-    AVG(avg_value) AS avg_value,
-    MIN(min_value) AS min_value,
-    MAX(max_value) AS max_value,
-    AVG(stddev_value) AS avg_stddev,
-    SUM(sample_count) AS total_samples
-FROM metrics_hourly
-GROUP BY DATE_TRUNC('day', hour), sensor_id, metric_type
-WITH REFRESH SCHEDULE '0 2 * * *';  -- 2 AM daily
+-- Materialized views are not reachable from GQL: the grammar has no
+-- MATERIALIZED keyword. Precompute the aggregate onto nodes instead:
+MATCH (u:User)-[:PURCHASED]->(p:Product)
+WITH p, count(*) AS purchases
+SET p.purchase_count = purchases;  -- 2 AM daily
 
 -- Monthly rollup (aggregates daily data)
-CREATE MATERIALIZED VIEW metrics_monthly AS
-SELECT
-    DATE_TRUNC('month', day) AS month,
-    sensor_id,
-    metric_type,
-    AVG(avg_value) AS avg_value,
-    MIN(min_value) AS min_value,
-    MAX(max_value) AS max_value,
-    SUM(total_samples) AS total_samples
-FROM metrics_daily
-GROUP BY DATE_TRUNC('month', day), sensor_id, metric_type
-WITH REFRESH SCHEDULE '0 3 1 * *';  -- 3 AM on 1st of month
+-- Materialized views are not reachable from GQL: the grammar has no
+-- MATERIALIZED keyword. Precompute the aggregate onto nodes instead:
+MATCH (u:User)-[:PURCHASED]->(p:Product)
+WITH p, count(*) AS purchases
+SET p.purchase_count = purchases;  -- 3 AM on 1st of month
 ```
 
 ### Customer Segmentation
 
 ```gql
-CREATE MATERIALIZED VIEW customer_segments AS
-SELECT
-    c.id AS customer_id,
-    c.name,
-    c.email,
-    COUNT(DISTINCT o.id) AS order_count,
-    SUM(o.total) AS lifetime_value,
-    AVG(o.total) AS avg_order_value,
-    MAX(o.created_at) AS last_order_date,
-    DATEDIFF(DAY, MAX(o.created_at), NOW()) AS days_since_last_order,
-    DATEDIFF(DAY, MIN(o.created_at), MAX(o.created_at)) AS customer_lifetime_days,
-
-    -- Segment classification
+-- Materialized views are not reachable from GQL: the grammar has no
+-- MATERIALIZED keyword. Precompute the aggregate onto nodes instead:
+MATCH (u:User)-[:PURCHASED]->(p:Product)
+WITH p, count(*) AS purchases
+SET p.purchase_count = purchases;    -- Segment classification
     CASE
-        WHEN SUM(o.total) > 10000 AND DATEDIFF(DAY, MAX(o.created_at), NOW()) < 90
+        WHEN SUM(o.total) > 10000 AND (datetime( - MAX(o.created_at)) /* Duration; no DATEDIFF(): store epoch millis to get an integer */) < 90
             THEN 'vip_active'
-        WHEN SUM(o.total) > 10000 AND DATEDIFF(DAY, MAX(o.created_at), NOW()) >= 90
+        WHEN SUM(o.total) > 10000 AND (datetime( - MAX(o.created_at)) /* Duration; no DATEDIFF(): store epoch millis to get an integer */) >= 90
             THEN 'vip_at_risk'
-        WHEN SUM(o.total) > 1000 AND DATEDIFF(DAY, MAX(o.created_at), NOW()) < 180
+        WHEN SUM(o.total) > 1000 AND (datetime( - MAX(o.created_at)) /* Duration; no DATEDIFF(): store epoch millis to get an integer */) < 180
             THEN 'loyal'
-        WHEN DATEDIFF(DAY, MAX(o.created_at), NOW()) >= 365
+        WHEN (datetime( - MAX(o.created_at)) /* Duration; no DATEDIFF(): store epoch millis to get an integer */) >= 365
             THEN 'churned'
         WHEN COUNT(DISTINCT o.id) = 1
             THEN 'one_time'
@@ -318,9 +230,9 @@ SELECT
     END AS segment,
 
     -- RFM score (Recency, Frequency, Monetary)
-    NTILE(5) OVER (ORDER BY MAX(o.created_at) DESC) AS recency_score,
-    NTILE(5) OVER (ORDER BY COUNT(DISTINCT o.id)) AS frequency_score,
-    NTILE(5) OVER (ORDER BY SUM(o.total)) AS monetary_score
+    NTILE(5) DESC) AS recency_score,
+    NTILE(5)) AS frequency_score,
+    NTILE(5)) AS monetary_score
 
 FROM Customer c
 LEFT JOIN Order o ON c.id = o.customer_id
@@ -332,14 +244,11 @@ WITH REFRESH SCHEDULE '0 0 * * 0';  -- Weekly on Sunday midnight
 ### Product Performance Dashboard
 
 ```gql
-CREATE MATERIALIZED VIEW product_performance_dashboard AS
-SELECT
-    p.id AS product_id,
-    p.name AS product_name,
-    p.category,
-    p.base_price,
-
-    -- Sales metrics
+-- Materialized views are not reachable from GQL: the grammar has no
+-- MATERIALIZED keyword. Precompute the aggregate onto nodes instead:
+MATCH (u:User)-[:PURCHASED]->(p:Product)
+WITH p, count(*) AS purchases
+SET p.purchase_count = purchases;    -- Sales metrics
     COUNT(DISTINCT o.id) AS orders_with_product,
     SUM(oi.quantity) AS units_sold,
     SUM(oi.quantity * oi.unit_price) AS gross_revenue,
@@ -355,7 +264,7 @@ SELECT
     -- Time metrics
     MIN(o.created_at) AS first_sale_date,
     MAX(o.created_at) AS last_sale_date,
-    DATEDIFF(DAY, MIN(o.created_at), MAX(o.created_at)) AS days_on_market,
+    (MAX(o.created_at - MIN(o.created_at)) /* Duration; no DATEDIFF(): store epoch millis to get an integer */) AS days_on_market,
 
     -- Review metrics
     COUNT(DISTINCT r.id) AS review_count,
@@ -394,59 +303,39 @@ WITH REFRESH SCHEDULE '0 */6 * * *';  -- Every 6 hours
 ```gql
 -- Use EXPLAIN to identify expensive queries
 EXPLAIN ANALYZE
-SELECT
-    category,
-    COUNT(*) AS product_count,
-    SUM(total_sales) AS category_revenue
-FROM products
-GROUP BY category;
-
--- If execution time > 1000ms and query frequency > 100/day:
--- → CREATE MATERIALIZED VIEW
-
--- Monitor view usage
-SELECT
-    view_name,
-    query_count,
-    avg_query_time_ms,
-    last_refresh_duration_ms,
-    storage_size_mb
-FROM system.materialized_view_stats
-ORDER BY query_count DESC;
+-- Materialized views are not reachable from GQL; there is no view catalog.
 ```
 
 ### Partitioning Large Views
 
 ```gql
 -- Partition by date for better refresh performance
-CREATE MATERIALIZED VIEW sales_by_month
-PARTITION BY month AS
-SELECT
-    DATE_TRUNC('month', order_date) AS month,
-    product_id,
-    COUNT(*) AS order_count,
-    SUM(quantity) AS units_sold,
-    SUM(revenue) AS total_revenue
-FROM order_items
-GROUP BY DATE_TRUNC('month', order_date), product_id;
+-- Materialized views are not reachable from GQL: the grammar has no
+-- MATERIALIZED keyword. Precompute the aggregate onto nodes instead:
+MATCH (u:User)-[:PURCHASED]->(p:Product)
+WITH p, count(*) AS purchases
+SET p.purchase_count = purchases;
 
 -- Refresh only recent partitions
-REFRESH MATERIALIZED VIEW sales_by_month
-PARTITION WHERE month >= '2026-01-01';
+-- There is no materialized view to refresh or drop. Re-run the
+-- precompute batch above to update the stored aggregate.
 ```
 
 ### Cascading Refreshes
 
 ```gql
 -- Create dependency chain for efficient updates
-CREATE MATERIALIZED VIEW base_metrics AS
-SELECT /* expensive base computation */
-WITH REFRESH SCHEDULE '0 1 * * *';
+-- Materialized views are not reachable from GQL: the grammar has no
+-- MATERIALIZED keyword. Precompute the aggregate onto nodes instead:
+MATCH (u:User)-[:PURCHASED]->(p:Product)
+WITH p, count(*) AS purchases
+SET p.purchase_count = purchases;
 
-CREATE MATERIALIZED VIEW derived_metrics AS
-SELECT /* aggregates from base_metrics */
-FROM base_metrics
-WITH REFRESH AFTER base_metrics;  -- Automatically refresh after base
+-- Materialized views are not reachable from GQL: the grammar has no
+-- MATERIALIZED keyword. Precompute the aggregate onto nodes instead:
+MATCH (u:User)-[:PURCHASED]->(p:Product)
+WITH p, count(*) AS purchases
+SET p.purchase_count = purchases;  -- Automatically refresh after base
 ```
 
 ## Monitoring and Maintenance
@@ -455,54 +344,31 @@ WITH REFRESH AFTER base_metrics;  -- Automatically refresh after base
 
 ```gql
 -- Check view freshness
-SELECT
-    view_name,
-    last_refresh_time,
-    DATEDIFF(MINUTE, last_refresh_time, NOW()) AS minutes_since_refresh,
-    last_refresh_duration_ms / 1000.0 AS refresh_duration_seconds,
-    row_count,
-    storage_size_mb
-FROM system.materialized_views
-ORDER BY minutes_since_refresh DESC;
+-- Materialized views are not reachable from GQL: the grammar has no
+-- MATERIALIZED keyword and there is no view catalog to query.
 
 -- Identify stale views
-SELECT view_name, last_refresh_time
-FROM system.materialized_views
-WHERE last_refresh_time < NOW() - INTERVAL '24 hours'
-AND refresh_schedule IS NOT NULL;  -- Should auto-refresh
+-- Materialized views are not reachable from GQL: the grammar has no
+-- MATERIALIZED keyword and there is no view catalog to query.  -- Should auto-refresh
 ```
 
 ### Refresh Performance
 
 ```gql
 -- Analyze refresh performance
-SELECT
-    view_name,
-    refresh_type,
-    AVG(duration_ms) AS avg_duration_ms,
-    MAX(duration_ms) AS max_duration_ms,
-    COUNT(*) AS refresh_count
-FROM system.materialized_view_refresh_history
-WHERE refresh_time > NOW() - INTERVAL '7 days'
-GROUP BY view_name, refresh_type
-ORDER BY avg_duration_ms DESC;
+-- Materialized views are not reachable from GQL; there is no refresh history.
 ```
 
 ### Storage Management
 
 ```gql
 -- Identify large views
-SELECT
-    view_name,
-    storage_size_mb,
-    row_count,
-    storage_size_mb / NULLIF(row_count, 0) * 1024 AS kb_per_row
-FROM system.materialized_views
-ORDER BY storage_size_mb DESC
-LIMIT 20;
+-- Materialized views are not reachable from GQL: the grammar has no
+-- MATERIALIZED keyword and there is no view catalog to query.
 
 -- Drop unused views
-DROP MATERIALIZED VIEW IF EXISTS old_unused_view;
+-- There is no materialized view to refresh or drop. Re-run the
+-- precompute batch above to update the stored aggregate.
 ```
 
 ## Best Practices
@@ -542,19 +408,20 @@ DROP MATERIALIZED VIEW IF EXISTS old_unused_view;
 EXPLAIN ANALYZE SELECT /* view definition query */;
 
 -- Consider incremental refresh
-ALTER MATERIALIZED VIEW slow_view
-SET REFRESH MODE INCREMENTAL;
+-- There is no materialized view to refresh or drop. Re-run the
+-- precompute batch above to update the stored aggregate.
 
 -- Partition large views
-ALTER MATERIALIZED VIEW slow_view
-PARTITION BY date_column;
+-- There is no materialized view to refresh or drop. Re-run the
+-- precompute batch above to update the stored aggregate.
 ```
 
 ### Out-of-Sync Data
 
 ```gql
 -- Force full refresh
-REFRESH MATERIALIZED VIEW problematic_view FORCE;
+-- There is no materialized view to refresh or drop. Re-run the
+-- precompute batch above to update the stored aggregate.
 
 -- Verify data consistency
 SELECT COUNT(*) FROM materialized_view;

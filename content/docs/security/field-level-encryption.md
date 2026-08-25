@@ -104,19 +104,16 @@ This allows equality searches (`WHERE email = 'alice@example.com'`) on encrypted
 
 ```gql
 -- 1. Create node type with encrypted fields
-CREATE NODE TYPE Customer (
+-- Geode has no CREATE NODE TYPE / CREATE EDGE TYPE: labels are
+-- schema-free. The only typed DDL is CREATE GRAPH TYPE, whose field
+-- list is `name TYPE [PRIMARY KEY] [@annotations]` in braces.
+CREATE GRAPH TYPE CustomerType AS {
   id UUID PRIMARY KEY,
   name STRING,
-  email STRING
-    @encrypted(alg:"AES-256-GCM")
-    @searchable(index:"blind-hmac-sha256")
-    @classify(tags:["PII"]),
-  ssn STRING
-    @encrypted(alg:"AES-256-GCM")
-    @classify(tags:["PII", "Restricted"])
-    @visible(to_roles:["compliance_officer"]),
+  email STRING,
+  ssn STRING,
   credit_score INT
-);
+};
 
 -- 2. Insert data (encryption happens automatically)
 CREATE (:Customer {
@@ -199,25 +196,17 @@ Sensitivity classification tags:
 ### Use Case 1: Healthcare - Patient Records
 
 ```gql
-CREATE NODE TYPE Patient (
+-- Geode has no CREATE NODE TYPE / CREATE EDGE TYPE: labels are
+-- schema-free. The only typed DDL is CREATE GRAPH TYPE, whose field
+-- list is `name TYPE [PRIMARY KEY] [@annotations]` in braces.
+CREATE GRAPH TYPE PatientType AS {
   patient_id UUID PRIMARY KEY,
   name STRING,
-  date_of_birth DATE
-    @encrypted(alg:"AES-256-GCM")
-    @classify(tags:["PHI", "Sensitive"]),
-  ssn STRING
-    @encrypted(alg:"AES-256-GCM")
-    @classify(tags:["PHI", "Restricted"])
-    @visible(to_roles:["physician", "compliance"]),
-  medical_record_number STRING
-    @encrypted(alg:"AES-256-GCM")
-    @searchable(index:"blind-hmac-sha256")
-    @classify(tags:["PHI"]),
+  date_of_birth DATE,
+  ssn STRING,
+  medical_record_number STRING,
   diagnosis STRING
-    @encrypted(alg:"AES-256-GCM")
-    @classify(tags:["PHI"])
-    @visible(to_roles:["physician", "nurse"])
-);
+};
 ```
 
 **Access control**:
@@ -229,44 +218,32 @@ CREATE NODE TYPE Patient (
 ### Use Case 2: Finance - Customer Data
 
 ```gql
-CREATE NODE TYPE Account (
+-- Geode has no CREATE NODE TYPE / CREATE EDGE TYPE: labels are
+-- schema-free. The only typed DDL is CREATE GRAPH TYPE, whose field
+-- list is `name TYPE [PRIMARY KEY] [@annotations]` in braces.
+CREATE GRAPH TYPE AccountType AS {
   account_id UUID PRIMARY KEY,
   customer_name STRING,
-  account_number STRING
-    @encrypted(alg:"AES-256-GCM")
-    @searchable(index:"blind-hmac-sha256")
-    @classify(tags:["PII", "PCI"]),
-  routing_number STRING
-    @encrypted(alg:"AES-256-GCM")
-    @classify(tags:["PCI"]),
+  account_number STRING,
+  routing_number STRING,
   balance DECIMAL,
   credit_card_number STRING
-    @encrypted(alg:"AES-256-GCM")
-    @classify(tags:["PCI-DSS", "Restricted"])
-    @visible(to_roles:["fraud_analyst", "compliance"])
-);
+};
 ```
 
 ### Use Case 3: E-commerce - User Profiles
 
 ```gql
-CREATE NODE TYPE User (
+-- Geode has no CREATE NODE TYPE / CREATE EDGE TYPE: labels are
+-- schema-free. The only typed DDL is CREATE GRAPH TYPE, whose field
+-- list is `name TYPE [PRIMARY KEY] [@annotations]` in braces.
+CREATE GRAPH TYPE UserType AS {
   user_id UUID PRIMARY KEY,
-  username STRING
-    @searchable(index:"blind-hmac-sha256"),
-  email STRING
-    @encrypted(alg:"AES-256-GCM")
-    @searchable(index:"blind-hmac-sha256")
-    @classify(tags:["PII"]),
-  phone STRING
-    @encrypted(alg:"AES-256-GCM")
-    @classify(tags:["PII"])
-    @visible(to_roles:["customer_service", "admin"]),
+  username STRING,
+  email STRING,
+  phone STRING,
   shipping_address STRING
-    @encrypted(alg:"AES-256-GCM")
-    @classify(tags:["PII"]),
-  preferences OBJECT  -- Not encrypted
-);
+};
 ```
 
 ## Query Operations
@@ -406,10 +383,10 @@ geode show rotation-status --tenant default
 
 ```gql
 -- 1. Alter schema to add encryption
-ALTER NODE TYPE Customer ALTER PROPERTY ssn
-  SET @encrypted(alg:"AES-256-GCM")
-  SET @classify(tags:["PII", "Restricted"])
-  SET @visible(to_roles:["compliance_officer"]);
+-- Geode has no ALTER LABEL / ALTER GRAPH / property DEFAULT DDL. Labels and
+-- properties are schema-free: write the new property with SET, supplying the
+-- default yourself.
+MATCH (u:User) WHERE u.verified IS NULL SET u.verified = false;
 
 -- 2. New writes are encrypted immediately
 -- 3. Existing plaintext data remains until migration
@@ -555,8 +532,10 @@ Error: SearchNotPermitted - Cannot filter on encrypted field 'ssn'
 
 ```gql
 -- Option 1: Make field searchable (if appropriate)
-ALTER NODE TYPE Customer ALTER PROPERTY ssn
-  SET @searchable(index:"blind-hmac-sha256");
+-- Geode has no ALTER LABEL / ALTER GRAPH / property DEFAULT DDL. Labels and
+-- properties are schema-free: write the new property with SET, supplying the
+-- default yourself.
+MATCH (u:User) WHERE u.verified IS NULL SET u.verified = false;
 
 -- Option 2: Grant user access
 GRANT READ_PLAINTEXT ON Customer.ssn TO ROLE analyst;

@@ -164,11 +164,12 @@ Fine-grained access control at the node and relationship level:
 
 ```gql
 -- Define security policy
-CREATE POLICY user_data_isolation ON User
-  USING (id = current_user_id());
+-- User.id must equal the caller's 'user_id' principal attribute
+CALL geode.rls.add_attribute_policy('app', 'User', 'id', 'user_id');
 
-CREATE POLICY confidential_relationships ON MANAGES
-  USING (current_user_role IN ['admin', 'manager']);
+-- Not expressible as a Geode policy predicate (only `=` against a string
+-- literal compiles); precompute the decision into a property instead:
+CALL geode.rls.add_attribute_policy('app', 'Label', 'access_tag', 'access_tag');
 
 -- Automatically enforced on all queries
 MATCH (u:User) RETURN u.name;  -- Only returns accessible users
@@ -187,11 +188,13 @@ CREATE INDEX order_date ON Order(date);
 CREATE INDEX product_category_price ON Product(category, price);
 
 -- Full-text search indexes
-CREATE FULLTEXT INDEX product_search ON Product(name, description);
+CREATE INDEX product_search ON Product(name, description) USING fulltext;
 
 -- Use full-text search
 MATCH (p:Product)
-WHERE fulltext_search(p, 'wireless headphones bluetooth')
+CALL geode.fts.search('product_search', 'wireless headphones bluetooth')
+YIELD node, score
+MATCH (p:Product) WHERE id(p) = node
 RETURN p.name, p.price;
 ```
 
@@ -219,7 +222,7 @@ ORDER BY e.start;
 MATCH (sale:Sale)
 WHERE sale.timestamp >= DATE '2024-01-01'
 RETURN
-  date_trunc('month', sale.timestamp) AS month,
+  $bucket_start /* no date_trunc(): bucket at write time or compare an explicit range */ AS month,
   count(*) AS sale_count,
   sum(sale.amount) AS revenue
 GROUP BY month
@@ -280,7 +283,7 @@ MATCH path = (a:Account)-[:TRANSFER*3..5]->(a)
 WHERE all(r IN relationships(path) WHERE r.amount > 10000)
   AND all(r IN relationships(path) WHERE r.timestamp >= CURRENT_DATE - DURATION 'P7D')
 RETURN path,
-  reduce(sum = 0, r IN relationships(path) | sum + r.amount) AS total_amount
+  null /* reduce() is advertised by SHOW FUNCTIONS but has no evaluator dispatch; collect() the values and fold client-side (for path weights use algo.dijkstra.stream, which yields cost) */ AS total_amount
 ORDER BY total_amount DESC;
 
 -- Velocity checks (rapid transfers)

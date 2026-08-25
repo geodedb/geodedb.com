@@ -84,10 +84,10 @@ Encrypt all data at rest with AES-256-GCM:
 
 ```yaml
 # geode.yaml
-security:
-  tde:
-    enabled: true
-    key_hex: '<32-byte-hex-key>'  # 256-bit key
+# NOTE: `security:` is not a configuration-file section — it is ignored.
+# KMS and encryption-at-rest are configured with environment variables:
+#   GEODE_KMS_URL, GEODE_KMS_ENDPOINT, GEODE_KMS_API_KEY
+#   GEODE_MASTER_KEY, GEODE_TDE_ENABLED, GEODE_ALLOW_LOCAL_KMS
 ```
 
 **Features**:
@@ -106,13 +106,13 @@ Encrypt specific sensitive fields:
 -- Create field with encryption
 CREATE (:Person {
   name: 'Alice',
-  ssn: encrypt('123-45-6789', 'ssn-key'),
+  ssn: '123-45-6789' /* field-level encryption is configured with CALL geode.fle.configurefield(...), not a scalar encrypt() */,
   email: 'alice@example.com'
 });
 
 -- Query encrypted field (searchable)
 MATCH (p:Person)
-WHERE decrypt(p.ssn, 'ssn-key') = '123-45-6789'
+WHERE p.ssn /* field-level encryption is configured with CALL geode.fle.configurefield(...), not a scalar decrypt() */ = '123-45-6789'
 RETURN p.name;
 ```
 
@@ -157,13 +157,10 @@ geode shell --username geode --password secret
 **Multi-Factor Authentication (MFA)**:
 
 ```yaml
-security:
-  mfa:
-    enabled: true
-    totp:
-      issuer: "Geode"
-      digits: 6
-      period: 30
+# NOTE: `security:` is not a configuration-file section — it is ignored.
+# KMS and encryption-at-rest are configured with environment variables:
+#   GEODE_KMS_URL, GEODE_KMS_ENDPOINT, GEODE_KMS_API_KEY
+#   GEODE_MASTER_KEY, GEODE_TDE_ENABLED, GEODE_ALLOW_LOCAL_KMS
 ```
 
 **API Keys**:
@@ -188,13 +185,10 @@ These remain roadmap items, not currently implemented server features. See [Auth
 Secure password storage with Argon2id:
 
 ```yaml
-security:
-  password_hashing:
-    algorithm: "argon2id"
-    argon2:
-      memory: 65536      # 64 MB
-      iterations: 3
-      parallelism: 4
+# NOTE: `security:` is not a configuration-file section — it is ignored.
+# KMS and encryption-at-rest are configured with environment variables:
+#   GEODE_KMS_URL, GEODE_KMS_ENDPOINT, GEODE_KMS_API_KEY
+#   GEODE_MASTER_KEY, GEODE_TDE_ENABLED, GEODE_ALLOW_LOCAL_KMS
 ```
 
 **Supported Algorithms**:
@@ -265,14 +259,10 @@ ENABLE POLICY customer_isolation;
 Centralized key management with Vault:
 
 ```yaml
-security:
-  kms:
-    provider: "vault"
-    vault:
-      address: "https://vault.example.com:8200"
-      token: "${VAULT_TOKEN}"
-      mount_path: "secret/geode"
-      key_path: "tde-master-key"
+# NOTE: `security:` is not a configuration-file section — it is ignored.
+# KMS and encryption-at-rest are configured with environment variables:
+#   GEODE_KMS_URL, GEODE_KMS_ENDPOINT, GEODE_KMS_API_KEY
+#   GEODE_MASTER_KEY, GEODE_TDE_ENABLED, GEODE_ALLOW_LOCAL_KMS
 ```
 
 **Features**:
@@ -290,13 +280,17 @@ Rotate encryption keys without downtime:
 
 ```bash
 # Rotate TDE key
-geode admin rotate-tde-key \
+# There is no `geode admin` subcommand. Geode's CLI is: serve, shell, query,
+# lsp, backup, restore, migrate, auth, login, logout, user, role, tenant,
+# policy, grant, revoke, completion, mcp.
   --old-key-id master-key-v1 \
   --new-key-id master-key-v2
 
 # Background re-encryption
 # Monitor progress:
-geode admin rotation-status
+# There is no `geode admin` subcommand. Geode's CLI is: serve, shell, query,
+# lsp, backup, restore, migrate, auth, login, logout, user, role, tenant,
+# policy, grant, revoke, completion, mcp.
 ```
 
 ## Session Management
@@ -304,13 +298,10 @@ geode admin rotation-status
 Secure session handling:
 
 ```yaml
-security:
-  sessions:
-    timeout: 3600              # 1 hour
-    absolute_timeout: 28800    # 8 hours
-    cookie_secure: true
-    cookie_httponly: true
-    cookie_samesite: "strict"
+# NOTE: `security:` is not a configuration-file section — it is ignored.
+# KMS and encryption-at-rest are configured with environment variables:
+#   GEODE_KMS_URL, GEODE_KMS_ENDPOINT, GEODE_KMS_API_KEY
+#   GEODE_MASTER_KEY, GEODE_TDE_ENABLED, GEODE_ALLOW_LOCAL_KMS
 ```
 
 **Features**:
@@ -329,16 +320,10 @@ security:
 Comprehensive audit trail:
 
 ```yaml
-security:
-  audit:
-    enabled: true
-    log_path: "/var/log/geode/audit.log"
-    events:
-      - authentication
-      - authorization
-      - data_access
-      - schema_changes
-      - admin_actions
+# NOTE: `security:` is not a configuration-file section — it is ignored.
+# KMS and encryption-at-rest are configured with environment variables:
+#   GEODE_KMS_URL, GEODE_KMS_ENDPOINT, GEODE_KMS_API_KEY
+#   GEODE_MASTER_KEY, GEODE_TDE_ENABLED, GEODE_ALLOW_LOCAL_KMS
 ```
 
 **Audit Events**:

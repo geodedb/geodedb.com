@@ -191,7 +191,7 @@ CREATE INDEX product_sku ON Product(sku);
 CREATE INDEX product_category_price ON Product(category, price);
 
 -- Full-text search
-CREATE FULLTEXT INDEX product_search ON Product(name, description);
+CREATE INDEX product_search ON Product(name, description) USING fulltext;
 ```
 
 ### 4. Limit Result Sets
@@ -336,16 +336,19 @@ Define security policies in the database:
 
 ```gql
 -- Tenant isolation
-CREATE POLICY tenant_isolation ON ALL
-USING (tenant_id = current_tenant());
+-- Not expressible as a Geode policy predicate (only `=` against a string
+-- literal compiles); precompute the decision into a property instead:
+CALL geode.rls.add_attribute_policy('app', 'Label', 'access_tag', 'access_tag');
 
 -- User data access
-CREATE POLICY user_data_access ON User
-USING (id = current_user_id() OR current_user_role = 'admin');
+-- Not expressible as a Geode policy predicate (only `=` against a string
+-- literal compiles); precompute the decision into a property instead:
+CALL geode.rls.add_attribute_policy('app', 'User', 'access_tag', 'access_tag');
 
 -- Confidential relationships
-CREATE POLICY salary_access ON EARNS_SALARY
-USING (current_user_role IN ['hr', 'admin']);
+-- Not expressible as a Geode policy predicate (only `=` against a string
+-- literal compiles); precompute the decision into a property instead:
+CALL geode.rls.add_attribute_policy('app', 'Label', 'access_tag', 'access_tag');
 ```
 
 ### 2. Never Trust Client Input

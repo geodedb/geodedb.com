@@ -129,7 +129,7 @@ WITH account,
      total_amount,
      timestamps,
      [i IN RANGE(1, SIZE(timestamps) - 1) |
-      DURATION.BETWEEN(timestamps[i-1], timestamps[i]).seconds] AS intervals
+      (timestamps[i] - timestamps[i-1]).seconds] AS intervals
 WHERE ANY(interval IN intervals WHERE interval < 5)
 RETURN account.id,
        transaction_count,
@@ -152,7 +152,7 @@ WITH account,
      t2,
      m1.location AS loc1,
      m2.location AS loc2,
-     DURATION.BETWEEN(t1.timestamp, t2.timestamp).minutes AS time_diff,
+     (t2.timestamp - t1.timestamp).minutes AS time_diff,
      DISTANCE(m1.coordinates, m2.coordinates) AS distance_km
 WHERE distance_km > 500
   AND distance_km / time_diff > 200  -- Speed > 200 km/h
@@ -181,11 +181,11 @@ WITH origin,
      LENGTH(path) AS hops
 WHERE ALL(amount IN amounts WHERE amount > 1000)
   AND hops >= 3
-  AND REDUCE(total = 0, amount IN amounts | total + amount) > 10000
+  AND null /* reduce() is advertised by SHOW FUNCTIONS but has no evaluator dispatch; collect() the values and fold client-side (for path weights use algo.dijkstra.stream, which yields cost) */ > 10000
 RETURN origin.id AS source_account,
        destination.id AS final_account,
        hops,
-       REDUCE(total = 0, amount IN amounts | total + amount) AS total_transferred,
+       null /* reduce() is advertised by SHOW FUNCTIONS but has no evaluator dispatch; collect() the values and fold client-side (for path weights use algo.dijkstra.stream, which yields cost) */ AS total_transferred,
        [n IN NODES(path)[1..-1] | n.id] AS intermediary_accounts,
        'LAYERING' AS pattern_type
 ORDER BY total_transferred DESC;
@@ -216,7 +216,7 @@ WITH account, flagged_device_connections, flagged_ip_connections,
 
 // Account age risk
 WITH account, flagged_device_connections, flagged_ip_connections, recent_transactions,
-     DURATION.BETWEEN(account.created_date, CURRENT_DATE).days AS account_age_days
+     (CURRENT_DATE - account.created_date).days AS account_age_days
 
 // Network size risk
 WITH account, flagged_device_connections, flagged_ip_connections,
@@ -264,7 +264,7 @@ WITH account,
                 trans.timestamp > CURRENT_TIMESTAMP - INTERVAL '90' DAY
                 AND trans.timestamp < CURRENT_TIMESTAMP - INTERVAL '7' DAY
                 | trans.amount]]) AS avg_historical_amount,
-     STDEV([t IN [(account)-[trans:TRANSACTION]->() WHERE
+     collect([t IN [(account) /* stddev/variance parse but are never computed; reduce client-side */-[trans:TRANSACTION]->() WHERE
                   trans.timestamp > CURRENT_TIMESTAMP - INTERVAL '90' DAY
                   AND trans.timestamp < CURRENT_TIMESTAMP - INTERVAL '7' DAY
                   | trans.amount]]) AS stddev_historical_amount
@@ -493,12 +493,12 @@ Detect complex money laundering schemes:
 ```gql
 -- Detect smurfing (structuring to avoid reporting thresholds)
 MATCH (a:Account)-[t:TRANSACTION]->()
-WHERE t.timestamp > datetime().minusDays(7)
+WHERE t.timestamp > datetime() - duration('P7D')
   AND t.amount BETWEEN 9000 AND 9999  // Just below $10k reporting threshold
 WITH a,
      COUNT(t) AS near_threshold_count,
      SUM(t.amount) AS total_amount,
-     COUNT(DISTINCT date.truncate('day', t.timestamp)) AS days_active
+     COUNT(DISTINCT $bucket_start /* no date_trunc(): bucket at write time or compare an explicit range */) AS days_active
 WHERE near_threshold_count >= 5
   AND total_amount > 40000
 RETURN a.account_id,
@@ -510,13 +510,13 @@ RETURN a.account_id,
 -- Fan-out / Fan-in patterns (integration phase)
 MATCH (origin:Account)-[t1:TRANSFER]->(layer1:Account)
       -[t2:TRANSFER]->(layer2:Account)
-WHERE t1.timestamp > datetime().minusDays(3)
+WHERE t1.timestamp > datetime() - duration('P3D')
   AND t2.timestamp > t1.timestamp
   AND t2.timestamp < t1.timestamp + duration('PT2H')
 WITH origin, layer2, COUNT(DISTINCT layer1) AS intermediaries
 WHERE intermediaries >= 3
 MATCH (layer2)-[t3:TRANSFER]->(destination:Account)
-WHERE t3.timestamp > datetime().minusDays(3)
+WHERE t3.timestamp > datetime() - duration('P3D')
 WITH origin, destination,
      COUNT(DISTINCT layer2) AS layering_nodes,
      SUM(t3.amount) AS final_amount
@@ -535,7 +535,7 @@ Detect fake identities and account takeovers:
 ```gql
 -- Synthetic identity detection
 MATCH (a:Account)
-WHERE a.created_date > datetime().minusDays(180)
+WHERE a.created_date > datetime() - duration('P180D')
 WITH a,
      COUNT { (a)-[:HAS_PHONE]->(:Phone) } AS phone_count,
      COUNT { (a)-[:HAS_EMAIL]->(:Email) } AS email_count,
@@ -560,18 +560,18 @@ ORDER BY synthetic_score DESC;
 
 -- Account takeover detection
 MATCH (a:Account)-[login:LOGIN]->(device:Device)
-WHERE login.timestamp > datetime().minusDays(30)
+WHERE login.timestamp > datetime() - duration('P30D')
 WITH a,
      COLLECT(DISTINCT device.fingerprint) AS recent_devices,
-     COUNT { (a)-[:LOGIN]->() WHERE login.timestamp < datetime().minusDays(30) } AS historical_logins
+     COUNT { (a)-[:LOGIN]->() WHERE login.timestamp < datetime() - duration('P30D') } AS historical_logins
 WITH a, recent_devices,
      SIZE([d IN recent_devices WHERE NOT EXISTS {
          (a)-[:LOGIN]->(:Device {fingerprint: d})
-         WHERE login.timestamp < datetime().minusDays(30)
+         WHERE login.timestamp < datetime() - duration('P30D')
      }]) AS new_device_count
 WHERE new_device_count >= 3
 MATCH (a)-[recent_login:LOGIN]->(:Device)
-WHERE recent_login.timestamp > datetime().minusDays(7)
+WHERE recent_login.timestamp > datetime() - duration('P7D')
   AND recent_login.failed_attempts > 3
 WITH a, new_device_count, COUNT(recent_login) AS failed_login_attempts
 WHERE failed_login_attempts > 10
@@ -588,7 +588,7 @@ Detect online payment fraud:
 ```gql
 -- Card testing patterns (small transactions before large purchase)
 MATCH (card:CreditCard)<-[t:TRANSACTION]-(merchant:Merchant)
-WHERE t.timestamp > datetime().minusHours(24)
+WHERE t.timestamp > datetime() - duration('PT24H')
 WITH card,
      COUNT(t) AS tx_count,
      [t IN COLLECT(t) ORDER BY t.timestamp | t.amount] AS amounts
@@ -606,12 +606,12 @@ RETURN card.card_number_last4,
 
 -- Cross-border fraud velocity
 MATCH (card:CreditCard)<-[t:TRANSACTION]-(merchant:Merchant)
-WHERE t.timestamp > datetime().minusDays(7)
+WHERE t.timestamp > datetime() - duration('P7D')
 WITH card, merchant.country AS country, COUNT(t) AS tx_in_country
 WITH card, COUNT(DISTINCT country) AS countries_used, SUM(tx_in_country) AS total_tx
 WHERE countries_used >= 5 AND total_tx >= 10
 MATCH (card)<-[recent:TRANSACTION]-(m:Merchant)
-WHERE recent.timestamp > datetime().minusHours(12)
+WHERE recent.timestamp > datetime() - duration('PT12H')
 WITH card, countries_used,
      COLLECT(DISTINCT m.country) AS recent_countries
 WHERE SIZE(recent_countries) >= 3
@@ -629,13 +629,13 @@ RETURN card.card_number_last4,
 -- Extract fraud detection features
 MATCH (a:Account)
 OPTIONAL MATCH (a)-[t:TRANSACTION]->()
-WHERE t.timestamp > datetime().minusDays(90)
+WHERE t.timestamp > datetime() - duration('P90D')
 WITH a,
      COUNT(t) AS tx_count_90d,
      AVG(t.amount) AS avg_tx_amount,
-     STDDEV(t.amount) AS stddev_tx_amount,
+     collect(t.amount) /* stddev/variance parse but are never computed; reduce client-side */ AS stddev_tx_amount,
      MAX(t.amount) AS max_tx_amount,
-     COUNT(DISTINCT date.truncate('day', t.timestamp)) AS active_days,
+     COUNT(DISTINCT $bucket_start /* no date_trunc(): bucket at write time or compare an explicit range */) AS active_days,
      COUNT(DISTINCT t.merchant_id) AS unique_merchants
 WITH a, tx_count_90d, avg_tx_amount, stddev_tx_amount, max_tx_amount, active_days, unique_merchants,
      SIZE((a)-[:USES]->(:Device)) AS device_count,
@@ -743,7 +743,7 @@ CALL {
     WITH account
     // Check 1: Account velocity
     MATCH (account)-[recent:TRANSACTION]->()
-    WHERE recent.timestamp > datetime().minusHours(1)
+    WHERE recent.timestamp > datetime() - duration('PT1H')
     WITH COUNT(recent) AS recent_count
     RETURN CASE WHEN recent_count > 10 THEN 0.3 ELSE 0.0 END AS velocity_risk
 }
@@ -758,8 +758,8 @@ CALL {
     WITH account, tx
     // Check 3: Amount anomaly
     MATCH (account)-[hist:TRANSACTION]->()
-    WHERE hist.timestamp > datetime().minusDays(30)
-    WITH AVG(hist.amount) AS avg_amount, STDDEV(hist.amount) AS stddev_amount
+    WHERE hist.timestamp > datetime() - duration('P30D')
+    WITH AVG(hist.amount) AS avg_amount, collect(hist.amount) /* stddev/variance parse but are never computed; reduce client-side */ AS stddev_amount
     WITH ABS(tx.amount - avg_amount) / NULLIF(stddev_amount, 0) AS z_score
     RETURN CASE WHEN z_score > 3 THEN 0.3 ELSE 0.0 END AS amount_risk
 }
@@ -830,7 +830,7 @@ WITH COLLECT({
 RETURN training_data;
 
 -- Track model performance metrics
-WITH [review IN fraud_reviews WHERE review.created_at > datetime().minusDays(30)] AS reviews
+WITH [review IN fraud_reviews WHERE review.created_at > datetime() - duration('P30D')] AS reviews
 WITH SIZE([r IN reviews WHERE r.predicted = 'FRAUD' AND r.actual = 'FRAUD']) AS true_positives,
      SIZE([r IN reviews WHERE r.predicted = 'FRAUD' AND r.actual = 'LEGITIMATE']) AS false_positives,
      SIZE([r IN reviews WHERE r.predicted = 'LEGITIMATE' AND r.actual = 'FRAUD']) AS false_negatives,
@@ -847,7 +847,7 @@ RETURN true_positives * 1.0 / (true_positives + false_positives) AS precision,
 ```gql
 -- Monitor for suspicious activity reports (SARs)
 MATCH (a:Account)-[t:TRANSACTION]->()
-WHERE t.timestamp > datetime().minusDays(30)
+WHERE t.timestamp > datetime() - duration('P30D')
 WITH a,
      SUM(CASE WHEN t.amount >= 10000 THEN 1 ELSE 0 END) AS large_tx_count,
      SUM(CASE WHEN t.amount BETWEEN 9000 AND 9999 THEN 1 ELSE 0 END) AS structuring_count,

@@ -81,6 +81,7 @@ SET p.email = 'anonymized@deleted.local',
 ```
 
 All deletion operations are logged in audit trails with:
+
 - Timestamp of deletion
 - User who performed the deletion
 - Data subject identifier
@@ -128,6 +129,7 @@ geode serve --audit-log-level=compliance \
 ```
 
 Audit logs capture:
+
 - What personal data was accessed
 - When it was accessed
 - Who accessed it
@@ -258,11 +260,8 @@ Implement minimum necessary access:
 
 ```gql
 -- Row-level security for minimum necessary
-CREATE POLICY minimum_necessary_physicians
-  ON Patient
-  FOR SELECT
-  TO physician
-  USING (assigned_physician = current_user());
+-- Patient.assigned_physician must equal the caller's 'username' principal attribute
+CALL geode.rls.add_attribute_policy('app', 'Patient', 'assigned_physician', 'username');
 
 CREATE POLICY minimum_necessary_researchers
   ON Patient
@@ -495,7 +494,7 @@ Geode undergoes regular third-party audits and maintains certifications:
 - **HIPAA**: Business Associate Agreement available
 - **GDPR**: Data Processing Agreement available
 
-Contact compliance@geodedb.com for certification documentation.
+Contact <compliance@geodedb.com> for certification documentation.
 
 ## Related Topics
 

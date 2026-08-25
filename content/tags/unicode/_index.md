@@ -314,8 +314,8 @@ CREATE (u:User {
 -- Query with locale
 MATCH (u:User)
 RETURN u.name,
-       FORMAT_DATE(u.created_at, u.date_format) AS formatted_date,
-       FORMAT_NUMBER(u.balance, u.number_format) AS formatted_balance;
+       toString(u.created_at) /* no format_*(); format in the client */ AS formatted_date,
+       toString(u.balance) /* no format_*(); format in the client */ AS formatted_balance;
 ```
 
 ## Full-Text Search with Multiple Languages
@@ -324,15 +324,15 @@ Create language-specific full-text indexes:
 
 ```gql
 -- English full-text index
-CREATE FULLTEXT INDEX content_en ON :Document(content_en)
+CREATE INDEX content_en ON :Document(content_en) USING fulltext
 WITH (language: 'english');
 
 -- Spanish full-text index
-CREATE FULLTEXT INDEX content_es ON :Document(content_es)
+CREATE INDEX content_es ON :Document(content_es) USING fulltext
 WITH (language: 'spanish');
 
 -- Chinese full-text index (requires CJK tokenization)
-CREATE FULLTEXT INDEX content_zh ON :Document(content_zh)
+CREATE INDEX content_zh ON :Document(content_zh) USING fulltext
 WITH (language: 'chinese');
 
 -- Multi-language search

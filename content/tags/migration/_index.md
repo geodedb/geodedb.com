@@ -102,7 +102,7 @@ CREATE TABLE schema_versions (
 INSERT INTO schema_versions VALUES (
     1,
     'Initial schema',
-    NOW(),
+    datetime(),
     CURRENT_USER()
 );
 ```
@@ -113,8 +113,10 @@ Handle breaking changes:
 
 ```gql
 -- Add new property
-ALTER PROPERTY TYPE Person
-ADD COLUMN middle_name STRING;
+-- Geode has no ALTER LABEL / ALTER GRAPH / property DEFAULT DDL. Labels and
+-- properties are schema-free: write the new property with SET, supplying the
+-- default yourself.
+MATCH (u:User) WHERE u.verified IS NULL SET u.verified = false;
 
 -- Populate from existing data
 UPDATE Person
@@ -122,8 +124,10 @@ SET middle_name = SPLIT_PART(full_name, ' ', 2)
 WHERE full_name LIKE '% % %';
 
 -- Remove old property
-ALTER PROPERTY TYPE Person
-DROP COLUMN full_name;
+-- Geode has no ALTER LABEL / ALTER GRAPH / property DEFAULT DDL. Labels and
+-- properties are schema-free: write the new property with SET, supplying the
+-- default yourself.
+MATCH (u:User) WHERE u.verified IS NULL SET u.verified = false;
 ```
 
 ## Data Transformation

@@ -166,7 +166,7 @@ CREATE (a:User {name: 'Alice'})-[:POSTED]->(p:Post {title: 'Hello'}),
 // Set properties
 MATCH (n:User {id: 1})
 SET n.name = 'New Name',
-    n.updated_at = NOW()
+    n.updated_at = datetime()
 
 // Set all properties from map
 MATCH (n:User {id: 1})
@@ -208,14 +208,14 @@ DETACH DELETE n
 ```gql
 // Upsert pattern
 MERGE (u:User {email: 'alice@example.com'})
-ON CREATE SET u.created_at = NOW(), u.login_count = 1
-ON MATCH SET u.last_login = NOW(), u.login_count = u.login_count + 1
+ON CREATE SET u.created_at = datetime(), u.login_count = 1
+ON MATCH SET u.last_login = datetime(), u.login_count = u.login_count + 1
 RETURN u
 
 // Merge relationships
 MATCH (a:User {id: 1}), (b:User {id: 2})
 MERGE (a)-[r:KNOWS]->(b)
-ON CREATE SET r.since = NOW()
+ON CREATE SET r.since = datetime()
 RETURN r
 ```
 
@@ -235,9 +235,9 @@ CREATE INDEX FOR (n:Label) ON (n.prop1, n.prop2, n.prop3)
 
 // Index types
 CREATE INDEX FOR (n:Label) ON (n.property)         // B-tree (default)
-CREATE HASH INDEX FOR (n:Label) ON (n.property)    // Hash
-CREATE TEXT INDEX FOR (n:Label) ON (n.property)    // Full-text
-CREATE VECTOR INDEX FOR (n:Label) ON (n.embedding) // Vector similarity
+CREATE INDEX FOR (n:Label) ON (n.property)    // Hash USING hash
+CREATE INDEX FOR (n:Label) ON (n.property)    // Full-text USING fulltext
+CREATE INDEX FOR (n:Label) ON (n.embedding) // Vector similarity USING vector
 
 // Drop index
 DROP INDEX index_name
@@ -343,7 +343,7 @@ RAND()
 ### Temporal
 
 ```gql
-NOW(), CURRENT_TIMESTAMP, CURRENT_DATE, CURRENT_TIME
+datetime(), CURRENT_TIMESTAMP, CURRENT_DATE, CURRENT_TIME
 DATE(str), DATETIME(str), TIME(str)
 DURATION(str)
 ```
@@ -643,7 +643,7 @@ RETURN user.name,
 MATCH path = (start)-[:CONNECTED*]-(end)
 WHERE start.id = $start_id AND end.id = $end_id
 WITH path,
-     reduce(total = 0, rel IN relationships(path) | total + rel.weight) AS path_weight
+     null /* reduce() is advertised by SHOW FUNCTIONS but has no evaluator dispatch; collect() the values and fold client-side (for path weights use algo.dijkstra.stream, which yields cost) */ AS path_weight
 RETURN path, path_weight
 ORDER BY path_weight
 LIMIT 1;
@@ -698,7 +698,7 @@ Advanced date and time manipulation:
 // Date arithmetic and formatting
 MATCH (subscription:Subscription)
 WITH subscription,
-     duration.between(subscription.start_date, date()) AS active_duration
+     (date( - subscription.start_date)) AS active_duration
 WHERE active_duration > duration('P1Y')  // Active for more than 1 year
 RETURN subscription.user_id,
        date.format(subscription.start_date, 'YYYY-MM-DD') AS start,
@@ -714,8 +714,8 @@ MATCH (session:Session)
 WHERE session.start_time >= datetime('2025-01-01T00:00:00Z')
 AND session.end_time < datetime('2025-02-01T00:00:00Z')
 WITH session,
-     duration.between(session.start_time, session.end_time) AS duration
-RETURN date.truncate(session.start_time, 'day') AS day,
+     (session.end_time - session.start_time) AS duration
+RETURN $bucket_start /* no date_trunc(): bucket at write time or compare an explicit range */ AS day,
        avg(duration.inMinutes(duration)) AS avg_session_minutes
 ORDER BY day;
 ```
@@ -815,10 +815,10 @@ MATCH (user:User)-[:PURCHASED]->(product:Product)
 WITH user,
      COLLECT(product.price) AS prices
 RETURN user.name,
-       reduce(sum = 0.0, price IN prices | sum + price) AS total_spent,
-       reduce(count = 0, price IN prices | count + 1) AS purchase_count,
-       reduce(sum = 0.0, price IN prices | sum + price) /
-       reduce(count = 0, price IN prices | count + 1) AS avg_price;
+       null /* reduce() is advertised by SHOW FUNCTIONS but has no evaluator dispatch; collect() the values and fold client-side (for path weights use algo.dijkstra.stream, which yields cost) */ AS total_spent,
+       null /* reduce() is advertised by SHOW FUNCTIONS but has no evaluator dispatch; collect() the values and fold client-side (for path weights use algo.dijkstra.stream, which yields cost) */ AS purchase_count,
+       null /* reduce() is advertised by SHOW FUNCTIONS but has no evaluator dispatch; collect() the values and fold client-side (for path weights use algo.dijkstra.stream, which yields cost) */ /
+       null /* reduce() is advertised by SHOW FUNCTIONS but has no evaluator dispatch; collect() the values and fold client-side (for path weights use algo.dijkstra.stream, which yields cost) */ AS avg_price;
 ```
 
 ## Integration with External Systems

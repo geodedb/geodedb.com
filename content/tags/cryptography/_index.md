@@ -57,6 +57,7 @@ Tag Size: 128 bits (16 bytes)
 ```
 
 **Characteristics**:
+
 - Authenticated encryption (AEAD) - provides confidentiality and integrity
 - Hardware acceleration via AES-NI on modern CPUs
 - Parallel encryption/decryption for high performance
@@ -93,6 +94,7 @@ Tag Size: 128 bits (16 bytes)
 ```
 
 **Characteristics**:
+
 - Software-optimized, fast on all platforms
 - Constant-time implementation (resistant to timing attacks)
 - Used by TLS 1.3 and WireGuard
@@ -155,6 +157,7 @@ Security Level: ~128 bits
 ```
 
 **Characteristics**:
+
 - Fast signature generation and verification
 - Deterministic signatures (no random nonce needed)
 - Small keys and signatures
@@ -551,23 +554,23 @@ Client-side encryption of specific fields:
 INSERT (:Person {
   name: 'Alice Smith',
   email: 'alice@example.com',
-  ssn: encrypt($ssn, 'pii-key', 'aes-256-gcm'),
-  salary: encrypt($salary, 'financial-key', 'aes-256-gcm')
+  ssn: $ssn /* field-level encryption is configured with CALL geode.fle.configurefield(...), not a scalar encrypt() */,
+  salary: $salary /* field-level encryption is configured with CALL geode.fle.configurefield(...), not a scalar encrypt() */
 });
 
 -- Decrypt when needed (requires key access)
 MATCH (p:Person {email: 'alice@example.com'})
-RETURN p.name, decrypt(p.ssn, 'pii-key') AS ssn;
+RETURN p.name, p.ssn /* field-level encryption is configured with CALL geode.fle.configurefield(...), not a scalar decrypt() */ AS ssn;
 ```
 
 **Encryption Modes**:
 
 ```gql
 -- Deterministic encryption (allows equality comparison)
-encrypt_deterministic($value, $key)
+$value /* field-level encryption is configured with CALL geode.fle.configurefield(...), not a scalar encrypt_deterministic() */
 
 -- Randomized encryption (maximum security)
-encrypt_random($value, $key)
+/* FLE is CALL geode.fle.configurefield(...) */ ($value, $key)
 
 -- Searchable encryption (allows pattern matching)
 encrypt_searchable($value, $key)
@@ -760,6 +763,7 @@ geode key-verify --key-source=hsm
 ### Common Issues
 
 **Slow Encryption**:
+
 ```bash
 # Check if hardware acceleration is available
 geode crypto-check
@@ -767,6 +771,7 @@ geode crypto-check
 ```
 
 **Key Access Failures**:
+
 ```bash
 # Verify HSM connectivity
 geode hsm-test --provider=pkcs11

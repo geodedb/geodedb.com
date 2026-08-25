@@ -112,10 +112,10 @@ CREATE INDEX knows_relationship ON :KNOWS
 CREATE INDEX person_city_age ON Person(city, age)
 
 -- Full-text index
-CREATE FULLTEXT INDEX person_bio ON Person(bio) USING BM25
+CREATE INDEX person_bio ON Person(bio) USING BM25
 
 -- Vector index
-CREATE VECTOR INDEX product_embedding ON Product(embedding)
+CREATE INDEX product_embedding ON Product(embedding)
   USING HNSW WITH (metric = 'cosine')
 ```
 
@@ -193,16 +193,16 @@ RETURN p, c
 **Pre-aggregate with Materialized Views**:
 
 ```gql
--- Create materialized view for expensive aggregation
-CREATE MATERIALIZED VIEW company_stats AS
-MATCH (c:Company)<-[:WORKS_AT]-(p:Person)
-RETURN c.id, c.name, COUNT(p) AS employees
-REFRESH EVERY 1 HOUR
+-- Materialized views are not reachable from GQL: the grammar has no
+-- MATERIALIZED keyword. Precompute the aggregate onto nodes instead:
+MATCH (u:User)-[:PURCHASED]->(p:Product)
+WITH p, count(*) AS purchases
+SET p.purchase_count = purchases;
 
--- Query materialized view (fast)
-MATCH (c IN company_stats)
-WHERE c.employees > 100
-RETURN c.name, c.employees
+-- Read the precomputed value back like any other property
+MATCH (p:Product)
+WHERE p.purchase_count > 100
+RETURN p.name, p.purchase_count
 ```
 
 **Optimize GROUP BY**: Let optimizer choose aggregation strategy:

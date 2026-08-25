@@ -55,10 +55,10 @@ CREATE PROPERTY TYPE Person (
     first_name STRING,
     last_name STRING,
     birthdate DATE,
-    
+
     -- Computed properties
     full_name STRING COMPUTED AS (first_name || ' ' || last_name),
-    age INTEGER COMPUTED AS (YEAR(CURRENT_DATE) - YEAR(birthdate)),
+    age INTEGER COMPUTED AS (CURRENT_DATE.year - birthdate.year),
     initials STRING COMPUTED AS (
         SUBSTRING(first_name, 1, 1) || SUBSTRING(last_name, 1, 1)
     )
@@ -73,12 +73,12 @@ Compute from relationships:
 CREATE PROPERTY TYPE User (
     id STRING,
     name STRING,
-    
+
     -- Count relationships
     friend_count INTEGER COMPUTED AS (
         SELECT COUNT(*) FROM MATCH (this)-[:FRIEND]->(:Person)
     ),
-    
+
     -- Sum values
     total_spent DECIMAL COMPUTED AS (
         SELECT SUM(amount) FROM MATCH (this)-[:PLACED]->(o:Order)
@@ -94,7 +94,7 @@ Use CASE expressions:
 CREATE PROPERTY TYPE Account (
     balance DECIMAL,
     credit_score INTEGER,
-    
+
     -- Account status
     status STRING COMPUTED AS (
         CASE
@@ -104,7 +104,7 @@ CREATE PROPERTY TYPE Account (
             ELSE 'premium'
         END
     ),
-    
+
     -- Credit tier
     credit_tier STRING COMPUTED AS (
         CASE
@@ -204,7 +204,7 @@ CREATE PROPERTY TYPE Order (
 
     -- Order age
     days_since_order INTEGER COMPUTED AS (
-        DATEDIFF(DAY, created_at, NOW())
+        (datetime( - created_at) /* Duration; no DATEDIFF(): store epoch millis to get an integer */)
     ),
 
     -- Order status
@@ -238,7 +238,7 @@ CREATE PROPERTY TYPE User (
 
     -- Age calculation
     age INTEGER COMPUTED AS (
-        DATEDIFF(YEAR, birthdate, CURRENT_DATE)
+        (CURRENT_DATE - birthdate) /* Duration; no DATEDIFF(): store epoch millis to get an integer */
     ),
     is_adult BOOLEAN COMPUTED AS (age >= 18),
     age_group STRING COMPUTED AS (
@@ -253,7 +253,7 @@ CREATE PROPERTY TYPE User (
 
     -- Account tenure
     membership_days INTEGER COMPUTED AS (
-        DATEDIFF(DAY, join_date, NOW())
+        (datetime( - join_date) /* Duration; no DATEDIFF(): store epoch millis to get an integer */)
     ),
     membership_years DECIMAL COMPUTED AS (membership_days / 365.25),
 
@@ -323,7 +323,7 @@ CREATE PROPERTY TYPE Account (
 
     -- Account age
     account_age_months INTEGER COMPUTED AS (
-        DATEDIFF(MONTH, opened_date, CURRENT_DATE)
+        (CURRENT_DATE - opened_date) /* Duration; no DATEDIFF(): store epoch millis to get an integer */
     ),
 
     -- Interest calculations
@@ -364,7 +364,7 @@ CREATE PROPERTY TYPE Patient (
 
     -- Age and demographics
     age INTEGER COMPUTED AS (
-        DATEDIFF(YEAR, date_of_birth, CURRENT_DATE)
+        (CURRENT_DATE - date_of_birth) /* Duration; no DATEDIFF(): store epoch millis to get an integer */
     ),
     age_category STRING COMPUTED AS (
         CASE
@@ -413,7 +413,7 @@ CREATE PROPERTY TYPE Patient (
         SELECT COUNT(*) FROM MATCH (this)-[:HAD_VISIT]->(v:Visit)
     ),
     last_visit_days_ago INTEGER COMPUTED AS (
-        SELECT MIN(DATEDIFF(DAY, v.date, NOW()))
+        SELECT MIN((datetime( - v.date) /* Duration; no DATEDIFF(): store epoch millis to get an integer */))
         FROM MATCH (this)-[:HAD_VISIT]->(v:Visit)
     ),
     needs_checkup BOOLEAN COMPUTED AS (
@@ -492,25 +492,25 @@ CREATE PROPERTY TYPE Sensor (
     readings_last_hour INTEGER COMPUTED AS (
         SELECT COUNT(*)
         FROM MATCH (this)-[:RECORDED]->(r:Reading)
-        WHERE r.timestamp > NOW() - INTERVAL '1 hour'
+        WHERE r.timestamp > datetime() - duration('PT1H')
     ),
 
     avg_last_hour DECIMAL COMPUTED AS (
         SELECT AVG(r.value)
         FROM MATCH (this)-[:RECORDED]->(r:Reading)
-        WHERE r.timestamp > NOW() - INTERVAL '1 hour'
+        WHERE r.timestamp > datetime() - duration('PT1H')
     ),
 
     max_last_24h DECIMAL COMPUTED AS (
         SELECT MAX(r.value)
         FROM MATCH (this)-[:RECORDED]->(r:Reading)
-        WHERE r.timestamp > NOW() - INTERVAL '24 hours'
+        WHERE r.timestamp > datetime() - duration('PT24H')
     ),
 
     min_last_24h DECIMAL COMPUTED AS (
         SELECT MIN(r.value)
         FROM MATCH (this)-[:RECORDED]->(r:Reading)
-        WHERE r.timestamp > NOW() - INTERVAL '24 hours'
+        WHERE r.timestamp > datetime() - duration('PT24H')
     ),
 
     -- Trend detection
@@ -603,15 +603,11 @@ CREATE INDEX idx_order_recent_total ON Order(is_recent, total);
 
 ```gql
 -- For expensive computations, consider materializing
-CREATE MATERIALIZED VIEW user_engagement_cache AS
-SELECT
-    u.id,
-    u.full_name,
-    u.follower_count,
-    u.engagement_score,
-    u.user_tier
-FROM User u
-WITH REFRESH SCHEDULE '0 */6 * * *';  -- Refresh every 6 hours
+-- Materialized views are not reachable from GQL: the grammar has no
+-- MATERIALIZED keyword. Precompute the aggregate onto nodes instead:
+MATCH (u:User)-[:PURCHASED]->(p:Product)
+WITH p, count(*) AS purchases
+SET p.purchase_count = purchases;  -- Refresh every 6 hours
 ```
 
 ### Optimizing Aggregation Queries
@@ -644,6 +640,7 @@ CREATE PROPERTY TYPE Team (
    - Use materialized views for complex aggregations
 
 2. **Document Complex Calculations**: Add comments explaining business logic
+
    ```gql
    -- Customer lifetime value: total purchases adjusted for returns
    -- and weighted by recency (last 90 days = 1.5x multiplier)
@@ -661,6 +658,7 @@ CREATE PROPERTY TYPE Team (
    - If result changes infrequently
 
 5. **Use Defensive Programming**: Handle NULL and edge cases
+
    ```gql
    safe_ratio DECIMAL COMPUTED AS (
        CAST(numerator AS DECIMAL) / NULLIF(denominator, 0)
@@ -679,15 +677,7 @@ CREATE PROPERTY TYPE Team (
 
 ```gql
 -- Query to identify slow computed properties
-SELECT
-    property_name,
-    avg_computation_time_ms,
-    call_count,
-    total_time_ms
-FROM system.computed_property_stats
-WHERE avg_computation_time_ms > 50
-ORDER BY total_time_ms DESC
-LIMIT 20;
+-- Geode collects no computed-property statistics.
 ```
 
 ## Common Pitfalls to Avoid

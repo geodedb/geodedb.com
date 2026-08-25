@@ -66,15 +66,22 @@ Enable CDC for specific graphs or globally:
 
 ```gql
 -- Enable CDC for entire graph
-ALTER GRAPH social SET CDC ENABLED;
+-- Geode has no ALTER LABEL / ALTER GRAPH / property DEFAULT DDL. Labels and
+-- properties are schema-free: write the new property with SET, supplying the
+-- default yourself.
+MATCH (u:User) WHERE u.verified IS NULL SET u.verified = false;
 
 -- Enable CDC for specific labels
-ALTER GRAPH social 
-SET CDC ENABLED FOR LABELS (Person, Post);
+-- Geode has no ALTER LABEL / ALTER GRAPH / property DEFAULT DDL. Labels and
+-- properties are schema-free: write the new property with SET, supplying the
+-- default yourself.
+MATCH (u:User) WHERE u.verified IS NULL SET u.verified = false;
 
 -- Enable CDC for specific operations
-ALTER GRAPH social
-SET CDC ENABLED FOR OPERATIONS (INSERT, UPDATE);
+-- Geode has no ALTER LABEL / ALTER GRAPH / property DEFAULT DDL. Labels and
+-- properties are schema-free: write the new property with SET, supplying the
+-- default yourself.
+MATCH (u:User) WHERE u.verified IS NULL SET u.verified = false;
 ```
 
 ### CDC Streams
@@ -104,7 +111,7 @@ Pull events on demand:
 ```gql
 -- Read events from stream
 SELECT * FROM CDC_STREAM('user_changes')
-WHERE timestamp > NOW() - INTERVAL '1 hour'
+WHERE timestamp > datetime() - duration('PT1H')
 ORDER BY timestamp ASC
 LIMIT 1000;
 ```
@@ -118,7 +125,7 @@ from geode_client import Client
 
 async def handle_change(event):
     print(f"Change detected: {event['operation']} on {event['entity_id']}")
-    
+
     if event['operation'] == 'INSERT':
         # Handle new entity
         await process_new_entity(event['after'])
@@ -289,7 +296,7 @@ async def sync_to_elasticsearch(event):
     """Sync changes to Elasticsearch"""
     index = 'users'
     doc_id = event['entity_id']
-    
+
     if event['operation'] == 'DELETE':
         es.delete(index=index, id=doc_id)
     else:
@@ -332,15 +339,9 @@ Maintain derived data:
 
 ```gql
 -- Trigger to update materialized view
-CREATE TRIGGER update_user_stats
-ON CDC_STREAM user_changes
-WHEN operation = 'INSERT'
-EXECUTE GQL
-  INSERT INTO stats (user_count, last_updated)
-  VALUES ((SELECT COUNT(*) FROM Person), NOW())
-  ON CONFLICT (id) DO UPDATE SET
-    user_count = EXCLUDED.user_count,
-    last_updated = EXCLUDED.last_updated;
+-- Geode has no trigger system (no CREATE TRIGGER). React to changes with
+-- a CDC subscription on the client, or write the derived value in the same
+-- transaction as the change.
 ```
 
 ## CDC Performance
@@ -356,15 +357,15 @@ async def process_batch(events):
     inserts = [e for e in events if e['operation'] == 'INSERT']
     updates = [e for e in events if e['operation'] == 'UPDATE']
     deletes = [e for e in events if e['operation'] == 'DELETE']
-    
+
     # Batch insert
     if inserts:
         await batch_insert(inserts)
-    
+
     # Batch update
     if updates:
         await batch_update(updates)
-    
+
     # Batch delete
     if deletes:
         await batch_delete(deletes)
@@ -420,14 +421,14 @@ class CheckpointManager:
     def __init__(self, stream_name):
         self.stream_name = stream_name
         self.checkpoint = self.load_checkpoint()
-    
+
     def load_checkpoint(self):
         # Load last processed event ID
         return redis.get(f"cdc:checkpoint:{self.stream_name}")
-    
+
     def save_checkpoint(self, event_id):
         redis.set(f"cdc:checkpoint:{self.stream_name}", event_id)
-    
+
     async def process_from_checkpoint(self):
         last_seen = self.checkpoint or "0"
         async with client.connection() as conn:
@@ -466,10 +467,10 @@ async def process_event_idempotent(event):
     # Check if already processed
     if await is_processed(event['event_id']):
         return
-    
+
     # Process event
     await handle_event(event)
-    
+
     # Mark as processed
     await mark_processed(event['event_id'])
 ```
@@ -485,10 +486,10 @@ async def process_with_dedup(event):
         # Check for duplicate
         if await tx.exists("SELECT 1 FROM processed WHERE event_id = $1", event['event_id']):
             return
-        
+
         # Process event
         await handle_event(event, tx)
-        
+
         # Record processing
         await tx.execute(
             "INSERT INTO processed (event_id, timestamp) VALUES ($1, $2)",
@@ -505,7 +506,7 @@ Handle failures gracefully:
 async def robust_processor(event):
     max_retries = 3
     retry_count = 0
-    
+
     while retry_count < max_retries:
         try:
             await process_event(event)
@@ -517,7 +518,7 @@ async def robust_processor(event):
             # Send to dead letter queue
             await send_to_dlq(event, str(e))
             return
-    
+
     # Max retries exceeded
     await send_to_dlq(event, "Max retries exceeded")
 ```
@@ -530,14 +531,7 @@ Monitor CDC stream health:
 
 ```gql
 -- Query CDC stream metrics
-SELECT
-    stream_name,
-    events_published,
-    events_consumed,
-    lag_events,
-    lag_seconds,
-    last_event_timestamp
-FROM SYSTEM.cdc_streams;
+-- There is no CDC stream catalog queryable from GQL.
 ```
 
 ### Consumer Lag
@@ -545,14 +539,7 @@ FROM SYSTEM.cdc_streams;
 Track consumer processing lag:
 
 ```gql
-SELECT
-    consumer_id,
-    stream_name,
-    last_processed_event,
-    lag_events,
-    throughput_events_per_sec
-FROM SYSTEM.cdc_consumers
-WHERE lag_events > 1000;
+-- There is no CDC consumer catalog queryable from GQL.
 ```
 
 ### Alerting
@@ -564,7 +551,7 @@ alerts:
   - name: CDC lag too high
     condition: lag_events > 10000
     action: notify_oncall
-    
+
   - name: CDC consumer offline
     condition: last_heartbeat < NOW() - INTERVAL '5 minutes'
     action: page_oncall

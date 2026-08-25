@@ -146,22 +146,17 @@ RLS enables fine-grained access control where users can only see data matching s
 
 ```gql
 -- Create RLS policy for multi-tenant access
-CREATE POLICY tenant_isolation ON :User
-  FOR ALL
-  TO analyst
-  USING (tenant_id = current_user_property('tenant_id'));
+-- User.tenant_id must equal the caller's 'tenant_id' principal attribute
+CALL geode.rls.add_attribute_policy('app', 'User', 'tenant_id', 'tenant_id');
 
 -- Create RLS policy for regional data access
-CREATE POLICY regional_access ON :Customer
-  FOR SELECT
-  TO regional_manager
-  USING (region IN current_user_property('authorized_regions'));
+-- Not expressible as a Geode policy predicate (only `=` against a string
+-- literal compiles); precompute the decision into a property instead:
+CALL geode.rls.add_attribute_policy('app', 'Customer', 'access_tag', 'access_tag');
 
 -- Department-based access
-CREATE POLICY department_data ON :Employee
-  FOR ALL
-  TO manager
-  USING (department = current_user_property('department'));
+-- Employee.department must equal the caller's 'department' principal attribute
+CALL geode.rls.add_attribute_policy('app', 'Employee', 'department', 'department');
 ```
 
 **RLS Use Cases**:
@@ -257,15 +252,14 @@ GRANT INSERT ON :Event TO analyst;
 
 ```gql
 -- View authentication logs
-SELECT * FROM system.auth_log
-WHERE event_type IN ('login_success', 'login_failure')
-  AND timestamp > current_timestamp() - INTERVAL '24 hours';
+-- Yields event_id, timestamp, category, action, outcome.
+CALL audit.get_recent_events(100);
 
 -- Alert on suspicious activity
 CREATE ALERT failed_login_attempts
-  WHEN (SELECT count(*) FROM system.auth_log
+  WHEN (CALL audit.get_recent_events(100)
         WHERE event_type = 'login_failure'
-          AND timestamp > current_timestamp() - INTERVAL '5 minutes'
+          AND timestamp > current_timestamp() - duration('PT5M')
           AND username = $username
        ) > 5
   ACTION notify_security_team;
@@ -345,11 +339,8 @@ for batch in data_batches:
 **Login Failures**: Check authentication logs:
 
 ```gql
-SELECT timestamp, username, client_ip, failure_reason
-FROM system.auth_log
-WHERE event_type = 'login_failure'
-ORDER BY timestamp DESC
-LIMIT 50;
+-- Yields event_id, timestamp, category, action, outcome.
+CALL audit.get_recent_events(100);
 ```
 
 **Permission Denied Errors**: Verify user privileges:
@@ -366,10 +357,7 @@ SHOW ROLE HIERARCHY FOR USER alice;
 
 ```gql
 -- List active tokens
-SELECT token_id, username, expires_at
-FROM system.tokens
-WHERE expires_at > current_timestamp()
-ORDER BY expires_at;
+CALL geode.auth.apikey_list();
 ```
 
 **TLS Certificate Issues**: Validate certificate chain:
@@ -646,28 +634,14 @@ Track all authentication events:
 
 ```gql
 -- View recent authentication attempts
-SELECT
-  timestamp,
-  username,
-  client_ip,
-  user_agent,
-  auth_method,
-  success,
-  failure_reason
-FROM system.auth_audit
-WHERE timestamp > current_timestamp() - INTERVAL '24 hours'
-ORDER BY timestamp DESC;
+-- Yields event_id, timestamp, category, action, outcome.
+CALL audit.get_recent_events(100);
 
 -- Alert on suspicious patterns
 CREATE ALERT brute_force_detection
 WHEN (
-  SELECT COUNT(*) as failed_attempts
-  FROM system.auth_audit
-  WHERE success = false
-    AND username = $username
-    AND timestamp > current_timestamp() - INTERVAL '5 minutes'
-) > 5
-ACTION notify_security_team($username, $client_ip);
+  -- Yields event_id, timestamp, category, action, outcome.
+  CALL audit.get_recent_events(100);
 ```
 
 Export audit logs for SIEM integration:
@@ -683,7 +657,7 @@ async def export_audit_logs_to_splunk():
     async with client.connection() as client:
         # Fetch recent audit events
         result, _ = await client.query("""
-            SELECT * FROM system.auth_audit
+            CALL audit.get_recent_events(100)
             WHERE timestamp > current_timestamp() - INTERVAL '1 hour'
         """)
 

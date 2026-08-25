@@ -56,6 +56,7 @@ RETURN friend.name, friend.age
 ```
 
 **Patterns** describe graph structure using ASCII art notation:
+
 - `()` - A node
 - `(n)` - A node bound to variable `n`
 - `(n:Label)` - A node with label `Label`
@@ -493,12 +494,13 @@ MATCH (p:Product)
 RETURN p.category,
        p.name,
        p.price,
-       RANK() OVER (PARTITION BY p.category ORDER BY p.price DESC) AS price_rank,
-       AVG(p.price) OVER (PARTITION BY p.category) AS category_avg_price
+       null /* Geode has no window functions and no OVER clause */ AS price_rank,
+       AVG(p.price) AS category_avg_price
 ORDER BY p.category, price_rank
 ```
 
 **Supported Window Functions**:
+
 - `ROW_NUMBER()`: Sequential number for each row
 - `RANK()`: Rank with gaps for ties
 - `DENSE_RANK()`: Rank without gaps
@@ -557,6 +559,7 @@ ORDER BY reporting_levels, subordinate.name
 ```
 
 **Depth Control**:
+
 ```gql
 -- Limit recursion depth
 MATCH (start:Node {id: 1})-[*1..5]->(reachable)
@@ -599,10 +602,11 @@ MATCH (u:User {id: $user_id})-[follows:FOLLOWS]->(friend:User)
 RETURN u.name,
        [f IN COLLECT(friend) WHERE f.active = true | f.name] AS active_friends,
        [f IN COLLECT(follows) | f.since] AS friendship_dates,
-       REDUCE(total = 0, f IN COLLECT(friend) | total + f.follower_count) AS total_network_reach
+       null /* reduce() is advertised by SHOW FUNCTIONS but has no evaluator dispatch; collect() the values and fold client-side (for path weights use algo.dijkstra.stream, which yields cost) */ AS total_network_reach
 ```
 
 **List Functions**:
+
 - `COLLECT(expr)`: Aggregate to list
 - `HEAD(list)`: First element
 - `TAIL(list)`: All but first
@@ -664,13 +668,11 @@ Control join strategy:
 ```gql
 -- Force hash join
 MATCH (a:User)-[:FRIEND]-(b:User)
-OPTION (join=hash)
 WHERE a.city = 'NYC' AND b.city = 'SF'
 RETURN a.name, b.name
 
 -- Force nested loop
 MATCH (a:User)-[:FRIEND]-(b:User)
-OPTION (join=nested_loop)
 WHERE a.id = $user_id
 RETURN b.name
 ```
@@ -678,6 +680,7 @@ RETURN b.name
 ### Query Rewriting
 
 **Before optimization**:
+
 ```gql
 -- Inefficient: Cartesian product
 MATCH (u:User), (p:Product)
@@ -686,6 +689,7 @@ RETURN u.name, p.name
 ```
 
 **After optimization**:
+
 ```gql
 -- Efficient: Explicit relationship or property join
 MATCH (u:User)
@@ -720,7 +724,7 @@ MATCH (u:User)
 WHERE toLower(u.name) CONTAINS 'alice'
 RETURN u.name,
        toUpper(u.email) AS email_upper,
-       substring(u.email, 0, indexOf(u.email, '@')) AS email_prefix,
+       substring(u.email, 0, null /* no indexOf(); use u.email CONTAINS '@' as a predicate */) AS email_prefix,
        replace(u.phone, '-', '') AS phone_clean,
        trim(u.address) AS address_trimmed,
        left(u.postal_code, 5) AS zip5,
@@ -752,9 +756,9 @@ WHERE event.date >= date('2026-01-01')
 RETURN event.name,
        event.date,
        duration_between(event.start_time, event.end_time) AS event_duration,
-       date_add(event.date, duration('P7D')) AS week_later,
-       extract(month FROM event.date) AS event_month,
-       extract(year FROM event.date) AS event_year,
+       (event.date + duration('P1D')) /* no date_add(); add a duration */) AS week_later,
+       event.date.month AS event_month,
+       event.date.year AS event_year,
        format_temporal(event.date, 'YYYY-MM-DD') AS formatted_date
 ```
 
@@ -769,10 +773,10 @@ RETURN category.name,
        MAX(product.price) AS max_price,
        AVG(product.price) AS avg_price,
        SUM(product.inventory) AS total_inventory,
-       STDDEV(product.price) AS price_stddev,
-       VARIANCE(product.price) AS price_variance,
-       PERCENTILE_CONT(product.price, 0.5) AS median_price,
-       PERCENTILE_CONT(product.price, 0.95) AS p95_price
+       collect(product.price) /* stddev/variance parse but are never computed; reduce client-side */ AS price_stddev,
+       collect(product.price) /* stddev/variance parse but are never computed; reduce client-side */ AS price_variance,
+       collect(product.price) /* percentile_cont/_disc parse but are never computed; sort client-side */ AS median_price,
+       collect(product.price) /* percentile_cont/_disc parse but are never computed; sort client-side */ AS p95_price
 ```
 
 ### Graph Functions
@@ -867,6 +871,7 @@ SET u.last_login = update.timestamp
 ### Pagination Strategies
 
 **Offset-based pagination** (simple but slower for large offsets):
+
 ```gql
 MATCH (p:Product)
 RETURN p
@@ -876,6 +881,7 @@ LIMIT $page_size
 ```
 
 **Cursor-based pagination** (efficient for large datasets):
+
 ```gql
 -- First page
 MATCH (p:Product)
@@ -915,6 +921,7 @@ RETURN u.name, u.cached_follower_count
 ### Parameterized Queries
 
 **Never concatenate user input**:
+
 ```python
 # WRONG - SQL injection vulnerable
 user_input = request.args.get('email')

@@ -114,7 +114,7 @@ CREATE (loc:Location {
 
 -- Distance calculation
 MATCH (a:Location), (b:Location)
-RETURN a.name, b.name, distanceKm(a.coords, b.coords) AS distance_km
+RETURN a.name, b.name, st_distance(a.coords, b.coords) AS distance_km
 ORDER BY distance_km
 ```
 
@@ -306,8 +306,8 @@ CREATE INDEX location_coords_idx ON Location(coordinates) USING spatial;
 
 -- Find locations within 10km
 MATCH (loc:Location)
-WHERE distanceKm(loc.coordinates, LatLon('40.7128,-74.0060')) < 10
-RETURN loc.name, distanceKm(loc.coordinates, LatLon('40.7128,-74.0060')) AS distance
+WHERE st_distance(loc.coordinates, LatLon('40.7128,-74.0060')) < 10
+RETURN loc.name, st_distance(loc.coordinates, LatLon('40.7128,-74.0060')) AS distance
 ORDER BY distance
 ```
 

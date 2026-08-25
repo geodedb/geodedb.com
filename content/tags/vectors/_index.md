@@ -316,7 +316,7 @@ For large-scale vector search, use ANN indexes:
 
 ```gql
 -- Create HNSW index for fast similarity search
-CREATE VECTOR INDEX product_embedding_idx
+CREATE INDEX product_embedding_idx
 ON Product(embedding)
 USING HNSW
 WITH (metric = 'cosine')

@@ -260,25 +260,16 @@ sync_interval_ms = 100  # Periodic sync
 
 ```gql
 -- WAL statistics
-SELECT
-    current_wal_lsn,
-    last_checkpoint_lsn,
-    wal_size_mb,
-    wal_write_rate_mb_per_sec,
-    checkpoint_in_progress
-FROM system.wal_stats;
+-- Yields node_count, edge_count, label_count, format_version, page_size,
+-- wal_lsn, last_checkpoint_lsn, free_pages_* , *_consistent,
+-- label_index_entries and total_errors for the graph.
+CALL geode.storage.stats();
 
 -- WAL file status
-SELECT
-    segment_name,
-    size_mb,
-    start_lsn,
-    end_lsn,
-    archived,
-    archived_at
-FROM system.wal_segments
-ORDER BY start_lsn DESC
-LIMIT 10;
+-- Yields node_count, edge_count, label_count, format_version, page_size,
+-- wal_lsn, last_checkpoint_lsn, free_pages_* , *_consistent,
+-- label_index_entries and total_errors for the graph.
+CALL geode.storage.stats();
 ```
 
 ## Buffer Pool Management
@@ -337,25 +328,16 @@ Geode uses LRU-K for intelligent page eviction:
 
 ```gql
 -- Buffer pool statistics
-SELECT
-    total_pages,
-    used_pages,
-    dirty_pages,
-    hit_ratio,
-    evictions_per_sec,
-    reads_per_sec,
-    writes_per_sec
-FROM system.buffer_pool_stats;
+-- Yields node_count, edge_count, label_count, format_version, page_size,
+-- wal_lsn, last_checkpoint_lsn, free_pages_* , *_consistent,
+-- label_index_entries and total_errors for the graph.
+CALL geode.storage.stats();
 
 -- Per-table buffer usage
-SELECT
-    table_name,
-    cached_pages,
-    cached_mb,
-    hit_ratio
-FROM system.buffer_pool_by_table
-ORDER BY cached_mb DESC
-LIMIT 10;
+-- Yields node_count, edge_count, label_count, format_version, page_size,
+-- wal_lsn, last_checkpoint_lsn, free_pages_* , *_consistent,
+-- label_index_entries and total_errors for the graph.
+CALL geode.storage.stats();
 ```
 
 ## Index Storage
@@ -459,16 +441,24 @@ throttle_mb_per_sec = 100
 
 ```bash
 # Trigger compaction
-./geode admin compact --graph social_network
+# There is no `geode admin` subcommand. Geode's CLI is: serve, shell, query,
+# lsp, backup, restore, migrate, auth, login, logout, user, role, tenant,
+# policy, grant, revoke, completion, mcp.
 
 # Analyze statistics
-./geode admin analyze --graph social_network
+# There is no `geode admin` subcommand. Geode's CLI is: serve, shell, query,
+# lsp, backup, restore, migrate, auth, login, logout, user, role, tenant,
+# policy, grant, revoke, completion, mcp.
 
 # Vacuum dead tuples
-./geode admin vacuum --graph social_network
+# There is no `geode admin` subcommand. Geode's CLI is: serve, shell, query,
+# lsp, backup, restore, migrate, auth, login, logout, user, role, tenant,
+# policy, grant, revoke, completion, mcp.
 
 # Rebuild indexes
-./geode admin reindex --index user_email_idx
+# There is no `geode admin` subcommand. Geode's CLI is: serve, shell, query,
+# lsp, backup, restore, migrate, auth, login, logout, user, role, tenant,
+# policy, grant, revoke, completion, mcp.
 ```
 
 **Via GQL**:
@@ -486,14 +476,10 @@ DROP INDEX user_email_idx;
 CREATE INDEX user_email_idx ON User(email);
 
 -- Check fragmentation
-SELECT
-    table_name,
-    live_tuples,
-    dead_tuples,
-    dead_tuple_ratio,
-    last_vacuum,
-    last_analyze
-FROM system.table_stats;
+-- Yields node_count, edge_count, label_count, format_version, page_size,
+-- wal_lsn, last_checkpoint_lsn, free_pages_* , *_consistent,
+-- label_index_entries and total_errors for the graph.
+CALL geode.storage.stats();
 ```
 
 ### Checkpointing
@@ -517,15 +503,10 @@ log_checkpoints = true
 
 ```gql
 -- Checkpoint status
-SELECT
-    checkpoint_start_time,
-    checkpoint_end_time,
-    duration_seconds,
-    pages_written,
-    wal_segments_removed
-FROM system.checkpoint_log
-ORDER BY checkpoint_start_time DESC
-LIMIT 5;
+-- Yields node_count, edge_count, label_count, format_version, page_size,
+-- wal_lsn, last_checkpoint_lsn, free_pages_* , *_consistent,
+-- label_index_entries and total_errors for the graph.
+CALL geode.storage.stats();
 
 -- Force checkpoint
 CHECKPOINT;
@@ -537,7 +518,7 @@ CHECKPOINT;
 
 ```bash
 # Prometheus metrics
-curl http://localhost:3141/metrics | grep -E "geode_storage|geode_buffer|geode_wal"
+curl http://localhost:9090/metrics | grep -E "geode_storage|geode_buffer|geode_wal"
 
 # Example metrics
 geode_storage_data_size_bytes 13421772800
@@ -555,34 +536,22 @@ geode_checkpoint_duration_seconds_sum 45.7
 
 ```gql
 -- Overall storage statistics
-SELECT
-    data_size_gb,
-    index_size_gb,
-    wal_size_gb,
-    free_space_gb,
-    total_size_gb,
-    fragmentation_percent
-FROM system.storage_overview;
+-- Yields node_count, edge_count, label_count, format_version, page_size,
+-- wal_lsn, last_checkpoint_lsn, free_pages_* , *_consistent,
+-- label_index_entries and total_errors for the graph.
+CALL geode.storage.stats();
 
 -- Per-graph storage
-SELECT
-    graph_name,
-    node_count,
-    edge_count,
-    data_size_mb,
-    index_size_mb
-FROM system.graph_storage
-ORDER BY data_size_mb DESC;
+-- Yields node_count, edge_count, label_count, format_version, page_size,
+-- wal_lsn, last_checkpoint_lsn, free_pages_* , *_consistent,
+-- label_index_entries and total_errors for the graph.
+CALL geode.storage.stats();
 
 -- Disk I/O statistics
-SELECT
-    reads_per_sec,
-    writes_per_sec,
-    read_bytes_per_sec,
-    write_bytes_per_sec,
-    avg_read_latency_ms,
-    avg_write_latency_ms
-FROM system.disk_io_stats;
+-- Yields node_count, edge_count, label_count, format_version, page_size,
+-- wal_lsn, last_checkpoint_lsn, free_pages_* , *_consistent,
+-- label_index_entries and total_errors for the graph.
+CALL geode.storage.stats();
 ```
 
 ### Alerting Rules

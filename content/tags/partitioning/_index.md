@@ -77,16 +77,19 @@ partitioning:
 ```
 
 **Advantages**:
+
 - Uniform distribution regardless of graph structure
 - Simple and predictable
 - Easy to add/remove partitions with consistent hashing
 
 **Disadvantages**:
+
 - Ignores graph structure
 - High cross-partition communication
 - Not optimal for traversal queries
 
 **Use Cases**:
+
 - Uniform access patterns
 - Lookup-heavy workloads
 - Graphs without strong community structure
@@ -129,16 +132,19 @@ partitioning:
 ```
 
 **Advantages**:
+
 - Efficient for range queries
 - Natural for temporal or hierarchical data
 - Supports partition pruning
 
 **Disadvantages**:
+
 - Can create hotspots for skewed data
 - Requires careful boundary selection
 - May need rebalancing
 
 **Use Cases**:
+
 - Time-series graphs
 - Geographical data
 - Ordered data sets
@@ -171,21 +177,25 @@ partitioning:
 ```
 
 **How It Works**:
+
 - Each edge is assigned to exactly one partition
 - Vertices may be replicated to multiple partitions
 - High-degree vertices are strategically replicated
 
 **Advantages**:
+
 - Edges never span partitions
 - Good for graph algorithms (PageRank, community detection)
 - Balances computation and storage
 
 **Disadvantages**:
+
 - Vertex replication overhead
 - Complex synchronization for updates
 - Higher storage requirements
 
 **Use Cases**:
+
 - Graph analytics workloads
 - Algorithm-heavy processing
 - Read-dominant workloads
@@ -218,21 +228,25 @@ partitioning:
 ```
 
 **How It Works**:
+
 - Each vertex is assigned to exactly one partition
 - Edges may span partitions (cut edges)
 - Minimizes number of cut edges
 
 **Advantages**:
+
 - No vertex replication
 - Efficient for traversal queries
 - Lower storage overhead
 
 **Disadvantages**:
+
 - Cross-partition edges require communication
 - Complex algorithms (METIS, KaHIP)
 - May need periodic rebalancing
 
 **Use Cases**:
+
 - Transactional workloads
 - Path queries and traversals
 - Write-heavy workloads
@@ -268,21 +282,25 @@ partitioning:
 ```
 
 **How It Works**:
+
 - Detect communities using graph algorithms
 - Assign communities to partitions
 - Co-locate highly connected nodes
 
 **Advantages**:
+
 - Minimizes cross-partition traversals
 - Aligns with graph structure
 - Excellent for social graphs
 
 **Disadvantages**:
+
 - Computationally expensive
 - Requires periodic recomputation
 - May create imbalanced partitions
 
 **Use Cases**:
+
 - Social networks
 - Collaboration graphs
 - Citation networks
@@ -562,9 +580,10 @@ LIMIT 100;
 Monitor partition health and balance:
 
 ```yaml
-monitoring:
-  partitions:
-    enabled: true
+# NOTE: `monitoring:` is not a configuration-file section — it is ignored.
+# The Prometheus listener is opt-in and env-only:
+#   GEODE_METRICS_PORT=9090   (serves /metrics and /health)
+#   GEODE_METRICS_BIND=127.0.0.1
 
     metrics:
       # Partition size distribution

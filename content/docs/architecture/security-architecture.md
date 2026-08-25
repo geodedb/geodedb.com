@@ -203,12 +203,14 @@ Restrict data visibility at the row level:
 
 ```gql
 -- Create RLS policy
-CREATE POLICY department_isolation ON :Employee
-  FOR SELECT
-  USING (department = current_user_department());
+-- Employee.department must equal the caller's 'department' principal attribute
+CALL geode.rls.add_attribute_policy('app', 'Employee', 'department', 'department');
 
 -- Enable RLS on label
-ALTER LABEL :Employee ENABLE ROW LEVEL SECURITY;
+-- Geode has no ALTER LABEL / ALTER GRAPH / property DEFAULT DDL. Labels and
+-- properties are schema-free: write the new property with SET, supplying the
+-- default yourself.
+MATCH (u:User) WHERE u.verified IS NULL SET u.verified = false;
 ```
 
 **RLS Implementation**:
@@ -258,8 +260,10 @@ Encrypt sensitive fields:
 
 ```gql
 -- Define encrypted property
-ALTER LABEL :Person
-  ADD PROPERTY ssn STRING ENCRYPTED;
+-- Geode has no ALTER LABEL / ALTER GRAPH / property DEFAULT DDL. Labels and
+-- properties are schema-free: write the new property with SET, supplying the
+-- default yourself.
+MATCH (u:User) WHERE u.verified IS NULL SET u.verified = false;
 
 -- Query encrypted data (automatic decryption for authorized users)
 MATCH (p:Person)

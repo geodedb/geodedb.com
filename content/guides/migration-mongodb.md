@@ -24,6 +24,7 @@ This guide provides a comprehensive approach to migrating from MongoDB to Geode.
 ### When to Move from Documents to Graphs
 
 Graph databases are ideal when:
+
 - **References between documents are common**: You frequently use `$lookup` or denormalize
 - **Multi-hop queries are needed**: Finding connections through multiple documents
 - **Relationship metadata matters**: You need properties on the connections themselves
@@ -32,6 +33,7 @@ Graph databases are ideal when:
 ### When to Keep MongoDB
 
 Consider keeping MongoDB for:
+
 - Simple document storage and retrieval
 - Highly nested, self-contained documents
 - High-volume write workloads with simple reads
@@ -73,6 +75,7 @@ For each embedded structure, choose a strategy:
 ### Example: E-Commerce Application
 
 **MongoDB Schema**:
+
 ```javascript
 // users collection
 {
@@ -140,6 +143,7 @@ For each embedded structure, choose a strategy:
 ```
 
 **Geode Graph Model**:
+
 ```gql
 // User node - flatten profile, keep simple
 (:User {
@@ -200,6 +204,7 @@ For each embedded structure, choose a strategy:
 For simple, owned embedded documents:
 
 **MongoDB**:
+
 ```javascript
 {
   username: "alice",
@@ -212,6 +217,7 @@ For simple, owned embedded documents:
 ```
 
 **GQL**:
+
 ```gql
 CREATE (:User {
   username: "alice",
@@ -226,6 +232,7 @@ CREATE (:User {
 For embedded documents that could be shared or queried independently:
 
 **MongoDB**:
+
 ```javascript
 {
   name: "Order #123",
@@ -238,6 +245,7 @@ For embedded documents that could be shared or queried independently:
 ```
 
 **GQL**:
+
 ```gql
 CREATE (addr:Address {
   street: "123 Main St",
@@ -253,6 +261,7 @@ CREATE (order)-[:SHIPS_TO]->(addr)
 For connections that have metadata:
 
 **MongoDB**:
+
 ```javascript
 {
   productId: ObjectId("..."),
@@ -268,6 +277,7 @@ For connections that have metadata:
 ```
 
 **GQL**:
+
 ```gql
 // Review becomes a relationship with properties
 MATCH (user:User {id: $userId})
@@ -284,6 +294,7 @@ CREATE (user)-[:REVIEWED {
 For complex relationships involving multiple entities:
 
 **MongoDB**:
+
 ```javascript
 {
   type: "purchase",
@@ -296,6 +307,7 @@ For complex relationships involving multiple entities:
 ```
 
 **GQL**:
+
 ```gql
 // Create a Transaction node
 CREATE (tx:Transaction {
@@ -338,6 +350,7 @@ db.orders
 Collections with `type` fields may need multiple labels:
 
 **MongoDB**:
+
 ```javascript
 // notifications collection
 { type: "email", to: "alice@...", subject: "..." }
@@ -346,6 +359,7 @@ Collections with `type` fields may need multiple labels:
 ```
 
 **GQL**:
+
 ```gql
 // Option 1: Multiple labels
 (:Notification:Email {to: "alice@...", subject: "..."})
@@ -359,12 +373,14 @@ Collections with `type` fields may need multiple labels:
 ### Capped Collections / Time Series
 
 **MongoDB**:
+
 ```javascript
 // capped collection for logs
 { timestamp: ISODate("..."), level: "ERROR", message: "..." }
 ```
 
 **GQL**:
+
 ```gql
 // Create nodes with explicit lifecycle management
 CREATE (:LogEntry {
@@ -384,6 +400,7 @@ DELETE l
 ### Basic Queries
 
 **Find by ID**:
+
 ```javascript
 // MongoDB
 db.users.findOne({ _id: ObjectId("...") })
@@ -396,6 +413,7 @@ RETURN u
 ```
 
 **Find with conditions**:
+
 ```javascript
 // MongoDB
 db.users.find({
@@ -412,6 +430,7 @@ RETURN u
 ```
 
 **Find with projection**:
+
 ```javascript
 // MongoDB
 db.users.find(
@@ -430,6 +449,7 @@ RETURN u.username, u.email
 ### Array Queries
 
 **Element match**:
+
 ```javascript
 // MongoDB
 db.products.find({ tags: "electronics" })
@@ -443,6 +463,7 @@ RETURN p
 ```
 
 **Array size**:
+
 ```javascript
 // MongoDB
 db.users.find({ orders: { $size: 5 } })
@@ -462,6 +483,7 @@ RETURN u
 ```
 
 **All elements match**:
+
 ```javascript
 // MongoDB
 db.products.find({ tags: { $all: ["electronics", "sale"] } })
@@ -477,6 +499,7 @@ RETURN p
 ### Embedded Document Queries
 
 **Query nested field**:
+
 ```javascript
 // MongoDB
 db.users.find({ "profile.city": "New York" })
@@ -496,6 +519,7 @@ RETURN u
 ### Reference/Lookup Queries
 
 **Single lookup**:
+
 ```javascript
 // MongoDB
 db.orders.aggregate([
@@ -516,6 +540,7 @@ RETURN o, u
 ```
 
 **Multiple lookups**:
+
 ```javascript
 // MongoDB
 db.orders.aggregate([
@@ -554,6 +579,7 @@ LIMIT 5
 ### Updates
 
 **Update single field**:
+
 ```javascript
 // MongoDB
 db.users.updateOne(
@@ -569,6 +595,7 @@ SET u.email = "new@example.com"
 ```
 
 **Update multiple fields**:
+
 ```javascript
 // MongoDB
 db.users.updateOne(
@@ -584,6 +611,7 @@ SET u.email = "new@example.com", u.active = true
 ```
 
 **Increment**:
+
 ```javascript
 // MongoDB
 db.products.updateOne(
@@ -599,6 +627,7 @@ SET p.views = COALESCE(p.views, 0) + 1
 ```
 
 **Push to array**:
+
 ```javascript
 // MongoDB
 db.users.updateOne(
@@ -616,6 +645,7 @@ SET u.tags = COALESCE(u.tags, []) + ["premium"]
 ### Deletes
 
 **Delete one**:
+
 ```javascript
 // MongoDB
 db.users.deleteOne({ _id: ObjectId("...") })
@@ -628,6 +658,7 @@ DELETE u
 ```
 
 **Delete with relationships**:
+
 ```javascript
 // MongoDB (references need manual cleanup)
 db.users.deleteOne({ _id: ObjectId("...") })
@@ -784,7 +815,7 @@ db.products.find({ $text: { $search: "laptop computer" } })
 
 ```gql
 // GQL with fulltext index
-CREATE FULLTEXT INDEX product_search ON :Product(name, description)
+CREATE INDEX product_search ON :Product(name, description) USING fulltext
 
 // Query
 MATCH (p:Product)
@@ -797,6 +828,7 @@ RETURN p
 ### MongoDB Flexibility
 
 MongoDB's schemaless nature allows:
+
 - Different documents in same collection
 - Adding fields without migration
 - Nested structures of any depth
@@ -824,6 +856,7 @@ CREATE (c)-[:PURCHASED {date: timestamp(), giftWrap: true}]->(d)
 Both support optional validation:
 
 **MongoDB Validator**:
+
 ```javascript
 db.createCollection("users", {
   validator: {
@@ -839,6 +872,7 @@ db.createCollection("users", {
 ```
 
 **Geode Constraints**:
+
 ```gql
 CREATE CONSTRAINT user_email_exists ON :User(email) ASSERT EXISTS
 CREATE CONSTRAINT user_email_unique ON :User(email) ASSERT UNIQUE
@@ -1524,6 +1558,7 @@ CREATE (:Location {
 ## Migration Checklist
 
 ### Pre-Migration
+
 - [ ] Analyze MongoDB schema and collections
 - [ ] Identify embedded documents and references
 - [ ] Plan node labels and relationship types
@@ -1531,12 +1566,14 @@ CREATE (:Location {
 - [ ] Estimate migration time and resources
 
 ### Schema Design
+
 - [ ] Design node labels and properties
 - [ ] Design relationship types and properties
 - [ ] Decide embedding vs. extraction for each case
 - [ ] Create Geode indexes and constraints
 
 ### Data Migration
+
 - [ ] Implement ETL pipeline
 - [ ] Test with sample data
 - [ ] Run full migration
@@ -1545,6 +1582,7 @@ CREATE (:Location {
 - [ ] Verify data integrity
 
 ### Application Migration
+
 - [ ] Update data access layer
 - [ ] Translate MongoDB queries to GQL
 - [ ] Update connection configuration
@@ -1552,12 +1590,14 @@ CREATE (:Location {
 - [ ] Test all operations
 
 ### Validation
+
 - [ ] Run data validation scripts
 - [ ] Execute query equivalence tests
 - [ ] Perform load testing
 - [ ] Verify backup procedures
 
 ### Cutover
+
 - [ ] Plan maintenance window
 - [ ] Prepare rollback procedure
 - [ ] Execute final sync

@@ -65,11 +65,10 @@ cache:
   index_cache_size: "2GB"
   data_cache_size: "8GB"
 
-security:
-  tls:
-    enabled: true
-    cert: "/etc/geode/tls/cert.pem"
-    key: "/etc/geode/tls/key.pem"
+# NOTE: `security:` is not a configuration-file section — it is ignored.
+# KMS and encryption-at-rest are configured with environment variables:
+#   GEODE_KMS_URL, GEODE_KMS_ENDPOINT, GEODE_KMS_API_KEY
+#   GEODE_MASTER_KEY, GEODE_TDE_ENABLED, GEODE_ALLOW_LOCAL_KMS
 
 metrics:
   enabled: true

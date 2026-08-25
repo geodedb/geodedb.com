@@ -572,7 +572,7 @@ EXPOSE 3141
 
 # Health check
 HEALTHCHECK --interval=10s --timeout=5s --start-period=30s \
-  CMD geode admin health || exit 1
+  CMD geode query "SHOW CLUSTER STATUS"|| exit 1
 
 # Start server
 ENTRYPOINT ["/usr/local/bin/geode"]
@@ -716,29 +716,35 @@ ls -la /var/lib/geode /var/log/geode
 
 ```bash
 # Check resource usage
-geode admin resources
+geode query "CALL geode.storage.stats()"
 
 # Review slow queries
-geode admin slow-queries --min-duration 1000
+# There is no `geode admin` subcommand. Geode's CLI is: serve, shell, query,
+# lsp, backup, restore, migrate, auth, login, logout, user, role, tenant,
+# policy, grant, revoke, completion, mcp.
 
 # Analyze query plans
 geode query "EXPLAIN <query>"
 
 # Check for lock contention
-geode admin locks --show-contention
+# There is no `geode admin` subcommand. Geode's CLI is: serve, shell, query,
+# lsp, backup, restore, migrate, auth, login, logout, user, role, tenant,
+# policy, grant, revoke, completion, mcp.
 ```
 
 ### Memory Issues
 
 ```bash
 # Check memory usage
-geode admin memory --detailed
+geode query "CALL geode.storage.stats()"
 
 # Analyze heap usage
-geode admin heap-dump --output /tmp/heap.dump
+# There is no `geode admin` subcommand. Geode's CLI is: serve, shell, query,
+# lsp, backup, restore, migrate, auth, login, logout, user, role, tenant,
+# policy, grant, revoke, completion, mcp.
 
 # Review cache statistics
-geode admin cache-stats
+geode query "CALL geode.storage.stats()"
 ```
 
 ## Related Topics

@@ -121,8 +121,10 @@ logging:
   slow_query:
     enabled: false
 
-monitoring:
-  detailed_metrics: false      # Reduce metric overhead
+# NOTE: `monitoring:` is not a configuration-file section — it is ignored.
+# The Prometheus listener is opt-in and env-only:
+#   GEODE_METRICS_PORT=9090   (serves /metrics and /health)
+#   GEODE_METRICS_BIND=127.0.0.1
 ```
 
 ### System Tuning

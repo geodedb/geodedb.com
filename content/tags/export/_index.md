@@ -43,6 +43,7 @@ geode export --format jsonl --output backup.jsonl --stream --graph production
 ```
 
 **JSON Structure**:
+
 ```json
 {
   "nodes": [
@@ -160,7 +161,7 @@ Export specific subsets:
 -- Export active users only
 EXPORT TO JSON '/exports/active_users.json'
 MATCH (u:User)
-WHERE u.last_login > NOW() - INTERVAL '30 days'
+WHERE u.last_login > datetime() - duration('P30D')
   AND u.status = 'active'
 RETURN u;
 
@@ -194,21 +195,30 @@ geode export --schema --statistics --output schema_stats.json
 ```
 
 **Schema Output**:
+
 ```gql
 -- Node type definitions
-CREATE NODE TYPE Person (
-    id STRING PRIMARY KEY,
-    name STRING NOT NULL,
-    age INTEGER,
-    email STRING UNIQUE
-);
+-- Geode has no CREATE NODE TYPE / CREATE EDGE TYPE: labels are
+-- schema-free. The only typed DDL is CREATE GRAPH TYPE, whose field
+-- list is `name TYPE [PRIMARY KEY] [@annotations]` in braces.
+-- Not supported in a field definition: NOT NULL, UNIQUE — enforce with CREATE CONSTRAINT or at write time.
+CREATE GRAPH TYPE PersonType AS {
+  id STRING PRIMARY KEY,
+  name STRING,
+  age INTEGER,
+  email STRING
+};
 
-CREATE NODE TYPE Product (
-    id STRING PRIMARY KEY,
-    name STRING NOT NULL,
-    price DECIMAL,
-    category STRING
-);
+-- Geode has no CREATE NODE TYPE / CREATE EDGE TYPE: labels are
+-- schema-free. The only typed DDL is CREATE GRAPH TYPE, whose field
+-- list is `name TYPE [PRIMARY KEY] [@annotations]` in braces.
+-- Not supported in a field definition: NOT NULL — enforce with CREATE CONSTRAINT or at write time.
+CREATE GRAPH TYPE ProductType AS {
+  id STRING PRIMARY KEY,
+  name STRING,
+  price DECIMAL,
+  category STRING
+};
 
 -- Relationship type definitions
 CREATE RELATIONSHIP TYPE PURCHASED (
@@ -222,7 +232,10 @@ CREATE INDEX idx_person_name ON Person(name);
 CREATE INDEX idx_product_category ON Product(category);
 
 -- Constraints
-ALTER NODE TYPE Person ADD CONSTRAINT unique_email UNIQUE (email);
+-- Geode has no ALTER LABEL / ALTER GRAPH / property DEFAULT DDL. Labels and
+-- properties are schema-free: write the new property with SET, supplying the
+-- default yourself.
+MATCH (u:User) WHERE u.verified IS NULL SET u.verified = false;
 ```
 
 ## Streaming Export for Large Datasets
@@ -392,7 +405,7 @@ geode export \
 # Verify backup
 if [ $? -eq 0 ]; then
     echo "Backup successful: ${BACKUP_NAME}"
-    
+
     # Cleanup old backups (keep last 7 days)
     find "${BACKUP_DIR}" -name "geode_backup_*.json.gz" -mtime +7 -delete
 else
@@ -435,7 +448,7 @@ import pandas as pd
 def export_to_data_warehouse():
     """Export Geode data to data warehouse"""
     client = Client("localhost:3141")
-    
+
     # Extract from Geode
     result = client.execute("""
         MATCH (p:Person)-[r:PURCHASED]->(prod:Product)
@@ -445,13 +458,13 @@ def export_to_data_warehouse():
                r.amount AS amount,
                r.date AS purchase_date
     """)
-    
+
     # Transform to DataFrame
     df = pd.DataFrame([dict(row) for row in result])
-    
+
     # Load to warehouse
     df.to_sql('purchases', warehouse_engine, if_exists='append', index=False)
-    
+
     return len(df)
 
 with DAG(
@@ -460,7 +473,7 @@ with DAG(
     schedule_interval=timedelta(days=1),
     start_date=datetime(2026, 1, 1)
 ) as dag:
-    
+
     export_task = PythonOperator(
         task_id='export_to_warehouse',
         python_callable=export_to_data_warehouse
@@ -495,7 +508,7 @@ async def batch_export(batch_size=10000):
     async with client.connection() as conn:
         offset = 0
         batch_num = 0
-        
+
         while True:
             result, _ = await conn.query(f"""
                 MATCH (p:Person)
@@ -504,15 +517,15 @@ async def batch_export(batch_size=10000):
                 SKIP {offset}
                 LIMIT {batch_size}
             """)
-            
+
             if not result:
                 break  # No more data
-            
+
             # Write batch to file
             filename = f"export_batch_{batch_num:04d}.json"
             with open(filename, 'w') as f:
                 json.dump([dict(row) for row in result], f)
-            
+
             offset += batch_size
             batch_num += 1
             print(f"Exported batch {batch_num}: {len(result.rows)} records")

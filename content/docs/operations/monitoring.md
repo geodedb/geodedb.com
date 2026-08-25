@@ -54,14 +54,10 @@ Geode provides extensive observability capabilities:
 
 ```yaml
 # geode.yaml
-monitoring:
-  enabled: true
-  metrics:
-    enabled: true
-    endpoint: '/metrics'
-    port: 8080
-    include_go_metrics: true
-    include_process_metrics: true
+# NOTE: `monitoring:` is not a configuration-file section — it is ignored.
+# The Prometheus listener is opt-in and env-only:
+#   GEODE_METRICS_PORT=9090   (serves /metrics and /health)
+#   GEODE_METRICS_BIND=127.0.0.1
 ```
 
 ### Prometheus Configuration

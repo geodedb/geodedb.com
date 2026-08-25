@@ -346,7 +346,9 @@ WHERE email LIKE '%@example.com'  -- Use btree instead
 CREATE INDEX doc_content_idx ON Document(content) USING fulltext;
 
 -- Optimal for:
-WHERE fulltext_match(content, "graph database")
+-- full-text search is a procedure call, not a WHERE predicate
+CALL geode.fts.search('article_content', 'graph database')
+YIELD node, score
 ```
 
 ### Vector Index (Similarity Search)
@@ -375,7 +377,7 @@ WHERE 'database' IN tags
 |------------|----------|------------|-------|------------|
 | B-tree | Ranges, ordering | `>`, `<`, `=`, `ORDER BY` | Low | Fast |
 | Hash | Exact matches | `=` | Very Low | Very Fast |
-| Full-text | Text search | `fulltext_match()` | Medium | Medium |
+| Full-text | Text search | `CALL geode.fts.search(...)` | Medium | Medium |
 | Vector | Similarity | `vector_distance_*()` | High | Slow |
 | Bloom | Membership | `IN`, `ANY` | Very Low | Very Fast |
 
@@ -439,7 +441,9 @@ Update statistics for accurate cost estimation:
 
 ```gql
 -- Analyze table to collect statistics
-ANALYZE Person;
+-- Geode has no ANALYZE / VACUUM / REINDEX. Statistics are maintained by
+-- the engine, freed pages are reused automatically, and an index is
+-- rebuilt by dropping and recreating it.
 ```
 
 **Expected output**:
@@ -525,7 +529,9 @@ DROP INDEX person_age_idx;
 CREATE INDEX person_age_idx ON Person(age) USING btree;
 
 -- Or use REINDEX (if supported)
-REINDEX person_age_idx;
+-- Geode has no ANALYZE / VACUUM / REINDEX. Statistics are maintained by
+-- the engine, freed pages are reused automatically, and an index is
+-- rebuilt by dropping and recreating it.
 ```
 
 ### Index Health Check
@@ -582,7 +588,9 @@ CREATE INDEX prod_cat_price_idx ON Product(category, price) USING btree;
 CREATE INDEX prod_rating_idx ON Product(rating) USING btree;
 
 -- Update statistics
-ANALYZE Product;
+-- Geode has no ANALYZE / VACUUM / REINDEX. Statistics are maintained by
+-- the engine, freed pages are reused automatically, and an index is
+-- rebuilt by dropping and recreating it.
 ```
 
 ### Verify Optimization
@@ -713,7 +721,9 @@ WHERE user.email = 'alice@example.com'
 WHERE product.price BETWEEN 50 AND 100
 
 -- Query C
-WHERE fulltext_match(article.content, "graph database")
+CALL geode.fts.search('node_content', 'graph database')
+YIELD node, score
+MATCH (article:Node) WHERE id(article) = node
 
 -- Query D
 WHERE vector_l2(image.embedding, $query_vec) < 0.3
@@ -852,7 +862,9 @@ DROP INDEX idx_name;
 SHOW INDEXES ON Label;
 
 -- Update statistics
-ANALYZE Label;
+-- Geode has no ANALYZE / VACUUM / REINDEX. Statistics are maintained by
+-- the engine, freed pages are reused automatically, and an index is
+-- rebuilt by dropping and recreating it.
 ```
 
 ### Index Types
@@ -870,7 +882,9 @@ USING bloom      -- Membership testing
 ```gql
 EXPLAIN ...      -- Show query plan (no execution)
 PROFILE ...      -- Execute and show performance
-ANALYZE Label;   -- Update statistics
+-- Geode has no ANALYZE / VACUUM / REINDEX. Statistics are maintained by
+-- the engine, freed pages are reused automatically, and an index is
+-- rebuilt by dropping and recreating it.   -- Update statistics
 ```
 
 ---

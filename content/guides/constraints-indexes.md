@@ -405,7 +405,7 @@ B-tree indexes are the default and most versatile index type. They support:
 
 ```gql
 CREATE INDEX index_name ON :Label(property)
-CREATE BTREE INDEX index_name ON :Label(property)
+CREATE INDEX index_name ON :Label(property) USING btree
 ```
 
 **Examples**:
@@ -415,7 +415,7 @@ CREATE BTREE INDEX index_name ON :Label(property)
 CREATE INDEX user_email ON :User(email)
 
 // Explicit B-tree index
-CREATE BTREE INDEX user_age ON :User(age)
+CREATE INDEX user_age ON :User(age) USING btree
 
 // Index for ordering
 CREATE INDEX order_date ON :Order(created_at)
@@ -444,17 +444,17 @@ Hash indexes provide the fastest exact-match lookups but do not support range qu
 **Syntax**:
 
 ```gql
-CREATE HASH INDEX index_name ON :Label(property)
+CREATE INDEX index_name ON :Label(property) USING hash
 ```
 
 **Examples**:
 
 ```gql
 // Hash index for exact lookups
-CREATE HASH INDEX user_id ON :User(id)
+CREATE INDEX user_id ON :User(id) USING hash
 
 // Hash index for foreign key lookups
-CREATE HASH INDEX order_user_id ON :Order(user_id)
+CREATE INDEX order_user_id ON :Order(user_id) USING hash
 ```
 
 **When to Use Hash Indexes**:
@@ -633,7 +633,7 @@ Vector indexes enable similarity search on high-dimensional vector embeddings, e
 **Syntax**:
 
 ```gql
-CREATE VECTOR INDEX index_name ON :Label(property)
+CREATE INDEX index_name ON :Label(property) USING vector
 WITH (metric = 'cosine')  // or 'l2', 'euclidean', 'dot', 'dot_product', 'inner_product'
 ```
 
@@ -641,15 +641,15 @@ WITH (metric = 'cosine')  // or 'l2', 'euclidean', 'dot', 'dot_product', 'inner_
 
 ```gql
 // OpenAI embedding index (1536 dimensions)
-CREATE VECTOR INDEX document_embedding ON :Document(embedding)
+CREATE INDEX document_embedding ON :Document(embedding) USING vector
 WITH (metric = 'cosine')
 
 // Image feature vector (512 dimensions, euclidean distance)
-CREATE VECTOR INDEX image_features ON :Image(features)
+CREATE INDEX image_features ON :Image(features) USING vector
 WITH (metric = 'euclidean')
 
 // Sentence embedding with dot product similarity
-CREATE VECTOR INDEX sentence_embed ON :Sentence(vector)
+CREATE INDEX sentence_embed ON :Sentence(vector) USING vector
 WITH (metric = 'dot_product')
 ```
 
@@ -869,26 +869,26 @@ Full-text indexes enable efficient text search with tokenization, stemming, and 
 **Syntax**:
 
 ```gql
-CREATE FULLTEXT INDEX index_name ON :Label(property, ...)
+CREATE INDEX index_name ON :Label(property, ...)
 OPTIONS {
   analyzer: "english",      // or "standard", "simple", language codes
   min_word_length: 3
-}
+} USING fulltext
 ```
 
 **Examples**:
 
 ```gql
 // Basic full-text index
-CREATE FULLTEXT INDEX article_content ON :Article(title, content)
+CREATE INDEX article_content ON :Article(title, content) USING fulltext
 
 // Multi-property full-text index with options
-CREATE FULLTEXT INDEX product_search ON :Product(name, description, tags)
-OPTIONS { analyzer: "english", min_word_length: 2 }
+CREATE INDEX product_search ON :Product(name, description, tags)
+OPTIONS { analyzer: "english", min_word_length: 2 } USING fulltext
 
 // Multi-language support
-CREATE FULLTEXT INDEX doc_multilang ON :Document(content)
-OPTIONS { analyzer: "standard" }
+CREATE INDEX doc_multilang ON :Document(content)
+OPTIONS { analyzer: "standard" } USING fulltext
 ```
 
 ### Full-Text Search Queries

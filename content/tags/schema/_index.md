@@ -238,8 +238,8 @@ Enable text search on string properties:
 
 ```gql
 // Full-text index on product names and descriptions
-CREATE FULLTEXT INDEX product_text_idx
-ON :Product(name, description)
+CREATE INDEX product_text_idx
+ON :Product(name, description) USING fulltext
 WITH (analyzer = 'english', stopwords = ['the', 'a', 'an']);
 
 // Full-text search query
@@ -256,7 +256,7 @@ Index embeddings for similarity search:
 
 ```gql
 // HNSW vector index for product embeddings
-CREATE VECTOR INDEX product_embedding_idx
+CREATE INDEX product_embedding_idx
 ON :Product(embedding)
 USING HNSW
 WITH (metric = 'cosine');
@@ -281,17 +281,17 @@ Define valid relationship types between labels:
 // User can PURCHASE Product
 CREATE CONSTRAINT purchase_relationship
 ON ()-[r:PURCHASED]->()
-ASSERT startNode(r):User AND endNode(r):Product;
+ASSERT /* no startNode(): bind the endpoint in the pattern, e.g. MATCH (a)-[r]->(b) */ a:User AND /* no endNode(): bind the endpoint in the pattern, e.g. MATCH (a)-[r]->(b) */ b:Product;
 
 // Employee WORKS_FOR Organization
 CREATE CONSTRAINT works_for_relationship
 ON ()-[r:WORKS_FOR]->()
-ASSERT startNode(r):Employee AND endNode(r):Organization;
+ASSERT /* no startNode(): bind the endpoint in the pattern, e.g. MATCH (a)-[r]->(b) */ a:Employee AND /* no endNode(): bind the endpoint in the pattern, e.g. MATCH (a)-[r]->(b) */ b:Organization;
 
 // Product IN_CATEGORY Category
 CREATE CONSTRAINT category_relationship
 ON ()-[r:IN_CATEGORY]->()
-ASSERT startNode(r):Product AND endNode(r):Category;
+ASSERT /* no startNode(): bind the endpoint in the pattern, e.g. MATCH (a)-[r]->(b) */ a:Product AND /* no endNode(): bind the endpoint in the pattern, e.g. MATCH (a)-[r]->(b) */ b:Category;
 ```
 
 ### Relationship Property Constraints

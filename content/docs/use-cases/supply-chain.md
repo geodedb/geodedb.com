@@ -197,8 +197,8 @@ CREATE (wh)-[:STOCKS {
 MATCH (wh:Warehouse {id: 'wh_1'}), (cust:Customer {id: 'cust_1'}),
       path = shortestPath((wh)-[:ROUTE*]->(cust))
 RETURN [n IN nodes(path) | n.name] AS route,
-       reduce(dist = 0, r IN relationships(path) | dist + r.distance_km) AS total_distance,
-       reduce(time = 0, r IN relationships(path) | time + r.time_hours) AS total_time;
+       null /* reduce() is advertised by SHOW FUNCTIONS but has no evaluator dispatch; collect() the values and fold client-side (for path weights use algo.dijkstra.stream, which yields cost) */ AS total_distance,
+       null /* reduce() is advertised by SHOW FUNCTIONS but has no evaluator dispatch; collect() the values and fold client-side (for path weights use algo.dijkstra.stream, which yields cost) */ AS total_time;
 ```
 
 #### Cheapest Path (Cost)
@@ -229,9 +229,9 @@ node ids.
 MATCH (wh:Warehouse {id: 'wh_1'}), (cust:Customer {id: 'cust_1'}),
       path = (wh)-[:ROUTE*1..5]->(cust)
 WITH path,
-     reduce(dist = 0, r IN relationships(path) | dist + r.distance_km) AS distance,
-     reduce(cost = 0, r IN relationships(path) | cost + r.cost_per_unit) AS cost,
-     reduce(time = 0, r IN relationships(path) | time + r.time_hours) AS time
+     null /* reduce() is advertised by SHOW FUNCTIONS but has no evaluator dispatch; collect() the values and fold client-side (for path weights use algo.dijkstra.stream, which yields cost) */ AS distance,
+     null /* reduce() is advertised by SHOW FUNCTIONS but has no evaluator dispatch; collect() the values and fold client-side (for path weights use algo.dijkstra.stream, which yields cost) */ AS cost,
+     null /* reduce() is advertised by SHOW FUNCTIONS but has no evaluator dispatch; collect() the values and fold client-side (for path weights use algo.dijkstra.stream, which yields cost) */ AS time
 WHERE time <= 24  -- Delivery within 24 hours
 RETURN [n IN nodes(path) | n.name] AS route,
        distance,
@@ -358,7 +358,7 @@ MATCH (ship:Shipment {id: 'ship_1'})-[:CURRENT_LOCATION]->(current:Warehouse)
 MATCH (destination:Customer {id: 'cust_1'}),
       path = shortestPath((current)-[:ROUTE*]->(destination))
 WITH ship, path,
-     reduce(time = 0, r IN relationships(path) | time + r.time_hours) AS remaining_hours
+     null /* reduce() is advertised by SHOW FUNCTIONS but has no evaluator dispatch; collect() the values and fold client-side (for path weights use algo.dijkstra.stream, which yields cost) */ AS remaining_hours
 RETURN ship.id,
        ship.estimated_delivery AS original_eta,
        timestamp() + (remaining_hours * 60 * 60 * 1000) AS updated_eta,
@@ -375,8 +375,8 @@ MATCH ()-[route:ROUTE]->()
 WITH route, route.capacity AS capacity,
      route.current_load AS load
 WHERE load > capacity * 0.8
-RETURN startNode(route).name AS from_location,
-       endNode(route).name AS to_location,
+RETURN /* no startNode(): bind the endpoint in the pattern, e.g. MATCH (a)-[route]->(b) */ a.name AS from_location,
+       /* no endNode(): bind the endpoint in the pattern, e.g. MATCH (a)-[route]->(b) */ b.name AS to_location,
        load,
        capacity,
        (load * 1.0 / capacity) AS utilization
@@ -441,9 +441,9 @@ CREATE (origin)-[:ROUTE {
 MATCH (origin:Warehouse {id: 'wh_1'}), (dest:Warehouse {id: 'wh_3'}),
       path = (origin)-[:ROUTE*]->(dest)
 WITH path,
-     reduce(cost = 0, r IN relationships(path) | cost + r.cost_per_unit) AS total_cost,
-     reduce(time = 0, r IN relationships(path) | time + r.time_hours) AS total_time,
-     reduce(carbon = 0, r IN relationships(path) | carbon + r.carbon_kg) AS total_carbon
+     null /* reduce() is advertised by SHOW FUNCTIONS but has no evaluator dispatch; collect() the values and fold client-side (for path weights use algo.dijkstra.stream, which yields cost) */ AS total_cost,
+     null /* reduce() is advertised by SHOW FUNCTIONS but has no evaluator dispatch; collect() the values and fold client-side (for path weights use algo.dijkstra.stream, which yields cost) */ AS total_time,
+     null /* reduce() is advertised by SHOW FUNCTIONS but has no evaluator dispatch; collect() the values and fold client-side (for path weights use algo.dijkstra.stream, which yields cost) */ AS total_carbon
 RETURN [r IN relationships(path) | r.mode] AS transport_modes,
        total_cost,
        total_time,
@@ -537,8 +537,8 @@ MATCH (origin:Warehouse {id: 'wh_1'}), (dest:Customer {id: 'cust_1'}),
       path = (origin)-[:ROUTE*]->(dest)
 WHERE ALL(r IN relationships(path) WHERE r.available = true)
 WITH path,
-     reduce(dist = 0, r IN relationships(path) | dist + r.distance_km) AS distance,
-     reduce(cost = 0, r IN relationships(path) | cost + r.cost_per_unit) AS cost
+     null /* reduce() is advertised by SHOW FUNCTIONS but has no evaluator dispatch; collect() the values and fold client-side (for path weights use algo.dijkstra.stream, which yields cost) */ AS distance,
+     null /* reduce() is advertised by SHOW FUNCTIONS but has no evaluator dispatch; collect() the values and fold client-side (for path weights use algo.dijkstra.stream, which yields cost) */ AS cost
 RETURN [n IN nodes(path) | n.name] AS alternative_route,
        distance,
        cost
@@ -557,7 +557,7 @@ CREATE INDEX customer_location_idx ON Customer(location) USING spatial;
 
 -- Find nearby warehouses
 MATCH (wh:Warehouse)
-WHERE point.distance(wh.location, point({latitude: 47.6062, longitude: -122.3321})) < 50000  -- 50km
+WHERE st_distance(wh.location, point({latitude: 47.6062, longitude: -122.3321})) < 50000  -- 50km
 RETURN wh.name, wh.location;
 ```
 
@@ -596,8 +596,8 @@ async def get_shortest_path(conn, origin_id, dest_id):
 -- Pre-compute common routes
 MATCH (wh:Warehouse)-[r:ROUTE*1..3]->(cust:Customer)
 WITH wh, cust,
-     reduce(dist = 0, rel IN r | dist + rel.distance_km) AS total_distance,
-     reduce(cost = 0, rel IN r | cost + rel.cost_per_unit) AS total_cost
+     null /* reduce() is advertised by SHOW FUNCTIONS but has no evaluator dispatch; collect() the values and fold client-side (for path weights use algo.dijkstra.stream, which yields cost) */ AS total_distance,
+     null /* reduce() is advertised by SHOW FUNCTIONS but has no evaluator dispatch; collect() the values and fold client-side (for path weights use algo.dijkstra.stream, which yields cost) */ AS total_cost
 CREATE (wh)-[:PRECOMPUTED_ROUTE {
   distance: total_distance,
   cost: total_cost,
@@ -653,8 +653,8 @@ MATCH (order:Order)-[:DELIVERED_TO]->(cust:Customer)
 WHERE order.timestamp > timestamp() - (30 * 24 * 60 * 60 * 1000)
 WITH order, sum(order.logistics_cost) AS delivery_cost
 RETURN avg(delivery_cost) AS avg_cost_per_delivery,
-       percentile_cont(delivery_cost, 0.5) AS median_cost,
-       percentile_cont(delivery_cost, 0.95) AS p95_cost;
+       collect(delivery_cost) /* percentile_cont/_disc parse but are never computed; sort client-side */ AS median_cost,
+       collect(delivery_cost) /* percentile_cont/_disc parse but are never computed; sort client-side */ AS p95_cost;
 ```
 
 ## Best Practices
@@ -697,7 +697,7 @@ MATCH (fc:FulfillmentCenter), (ord:Order)
 MATCH (fc)-[stock:STOCKS]->(prod:Product)
 WHERE stock.quantity >= ord.quantity
 WITH fc, ord,
-     point.distance(
+     st_distance(
        fc.location,
        geocode(ord.customer_zip)
      ) AS distance

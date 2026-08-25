@@ -62,7 +62,7 @@ CREATE (a)-[r:TYPE {property: value}]->(b)
 // SET - update properties
 MATCH (n:User {id: 123})
 SET n.name = 'New Name',
-    n.updated_at = NOW()
+    n.updated_at = datetime()
 
 // DELETE - remove nodes/relationships
 MATCH (n:User {id: 123})
@@ -74,8 +74,8 @@ DETACH DELETE n
 
 // MERGE - upsert operation
 MERGE (u:User {email: 'alice@example.com'})
-ON CREATE SET u.created_at = NOW()
-ON MATCH SET u.last_seen = NOW()
+ON CREATE SET u.created_at = datetime()
+ON MATCH SET u.last_seen = datetime()
 ```
 
 ### Schema Operations
@@ -344,10 +344,10 @@ curl -X POST http://localhost:3141/query \
 }
 
 # Health check
-curl http://localhost:3141/health
+curl http://localhost:9090/health
 
 # Metrics
-curl http://localhost:3141/metrics
+curl http://localhost:9090/metrics
 ```
 
 ## Configuration Reference
@@ -358,7 +358,6 @@ Server configuration options:
 geode serve \
   --listen 0.0.0.0:3141 \
   --data-dir /var/lib/geode \
-  --wal-dir /var/lib/geode/wal \
   --log-level info \
   --max-connections 1000 \
   --query-timeout 30000 \
@@ -456,7 +455,7 @@ RETURN rand();                      -- Random float [0.0, 1.0)
 
 ```gql
 -- Current timestamp
-RETURN now();                       -- Current timestamp
+RETURN datetime();                       -- Current timestamp
 RETURN date();                      -- Current date
 RETURN time();                      -- Current time
 
@@ -468,7 +467,7 @@ RETURN time({hour: 14, minute: 30, second: 0});
 -- Date arithmetic
 RETURN datetime() + duration({days: 7});        -- One week from now
 RETURN datetime() - duration({hours: 24});      -- Yesterday
-RETURN duration.between(date('2024-01-01'), date('2024-12-31'));
+RETURN (date('2024-12-31' - date('2024-01-01')));
 
 -- Date extraction
 RETURN year(datetime());            -- 2024
@@ -477,7 +476,7 @@ RETURN day(datetime());             -- 15
 RETURN hour(datetime());            -- 14
 RETURN minute(datetime());          -- 30
 RETURN second(datetime());          -- 0
-RETURN dayOfWeek(datetime());       -- 1-7 (Monday=1)
+RETURN null /* no dayOfWeek(); derive it in the client */);       -- 1-7 (Monday=1)
 ```
 
 ### Aggregation Functions
@@ -492,9 +491,9 @@ RETURN
     avg(u.age) AS average_age,
     min(u.age) AS youngest,
     max(u.age) AS oldest,
-    stdev(u.age) AS age_std_dev,
-    percentile_cont(u.age, 0.5) AS median_age,
-    percentile_cont(u.age, 0.95) AS p95_age;
+    collect(u.age) /* stddev/variance parse but are never computed; reduce client-side */ AS age_std_dev,
+    collect(u.age) /* percentile_cont/_disc parse but are never computed; sort client-side */ AS median_age,
+    collect(u.age) /* percentile_cont/_disc parse but are never computed; sort client-side */ AS p95_age;
 
 -- Collection aggregations
 MATCH (u:User)
@@ -513,7 +512,7 @@ RETURN last([1, 2, 3]);                         -- 3
 RETURN tail([1, 2, 3]);                         -- [2, 3]
 RETURN [x IN [1, 2, 3, 4, 5] WHERE x > 2];     -- [3, 4, 5]
 RETURN [x IN [1, 2, 3] | x * 2];               -- [2, 4, 6]
-RETURN reduce(s = 0, x IN [1, 2, 3] | s + x);  -- 6
+RETURN null /* reduce() is advertised by SHOW FUNCTIONS but has no evaluator dispatch; collect() the values and fold client-side (for path weights use algo.dijkstra.stream, which yields cost) */;  -- 6
 RETURN range(0, 10, 2);                         -- [0, 2, 4, 6, 8, 10]
 ```
 
@@ -532,8 +531,8 @@ MATCH (a)-[r]->(b)
 RETURN
     id(r) AS relationship_id,
     type(r) AS relationship_type,
-    startNode(r) AS start,
-    endNode(r) AS end;
+    /* no startNode(): bind the endpoint in the pattern, e.g. MATCH (a)-[r]->(b) */ a AS start,
+    /* no endNode(): bind the endpoint in the pattern, e.g. MATCH (a)-[r]->(b) */ b AS end;
 
 -- Path functions
 MATCH path = (a:User)-[:KNOWS*1..3]->(b:User)
@@ -607,9 +606,9 @@ RETURN
     u.name,
     p.category,
     p.price,
-    row_number() OVER (PARTITION BY p.category ORDER BY p.price DESC) AS category_rank,
-    rank() OVER (ORDER BY p.price DESC) AS overall_rank,
-    percent_rank() OVER (PARTITION BY p.category ORDER BY p.price) AS price_percentile;
+    null /* Geode has no window functions and no OVER clause */ AS category_rank,
+    null /* Geode has no window functions and no OVER clause */ AS overall_rank,
+    null /* Geode has no window functions and no OVER clause */ AS price_percentile;
 ```
 
 ### Recursive Queries

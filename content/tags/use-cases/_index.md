@@ -61,6 +61,7 @@ ORDER BY endorsement_count DESC
 ```
 
 **Benefits:**
+
 - Real-time skill verification through endorsement networks
 - Connection path discovery for warm introductions
 - Talent search with multi-criteria filtering
@@ -92,6 +93,7 @@ LIMIT 20
 ```
 
 **Metrics:**
+
 - 15M+ relationships traversed per second
 - Real-time feed generation for millions of users
 - Sub-100ms response times for multi-hop queries
@@ -126,6 +128,7 @@ LIMIT 10
 ```
 
 **Implementation:**
+
 - Session-based recommendations update in real-time
 - A/B testing different recommendation algorithms
 - Cold-start problem mitigation through category-based fallbacks
@@ -147,6 +150,7 @@ ORDER BY conversion_rate DESC
 ```
 
 **Results:**
+
 - 25% increase in average order value
 - 40% higher conversion on bundled recommendations
 - Real-time inventory-aware suggestions
@@ -168,7 +172,7 @@ WHERE ALL(rel IN relationships(path) WHERE
 )
 WITH path,
      [rel IN relationships(path) | rel.amount] as amounts,
-     reduce(total = 0, rel IN relationships(path) | total + rel.amount) as total
+     null /* reduce() is advertised by SHOW FUNCTIONS but has no evaluator dispatch; collect() the values and fold client-side (for path weights use algo.dijkstra.stream, which yields cost) */ as total
 WHERE total > 100000
 RETURN nodes(path) as accounts,
        amounts,
@@ -186,6 +190,7 @@ RETURN a.id, target.id, transaction_count, total
 ```
 
 **Detection Capabilities:**
+
 - Circular fund flows across multiple hops
 - Rapid fund disbursement patterns
 - Velocity-based anomaly detection
@@ -202,12 +207,13 @@ MATCH (entity:Entity {id: $entity_id})-[exposure:CREDIT_EXPOSURE*1..3]->
 WHERE ALL(e IN exposure WHERE e.amount > 0)
 RETURN counterparty.name,
        counterparty.credit_rating,
-       reduce(total = 0, e IN exposure | total + e.amount) as total_exposure,
+       null /* reduce() is advertised by SHOW FUNCTIONS but has no evaluator dispatch; collect() the values and fold client-side (for path weights use algo.dijkstra.stream, which yields cost) */ as total_exposure,
        length(exposure) as degrees_of_separation
 ORDER BY total_exposure DESC
 ```
 
 **Risk Management:**
+
 - Real-time exposure aggregation across entity networks
 - Contagion risk modeling for stress testing
 - Relationship-based credit scoring
@@ -259,6 +265,7 @@ ORDER BY document_count DESC, avg_relevance DESC
 ```
 
 **Knowledge Discovery:**
+
 - Semantic search across document networks
 - Expert identification for project staffing
 - Gap analysis in organizational knowledge
@@ -292,6 +299,7 @@ ORDER BY recent_papers DESC
 ```
 
 **Research Intelligence:**
+
 - Citation network analysis for impact assessment
 - Collaboration network discovery
 - Trend identification through keyword co-occurrence
@@ -326,6 +334,7 @@ ORDER BY affected_products DESC
 ```
 
 **Supply Chain Optimization:**
+
 - Risk assessment through supplier concentration analysis
 - Alternative sourcing recommendations
 - Lead time calculation across tiers
@@ -343,13 +352,12 @@ MATCH path = shortestPath(
 )
 WHERE ALL(rel IN relationships(path) WHERE rel.available = true)
 RETURN [loc IN nodes(path) | loc.name] as route,
-       reduce(distance = 0, rel IN relationships(path) |
-         distance + rel.distance_km) as total_distance,
-       reduce(time = 0, rel IN relationships(path) |
-         time + rel.avg_time_minutes) as estimated_time
+       null /* reduce() is advertised by SHOW FUNCTIONS but has no evaluator dispatch; collect() the values and fold client-side (for path weights use algo.dijkstra.stream, which yields cost) */ as total_distance,
+       null /* reduce() is advertised by SHOW FUNCTIONS but has no evaluator dispatch; collect() the values and fold client-side (for path weights use algo.dijkstra.stream, which yields cost) */ as estimated_time
 ```
 
 **Logistics Benefits:**
+
 - Real-time route optimization with traffic conditions
 - Capacity-constrained routing
 - Multi-stop delivery sequencing
@@ -380,6 +388,7 @@ RETURN [service IN nodes(path) | service.name] as circular_chain,
 ```
 
 **Infrastructure Management:**
+
 - Change impact analysis before deployments
 - Root cause analysis for cascading failures
 - Capacity planning through dependency mapping
@@ -398,12 +407,11 @@ MATCH path = allShortestPaths(
 )
 RETURN [device IN nodes(path) | device.hostname] as path,
        [rel IN relationships(path) | rel.bandwidth] as link_speeds,
-       reduce(min_bw = 1000000, rel IN relationships(path) |
-         CASE WHEN rel.bandwidth < min_bw THEN rel.bandwidth ELSE min_bw END
-       ) as bottleneck_bandwidth
+       null /* reduce() is advertised by SHOW FUNCTIONS but has no evaluator dispatch; collect() the values and fold client-side (for path weights use algo.dijkstra.stream, which yields cost) */ as bottleneck_bandwidth
 ```
 
 **Network Operations:**
+
 - Path redundancy analysis
 - Bandwidth bottleneck identification
 - Failure domain isolation
@@ -441,6 +449,7 @@ ORDER BY screening.due_date ASC
 ```
 
 **Healthcare Coordination:**
+
 - Care pathway optimization
 - Readmission risk prediction
 - Provider network analysis
@@ -468,6 +477,7 @@ Real-world Geode deployments demonstrate production-ready performance:
 
 **Query Performance:**
 **Architecture:**
+
 - Memory-mapped I/O for efficient storage access
 - Six specialized index types for different workloads
 - Horizontal scale-out via federated query coordination with up to 32 shards

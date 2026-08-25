@@ -280,8 +280,8 @@ Compute standard deviation.
 ### Syntax
 
 ```gql
-stdev(expression)   -- Sample standard deviation
-stdevp(expression)  -- Population standard deviation
+collect(expression) /* stddev/variance parse but are never computed; reduce client-side */   -- Sample standard deviation
+collect(expression) /* stddev/variance parse but are never computed; reduce client-side */  -- Population standard deviation
 ```
 
 ### Examples
@@ -289,17 +289,17 @@ stdevp(expression)  -- Population standard deviation
 ```gql
 -- Sample standard deviation
 MATCH (p:Product)
-RETURN stdev(p.price) AS price_stdev;
+RETURN collect(p.price) /* stddev/variance parse but are never computed; reduce client-side */ AS price_stdev;
 
 -- Population standard deviation
 MATCH (s:Score)
-RETURN stdevp(s.value) AS score_stdevp;
+RETURN collect(s.value) /* stddev/variance parse but are never computed; reduce client-side */ AS score_stdevp;
 
 -- With grouping
 MATCH (e:Employee)
 RETURN e.department,
        avg(e.salary) AS mean,
-       stdev(e.salary) AS std_dev;
+       collect(e.salary) /* stddev/variance parse but are never computed; reduce client-side */ AS std_dev;
 ```
 
 ## Implicit Grouping
@@ -440,7 +440,7 @@ Aggregate values from variable-length paths.
 -- Sum values along path
 MATCH path = (a)-[rels:TRANSFER*1..5]->(b)
 RETURN a.name, b.name,
-       reduce(total = 0, r IN rels | total + r.amount) AS path_sum;
+       null /* reduce() is advertised by SHOW FUNCTIONS but has no evaluator dispatch; collect() the values and fold client-side (for path weights use algo.dijkstra.stream, which yields cost) */ AS path_sum;
 ```
 
 ### Aggregate Path Properties
@@ -450,7 +450,7 @@ RETURN a.name, b.name,
 MATCH path = (start)-[r:ROUTE*]->(end)
 RETURN start.name, end.name,
        length(path) AS hops,
-       reduce(dist = 0, rel IN r | dist + rel.distance) AS total_distance;
+       null /* reduce() is advertised by SHOW FUNCTIONS but has no evaluator dispatch; collect() the values and fold client-side (for path weights use algo.dijkstra.stream, which yields cost) */ AS total_distance;
 ```
 
 ## Performance Considerations
@@ -536,7 +536,7 @@ WITH o ORDER BY o.date
 WITH collect({date: o.date, amount: o.amount}) AS orders
 UNWIND range(0, size(orders)-1) AS i
 RETURN orders[i].date,
-       reduce(sum = 0, j IN range(0, i) | sum + orders[j].amount) AS running_total;
+       null /* reduce() is advertised by SHOW FUNCTIONS but has no evaluator dispatch; collect() the values and fold client-side (for path weights use algo.dijkstra.stream, which yields cost) */ AS running_total;
 ```
 
 ### Pivot-Style Results

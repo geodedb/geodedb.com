@@ -20,17 +20,18 @@ Geode implements the complete ISO/IEC 39075:2024 GQL status code system (GQLSTAT
 
 All GQL status codes follow the five-character format defined by the ISO standard:
 
-\`\`\`
+```text
 GQLXX
-\`\`\`
+```
 
 Where:
+
 - **GQL** = Fixed prefix identifying GQL status codes
 - **XX** = Two-character code indicating category and specific condition
 
 ### Status Code Categories
 
-\`\`\`
+```text
 00 - Success
 01 - Warning
 02 - No Data
@@ -43,29 +44,31 @@ Where:
 28 - Invalid Authorization Specification
 2E - Invalid Connection
 42 - Syntax Error or Access Rule Violation
-\`\`\`
+```
 
 ## Success Codes
 
 ### GQL00 - Successful Completion
 
-**Code**: \`GQL00\`
+**Code**: `GQL00`
 **Category**: Success
 **Meaning**: Query or operation completed successfully with no errors or warnings
 
 **Example**:
-\`\`\`gql
+
+```gql
 MATCH (p:Person {id: 1}) RETURN p.name
-\`\`\`
+```
 
 **Response**:
-\`\`\`json
+
+```json
 {
   "status": "GQL00",
   "message": "Successful completion",
   "rows": [{"name": "Alice"}]
 }
-\`\`\`
+```
 
 **Handling**: No action required, proceed with result processing.
 
@@ -73,16 +76,18 @@ MATCH (p:Person {id: 1}) RETURN p.name
 
 ### GQL01 - Warning
 
-**Code**: \`GQL01\`
+**Code**: `GQL01`
 **Subcodes**: Multiple warning conditions
 
 **Common Warnings**:
 
 #### GQL01001 - Cursor Operation Conflict
+
 **Meaning**: Cursor operation conflict with concurrent modification
 
 **Example Scenario**:
-\`\`\`gql
+
+```gql
 -- Transaction 1
 START TRANSACTION
 DECLARE cursor1 CURSOR FOR MATCH (p:Person) RETURN p
@@ -93,17 +98,20 @@ CREATE (p:Person {name: 'NewPerson'})
 
 -- Transaction 1 continues
 FETCH NEXT FROM cursor1  -- Warning: GQL01001
-\`\`\`
+```
 
 **Handling**:
+
 - Re-execute query if data consistency is critical
 - Accept warning if cursor data can be stale
 - Consider higher isolation level for transaction
 
 #### GQL01002 - Disconnect Error
+
 **Meaning**: Disconnect error occurred but operation completed
 
 **Handling**:
+
 - Verify operation completion
 - Re-establish connection for subsequent operations
 - Check connection pool health
@@ -112,24 +120,27 @@ FETCH NEXT FROM cursor1  -- Warning: GQL01001
 
 ### GQL02 - No Data
 
-**Code**: \`GQL02\`
+**Code**: `GQL02`
 **Meaning**: Query executed successfully but returned no rows
 
 **Example**:
-\`\`\`gql
+
+```gql
 MATCH (p:Person {email: 'nonexistent@example.com'}) RETURN p
-\`\`\`
+```
 
 **Response**:
-\`\`\`json
+
+```json
 {
   "status": "GQL02",
   "message": "No data found",
   "rows": []
 }
-\`\`\`
+```
 
 **Handling**:
+
 - Not an error condition
 - Check query predicates if data was expected
 - Differentiate from GQL00 (success with data)
@@ -139,12 +150,14 @@ MATCH (p:Person {email: 'nonexistent@example.com'}) RETURN p
 **Meaning**: No additional result sets available
 
 **Example Scenario**:
-\`\`\`gql
+
+```gql
 -- After consuming all result pages
 FETCH NEXT FROM cursor1  -- GQL02001
-\`\`\`
+```
 
 **Handling**:
+
 - Normal end-of-results indicator
 - Close cursor or complete pagination
 
@@ -155,122 +168,144 @@ FETCH NEXT FROM cursor1  -- GQL02001
 **Category**: Data validation and type errors
 
 #### GQL22001 - String Data Right Truncation
+
 **Meaning**: String value truncated to fit field length
 
 **Example**:
-\`\`\`gql
+
+```gql
 CREATE (p:Person {name: 'VeryLongNameThatExceedsLimit...'})
 -- If name field has max length of 50 characters
-\`\`\`
+```
 
 **Handling**:
+
 - Validate input length before insertion
 - Increase field size if legitimate use case
 - Truncate data explicitly in application
 
 #### GQL22003 - Numeric Value Out of Range
+
 **Meaning**: Numeric value exceeds data type bounds
 
 **Example**:
-\`\`\`gql
+
+```gql
 CREATE (p:Product {quantity: 9999999999999999})
 -- If quantity is INT32
-\`\`\`
+```
 
 **Handling**:
-\`\`\`go
+
+```go
 // Go example
 if quantity > math.MaxInt32 {
     return fmt.Errorf("quantity exceeds maximum: %d", math.MaxInt32)
 }
-\`\`\`
+```
 
 #### GQL22007 - Invalid Datetime Format
+
 **Meaning**: Datetime string doesn't match expected format
 
 **Example**:
-\`\`\`gql
+
+```gql
 CREATE (e:Event {timestamp: '2024-13-45T25:99:99'})  -- Invalid
-\`\`\`
+```
 
 **Valid Formats**:
-\`\`\`gql
+
+```gql
 -- ISO 8601 formats
 '2024-01-15'                    -- Date
 '14:30:00'                      -- Time
 '2024-01-15T14:30:00'          -- DateTime
 '2024-01-15T14:30:00Z'         -- DateTime with UTC
 '2024-01-15T14:30:00-05:00'    -- DateTime with timezone
-\`\`\`
+```
 
 **Handling**:
+
 - Validate datetime strings before insertion
 - Use ISO 8601 format consistently
 - Consider using datetime functions
 
 #### GQL22008 - Datetime Field Overflow
+
 **Meaning**: Datetime calculation resulted in overflow
 
 **Example**:
-\`\`\`gql
+
+```gql
 RETURN datetime('2024-01-01') + duration('P99999Y')
-\`\`\`
+```
 
 **Handling**:
+
 - Validate duration values before arithmetic
 - Check result bounds after calculations
 
 #### GQL22012 - Division by Zero
+
 **Meaning**: Attempted division or modulo by zero
 
 **Example**:
-\`\`\`gql
+
+```gql
 MATCH (p:Product)
 RETURN p.price, p.price / p.quantity AS unit_price
 -- If quantity = 0
-\`\`\`
+```
 
 **Handling**:
-\`\`\`gql
+
+```gql
 -- Add guard clause
 MATCH (p:Product)
 WHERE p.quantity > 0
 RETURN p.price, p.price / p.quantity AS unit_price
-\`\`\`
+```
 
-\`\`\`python
+```python
 # Python example
 unit_price = price / quantity if quantity != 0 else None
-\`\`\`
+```
 
 #### GQL22018 - Invalid Character Value for Cast
+
 **Meaning**: String cannot be cast to target type
 
 **Example**:
-\`\`\`gql
+
+```gql
 RETURN toInteger('not_a_number')  -- GQL22018
-\`\`\`
+```
 
 **Handling**:
-\`\`\`gql
+
+```gql
 -- Validate before casting
 RETURN CASE
     WHEN value =~ '^[0-9]+$' THEN toInteger(value)
     ELSE NULL
 END
-\`\`\`
+```
 
 #### GQL22023 - Invalid Parameter Value
+
 **Meaning**: Parameter value invalid for operation
 
 **Example**:
-\`\`\`gql
+
+```gql
 MATCH (p:Person)
 WHERE p.age > $age  -- $age = 'twenty' (string instead of number)
 RETURN p
-\`\`\`
+```
 
 **Handling**:
+
 - Type-check parameters before query execution
 - Use strongly-typed parameter binding
 - Validate input at application boundary
@@ -280,58 +315,67 @@ RETURN p
 ### GQL23 - Integrity Constraint Violation
 
 #### GQL23000 - Integrity Constraint Violation (General)
+
 **Meaning**: Unspecified integrity constraint violated
 
 **Example**:
-\`\`\`gql
+
+```gql
 CREATE (p:Person {id: 1, email: 'alice@example.com'})
 CREATE (p:Person {id: 1, email: 'bob@example.com'})
 -- If id has UNIQUE constraint
-\`\`\`
+```
 
 **Handling**:
+
 - Check constraint definitions
 - Validate data before insertion
 - Handle duplicate key scenarios
 
 #### GQL23001 - Restrict Violation
+
 **Meaning**: Foreign key constraint prevents deletion
 
 **Example**:
-\`\`\`gql
+
+```gql
 -- Person has relationships to Orders
 DELETE (p:Person {id: 1})
 -- GQL23001 if ON DELETE RESTRICT is enforced
-\`\`\`
+```
 
 **Handling**:
-\`\`\`gql
+
+```gql
 -- Use DETACH DELETE to remove relationships
 DETACH DELETE (p:Person {id: 1})
 
 -- Or delete relationships first
 MATCH (p:Person {id: 1})-[r]-()
 DELETE r, p
-\`\`\`
+```
 
 #### GQL23505 - Unique Violation
+
 **Meaning**: Unique constraint violated
 
 **Example**:
-\`\`\`gql
+
+```gql
 CREATE (u:User {email: 'alice@example.com'})
 CREATE (u:User {email: 'alice@example.com'})  -- GQL23505
-\`\`\`
+```
 
 **Handling**:
-\`\`\`gql
+
+```gql
 -- Use MERGE for upsert semantics
 MERGE (u:User {email: 'alice@example.com'})
 ON CREATE SET u.created = datetime()
 ON MATCH SET u.accessed = datetime()
-\`\`\`
+```
 
-\`\`\`python
+```python
 # Python error handling
 from geode_client.exceptions import ConstraintViolationError
 
@@ -344,18 +388,21 @@ except ConstraintViolationError as e:
     if e.status_code == "GQL23505":
         # Handle duplicate email
         logger.warning(f"Email already exists: {email}")
-\`\`\`
+```
 
 #### GQL23514 - Check Constraint Violation
+
 **Meaning**: CHECK constraint condition not satisfied
 
 **Example**:
-\`\`\`gql
+
+```gql
 -- Assuming CHECK constraint: age >= 0 AND age <= 150
 CREATE (p:Person {name: 'Alice', age: 200})  -- GQL23514
-\`\`\`
+```
 
 **Handling**:
+
 - Validate data against constraint rules before insertion
 - Review constraint definitions for reasonableness
 - Provide clear error messages to users
@@ -365,37 +412,43 @@ CREATE (p:Person {name: 'Alice', age: 200})  -- GQL23514
 ### GQL24 - Invalid Transaction State
 
 #### GQL24000 - Invalid Transaction State (General)
+
 **Meaning**: Operation not valid in current transaction state
 
 **Example**:
-\`\`\`gql
+
+```gql
 COMMIT  -- No active transaction
-\`\`\`
+```
 
 **Handling**:
+
 - Track transaction state in application
 - Always pair BEGIN with COMMIT/ROLLBACK
 - Use transaction context managers
 
-\`\`\`python
+```python
 # Python - Safe transaction handling
 async with db.connection() as tx:
     await tx.begin()
     await tx.execute("CREATE (p:Person {name: 'Alice'})")
     # Automatic commit on success, rollback on exception
-\`\`\`
+```
 
 #### GQL25000 - Invalid Transaction Termination
+
 **Meaning**: Cannot commit or rollback in current state
 
 **Example**:
-\`\`\`gql
+
+```gql
 START TRANSACTION
 -- Connection lost
 COMMIT  -- GQL25000
-\`\`\`
+```
 
 **Handling**:
+
 - Implement connection retry logic
 - Re-establish transaction after connection recovery
 - Use savepoints for partial rollback
@@ -403,18 +456,21 @@ COMMIT  -- GQL25000
 ### GQL27 - Transaction Rollback
 
 #### GQL27000 - Transaction Rollback (General)
+
 **Meaning**: Transaction rolled back due to error or deadlock
 
 **Example**:
-\`\`\`gql
+
+```gql
 START TRANSACTION
 CREATE (p:Person {id: 1})
 -- Deadlock detected with concurrent transaction
 -- GQL27000 - Transaction rolled back
-\`\`\`
+```
 
 **Handling**:
-\`\`\`python
+
+```python
 # Python - Retry on deadlock
 max_retries = 3
 for attempt in range(max_retries):
@@ -428,36 +484,42 @@ for attempt in range(max_retries):
             await asyncio.sleep(0.1 * (2 ** attempt))  # Exponential backoff
         else:
             raise
-\`\`\`
+```
 
 ## Syntax and Access Errors
 
 ### GQL42 - Syntax Error or Access Rule Violation
 
 #### GQL42000 - Syntax Error or Access Violation (General)
+
 **Meaning**: Query syntax error or insufficient privileges
 
 **Example**:
-\`\`\`gql
+
+```gql
 MATCH (p:Person WHERE p.age > 25 RETURN p  -- Missing )
-\`\`\`
+```
 
 **Handling**:
+
 - Validate query syntax before execution
 - Use query builder libraries to prevent syntax errors
 - Check error message for specific syntax issue
 
 #### GQL42501 - Insufficient Privilege
+
 **Meaning**: User lacks required permissions
 
 **Example**:
-\`\`\`gql
+
+```gql
 -- User without CREATE permission
 CREATE (p:Person {name: 'Alice'})  -- GQL42501
-\`\`\`
+```
 
 **Handling**:
-\`\`\`python
+
+```python
 from geode_client.exceptions import InsufficientPrivilegeError
 
 try:
@@ -465,26 +527,31 @@ try:
 except InsufficientPrivilegeError as e:
     logger.error(f"Permission denied: {e.message}")
     # Request access or use different credentials
-\`\`\`
+```
 
 #### GQL42601 - Invalid Grant Operation
+
 **Meaning**: Cannot grant specified privilege
 
 **Example**:
-\`\`\`gql
+
+```gql
 GRANT CREATE ON GRAPH production TO user1
 -- If current user cannot grant this privilege
-\`\`\`
+```
 
 #### GQL42704 - Undefined Database Object
+
 **Meaning**: Referenced object does not exist
 
 **Example**:
-\`\`\`gql
+
+```gql
 USE GRAPH nonexistent_graph  -- GQL42704
-\`\`\`
+```
 
 **Handling**:
+
 - Verify database object names before use
 - Create objects if they don't exist
 - Handle missing objects gracefully
@@ -494,15 +561,18 @@ USE GRAPH nonexistent_graph  -- GQL42704
 ### GQL2E - Invalid Connection
 
 #### GQL2E000 - Connection Exception (General)
+
 **Meaning**: Connection-level error occurred
 
 **Example Scenarios**:
+
 - Network timeout
 - Connection pool exhausted
 - Server unreachable
 
 **Handling**:
-\`\`\`go
+
+```go
 // Go - Connection retry with backoff
 func connectWithRetry(url string, maxRetries int) (*gql.DB, error) {
     var db *gql.DB
@@ -525,17 +595,19 @@ func connectWithRetry(url string, maxRetries int) (*gql.DB, error) {
 
     return nil, fmt.Errorf("failed after %d retries: %w", maxRetries, err)
 }
-\`\`\`
+```
 
 #### GQL2E001 - Connection Does Not Exist
+
 **Meaning**: Connection closed or never established
 
 **Handling**:
+
 - Check connection status before operations
 - Implement connection health checks
 - Use connection pooling for reliability
 
-\`\`\`python
+```python
 # Python - Connection health check
 async def ensure_connection(db):
     try:
@@ -544,13 +616,13 @@ async def ensure_connection(db):
     except ConnectionError:
         # Re-establish connection
         await db.reconnect()
-\`\`\`
+```
 
 ## Error Handling Best Practices
 
 ### 1. Categorize Errors by Severity
 
-\`\`\`python
+```python
 from geode_client.exceptions import GeodeError
 
 def handle_error(e: GeodeError):
@@ -583,11 +655,11 @@ def handle_error(e: GeodeError):
         # Unknown error
         logger.exception(f"Unexpected error: {e.message}")
         raise
-\`\`\`
+```
 
 ### 2. Implement Retry Logic for Transient Errors
 
-\`\`\`go
+```go
 // Go - Retry wrapper
 func executeWithRetry(ctx context.Context, db *gql.DB, query string, params map[string]interface{}, maxRetries int) (*gql.Page, error) {
     var page *gql.Page
@@ -621,11 +693,11 @@ func executeWithRetry(ctx context.Context, db *gql.DB, query string, params map[
 
     return nil, fmt.Errorf("failed after %d attempts: %w", maxRetries, err)
 }
-\`\`\`
+```
 
 ### 3. Log Errors with Context
 
-\`\`\`python
+```python
 import logging
 import json
 
@@ -647,11 +719,11 @@ async def execute_query_with_logging(conn, query, params):
             }
         )
         raise
-\`\`\`
+```
 
 ### 4. Validate Input Before Execution
 
-\`\`\`rust
+```rust
 use geode_client::{Client, Value};
 
 fn validate_person(name: &str, age: i32, email: &str) -> Result<(), String> {
@@ -688,7 +760,7 @@ async fn create_person(
 
     Ok(())
 }
-\`\`\`
+```
 
 ## Status Code Quick Reference
 
@@ -730,13 +802,15 @@ async fn create_person(
 **Problem**: GQL2E000 - Connection Exception
 
 **Diagnostic Steps**:
-1. Verify server is running: \`geode status\`
-2. Check network connectivity: \`ping geode-server\`
+
+1. Verify server is running: `geode status`
+2. Check network connectivity: `ping geode-server`
 3. Verify QUIC port (3141) is accessible
 4. Check connection pool status
 5. Review server logs for errors
 
 **Solutions**:
+
 - Restart Geode server
 - Check firewall rules for UDP port 3141
 - Increase connection pool size
@@ -747,13 +821,15 @@ async fn create_person(
 **Problem**: Slow queries or timeouts
 
 **Diagnostic Steps**:
+
 1. Use EXPLAIN to analyze query plan
 2. Check index usage
 3. Review query complexity
 4. Monitor server resources
 
 **Solutions**:
-\`\`\`gql
+
+```gql
 -- Add appropriate indexes
 CREATE INDEX ON :Person(email)
 
@@ -767,20 +843,22 @@ LIMIT 100  -- Add limit for large result sets
 -- Use PROFILE to measure performance
 PROFILE MATCH (p:Person)-[:KNOWS]->(f)
 RETURN p.name, count(f) AS friend_count
-\`\`\`
+```
 
 ### Transaction Deadlocks
 
 **Problem**: GQL27000 - Transaction Rollback (Deadlock)
 
 **Prevention**:
+
 - Access resources in consistent order
 - Keep transactions short
 - Use appropriate isolation levels
 - Implement retry logic with exponential backoff
 
 **Example**:
-\`\`\`python
+
+```python
 import asyncio
 from geode_client import Client, QueryError
 
@@ -818,20 +896,22 @@ async def transfer_with_retry(from_id, to_id, amount, max_retries=3):
                     await asyncio.sleep(0.1 * (2 ** attempt))
                 else:
                     raise
-\`\`\`
+```
 
 ### Data Validation Errors
 
 **Problem**: GQL22* - Data Exception
 
 **Prevention**:
+
 - Validate all inputs before database operations
 - Use type-safe parameter binding
 - Define appropriate constraints
 - Implement application-level validation
 
 **Example Validation Framework**:
-\`\`\`python
+
+```python
 from pydantic import BaseModel, EmailStr, Field
 from datetime import datetime
 
@@ -866,13 +946,13 @@ async def create_person(person: PersonCreate):
             """,
             person.dict()
         )
-\`\`\`
+```
 
 ## Client Library Integration
 
 ### Go Client
 
-\`\`\`go
+```go
 import (
     "gitlab.com/devnw/codepros/geode-client-go/errors"
 )
@@ -890,11 +970,11 @@ if gqlErr, ok := err.(errors.GQLError); ok {
     statusCode := gqlErr.StatusCode()  // e.g., "GQL23505"
     message := gqlErr.Message()
 }
-\`\`\`
+```
 
 ### Python Client
 
-\`\`\`python
+```python
 from geode_client.exceptions import (
     GeodeError,
     ConstraintViolationError,
@@ -912,11 +992,11 @@ except ConnectionError as e:
     print(f"Connection error: {e.status_code}")
 except GeodeError as e:
     print(f"Geode error: {e.status_code} - {e.message}")
-\`\`\`
+```
 
 ### Rust Client
 
-\`\`\`rust
+```rust
 use geode_client::{Error, ErrorKind};
 
 match conn.execute(query, params).await {
@@ -932,7 +1012,7 @@ match conn.execute(query, params).await {
     }
     Err(e) => eprintln!("Error: {:?}", e),
 }
-\`\`\`
+```
 
 ## Next Steps
 
@@ -944,6 +1024,7 @@ match conn.execute(query, params).await {
 6. **Test Error Scenarios** - Include error cases in test suite
 
 **Related Documentation**:
+
 - [Transaction Patterns](/docs/transactions/advanced-patterns)
 - [Client Error Handling](/docs/client-libraries/client-comparison#error-handling-strategies)
 - [Troubleshooting Guide](/docs/guides/troubleshooting)

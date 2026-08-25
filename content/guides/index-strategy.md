@@ -140,7 +140,7 @@ Faster than B-tree for equality only. Use when:
 
 ```gql
 // Create hash index
-CREATE HASH INDEX user_id ON :User(id)
+CREATE INDEX user_id ON :User(id) USING hash
 
 // Optimal for:
 MATCH (u:User {id: "usr_12345"}) RETURN u
@@ -179,7 +179,7 @@ For text search operations. Use when:
 
 ```gql
 // Create full-text index
-CREATE FULLTEXT INDEX product_search ON :Product(name, description)
+CREATE INDEX product_search ON :Product(name, description) USING fulltext
 
 // Query with full-text search
 CALL geode.fts.search('product_search', 'wireless bluetooth', 10)
@@ -443,7 +443,7 @@ CREATE INDEX user_last_seen ON :User(last_seen_at)  // Updates every request
 CREATE INDEX article_content ON :Article(content)  // May be megabytes
 
 // Better: Use full-text index for searchable content
-CREATE FULLTEXT INDEX article_search ON :Article(title, summary)
+CREATE INDEX article_search ON :Article(title, summary) USING fulltext
 ```
 
 ### Alternative Strategies
@@ -573,7 +573,7 @@ CREATE INDEX user_status_created ON :User(status, created_at)
 // Product lookup
 CREATE CONSTRAINT product_sku_unique ON :Product(sku) ASSERT UNIQUE
 CREATE INDEX product_category_price ON :Product(category, price)
-CREATE FULLTEXT INDEX product_search ON :Product(name, description)
+CREATE INDEX product_search ON :Product(name, description) USING fulltext
 
 // Order lookup
 CREATE CONSTRAINT order_number_unique ON :Order(order_number) ASSERT UNIQUE
@@ -591,7 +591,7 @@ CREATE INDEX user_name ON :User(name)
 // Post lookup
 CREATE INDEX post_author_date ON :Post(author_id, created_at)
 CREATE INDEX post_visibility_date ON :Post(visibility, created_at)
-CREATE FULLTEXT INDEX post_content ON :Post(text)
+CREATE INDEX post_content ON :Post(text) USING fulltext
 ```
 
 ## Summary

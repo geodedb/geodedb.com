@@ -355,7 +355,7 @@ CREATE (doc2:Document {
 });
 
 -- Create vector index
-CREATE VECTOR INDEX doc_embeddings ON :Document(embedding)
+CREATE INDEX doc_embeddings ON :Document(embedding) USING vector
 WITH (metric = 'cosine');
 
 -- Semantic search
@@ -372,7 +372,7 @@ Text search with BM25 ranking:
 
 ```gql
 -- Create full-text index
-CREATE FULLTEXT INDEX article_content ON :Article(title, content);
+CREATE INDEX article_content ON :Article(title, content) USING fulltext;
 
 -- Insert articles
 CREATE (a1:Article {
@@ -383,8 +383,10 @@ CREATE (a1:Article {
 
 -- Search with BM25 ranking
 MATCH (article:Article)
-WHERE fulltext_search(article, 'graph database')
-RETURN article.title, article.published, bm25_score(article) as relevance
+CALL geode.fts.search('article_search', 'graph database')
+YIELD node, score
+MATCH (article:Article) WHERE id(article) = node
+RETURN article.title, article.published, score as relevance
 ORDER BY relevance DESC;
 ```
 

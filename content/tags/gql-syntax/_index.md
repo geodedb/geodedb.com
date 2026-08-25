@@ -337,8 +337,8 @@ MERGE pattern
 
 // Examples
 MERGE (u:User {email: 'alice@example.com'})
-ON CREATE SET u.created_at = NOW()
-ON MATCH SET u.last_seen = NOW()
+ON CREATE SET u.created_at = datetime()
+ON MATCH SET u.last_seen = datetime()
 RETURN u
 ```
 
@@ -490,7 +490,7 @@ ON (variable.property [, variable.property, ...])
 // Examples
 CREATE INDEX FOR (u:User) ON (u.email)
 CREATE INDEX user_name_idx FOR (u:User) ON (u.name)
-CREATE VECTOR INDEX FOR (d:Doc) ON (d.embedding) WITH (metric = 'cosine')
+CREATE INDEX FOR (d:Doc) ON (d.embedding) WITH (metric = 'cosine') USING vector
 ```
 
 ### Constraint

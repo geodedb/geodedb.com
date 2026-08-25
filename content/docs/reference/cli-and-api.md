@@ -250,7 +250,6 @@ geode restore \
 # Point-in-time recovery
 geode restore \
   --source s3://my-bucket/backups/geode-20240115.tar.gz \
-  --wal-dir /var/lib/geode/wal \
   --until "2024-01-15T14:30:00Z"
 ```
 

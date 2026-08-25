@@ -194,11 +194,10 @@ Geode handles ephemeral key management automatically with secure memory handling
 
 ```yaml
 # geode.yaml
-security:
-  memory:
-    secure_key_memory: true   # Secure memory allocation for keys
-    lock_key_memory: true     # Prevent keys from being swapped to disk
-    secure_erase: true        # Zero memory before deallocation
+# NOTE: `security:` is not a configuration-file section — it is ignored.
+# KMS and encryption-at-rest are configured with environment variables:
+#   GEODE_KMS_URL, GEODE_KMS_ENDPOINT, GEODE_KMS_API_KEY
+#   GEODE_MASTER_KEY, GEODE_TDE_ENABLED, GEODE_ALLOW_LOCAL_KMS
 ```
 
 ## Session Resumption

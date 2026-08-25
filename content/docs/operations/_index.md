@@ -98,7 +98,7 @@ curl http://localhost:8080/ready
 curl http://localhost:8080/live
 
 # Detailed status
-geode admin status
+geode query "SHOW CLUSTER STATUS"
 ```
 
 ### Backup Operations
@@ -127,7 +127,7 @@ curl http://localhost:8080/metrics
 journalctl -u geode -f
 
 # Check resource usage
-geode admin stats
+geode query "CALL geode.storage.stats()"
 ```
 
 ### Common Operations
@@ -143,7 +143,9 @@ systemctl restart geode
 geode config validate
 
 # Database maintenance
-geode admin maintenance --compact
+# There is no `geode admin` subcommand. Geode's CLI is: serve, shell, query,
+# lsp, backup, restore, migrate, auth, login, logout, user, role, tenant,
+# policy, grant, revoke, completion, mcp.
 ```
 
 ## Architecture Overview

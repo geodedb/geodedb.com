@@ -147,12 +147,14 @@ RETURN p.name, p.price;
 ```
 
 **Use nodes when**:
+
 - The value participates in relationships
 - Multiple entities share the same value
 - The value has its own attributes
 - You need to query or traverse through the value
 
 **Use properties when**:
+
 - The value is simple and specific to one entity
 - The value doesn't participate in relationships
 - The value is frequently accessed with the entity
@@ -234,7 +236,7 @@ INSERT (sender)-[:TRANSFERRED {
 // Query by relationship properties
 MATCH (sender:Account)-[t:TRANSFERRED]->(receiver:Account)
 WHERE t.amount > 1000
-  AND t.timestamp > datetime().minusDays(7)
+  AND t.timestamp > datetime() - duration('P7D')
   AND t.status = 'completed'
 RETURN sender.account_id,
        receiver.account_id,
@@ -350,7 +352,7 @@ INSERT (alice)-[:FRIENDS_WITH {
 
 // Query recent friendships
 MATCH (u1:User)-[f:FRIENDS_WITH]->(u2:User)
-WHERE f.since > datetime().minusDays(30)
+WHERE f.since > datetime() - duration('P30D')
 RETURN u1.name, u2.name, f.since;
 ```
 
@@ -647,14 +649,7 @@ MATCH (a:Account {account_id: 'acc_123'})-[he:HAS_EVENT]->(e:AccountEvent)
 WITH a, e ORDER BY he.sequence
 WITH a, COLLECT(e) AS events
 RETURN a.account_id,
-       REDUCE(balance = 0, evt IN events |
-         CASE evt.event_type
-           WHEN 'AccountOpened' THEN evt.data.initial_balance
-           WHEN 'DepositMade' THEN balance + evt.data.amount
-           WHEN 'WithdrawalMade' THEN balance - evt.data.amount
-           ELSE balance
-         END
-       ) AS calculated_balance;
+       null /* reduce() is advertised by SHOW FUNCTIONS but has no evaluator dispatch; collect() the values and fold client-side (for path weights use algo.dijkstra.stream, which yields cost) */ AS calculated_balance;
 ```
 
 ## Performance-Driven Modeling

@@ -97,13 +97,13 @@ MATCH paths = ALL SHORTEST (a:City {name: 'NYC'})
                            -[:FLIGHT*]->
                            (b:City {name: 'LAX'})
 RETURN paths,
-       reduce(cost = 0, r IN relationships(paths) | cost + r.price) AS total_cost;
+       null /* reduce() is advertised by SHOW FUNCTIONS but has no evaluator dispatch; collect() the values and fold client-side (for path weights use algo.dijkstra.stream, which yields cost) */ AS total_cost;
 
 -- K shortest paths
 MATCH paths = K SHORTEST 5 (a:Location)-[:ROUTE*]->(b:Location)
 WHERE a.id = $start AND b.id = $end
 RETURN paths,
-       reduce(dist = 0, r IN relationships(paths) | dist + r.distance) AS distance
+       null /* reduce() is advertised by SHOW FUNCTIONS but has no evaluator dispatch; collect() the values and fold client-side (for path weights use algo.dijkstra.stream, which yields cost) */ AS distance
 ORDER BY distance;
 ```
 
@@ -180,9 +180,9 @@ RETURN e.name, e.start;
 -- Extract temporal components
 MATCH (s:Sale)
 RETURN
-  extract(year from s.timestamp) AS year,
-  extract(month from s.timestamp) AS month,
-  extract(day from s.timestamp) AS day
+  s.timestamp.year AS year,
+  s.timestamp.month AS month,
+  s.timestamp.day AS day
 GROUP BY year, month, day;
 ```
 
@@ -394,12 +394,16 @@ Optional schema definition for type safety:
 
 ```gql
 -- Define node type
-CREATE NODE TYPE Person (
-  id STRING NOT NULL,
-  name STRING NOT NULL,
+-- Geode has no CREATE NODE TYPE / CREATE EDGE TYPE: labels are
+-- schema-free. The only typed DDL is CREATE GRAPH TYPE, whose field
+-- list is `name TYPE [PRIMARY KEY] [@annotations]` in braces.
+-- Not supported in a field definition: NOT NULL — enforce with CREATE CONSTRAINT or at write time.
+CREATE GRAPH TYPE PersonType AS {
+  id STRING,
+  name STRING,
   age INTEGER,
   email STRING
-);
+};
 
 -- Define relationship type
 CREATE RELATIONSHIP TYPE KNOWS (
@@ -439,7 +443,7 @@ CREATE INDEX person_name ON Person(name);
 CREATE INDEX product_category_price ON Product(category, price);
 
 -- Full-text index
-CREATE FULLTEXT INDEX product_search ON Product(name, description);
+CREATE INDEX product_search ON Product(name, description) USING fulltext;
 ```
 
 ## Conformance Levels
@@ -489,15 +493,15 @@ Geode adds enterprise features beyond the standard:
 **Row-Level Security (RLS)**:
 
 ```gql
-CREATE POLICY user_data_isolation ON User
-  USING (id = current_user_id());
+-- User.id must equal the caller's 'user_id' principal attribute
+CALL geode.rls.add_attribute_policy('app', 'User', 'id', 'user_id');
 ```
 
 **Advanced Aggregations**:
 
 ```gql
 MATCH (p:Product)
-RETURN percentile(p.price, 0.95) AS p95_price;
+RETURN collect(p.price) /* percentile_cont/_disc parse but are never computed; sort client-side */ AS p95_price;
 ```
 
 **Parallel Query Execution**:
@@ -613,7 +617,7 @@ LIMIT 20;
 MATCH path = (a:Account)-[:TRANSFER*3..5]->(a)
 WHERE all(r IN relationships(path) WHERE r.amount > 10000)
 RETURN path,
-  reduce(sum = 0, r IN relationships(path) | sum + r.amount) AS total;
+  null /* reduce() is advertised by SHOW FUNCTIONS but has no evaluator dispatch; collect() the values and fold client-side (for path weights use algo.dijkstra.stream, which yields cost) */ AS total;
 ```
 
 ### Knowledge Graph

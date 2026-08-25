@@ -52,6 +52,7 @@ Geode can emit optional paging telemetry as JSON Lines on stderr. This feature i
 #### Environment Variables
 
 **Core Toggles**:
+
 ```bash
 # Enable pagination telemetry
 export GEODE_TELEMETRY_PAGING=1
@@ -61,6 +62,7 @@ export GEODE_CAPTURE_SERVER_STDERR=1
 ```
 
 **CI/Testing Variables**:
+
 ```bash
 # Enable telemetry smoke test
 export GEODE_CI_TELEMETRY_SMOKE=1
@@ -94,6 +96,7 @@ Each page emission produces a single JSON line on stderr:
 ```
 
 **Field Descriptions**:
+
 - `type`: Always `TELEMETRY` for these events
 - `event`: Always `PULL_PAGE` for paging emissions
 - `page_size`: Requested page size (stringified)
@@ -108,6 +111,7 @@ Each page emission produces a single JSON line on stderr:
 #### Usage Examples
 
 **Server with Telemetry**:
+
 ```bash
 # Start server with paging telemetry enabled
 GEODE_TELEMETRY_PAGING=1 \
@@ -128,18 +132,21 @@ cat server.log | grep '"event":"PULL_PAGE"'
 ```
 
 **Client with Server Stderr Capture**:
+
 ```bash
 GEODE_CAPTURE_SERVER_STDERR=1 \
   geode query "RETURN 1 AS x ORDER BY x LIMIT 1" --format json
 ```
 
 **Helper Script**:
+
 ```bash
 # Quick local validation
 make build && bash scripts/telemetry-smoke.sh 1
 ```
 
 The script:
+
 - Builds `zig-out/bin/geode`
 - Starts server with `GEODE_TELEMETRY_PAGING=1`
 - Runs ordered+limited query
@@ -149,11 +156,13 @@ The script:
 ### Testing Telemetry
 
 **CANARY Integration**:
+
 - Test: `TestCANARY_REQ_GQL_090_TelemetryPagingPull`
 - Requirement: `REQ-GQL-090` - Streaming Telemetry, Paging Events
 - Status: `TESTED`
 
 **Smoke Tests**:
+
 ```bash
 # Basic smoke test (non-fatal)
 GEODE_TELEMETRY_PAGING=1 \
@@ -174,6 +183,7 @@ make quic-smoke
 ### QUIC Metrics
 
 **Handshake Metrics**:
+
 ```
 geode_quic_handshake_duration_seconds{quantile="0.5"} 0.015
 geode_quic_handshake_duration_seconds{quantile="0.95"} 0.045
@@ -183,6 +193,7 @@ geode_quic_handshake_failure_total{} 5
 ```
 
 **Stream Multiplexing**:
+
 ```
 geode_quic_active_streams{} 42
 geode_quic_stream_create_total{} 5678
@@ -191,6 +202,7 @@ geode_quic_max_concurrent_streams{} 100
 ```
 
 **Loss Recovery**:
+
 ```
 geode_quic_packet_loss_rate{} 0.001
 geode_quic_rtt_milliseconds{quantile="0.5"} 12.5
@@ -200,6 +212,7 @@ geode_quic_congestion_events_total{} 3
 ```
 
 **Data Transfer**:
+
 ```
 geode_quic_bytes_sent_total{} 12345678
 geode_quic_bytes_received_total{} 98765432
@@ -224,15 +237,14 @@ Enable Prometheus metrics endpoint:
 
 ```yaml
 # geode.yaml
-monitoring:
-  prometheus:
-    enable: true
-    port: 9090
-    path: /metrics
-    interval: 15s
+# NOTE: `monitoring:` is not a configuration-file section — it is ignored.
+# The Prometheus listener is opt-in and env-only:
+#   GEODE_METRICS_PORT=9090   (serves /metrics and /health)
+#   GEODE_METRICS_BIND=127.0.0.1
 ```
 
 **Command-Line**:
+
 ```bash
 geode serve \
   --prometheus-enable \
@@ -241,6 +253,7 @@ geode serve \
 ```
 
 **Environment Variables**:
+
 ```bash
 export GEODE_PROMETHEUS_ENABLE=1
 export GEODE_PROMETHEUS_PORT=9090
@@ -280,6 +293,7 @@ scrape_configs:
 ### Available Metrics
 
 **Query Metrics**:
+
 ```
 geode_queries_total{status="success"} 12345
 geode_queries_total{status="error"} 23
@@ -290,6 +304,7 @@ geode_slow_queries_total{threshold="1s"} 45
 ```
 
 **Connection Metrics**:
+
 ```
 geode_active_connections{} 42
 geode_connection_create_total{} 1234
@@ -300,6 +315,7 @@ geode_connection_pool_size{type="current"} 42
 ```
 
 **Transaction Metrics**:
+
 ```
 geode_transactions_active{} 8
 geode_transactions_total{status="committed"} 5678
@@ -310,6 +326,7 @@ geode_deadlocks_detected_total{} 1
 ```
 
 **Storage Metrics**:
+
 ```
 geode_storage_size_bytes{type="data"} 10737418240
 geode_storage_size_bytes{type="wal"} 536870912
@@ -320,6 +337,7 @@ geode_page_faults_total{} 1234
 ```
 
 **Memory Metrics**:
+
 ```
 geode_memory_used_bytes{} 4294967296
 geode_memory_limit_bytes{} 17179869184
@@ -329,6 +347,7 @@ geode_buffer_pool_hit_rate{} 0.98
 ```
 
 **Index Metrics**:
+
 ```
 geode_index_operations_total{type="insert"} 12345
 geode_index_operations_total{type="delete"} 234
@@ -338,6 +357,7 @@ geode_hnsw_search_duration_seconds{quantile="0.95"} 0.012
 ```
 
 **Graph Metrics**:
+
 ```
 geode_node_count{label="Person"} 1000000
 geode_node_count{label="Product"} 50000
@@ -348,6 +368,7 @@ geode_graph_size_relationships_total{} 5250000
 ```
 
 **Session Metrics**:
+
 ```
 geode_active_sessions{} 42
 geode_session_create_total{} 1234
@@ -361,6 +382,7 @@ geode_session_parameters_total{} 156
 ### Installation
 
 1. **Install Grafana**:
+
 ```bash
 # Docker
 docker run -d \
@@ -373,12 +395,12 @@ sudo apt-get install -y grafana
 sudo systemctl start grafana-server
 ```
 
-2. **Access Grafana**: http://localhost:3000 (default: admin/admin)
+2. **Access Grafana**: <http://localhost:3000> (default: admin/admin)
 
 3. **Add Prometheus Data Source**:
    - Configuration → Data Sources → Add data source
    - Select Prometheus
-   - URL: http://localhost:9091 (Prometheus server)
+   - URL: <http://localhost:9091> (Prometheus server)
    - Save & Test
 
 ### Pre-Built Dashboards
@@ -388,6 +410,7 @@ Geode includes pre-built Grafana dashboards:
 **Location**: `monitoring/grafana/dashboards/`
 
 **Available Dashboards**:
+
 1. `geode-overview.json` - System overview
 2. `geode-queries.json` - Query performance
 3. `geode-transactions.json` - Transaction monitoring
@@ -395,6 +418,7 @@ Geode includes pre-built Grafana dashboards:
 5. `geode-quic.json` - QUIC transport metrics (v0.1.1+)
 
 **Import Dashboard**:
+
 1. Dashboards → Import
 2. Upload JSON file or paste JSON
 3. Select Prometheus data source
@@ -503,6 +527,7 @@ Create dynamic dashboards with variables:
 ```
 
 Use in queries:
+
 ```promql
 geode_node_count{instance=~"$instance", label="$label"}
 ```
@@ -514,6 +539,7 @@ geode_node_count{instance=~"$instance", label="$label"}
 Instrument your application code:
 
 **Go Example**:
+
 ```go
 import (
     "github.com/prometheus/client_golang/prometheus"
@@ -558,6 +584,7 @@ func handleLogin(username, password string) error {
 ```
 
 **Python Example**:
+
 ```python
 from prometheus_client import Counter, Histogram
 
@@ -737,6 +764,7 @@ geode_query_duration_seconds{quantile="0.95"} < 0.1
 ```
 
 **Grafana SLO Dashboard**:
+
 ```json
 {
   "panels": [
@@ -798,12 +826,15 @@ groups:
 **Symptom**: Prometheus shows no targets or metrics unavailable
 
 **Solutions**:
+
 1. Verify server is running with metrics enabled:
+
    ```bash
    curl http://localhost:9090/metrics
    ```
 
 2. Check Prometheus configuration:
+
    ```bash
    promtool check config prometheus.yml
    ```
@@ -811,6 +842,7 @@ groups:
 3. Verify firewall allows port 9090
 
 4. Check Prometheus logs:
+
    ```bash
    journalctl -u prometheus -f
    ```
@@ -820,7 +852,9 @@ groups:
 **Symptom**: Prometheus consuming excessive memory
 
 **Solutions**:
+
 1. Limit label cardinality:
+
    ```yaml
    # ❌ Bad: Unique label per user
    geode_user_queries_total{user_id="12345"}
@@ -830,12 +864,14 @@ groups:
    ```
 
 2. Use recording rules to pre-aggregate:
+
    ```yaml
    - record: query_rate_by_type
      expr: sum(rate(geode_queries_total[5m])) by (type)
    ```
 
 3. Adjust Prometheus retention:
+
    ```bash
    prometheus --storage.tsdb.retention.time=15d
    ```
@@ -845,12 +881,15 @@ groups:
 **Symptom**: Telemetry causing performance degradation
 
 **Solutions**:
+
 1. Disable paging telemetry in production:
+
    ```bash
    unset GEODE_TELEMETRY_PAGING
    ```
 
 2. Reduce Prometheus scrape interval:
+
    ```yaml
    scrape_interval: 60s  # Instead of 15s
    ```
@@ -860,16 +899,19 @@ groups:
 ## Next Steps
 
 **Explore More**:
+
 - [Observability Guide](/docs/ops/observability/) - Logging and tracing
 - [Deployment](/docs/ops/deployment/) - Production deployment
 - [Performance Tuning](/docs/query/performance-tuning/) - Query optimization
 
 **Related Topics**:
+
 - [Alerting Best Practices](/docs/ops/observability/#alerting) - Alert design
 - [Backup and Recovery](/docs/guides/backup-automation/) - Data protection
 - [Security Monitoring](/docs/security/overview/#audit-logging) - Security events
 
 **Tools**:
+
 - [Prometheus](https://prometheus.io/) - Metrics collection
 - [Grafana](https://grafana.com/) - Visualization
 - [Alertmanager](https://prometheus.io/docs/alerting/latest/alertmanager/) - Alert routing

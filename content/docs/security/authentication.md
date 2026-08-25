@@ -137,15 +137,10 @@ That is the root of `GAP-0270`, which currently accounts for most of the remaini
 Geode documents and uses Argon2id-style password handling and enforces password policy at login/update time.
 
 ```yaml
-security:
-  password_policy:
-    min_length: 16
-    require_uppercase: true
-    require_lowercase: true
-    require_digits: true
-    require_special: true
-    expiration_days: 90
-    history_count: 5
+# NOTE: `security:` is not a configuration-file section — it is ignored.
+# KMS and encryption-at-rest are configured with environment variables:
+#   GEODE_KMS_URL, GEODE_KMS_ENDPOINT, GEODE_KMS_API_KEY
+#   GEODE_MASTER_KEY, GEODE_TDE_ENABLED, GEODE_ALLOW_LOCAL_KMS
 ```
 
 The CLI help and current auth docs also assume:
@@ -172,13 +167,10 @@ geode apikey revoke-all --user alice --yes
 Geode includes TOTP-based MFA support and recent March hardening fixes addressed deterministic secret generation. Core MFA support exists, but some CLI-driven MFA workflows are still constrained by `GAP-0270` because they do not yet delegate to the running server.
 
 ```yaml
-security:
-  mfa:
-    enabled: true
-    totp:
-      issuer: "Geode"
-      digits: 6
-      period: 30
+# NOTE: `security:` is not a configuration-file section — it is ignored.
+# KMS and encryption-at-rest are configured with environment variables:
+#   GEODE_KMS_URL, GEODE_KMS_ENDPOINT, GEODE_KMS_API_KEY
+#   GEODE_MASTER_KEY, GEODE_TDE_ENABLED, GEODE_ALLOW_LOCAL_KMS
 ```
 
 Use MFA for:
@@ -192,11 +184,10 @@ Use MFA for:
 Certificate-based client identity is available for zero-trust or service-mesh deployments.
 
 ```yaml
-security:
-  mtls:
-    enabled: true
-    client_ca: "/etc/geode/certs/client-ca.pem"
-    verify_client: "require"
+# NOTE: `security:` is not a configuration-file section — it is ignored.
+# KMS and encryption-at-rest are configured with environment variables:
+#   GEODE_KMS_URL, GEODE_KMS_ENDPOINT, GEODE_KMS_API_KEY
+#   GEODE_MASTER_KEY, GEODE_TDE_ENABLED, GEODE_ALLOW_LOCAL_KMS
 ```
 
 Client usage:

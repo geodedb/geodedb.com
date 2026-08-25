@@ -44,22 +44,26 @@ The property graph model consists of four fundamental concepts: nodes (entities)
 ### Core Concepts
 
 **Nodes** represent entities in your domain (people, products, locations, events, etc.). Each node can have:
+
 - **Labels**: One or more type tags (e.g., `:Person`, `:Employee`)
 - **Properties**: Key-value pairs storing data about the entity
 - **Unique ID**: System-assigned identifier
 
 **Relationships** represent connections between nodes. Each relationship has:
+
 - **Type**: Exactly one relationship type (e.g., `:KNOWS`, `:WORKS_FOR`)
 - **Direction**: Relationships are always directed (source → target)
 - **Properties**: Key-value pairs describing the connection
 - **Unique ID**: System-assigned identifier
 
 **Properties** store data as key-value pairs where:
+
 - **Keys**: String identifiers (e.g., "name", "age", "created_at")
 - **Values**: Any supported data type (see Type System below)
 - **Schema-optional**: Properties can be added/removed dynamically
 
 **Labels** categorize nodes and relationships:
+
 - **Multiple Labels**: Nodes can have multiple labels (e.g., `:Person:Employee:Manager`)
 - **Single Type**: Relationships have exactly one type
 - **Index Support**: Labels enable efficient querying via indexes
@@ -77,6 +81,7 @@ The property graph model consists of four fundamental concepts: nodes (entities)
 ```
 
 This simple graph represents:
+
 - Two people (Alice and Bob) with properties
 - One company (Acme Corp)
 - Three relationships (two WORKS_FOR, one KNOWS) with properties
@@ -153,7 +158,7 @@ MATCH (a:Person {name: "Alice"}), (c:Company {name: "Acme"})
 CREATE (a)-[:WORKS_FOR {
   since: date('2020-01-01'),
   role: "Engineer",
-  salary: money(150000, 'USD')
+  salary: currency(150000, 'USD')
 }]->(c)
 ```
 
@@ -286,7 +291,7 @@ CREATE (author)-[:POSTED]->(p)
 CREATE (:Product {
   sku: "WIDGET-001",
   name: "Super Widget",
-  price: money(29.99, 'USD')
+  price: currency(29.99, 'USD')
 })-[:IN_CATEGORY]->(:Category {name: "Widgets"})
 
 -- Orders

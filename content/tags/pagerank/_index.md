@@ -555,7 +555,7 @@ WHERE page.content CONTAINS $query
 WITH page,
      page.pagerank AS authority_score,
      // TF-IDF score from full-text index
-     text_score(page, $query) AS relevance_score
+     score AS relevance_score
 RETURN page.url,
        page.title,
        authority_score,

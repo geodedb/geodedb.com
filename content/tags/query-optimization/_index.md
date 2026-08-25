@@ -489,17 +489,15 @@ Track query performance continuously:
 
 ```gql
 // Identify slow queries
-SELECT query_text, avg_duration, execution_count
-FROM system.query_stats
-WHERE avg_duration > 1000  -- milliseconds
-ORDER BY avg_duration DESC
-LIMIT 20;
+-- There is no query-statistics table, slow-query log or plan cache to
+-- query. Measure a specific statement with EXPLAIN / PROFILE, and scrape
+-- aggregate counters from the Prometheus endpoint (GEODE_METRICS_PORT).
 
 // Find missing indexes
-SELECT table_name, column_name, scan_count
-FROM system.column_stats
-WHERE scan_count > 1000 AND index_exists = false
-ORDER BY scan_count DESC;
+-- Yields node_count, edge_count, label_count, format_version, page_size,
+-- wal_lsn, last_checkpoint_lsn, free_pages_* , *_consistent,
+-- label_index_entries and total_errors for the graph.
+CALL geode.storage.stats();
 ```
 
 ### Capacity Planning

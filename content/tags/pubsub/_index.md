@@ -70,7 +70,7 @@ async def publish_user_event(client, user_id, event_type):
             "version": "1.0"
         }
     }
-    
+
     await client.publish("user_events", message)
     print(f"Published: {event_type} for user {user_id}")
 ```
@@ -90,7 +90,7 @@ async def handle_user_event(message):
     """Process user event"""
     event_type = message["event_type"]
     user_id = message["user_id"]
-    
+
     if event_type == "signup":
         await send_welcome_email(user_id)
     elif event_type == "purchase":
@@ -169,15 +169,15 @@ class RPCClient:
         self.client = client
         self.pending_requests = {}
         self.reply_topic = f"replies_{uuid.uuid4()}"
-        
+
     async def call(self, method, params, timeout=5.0):
         """Make RPC call"""
         request_id = str(uuid.uuid4())
-        
+
         # Set up reply handler
         reply_future = asyncio.Future()
         self.pending_requests[request_id] = reply_future
-        
+
         # Publish request
         await self.client.publish("rpc_requests", {
             "id": request_id,
@@ -185,14 +185,14 @@ class RPCClient:
             "params": params,
             "reply_to": self.reply_topic
         })
-        
+
         # Wait for reply
         try:
             result = await asyncio.wait_for(reply_future, timeout)
             return result
         finally:
             del self.pending_requests[request_id]
-    
+
     async def listen_for_replies(self):
         """Listen for RPC replies"""
         async with self.client.subscribe(self.reply_topic) as sub:
@@ -339,7 +339,7 @@ async def batch_publisher(client):
         {"user_id": f"user{i}", "action": "login"}
         for i in range(1000)
     ]
-    
+
     # Batch publish
     await client.publish_batch("user_events", messages)
 ```
@@ -351,16 +351,7 @@ async def batch_publisher(client):
 Monitor topic health:
 
 ```gql
-SELECT
-    topic_name,
-    messages_published,
-    messages_consumed,
-    pending_messages,
-    subscriber_count,
-    publish_rate,
-    consume_rate
-FROM SYSTEM.topics
-WHERE pending_messages > 10000;
+-- Geode has no pub/sub topic catalog.
 ```
 
 ### Subscriber Lag
@@ -368,14 +359,7 @@ WHERE pending_messages > 10000;
 Track consumer lag:
 
 ```gql
-SELECT
-    subscriber_id,
-    topic_name,
-    lag_messages,
-    lag_seconds,
-    last_message_time
-FROM SYSTEM.subscribers
-WHERE lag_messages > 1000;
+-- Geode has no pub/sub subscriber catalog.
 ```
 
 ## Best Practices

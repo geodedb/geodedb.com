@@ -193,7 +193,7 @@ RETURN
     e.name,
     e.start_date,
     e.end_date,
-    duration.between(e.start_date, e.end_date).days AS duration_days;
+    (e.end_date - e.start_date).days AS duration_days;
 
 -- Date formatting
 MATCH (u:User)
@@ -498,11 +498,11 @@ Get internal identifiers for elements.
 ```gql
 -- Element ID function
 MATCH (p:Person)
-RETURN elementId(p) AS id, p.name;
+RETURN id(p) AS id, p.name;
 
 -- For relationships
 MATCH (a)-[r:KNOWS]->(b)
-RETURN elementId(r) AS rel_id, a.name, b.name;
+RETURN id(r) AS rel_id, a.name, b.name;
 ```
 
 ### Returning Labels and Types
@@ -565,6 +565,7 @@ RETURN f.name;
 ### Performance Optimization
 
 1. **Return Only What You Need**: Avoid returning entire nodes when only properties are needed
+
 ```gql
 -- Good: Return specific properties
 MATCH (p:Person)
@@ -576,6 +577,7 @@ RETURN p;  -- May include large unused properties
 ```
 
 2. **Apply LIMIT Early**: When you only need a subset
+
 ```gql
 -- Good: Limit before expensive operations
 MATCH (p:Product)
@@ -586,6 +588,7 @@ RETURN p.name, p.price;
 ```
 
 3. **Use Aliases for Clarity**: Make results self-documenting
+
 ```gql
 RETURN
     u.name AS user_name,
@@ -596,6 +599,7 @@ RETURN
 ### Result Formatting
 
 1. **Consistent Naming**: Use consistent alias conventions
+
 ```gql
 -- snake_case for database-like results
 RETURN p.name AS product_name, p.price AS unit_price;
@@ -605,6 +609,7 @@ RETURN p.name AS productName, p.price AS unitPrice;
 ```
 
 2. **Handle NULLs**: Use COALESCE for default values
+
 ```gql
 RETURN
     p.name,
@@ -613,10 +618,11 @@ RETURN
 ```
 
 3. **Format for Consumption**: Structure results for your application
+
 ```gql
 -- API-friendly format
 RETURN {
-    id: elementId(p),
+    id: id(p),
     name: p.name,
     price: p.price,
     metadata: {

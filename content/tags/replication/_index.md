@@ -389,7 +389,6 @@ Initialize replication on a running system:
 # Configure master node
 geode replication init-master \
   --listen=0.0.0.0:3141 \
-  --wal-dir=/var/lib/geode/wal \
   --replication-factor=3
 
 # Add replica
@@ -459,9 +458,10 @@ geode replication configure-failover \
 Track replication health and performance:
 
 ```yaml
-monitoring:
-  replication:
-    enabled: true
+# NOTE: `monitoring:` is not a configuration-file section — it is ignored.
+# The Prometheus listener is opt-in and env-only:
+#   GEODE_METRICS_PORT=9090   (serves /metrics and /health)
+#   GEODE_METRICS_BIND=127.0.0.1
 
     metrics:
       # Replication lag in milliseconds

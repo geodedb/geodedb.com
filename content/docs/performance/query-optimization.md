@@ -315,11 +315,11 @@ GROUP BY p.city;
 ### Pre-aggregate with Materialized Views
 
 ```gql
--- Create materialized view for common aggregation
-CREATE MATERIALIZED VIEW city_population AS
-SELECT city, count(*) AS population
-FROM (MATCH (p:Person) WHERE p.status = 'active' RETURN p.city AS city)
-GROUP BY city;
+-- Materialized views are not reachable from GQL: the grammar has no
+-- MATERIALIZED keyword. Precompute the aggregate onto nodes instead:
+MATCH (u:User)-[:PURCHASED]->(p:Product)
+WITH p, count(*) AS purchases
+SET p.purchase_count = purchases;
 
 -- Query the materialized view
 SELECT * FROM city_population WHERE city = 'New York';

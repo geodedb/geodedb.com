@@ -57,8 +57,9 @@ from geode_client import Client
 client = Client(host="geode.example.com", port=3141, skip_verify=True)
 
 async with client.connection() as conn:
-    # Session-scoped variables live on the connection
-    await conn.execute("SET SESSION tenant_id = 'tenant_123'")
+    # Session parameters use the ISO GQL SESSION SET VALUE form.
+    # `SET SESSION <name> = ...` with a bare identifier is not valid GQL.
+    await conn.execute("SESSION SET VALUE $tenant_id = 'tenant_123'")
 
     # Start transaction within the session
     await conn.begin()
@@ -70,7 +71,7 @@ async with client.connection() as conn:
         raise
 
     # Session variables persist for the connection lifetime
-    result, _ = await conn.query("RETURN current_tenant_id() AS tenant_id")
+    result, _ = await conn.query("RETURN $tenant_id AS tenant_id")
     tenant_id = result.rows[0]["tenant_id"].as_string
 ```
 
@@ -92,12 +93,12 @@ if err != nil {
 defer db.Close()
 
 // Set session variables
-_, err = db.ExecContext(context.Background(), "SET SESSION tenant_id = 'tenant_123'")
+_, err = db.ExecContext(context.Background(), "SESSION SET VALUE $tenant_id = 'tenant_123'")
 
 // Execute queries in session context
 rows, err := db.QueryContext(
     context.Background(),
-    "MATCH (p:Person) WHERE p.tenant_id = current_tenant_id() RETURN p",
+    "MATCH (p:Person) WHERE p.tenant_id = $tenant_id RETURN p",
 )
 ```
 
@@ -109,9 +110,9 @@ use geode_client::Client;
 let client = Client::new("geode.example.com", 3141).skip_verify(true);
 let mut conn = client.connect().await?;
 
-conn.query("SET SESSION tenant_id = 'tenant_123'").await?;
+conn.query("SESSION SET VALUE $tenant_id = 'tenant_123'").await?;
 let (page, _) = conn
-    .query("MATCH (p:Person) WHERE p.tenant_id = current_tenant_id() RETURN p")
+    .query("MATCH (p:Person) WHERE p.tenant_id = $tenant_id RETURN p")
     .await?;
 ```
 
@@ -518,12 +519,10 @@ geode stats --component=sessions
 ### Session Alerts
 
 ```yaml
-monitoring:
-  alerts:
-    sessions:
-      - name: "too_many_sessions"
-        condition: "active_sessions > 5000"
-        severity: "warning"
+# NOTE: `monitoring:` is not a configuration-file section — it is ignored.
+# The Prometheus listener is opt-in and env-only:
+#   GEODE_METRICS_PORT=9090   (serves /metrics and /health)
+#   GEODE_METRICS_BIND=127.0.0.1
 
       - name: "session_timeout_spike"
         condition: "timeout_rate > 100/minute"

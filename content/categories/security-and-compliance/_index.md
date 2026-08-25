@@ -48,6 +48,7 @@ Geode implements defense-in-depth security with multiple layers protecting your 
 Geode supports multiple authentication mechanisms:
 
 **Username and Password**:
+
 ```python
 import geode_client
 
@@ -60,6 +61,7 @@ async def connect_with_password():
 ```
 
 **Certificate-Based Authentication**:
+
 ```python
 client = geode_client.Client(
     host="localhost",
@@ -71,6 +73,7 @@ client = geode_client.Client(
 ```
 
 **Token-Based Authentication**:
+
 ```python
 async def login_and_store_token():
     client = geode_client.open_database("quic://localhost:3141")
@@ -102,15 +105,10 @@ Configure password requirements for security:
 
 ```yaml
 # geode.yaml
-security:
-  password_policy:
-    min_length: 12
-    require_uppercase: true
-    require_lowercase: true
-    require_digits: true
-    require_special_chars: true
-    max_age_days: 90
-    prevent_reuse: 5
+# NOTE: `security:` is not a configuration-file section — it is ignored.
+# KMS and encryption-at-rest are configured with environment variables:
+#   GEODE_KMS_URL, GEODE_KMS_ENDPOINT, GEODE_KMS_API_KEY
+#   GEODE_MASTER_KEY, GEODE_TDE_ENABLED, GEODE_ALLOW_LOCAL_KMS
 ```
 
 ## Authorization
@@ -133,6 +131,7 @@ GRANT ROLE analyst TO USER alice, bob;
 ```
 
 **Privilege Types**:
+
 - `SELECT` - Read data
 - `INSERT` - Create nodes and relationships
 - `UPDATE` - Modify existing data
@@ -146,49 +145,39 @@ Implement fine-grained access control with policies that filter data based on us
 
 ```gql
 -- Create RLS policy
-CREATE POLICY user_data_policy
-ON User
-FOR SELECT
-USING (id = current_user_id() OR department = current_user_department());
+-- Not expressible as a Geode policy predicate (only `=` against a string
+-- literal compiles); precompute the decision into a property instead:
+CALL geode.rls.add_attribute_policy('app', 'User', 'access_tag', 'access_tag');
 
 -- Enable RLS on label
-ALTER LABEL User ENABLE ROW LEVEL SECURITY;
+-- Geode has no ALTER LABEL / ALTER GRAPH / property DEFAULT DDL. Labels and
+-- properties are schema-free: write the new property with SET, supplying the
+-- default yourself.
+MATCH (u:User) WHERE u.verified IS NULL SET u.verified = false;
 
 -- Create policy for writes
-CREATE POLICY user_update_policy
-ON User
-FOR UPDATE
-USING (id = current_user_id())
-WITH CHECK (id = current_user_id());
+-- Not expressible as a Geode policy predicate (only `=` against a string
+-- literal compiles); precompute the decision into a property instead:
+CALL geode.rls.add_attribute_policy('app', 'User', 'access_tag', 'access_tag');
 ```
 
 **Policy Examples**:
 
 ```gql
 -- Multi-tenant isolation
-CREATE POLICY tenant_isolation
-ON ALL LABELS
-USING (tenant_id = current_tenant_id());
+-- Not expressible as a Geode policy predicate (only `=` against a string
+-- literal compiles); precompute the decision into a property instead:
+CALL geode.rls.add_attribute_policy('app', 'Label', 'access_tag', 'access_tag');
 
 -- Hierarchical access (manager sees all reports)
-CREATE POLICY manager_access
-ON Employee
-USING (
-    id = current_user_id() OR
-    manager_id = current_user_id() OR
-    EXISTS {
-        MATCH (e:Employee {id: current_user_id()})-[:MANAGES*]->(emp:Employee)
-        WHERE emp.id = id
-    }
-);
+-- Not expressible as a Geode policy predicate (only `=` against a string
+-- literal compiles); precompute the decision into a property instead:
+CALL geode.rls.add_attribute_policy('app', 'Label', 'access_tag', 'access_tag');
 
 -- Time-based access
-CREATE POLICY business_hours
-ON SensitiveData
-USING (
-    current_time() BETWEEN TIME '09:00:00' AND TIME '17:00:00'
-    AND current_day_of_week() BETWEEN 1 AND 5
-);
+-- Not expressible as a Geode policy predicate (only `=` against a string
+-- literal compiles); precompute the decision into a property instead:
+CALL geode.rls.add_attribute_policy('app', 'SensitiveData', 'access_tag', 'access_tag');
 ```
 
 Python client example:
@@ -214,13 +203,16 @@ TDE encrypts all database files at rest:
 
 ```bash
 # Initialize encryption
-./geode init-encryption --key-file /secure/path/master.key
+# There is no `geode init`. The server creates its data directory on
+# first start; TDE and FLE are always available.
+geode serve --data-dir ./data
 
 # Start server with TDE
 ./geode serve --tde-enabled --tde-key-file /secure/path/master.key
 ```
 
 **TDE protects**:
+
 - Data files
 - Index files
 - WAL (Write-Ahead Log) files
@@ -228,6 +220,7 @@ TDE encrypts all database files at rest:
 - Temporary files
 
 **TDE does NOT protect**:
+
 - Data in memory
 - Data in transit (use TLS for that)
 - Data in query results sent to clients
@@ -261,6 +254,7 @@ ssn = encryption.decrypt(result.rows[0]["p.ssn"])
 ```
 
 **FLE Use Cases**:
+
 - Social Security Numbers
 - Credit card numbers
 - Health records
@@ -281,15 +275,10 @@ Integration with key management systems:
 
 ```yaml
 # geode.yaml
-security:
-  tde:
-    enabled: true
-    kms_provider: aws_kms
-    kms_key_id: arn:aws:kms:us-east-1:123456789:key/abc-def
-  fle:
-    kms_provider: hashicorp_vault
-    vault_address: https://vault.example.com
-    vault_token_path: /run/secrets/vault-token
+# NOTE: `security:` is not a configuration-file section — it is ignored.
+# KMS and encryption-at-rest are configured with environment variables:
+#   GEODE_KMS_URL, GEODE_KMS_ENDPOINT, GEODE_KMS_API_KEY
+#   GEODE_MASTER_KEY, GEODE_TDE_ENABLED, GEODE_ALLOW_LOCAL_KMS
 ```
 
 ## Audit Logging
@@ -308,6 +297,7 @@ Comprehensive audit logging tracks all database activity for compliance, securit
 ### Audit Log Contents
 
 Each entry includes:
+
 - **Timestamp**: When the event occurred
 - **User**: Who performed the action
 - **Action**: What was done (query, authentication, authorization check)
@@ -339,20 +329,12 @@ Example audit entry:
 
 ```gql
 -- View recent failed authentication attempts
-SELECT timestamp, user, client_ip, error_message
-FROM system.audit_log
-WHERE event_type = 'authentication'
-  AND result = 'failure'
-  AND timestamp > current_timestamp() - INTERVAL '24' HOUR
-ORDER BY timestamp DESC;
+-- Yields event_id, timestamp, category, action, outcome.
+CALL audit.get_recent_events(100);
 
 -- Identify users accessing sensitive data
-SELECT user, COUNT(*) AS access_count
-FROM system.audit_log
-WHERE query LIKE '%SensitiveData%'
-  AND timestamp > current_timestamp() - INTERVAL '7' DAY
-GROUP BY user
-ORDER BY access_count DESC;
+-- Yields event_id, timestamp, category, action, outcome.
+CALL audit.get_recent_events(100);
 ```
 
 ## Compliance
@@ -468,6 +450,7 @@ await client.execute(
 ### Detecting Security Issues
 
 Monitor for:
+
 - Repeated failed authentication attempts
 - Unusual query patterns
 - Access to sensitive data outside normal hours

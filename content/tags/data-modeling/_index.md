@@ -93,6 +93,7 @@ LIMIT 10;
 ### 2. Choose Appropriate Node Granularity
 
 Determine what should be a node versus a property based on:
+
 - Is it referenced by multiple entities?
 - Does it have its own relationships?
 - Will it be queried independently?
@@ -526,7 +527,7 @@ WHERE p.category = 'Electronics' AND p.price < 500
 RETURN p.name;  -- Uses composite index
 
 -- Full-text index for search
-CREATE FULLTEXT INDEX idx_product_search ON Product(name, description);
+CREATE INDEX idx_product_search ON Product(name, description) USING fulltext;
 ```
 
 ### Query Patterns to Optimize For

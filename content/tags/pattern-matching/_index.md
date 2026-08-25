@@ -67,6 +67,7 @@ RETURN u
 ```
 
 **Pattern Components**:
+
 - `(n)` - Variable binding (can reference later)
 - `:User` - Label constraint
 - `{verified: true}` - Property constraint (inline)
@@ -104,6 +105,7 @@ RETURN a, movie
 ```
 
 **Relationship Directions**:
+
 - `->` - Right-directed (from left node to right node)
 - `<-` - Left-directed (from right node to left node)
 - `-` - Undirected (matches either direction)
@@ -424,14 +426,14 @@ RETURN DISTINCT account.id, account.holder_name
 // Find circular payment patterns
 MATCH path = (a:Account)-[:TRANSFER*3..5]->(a)
 WHERE ALL(rel IN RELATIONSHIPS(path) WHERE rel.amount > 1000)
-  AND ALL(node IN NODES(path) WHERE node.created_at > DATE() - DURATION('P30D'))
+  AND ALL(node IN NODES(path) WHERE node.created_at > DATE() - duration('P30D'))
 RETURN path, SUM([rel IN RELATIONSHIPS(path) | rel.amount]) AS total_amount
 
 // Shared contact information
 MATCH (user1:User)-[:HAS_PHONE|HAS_EMAIL]->(contact)<-[:HAS_PHONE|HAS_EMAIL]-(user2:User)
 WHERE user1 <> user2
-  AND user1.created_at > DATE() - DURATION('P7D')
-  AND user2.created_at > DATE() - DURATION('P7D')
+  AND user1.created_at > DATE() - duration('P7D')
+  AND user2.created_at > DATE() - duration('P7D')
 RETURN user1, user2, COLLECT(contact) AS shared_contacts
 ```
 
