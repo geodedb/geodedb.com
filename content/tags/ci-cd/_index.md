@@ -47,29 +47,34 @@ Performance Benchmarks → Client Tests → Deploy to Staging → Production
 ```
 
 **Stage 1: Build Verification** (30 seconds)
+
 - Compile server (Zig)
 - Build all client libraries
 - Verify no compilation errors
 - Check code formatting
 
 **Stage 2: Unit Testing** (2-3 minutes)
+
 - Core Geode unit tests (1,688 tests)
 - Individual client library tests
 - Mock-free, server-backed testing
 - 97.4% pass rate target
 
 **Stage 3: Integration Testing** (5-10 minutes)
+
 - Cross-client test harness
 - Multi-client scenarios
 - Transaction isolation tests
 - Concurrent access tests
 
 **Stage 4: Conformance Testing** (3-5 minutes)
+
 - ISO/IEC 39075:2024 conformance profile tests (full GQL)
 - Standards conformance validation (profile-based)
 - Conformance profile gating
 
 **Stage 5: Performance Testing** (10-20 minutes)
+
 - Benchmark suite execution
 - Regression detection
 - Resource utilization monitoring
@@ -136,15 +141,15 @@ jobs:
         run: |
           zig build test
 
-      - name: Run GeodeTestLab Comprehensive
+      - name: Run Integration Suites
         working-directory: geode
         run: |
-          make geodetestlab-comprehensive
+          make test-all-integration
 
-      - name: Generate Coverage Report
+      - name: Run Sharded Unit Tests
+        working-directory: geode
         run: |
-          zig build test -Dcoverage=true
-          # Process coverage data
+          zig build test -Dtest-shard-total=4 -Dtest-shard-index=0
 
   gql-compliance:
     name: GQL Compliance Tests
@@ -389,6 +394,7 @@ jobs:
 ```
 
 **Benefits**:
+
 - Tests run in 5-8 minutes instead of 30+ minutes sequentially
 - Early failure detection across platforms
 - Matrix testing validates multiple configurations
@@ -579,6 +585,7 @@ if __name__ == '__main__':
 ### 1. Fast Feedback Loops
 
 **Optimize build times**:
+
 - Cache Zig build artifacts (30s → 5s builds)
 - Parallelize independent tests
 - Run smoke tests before full suite
@@ -596,6 +603,7 @@ if __name__ == '__main__':
 ### 2. Reproducible Builds
 
 **Pin all dependencies**:
+
 ```yaml
 # Exact versions, not ranges
 env:
@@ -607,6 +615,7 @@ env:
 ### 3. Comprehensive Test Data
 
 **Test with realistic data**:
+
 ```bash
 # Generate realistic test graph
 ./scripts/generate-test-graph.py \
@@ -619,6 +628,7 @@ env:
 ### 4. Environment Parity
 
 **Staging mirrors production**:
+
 - Same instance types (AWS r7g.xlarge)
 - Same Geode configuration
 - Same QUIC settings
@@ -627,6 +637,7 @@ env:
 ### 5. Automated Rollbacks
 
 **Automatic rollback on failure**:
+
 ```yaml
 - name: Health Check
   run: |

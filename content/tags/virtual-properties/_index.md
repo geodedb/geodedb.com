@@ -52,6 +52,7 @@ Virtual properties offer zero-storage computation:
 ### When to Use Virtual Properties
 
 **Ideal For**:
+
 - Display formatting (phone numbers, dates, names)
 - Simple arithmetic transformations
 - Frequently changing business logic
@@ -60,6 +61,7 @@ Virtual properties offer zero-storage computation:
 - Presentation layer logic
 
 **Avoid When**:
+
 - Need to filter/sort by the property frequently
 - Complex expensive computations
 - Aggregations across many nodes
@@ -579,7 +581,7 @@ CREATE PROPERTY TYPE Account (
             WHEN 'frozen' THEN 'Temporarily Frozen'
             WHEN 'closed' THEN 'Closed'
             WHEN 'pending' THEN 'Pending Activation'
-            ELSE INITCAP(status)
+            ELSE status  -- no INITCAP function; store the display form if needed
         END
     )
 );
@@ -709,12 +711,14 @@ func (u *User) FollowerCount() int {
 ### When to Convert to Computed/Stored
 
 **Convert to Computed Property If**:
+
 - Queried frequently (>1000 times/day)
 - Used in WHERE clauses often
 - Need to create index on the property
 - Calculation time > 50ms
 
 **Convert to Stored Property If**:
+
 - Value rarely changes
 - Need guaranteed consistent reads
 - Complex expensive calculation

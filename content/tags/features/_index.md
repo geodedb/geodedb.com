@@ -652,20 +652,18 @@ await client.execute("""
 Built-in algorithm implementations:
 
 ```gql
--- PageRank
-CALL algo.pageRank('User', 'FOLLOWS', {
-    iterations: 20,
-    dampingFactor: 0.85
-}) YIELD node, score
-RETURN node.name, score
+-- PageRank (no arguments: runs over the whole current graph)
+CALL algo.pagerank.stream()
+YIELD nodeId, score
+MATCH (n:User) WHERE id(n) = nodeId
+RETURN n.name, score
 ORDER BY score DESC
 LIMIT 10
 
 -- Community Detection (Louvain)
-CALL algo.louvain('User', 'FRIENDS_WITH', {
-    resolution: 1.0
-}) YIELD node, community
-RETURN community, COUNT(node) as size
+CALL algo.louvain.stream()
+YIELD nodeId, community
+RETURN community, COUNT(nodeId) AS size
 ORDER BY size DESC
 
 -- Shortest Path
@@ -673,9 +671,11 @@ MATCH path = shortestPath((start:User {id: $id1})-[:KNOWS*]-(end:User {id: $id2}
 RETURN [node IN nodes(path) | node.name] as path, length(path) as distance
 
 -- Betweenness Centrality
-CALL algo.betweenness('User', 'KNOWS') YIELD node, score
-RETURN node.name, score
-ORDER BY score DESC
+CALL algo.betweenness.stream()
+YIELD nodeId, betweenness
+MATCH (n:User) WHERE id(n) = nodeId
+RETURN n.name, betweenness
+ORDER BY betweenness DESC
 LIMIT 20
 ```
 

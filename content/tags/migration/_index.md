@@ -18,11 +18,13 @@ Data migration is the process of transferring data from one system to another, o
 Move all data at once:
 
 **Pros:**
+
 - Simple and straightforward
 - Immediate cutover
 - No sync period
 
 **Cons:**
+
 - Higher risk
 - Longer downtime
 - Difficult rollback
@@ -43,11 +45,13 @@ geode import --input data.json --graph production
 Migrate data in phases:
 
 **Pros:**
+
 - Lower risk
 - Phased validation
 - Easier rollback
 
 **Cons:**
+
 - More complex
 - Requires sync
 - Longer timeline
@@ -68,11 +72,13 @@ geode import --input activities.json --graph production
 Run old and new systems simultaneously:
 
 **Pros:**
+
 - Lowest risk
 - Validate in production
 - Gradual transition
 
 **Cons:**
+
 - Most complex
 - Highest cost
 - Sync overhead
@@ -146,9 +152,10 @@ Clean and normalize data:
 UPDATE Person
 SET email = TRIM(LOWER(email));
 
--- Standardize phone numbers
-UPDATE Contact
-SET phone = REGEXP_REPLACE(phone, '[^0-9]', '');
+-- Standardize phone numbers. There is no regex replacement (`REGEXP_REPLACE`
+-- does not exist); REPLACE removes one literal substring at a time.
+MATCH (c:Contact)
+SET c.phone = REPLACE(REPLACE(REPLACE(c.phone, '-', ''), ' ', ''), '.', '');
 
 -- Remove duplicates
 DELETE FROM Person p1
@@ -198,7 +205,7 @@ async def migrate_users(source_conn, geode_client):
     """Migrate users from SQL to Geode"""
     # Extract from source
     users = await source_conn.fetch("SELECT * FROM users")
-    
+
     batch = []
     for user in users:
         # Transform
@@ -211,14 +218,14 @@ async def migrate_users(source_conn, geode_client):
                 "created_at": user['created_at'].isoformat()
             }
         }
-        
+
         batch.append(node)
-        
+
         # Load in batches
         if len(batch) >= 1000:
             await geode_client.create_nodes_batch(batch)
             batch = []
-    
+
     # Load remaining
     if batch:
         await geode_client.create_nodes_batch(batch)
@@ -226,7 +233,7 @@ async def migrate_users(source_conn, geode_client):
 async def main():
     source = await connect_source()
     geode = Client("localhost", 3141)
-    
+
     await migrate_users(source, geode)
     await migrate_relationships(source, geode)
     await validate_migration(source, geode)
@@ -276,6 +283,7 @@ OR NOT EXISTS (
 ## Best Practices
 
 ### Planning
+
 - Document current state
 - Define success criteria
 - Create rollback plan
@@ -283,6 +291,7 @@ OR NOT EXISTS (
 - Schedule during low-traffic
 
 ### Execution
+
 - Use transactions
 - Batch operations
 - Monitor progress
@@ -290,6 +299,7 @@ OR NOT EXISTS (
 - Keep audit trail
 
 ### Post-Migration
+
 - Verify data quality
 - Update documentation
 - Monitor performance

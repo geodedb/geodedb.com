@@ -140,6 +140,7 @@ geode serve --config geode.yaml
 ```
 
 Environment variables use underscores to represent nesting:
+
 - `GEODE_SERVER_LISTEN` → `server.listen`
 - `GEODE_STORAGE_CACHE_SIZE_MB` → `storage.cache_size_mb`
 - `GEODE_TRANSACTIONS_ISOLATION_LEVEL` → `transactions.isolation_level`
@@ -159,18 +160,21 @@ geode serve \
 
 ### 4. Runtime Configuration
 
-Change certain settings while server is running:
+Geode has no runtime configuration surface: there is no `system.*` procedure
+namespace, no configuration-reload command, and no way to change a server
+setting from GQL. Configuration is read at start-up from the config file and
+the command line, so a change means restarting the server:
 
-```gql
--- View current configuration
-CALL system.config.show();
+```bash
+# Edit .geode/config.yaml (or the file named by --config), then:
+systemctl restart geode
 
--- Update configuration setting
-CALL system.config.set('query.max_query_time_seconds', 600);
-
--- Reload configuration from file
-CALL system.config.reload();
+# ...or pass the setting directly
+geode serve --data-dir /var/lib/geode --max-connections 500 --log-level debug
 ```
+
+Per-session settings that *can* change at runtime are set with `SESSION SET`
+(for example the current graph or time zone), not through a procedure.
 
 ## Configuration Precedence
 
@@ -581,11 +585,13 @@ monitoring:
 ### Resource Allocation
 
 **Memory sizing**:
+
 - Cache: 25-50% of available RAM
 - Leave 25% for OS and other processes
 - Monitor cache hit rate and adjust
 
 **CPU allocation**:
+
 - Worker threads: 1-2x CPU count for OLTP
 - Worker threads: 2-4x CPU count for analytics
 - Monitor CPU utilization and queue depth

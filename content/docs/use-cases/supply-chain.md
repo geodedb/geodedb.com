@@ -34,12 +34,14 @@ Supply chain networks are inherently graph-structured with warehouses, distribut
 **Challenge**: Minimize delivery time and cost for final leg to customers
 
 **Solution**: Model delivery network with:
+
 - Warehouses and distribution centers
 - Customer locations
 - Routes with distance, time, traffic
 - Vehicle capacity constraints
 
 **Benefits**:
+
 - Reduced delivery times (15-30%)
 - Lower fuel costs (10-20%)
 - Improved customer satisfaction
@@ -50,12 +52,14 @@ Supply chain networks are inherently graph-structured with warehouses, distribut
 **Challenge**: Manage complex supplier dependencies and risks
 
 **Solution**: Build supplier graph with:
+
 - Suppliers at multiple tiers
 - Component dependencies
 - Lead times and capacities
 - Geographic risks
 
 **Benefits**:
+
 - Identify single points of failure
 - Assess cascade impact
 - Optimize supplier mix
@@ -66,12 +70,14 @@ Supply chain networks are inherently graph-structured with warehouses, distribut
 **Challenge**: Determine optimal warehouse locations and inventory levels
 
 **Solution**: Model warehouse network:
+
 - Warehouse locations and capacities
 - Customer demand patterns
 - Transportation costs
 - Service level requirements
 
 **Benefits**:
+
 - Minimize total logistics costs
 - Reduce inventory holding
 - Improve service levels
@@ -198,19 +204,23 @@ RETURN [n IN nodes(path) | n.name] AS route,
 #### Cheapest Path (Cost)
 
 ```gql
--- Find cheapest route using Dijkstra
-CALL graph.dijkstra('SupplyChainNetwork', {
-  start_node: {id: 'wh_1'},
-  end_node: {id: 'cust_1'},
-  relationship_type: 'ROUTE',
-  weight_property: 'cost_per_unit',
-  minimize: true
-})
+-- Look up the endpoint ids first
+MATCH (wh:Warehouse {id: 'wh_1'}) RETURN id(wh);
+MATCH (c:Customer {id: 'cust_1'}) RETURN id(c);
+
+-- Find cheapest route using Dijkstra (node ids, not patterns)
+CALL algo.dijkstra.stream(1, 42, 'cost_per_unit')
 YIELD path, cost
-RETURN [n IN nodes(path) | n.name] AS route,
+UNWIND path AS hop_id
+MATCH (n) WHERE id(n) = hop_id
+RETURN collect(n.name) AS route,
        cost AS total_cost,
-       length(path) AS hops;
+       size(path) - 1 AS hops;
 ```
+
+`algo.dijkstra.stream(startId, endId, weightProperty)` always minimises the
+weight sum, traverses every relationship type, and yields `path` as a `LIST` of
+node ids.
 
 #### Multi-Constraint Optimization
 
@@ -377,12 +387,10 @@ ORDER BY utilization DESC;
 
 ```gql
 -- Find critical warehouses in network
-CALL graph.betweennessCentrality('SupplyChainNetwork', {
-  relationship_type: 'ROUTE',
-  normalized: true
-})
-YIELD node, score
-WHERE node:Warehouse
+CALL algo.betweenness.stream()
+YIELD nodeId, betweenness
+MATCH (node:Warehouse) WHERE id(node) = nodeId
+WITH node, betweenness AS score
 RETURN node.name AS warehouse,
        node.capacity,
        score AS criticality_score

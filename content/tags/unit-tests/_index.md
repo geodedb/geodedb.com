@@ -47,13 +47,13 @@ const Lexer = @import("lexer.zig").Lexer;
 test "lexer tokenizes simple GQL query" {
     const allocator = testing.allocator;
     const input = "MATCH (n:User) RETURN n";
-    
+
     var lexer = try Lexer.init(allocator, input);
     defer lexer.deinit();
-    
+
     const tokens = try lexer.tokenize();
     defer allocator.free(tokens);
-    
+
     try testing.expectEqual(@as(usize, 7), tokens.len);
     try testing.expectEqual(Token.Type.MATCH, tokens[0].type);
     try testing.expectEqual(Token.Type.LPAREN, tokens[1].type);
@@ -63,13 +63,13 @@ test "lexer tokenizes simple GQL query" {
 test "lexer handles Unicode identifiers" {
     const allocator = testing.allocator;
     const input = "MATCH (user:用户) RETURN user.名前";
-    
+
     var lexer = try Lexer.init(allocator, input);
     defer lexer.deinit();
-    
+
     const tokens = try lexer.tokenize();
     defer allocator.free(tokens);
-    
+
     // Verify Unicode support
     try testing.expectEqualStrings("用户", tokens[3].value);
     try testing.expectEqualStrings("名前", tokens[8].value);
@@ -78,10 +78,10 @@ test "lexer handles Unicode identifiers" {
 test "lexer error handling - unterminated string" {
     const allocator = testing.allocator;
     const input = "MATCH (n) WHERE n.name = 'unterminated";
-    
+
     var lexer = try Lexer.init(allocator, input);
     defer lexer.deinit();
-    
+
     const result = lexer.tokenize();
     try testing.expectError(error.UnterminatedString, result);
 }
@@ -95,11 +95,13 @@ cd geode
 # Run all tests
 zig build test
 
-# Run specific test file
-zig build test -Dtest-filter="lexer_test"
+# Run one named suite (each suite is its own build step; there is no
+# test-name filter option)
+zig build test-graph-store
+zig build test-iso-conformance
 
-# Run with coverage
-zig build test -Dcoverage=true
+# List every available step
+zig build --help
 ```
 
 ### Query Planner Tests
@@ -112,18 +114,18 @@ test "planner chooses index for equality filter" {
     const allocator = testing.allocator;
     var db = try TestDatabase.init(allocator);
     defer db.deinit();
-    
+
     // Create index
     try db.exec("CREATE INDEX user_email ON User(email)");
-    
+
     // Parse query
     const query = "MATCH (u:User {email: $email}) RETURN u";
     var planner = try QueryPlanner.init(allocator, &db);
     defer planner.deinit();
-    
+
     const plan = try planner.plan(query);
     defer plan.deinit();
-    
+
     // Verify planner chose index seek
     try testing.expect(plan.operations[0].type == .IndexSeek);
     try testing.expectEqualStrings("user_email", plan.operations[0].index_name);
@@ -133,15 +135,15 @@ test "planner avoids cartesian product" {
     const allocator = testing.allocator;
     var db = try TestDatabase.init(allocator);
     defer db.deinit();
-    
+
     // Query that could create cartesian product
     const query = "MATCH (a:User), (b:Product) WHERE a.pref = b.cat RETURN a, b";
     var planner = try QueryPlanner.init(allocator, &db);
     defer planner.deinit();
-    
+
     const plan = try planner.plan(query);
     defer plan.deinit();
-    
+
     // Verify planner adds relationship or index to avoid cartesian product
     try testing.expect(!plan.hasCartesianProduct());
 }
@@ -155,38 +157,38 @@ test "transaction ACID properties" {
     const allocator = testing.allocator;
     var db = try TestDatabase.init(allocator);
     defer db.deinit();
-    
+
     // Test Atomicity
     {
         var tx = try db.beginTransaction();
         errdefer tx.rollback();
-        
+
         try tx.exec("CREATE (u:User {name: 'Alice'})");
         try tx.exec("CREATE (u:User {name: 'Bob'})");
-        
+
         // Simulate error
         const result = tx.exec("INVALID QUERY");
         try testing.expectError(error.ParseError, result);
-        
+
         // Rollback
         try tx.rollback();
-        
+
         // Verify no data written
         const count = try db.exec("MATCH (u:User) RETURN count(u)");
         try testing.expectEqual(@as(i64, 0), count);
     }
-    
+
     // Test Isolation
     {
         var tx1 = try db.beginTransaction();
         defer tx1.rollback();
-        
+
         var tx2 = try db.beginTransaction();
         defer tx2.rollback();
-        
+
         // TX1 writes
         try tx1.exec("CREATE (u:User {name: 'Charlie'})");
-        
+
         // TX2 should not see TX1's changes
         const count = try tx2.exec("MATCH (u:User) RETURN count(u)");
         try testing.expectEqual(@as(i64, 0), count);
@@ -214,21 +216,21 @@ func TestBasicQuery(t *testing.T) {
         t.Fatal(err)
     }
     defer db.Close()
-    
+
     // Execute query
     rows, err := db.Query("MATCH (n) RETURN count(n) AS cnt")
     if err != nil {
         t.Fatal(err)
     }
     defer rows.Close()
-    
+
     var count int64
     if rows.Next() {
         if err := rows.Scan(&count); err != nil {
             t.Fatal(err)
         }
     }
-    
+
     if count < 0 {
         t.Errorf("Expected non-negative count, got %d", count)
     }
@@ -240,14 +242,14 @@ func TestPreparedStatement(t *testing.T) {
         t.Fatal(err)
     }
     defer db.Close()
-    
+
     // Prepare statement
     stmt, err := db.Prepare("MATCH (u:User {email: $1}) RETURN u.name")
     if err != nil {
         t.Fatal(err)
     }
     defer stmt.Close()
-    
+
     // Execute with parameter
     var name string
     err = stmt.QueryRow("alice@example.com").Scan(&name)
@@ -262,24 +264,24 @@ func TestTransaction(t *testing.T) {
         t.Fatal(err)
     }
     defer db.Close()
-    
+
     tx, err := db.Begin()
     if err != nil {
         t.Fatal(err)
     }
-    
+
     // Execute in transaction
     _, err = tx.Exec("CREATE (u:User {name: 'Test User'})")
     if err != nil {
         tx.Rollback()
         t.Fatal(err)
     }
-    
+
     // Commit
     if err := tx.Commit(); err != nil {
         t.Fatal(err)
     }
-    
+
     // Verify data persisted
     var count int
     err = db.QueryRow("MATCH (u:User {name: 'Test User'}) RETURN count(u)").Scan(&count)
@@ -326,7 +328,7 @@ async def test_transaction():
             await tx.execute("CREATE (u:User {name: 'Test'})")
             await tx.execute("CREATE (u:User {name: 'Test2'})")
             # Auto-commits on exit
-        
+
         # Verify committed
         result, _ = await conn.query(
             "MATCH (u:User) WHERE u.name STARTS WITH 'Test' RETURN count(u)"
@@ -344,7 +346,7 @@ async def test_transaction_rollback():
                 raise Exception("Simulated error")
         except:
             pass
-        
+
         # Verify rolled back
         result, _ = await conn.query(
             "MATCH (u:User {name: 'Rollback Test'}) RETURN count(u)"
@@ -354,21 +356,20 @@ async def test_transaction_rollback():
 
 ## Test Coverage
 
-Geode tracks test coverage meticulously:
+The build system has no coverage instrumentation: `zig build --help` declares no
+`-Dcoverage` option and there is no `coverage-report` step. Coverage is tracked
+by requirement rather than by line — every feature carries a CANARY marker
+naming the test that proves it, and `make canary-verify` checks those markers
+against the suite:
 
 ```bash
-# Generate coverage report
 cd geode
-zig build test -Dcoverage=true
 
-# View coverage
-zig build coverage-report
+# Run the full unit suite
+zig build test
 
-# Geode Coverage Stats:
-# - Overall: 97.4% (1644/1688 tests passing)
-# - Core modules: 95%+
-# - Security code: 100%
-# - GQL parser: 95%+
+# Verify every CANARY marker resolves to a real, passing test
+make canary-verify
 ```
 
 **Coverage Requirements**:
@@ -382,13 +383,13 @@ def check_coverage_requirements(coverage_data):
         'security': 100.0,
         'parser': 95.0,
     }
-    
+
     for module, threshold in requirements.items():
         actual = coverage_data.get_module_coverage(module)
         if actual < threshold:
             print(f"FAILED: {module} coverage {actual}% < {threshold}%")
             return False
-    
+
     return True
 ```
 
@@ -411,12 +412,12 @@ test "user creation with valid data" {
     const allocator = testing.allocator;
     var db = try TestDatabase.init(allocator);
     defer db.deinit();
-    
+
     // Act
     const result = try db.exec(
         "CREATE (u:User {name: 'Alice', email: 'alice@example.com'}) RETURN u"
     );
-    
+
     // Assert
     try testing.expectEqual(@as(usize, 1), result.len);
     try testing.expectEqualStrings("Alice", result[0].get("name"));
@@ -429,13 +430,13 @@ test "user creation with valid data" {
 const TestDatabase = struct {
     db: *Database,
     allocator: std.mem.Allocator,
-    
+
     pub fn init(allocator: std.mem.Allocator) !TestDatabase {
         // Create temporary database
         var db = try Database.initTemp(allocator);
         return TestDatabase{ .db = db, .allocator = allocator };
     }
-    
+
     pub fn deinit(self: *TestDatabase) void {
         self.db.deinit();
     }
@@ -445,8 +446,11 @@ const TestDatabase = struct {
 ### 4. Parallel Test Execution
 
 ```bash
-# Run tests in parallel (8 shards)
-zig build test -Dparallel=8
+# Split the suite into 8 load-balanced shards (index is 0-based); run each
+# shard on its own CI worker
+zig build test -Dtest-shard-total=8 -Dtest-shard-index=0
+zig build test -Dtest-shard-total=8 -Dtest-shard-index=1
+# ...through index 7
 
 # Results: 8-minute suite runs in 1-2 minutes
 ```
@@ -687,16 +691,10 @@ jobs:
           cd geode
           zig build test --summary all
 
-      - name: Generate coverage report
+      - name: Verify CANARY markers
         run: |
           cd geode
-          zig build test -Dcoverage=true
-          zig build coverage-report
-
-      - name: Upload coverage
-        uses: codecov/codecov-action@v3
-        with:
-          files: ./geode/coverage/lcov.info
+          make canary-verify
 
   client-tests:
     runs-on: ubuntu-latest

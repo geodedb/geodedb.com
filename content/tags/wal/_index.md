@@ -24,6 +24,7 @@ Write-Ahead Logging (WAL) is the cornerstone of database durability. The princip
 WAL has been a standard component of database systems since the 1970s, used by virtually every production database including PostgreSQL, Oracle, MySQL, and now Geode. The technique solves a fundamental problem: random writes to database pages are expensive (requiring disk seeks and scattered I/O), but sequential writes to a log file are fast (leveraging sequential disk throughput).
 
 By committing transactions via WAL, Geode achieves both:
+
 - **Fast commits**: Write sequential log records instead of scattered database pages
 - **Crash recovery**: Replay the WAL to reconstruct lost in-memory state
 - **Point-in-time recovery**: Restore database to any historical moment
@@ -42,6 +43,7 @@ The fundamental WAL protocol consists of three rules:
 3. **No-Force Policy**: Data pages may remain in memory; only WAL must be forced to disk
 
 These rules ensure that:
+
 - Committed transactions survive crashes (durability)
 - Uncommitted transactions can be rolled back (atomicity)
 - The database can be reconstructed from the WAL (recoverability)
@@ -60,6 +62,7 @@ Components:
 ```
 
 LSNs enable:
+
 - Ordering of operations
 - Tracking which records have been applied
 - Identifying the recovery start point
@@ -78,6 +81,7 @@ Example:
 ```
 
 Components:
+
 - **LSN**: Unique identifier for this record
 - **Transaction ID**: Which transaction generated this operation
 - **Operation Type**: INSERT, UPDATE, DELETE, BEGIN, COMMIT, ABORT
@@ -161,6 +165,7 @@ wal/
 ```
 
 **WAL Archival**: Old WAL files are moved to archive storage for:
+
 - Point-in-time recovery
 - Replication to new replicas
 - Audit and compliance
@@ -210,6 +215,7 @@ $ geode restore --time "2026-01-24T09:00:00Z"
 ```
 
 This is invaluable for:
+
 - Recovering from accidental data deletion
 - Investigating historical states for debugging
 - Compliance and audit requirements
@@ -229,6 +235,7 @@ Primary Server                 Replica Server
 ```
 
 Replicas apply WAL records to stay synchronized with the primary, enabling:
+
 - High availability (fail over to replica)
 - Read scalability (distribute reads across replicas)
 - Geographic distribution (replicas in multiple regions)
@@ -237,16 +244,24 @@ Replicas apply WAL records to stay synchronized with the primary, enabling:
 
 WAL provides a complete audit trail:
 
+The WAL itself is not queryable — there is no `dbms.audit.wal.*` namespace and
+no before/after-image reader. The auditable record of what happened is the
+audit trail, and the WAL's position is visible through the storage statistics:
+
 ```gql
--- Query WAL for specific transaction
-CALL dbms.audit.wal.query({
-  transaction_id: "tx-12345",
-  time_range: {start: "2026-01-24T00:00:00Z", end: "2026-01-24T23:59:59Z"}
-}) YIELD lsn, operation, before_image, after_image, timestamp
-RETURN lsn, operation, before_image, after_image, timestamp;
+-- What the server recorded, with a verifiable hash chain
+CALL audit.get_recent_events(500)
+YIELD event_id, timestamp, category, action, outcome
+RETURN timestamp, category, action, outcome
+ORDER BY timestamp DESC;
+
+CALL audit.verify_hash_chain()
+YIELD valid, events_checked, issues_found
+RETURN valid, events_checked, issues_found;
 ```
 
 This supports:
+
 - Compliance (SOC 2, HIPAA, GDPR)
 - Forensic investigation
 - Change tracking
@@ -256,11 +271,13 @@ This supports:
 ### WAL Storage Configuration
 
 1. **Use dedicated storage**: Place WAL on separate disks from data files
+
    ```bash
-   $ geode serve --wal-dir /mnt/wal-ssd --data-dir /mnt/data-hdd
+   geode serve --wal-dir /mnt/wal-ssd --data-dir /mnt/data-hdd
    ```
 
 2. **Use SSDs for WAL**: Sequential writes benefit from SSD latency
+
    ```
    WAL on HDD: ~10ms fsync latency → 100 commits/sec
    WAL on SSD: ~0.1ms fsync latency → 10,000 commits/sec
@@ -271,6 +288,7 @@ This supports:
 ### Checkpoint Tuning
 
 Configure checkpoint frequency to balance:
+
 - **Recovery time**: More frequent checkpoints → faster recovery
 - **Performance**: Less frequent checkpoints → less I/O overhead
 
@@ -294,6 +312,7 @@ wal:
 ```
 
 Configure archival based on requirements:
+
 - **Compliance**: Long retention (90+ days)
 - **Replication**: Keep WAL until all replicas apply it
 - **Storage cost**: Balance retention with storage costs
@@ -303,20 +322,21 @@ Configure archival based on requirements:
 Track critical WAL metrics:
 
 ```gql
--- WAL metrics
-CALL dbms.monitor.wal.stats()
-YIELD current_lsn, checkpoint_lsn, wal_files, wal_size, flush_rate;
+-- WAL position and checkpoint position
+CALL geode.storage.stats()
+YIELD wal_lsn, last_checkpoint_lsn
+RETURN wal_lsn, last_checkpoint_lsn, wal_lsn - last_checkpoint_lsn AS unflushed;
 
--- WAL lag (replication)
-CALL dbms.monitor.replication.lag()
-YIELD replica, wal_lag_bytes, wal_lag_seconds;
-
--- Checkpoint statistics
-CALL dbms.monitor.checkpoint.stats()
-YIELD last_checkpoint, duration, pages_written;
+-- Cluster members, their role and how recently each was heard from
+SHOW CLUSTER STATUS;
 ```
 
+There is no `dbms.monitor.*` namespace: WAL file counts, flush rates, per-replica
+byte lag and checkpoint durations are not published. Watch the LSN gap above,
+`last_contact_ms` from `SHOW CLUSTER STATUS`, and the data directory size.
+
 Alert on:
+
 - **WAL accumulation**: WAL files growing without bound
 - **Slow fsync**: Commit latency increasing
 - **Replication lag**: Replicas falling behind
@@ -328,6 +348,7 @@ Alert on:
 **Symptom**: Commits fail with "WAL disk full" error
 **Cause**: WAL directory ran out of space
 **Solution**:
+
 1. Add storage to WAL directory
 2. Reduce WAL retention
 3. Increase checkpoint frequency
@@ -338,6 +359,7 @@ Alert on:
 **Symptom**: High commit latency
 **Cause**: Slow fsync() calls
 **Solution**:
+
 1. Move WAL to faster storage (SSD)
 2. Check disk I/O contention
 3. Tune filesystem mount options (noatime, data=writeback)
@@ -348,6 +370,7 @@ Alert on:
 **Symptom**: Database takes minutes to recover after crash
 **Cause**: Large amount of WAL to replay
 **Solution**:
+
 1. Increase checkpoint frequency
 2. Reduce transaction size
 3. Add more memory for in-memory buffers
@@ -358,6 +381,7 @@ Alert on:
 **Symptom**: Recovery fails with checksum mismatch
 **Cause**: Disk corruption, partial write, bit flip
 **Solution**:
+
 1. Restore from backup
 2. Recover to last valid LSN (may lose recent commits)
 3. Use WAL archive if available
@@ -370,6 +394,7 @@ Alert on:
 Optimize WAL write performance:
 
 1. **Batch commits**: Group multiple transactions into single fsync
+
    ```yaml
    wal:
      group_commit_delay: 10ms  # Wait up to 10ms to batch commits
@@ -377,6 +402,7 @@ Optimize WAL write performance:
    ```
 
 2. **Asynchronous commit**: Trade durability for throughput (use cautiously)
+
    ```gql
    BEGIN TRANSACTION ISOLATION LEVEL READ COMMITTED, COMMIT MODE ASYNC;
    -- Transaction commits without waiting for fsync
@@ -384,6 +410,7 @@ Optimize WAL write performance:
    ```
 
 3. **WAL compression**: Reduce WAL size with compression
+
    ```yaml
    wal:
      compression: lz4  # Fast compression algorithm
@@ -560,12 +587,14 @@ COMMIT;  -- Returns immediately, replica applies eventually
 Trade-offs:
 
 **Synchronous**:
+
 - Pro: Zero data loss on failover
 - Pro: Strong consistency across replicas
 - Con: Higher commit latency (network round-trip)
 - Con: Availability depends on replica health
 
 **Asynchronous**:
+
 - Pro: Low commit latency
 - Pro: Primary unaffected by replica failures
 - Con: Potential data loss on failover (uncommitted WAL)
@@ -611,6 +640,7 @@ SUBSCRIBE TO PUBLICATION analytics_pub
 ```
 
 Use cases:
+
 - Replicate subset of data to analytics database
 - Multi-tenant replication (one tenant per replica)
 - Cross-database replication (Geode → PostgreSQL)

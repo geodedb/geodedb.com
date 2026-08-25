@@ -148,19 +148,21 @@ ORDER BY degree DESC
 LIMIT 10;
 
 -- PageRank-style importance (recursive influence)
-MATCH (p:Person)
-CALL graph.pagerank(p, 'FOLLOWS') AS pr
-RETURN p.name, pr.score
-ORDER BY pr.score DESC;
+CALL algo.pagerank.stream()
+YIELD nodeId, score
+MATCH (p:Person) WHERE id(p) = nodeId
+RETURN p.name, score
+ORDER BY score DESC;
 ```
 
 ### Community Detection
 
 ```gql
 -- Label propagation for community detection
-MATCH (p:Person)
-CALL graph.label_propagation(p, 'KNOWS', 10) AS community
-RETURN community.id, collect(p.name) AS members;
+CALL algo.labelPropagation.stream()
+YIELD nodeId, label
+MATCH (p:Person) WHERE id(p) = nodeId
+RETURN label AS community, collect(p.name) AS members;
 ```
 
 ## Temporal Query Features
@@ -228,9 +230,10 @@ RETURN
 MATCH (u:User)-[:PURCHASED]->(p:Product)
 RETURN u.name, collect(DISTINCT p.category) AS categories;
 
--- String aggregation
+-- String aggregation: collect() returns a LIST (there is no string_agg);
+-- join it in the client if you need one string.
 MATCH (t:Team)-[:HAS_MEMBER]->(m:Member)
-RETURN t.name, string_agg(m.name, ', ') AS members;
+RETURN t.name, collect(m.name) AS members;
 ```
 
 ## Performance Optimization
@@ -248,6 +251,7 @@ LIMIT 20;
 ```
 
 The PROFILE output shows:
+
 - Execution plan with operator costs
 - Index usage and scan types
 - Memory consumption
@@ -348,11 +352,20 @@ ORDER BY citations DESC;
 
 Connect to external data sources:
 
+Geode has no foreign-data-wrapper surface: there is no `foreign.*` procedure
+namespace and no way to reach an external database from inside a query. Join
+external data in the application, or ingest it into the graph first:
+
 ```gql
--- Query external PostgreSQL table
-MATCH (p:Person)
-CALL foreign.query('postgres', 'SELECT * FROM orders WHERE user_id = $1', p.id) AS orders
-RETURN p.name, orders.order_id, orders.total;
+-- Ingest the external rows as nodes, then join with a pattern
+MERGE (o:Order {order_id: $order_id})
+SET o.total = $total;
+
+MATCH (p:Person {id: $user_id}), (o:Order {order_id: $order_id})
+MERGE (p)-[:PLACED]->(o);
+
+MATCH (p:Person)-[:PLACED]->(o:Order)
+RETURN p.name, o.order_id, o.total;
 ```
 
 ### Export and Materialized Views
@@ -464,8 +477,10 @@ max_query_parallelism = 8
 ### 2. Import Sample Data
 
 ```gql
--- Load sample graph
-CALL graph.load_sample('social_network');
+-- Create a small sample graph (there is no sample-data loader procedure)
+CREATE (alice:Person {name: 'Alice'}),
+       (bob:Person {name: 'Bob'}),
+       (alice)-[:KNOWS]->(bob);
 ```
 
 ### 3. Experiment with Features

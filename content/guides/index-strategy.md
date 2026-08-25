@@ -26,6 +26,7 @@ Indexes are the foundation of query performance in Geode. This guide helps you a
 Indexes create auxiliary data structures that allow Geode to find nodes quickly without scanning all nodes with a given label. Without an index, finding a user by email requires examining every User node:
 
 **Without index** - O(n) scan:
+
 ```gql
 MATCH (u:User)
 WHERE u.email = "alice@example.com"
@@ -34,6 +35,7 @@ RETURN u
 ```
 
 **With index** - O(log n) lookup:
+
 ```gql
 // After: CREATE INDEX user_email ON :User(email)
 MATCH (u:User {email: "alice@example.com"})
@@ -64,6 +66,7 @@ Before creating indexes, understand your query patterns:
 3. **Review slow query logs** for optimization candidates
 
 **Example analysis**:
+
 ```
 Query Pattern                                  Frequency  Avg Time
 --------------------------------------------  ---------  --------
@@ -179,11 +182,11 @@ For text search operations. Use when:
 CREATE FULLTEXT INDEX product_search ON :Product(name, description)
 
 // Query with full-text search
-CALL db.index.fulltext.queryNodes("product_search", "wireless bluetooth")
+CALL geode.fts.search('product_search', 'wireless bluetooth', 10)
 YIELD node, score
-RETURN node.name, score
+MATCH (p) WHERE id(p) = node
+RETURN p.name, score
 ORDER BY score DESC
-LIMIT 10
 ```
 
 ### Unique Constraints
@@ -211,11 +214,13 @@ MATCH (u:User {email: "alice@example.com"}) RETURN u
 | status   | 5             | 1,000,000   | 0.0005% (very poor) |
 
 **High selectivity** (good index candidates):
+
 - User IDs, emails, usernames
 - Product SKUs, ISBNs
 - Order numbers, transaction IDs
 
 **Low selectivity** (poor index candidates alone):
+
 - Boolean flags (active/inactive)
 - Status fields (few values)
 - Country codes
@@ -290,6 +295,7 @@ MATCH (u:User {country: "USA", zip: "10001"}) ...            // Partial scan
 3. **Equality before range**: Equality predicates should precede range predicates
 
 **Example**:
+
 ```gql
 // Query pattern:
 MATCH (o:Order)
@@ -349,16 +355,19 @@ ORDER BY size DESC
 Consider your workload characteristics:
 
 **Read-heavy workloads** (90% reads, 10% writes):
+
 - More indexes are acceptable
 - Prioritize query performance
 - Consider covering indexes
 
 **Write-heavy workloads** (30% reads, 70% writes):
+
 - Minimize indexes
 - Only index critical query paths
 - Avoid redundant indexes
 
 **Balanced workloads**:
+
 - Index selectively
 - Monitor both read and write latencies
 - Review index usage periodically
@@ -402,6 +411,7 @@ RETURN u.name
 ### Avoid Indexing
 
 **Low-selectivity properties**:
+
 ```gql
 // Poor: Boolean with ~50/50 distribution
 CREATE INDEX user_active ON :User(active)  // Only 2 values
@@ -411,12 +421,14 @@ CREATE INDEX user_active_created ON :User(active, created_at)
 ```
 
 **Rarely queried properties**:
+
 ```gql
 // Avoid: Internal metadata rarely searched
 CREATE INDEX user_internal_notes ON :User(internal_notes)
 ```
 
 **Frequently updated properties**:
+
 ```gql
 // Avoid: Properties that change constantly
 CREATE INDEX user_last_seen ON :User(last_seen_at)  // Updates every request
@@ -425,6 +437,7 @@ CREATE INDEX user_last_seen ON :User(last_seen_at)  // Updates every request
 ```
 
 **Very large text properties**:
+
 ```gql
 // Avoid: Large text blobs
 CREATE INDEX article_content ON :Article(content)  // May be megabytes
@@ -436,6 +449,7 @@ CREATE FULLTEXT INDEX article_search ON :Article(title, summary)
 ### Alternative Strategies
 
 **Denormalization** instead of indexing:
+
 ```gql
 // Instead of indexing deep traversals, denormalize
 // Add commonly needed data directly to nodes
@@ -443,6 +457,7 @@ SET user.company_name = "Acme Corp"  // Avoid JOIN/traverse
 ```
 
 **Materialized aggregates**:
+
 ```gql
 // Instead of counting on every query
 // Maintain a count property
@@ -450,6 +465,7 @@ SET user.post_count = user.post_count + 1
 ```
 
 **Application-level caching**:
+
 ```python
 # Cache frequently accessed, rarely changed data
 @cache(ttl=3600)

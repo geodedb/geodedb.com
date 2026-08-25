@@ -490,8 +490,11 @@ RETURN c.name, c.location
 ### Step 1: List All Indexes
 
 \`\`\`gql
-CALL db.indexes() YIELD name, type, properties, options
-RETURN name, type, properties, options
+SHOW INDEXES;
+
+-- Or through the introspection procedure
+CALL db.indexes() YIELD name, type, label, properties
+RETURN name, type, label, properties
 \`\`\`
 
 **Output**:
@@ -508,14 +511,15 @@ RETURN name, type, properties, options
 
 ### Step 2: Analyze Index Usage
 
-Check which indexes are being used:
+Index hit counters are not maintained, so "is this index used?" is answered per
+statement, by reading the plan:
 
 \`\`\`gql
-CALL db.index.stats() YIELD name, hits, misses, hit_rate
-WHERE hit_rate < 0.5  -- Find underutilized indexes
-RETURN name, hits, misses, hit_rate
-ORDER BY hit_rate
+EXPLAIN MATCH (c:Customer) WHERE c.email = 'alice@example.com' RETURN c;
 \`\`\`
+
+Walk your application's hot statements through \`EXPLAIN\` and treat any index
+that never appears in a plan as a candidate for removal.
 
 ### Step 3: Rebuild Index
 
@@ -530,12 +534,16 @@ CREATE INDEX ON :Customer(email)
 
 ### Step 4: Monitor Index Size
 
-Check index storage size:
+Per-index byte sizes are not published. Index data lives in the data directory
+alongside everything else, so measure it there, and track the number of indexed
+rows with a count:
+
+\`\`\`bash
+du -sh /var/lib/geode/data
+\`\`\`
 
 \`\`\`gql
-CALL db.index.size() YIELD name, size_bytes, entry_count
-RETURN name, size_bytes / (1024 * 1024) AS size_mb, entry_count
-ORDER BY size_mb DESC
+MATCH (c:Customer) WHERE c.email IS NOT NULL RETURN count(c) AS indexed_rows;
 \`\`\`
 
 ## Part 7: Advanced Optimization Techniques
@@ -673,16 +681,18 @@ asyncio.run(benchmark_queries(db, 1000))
 **Problem**: Every index adds write overhead
 
 **Solution**: Only create indexes for frequent queries
-\`\`\`gql
--- Analyze query patterns first
-CALL db.query.stats() YIELD query, execution_count
-WHERE execution_count > 100
-RETURN query, execution_count
-ORDER BY execution_count DESC
-LIMIT 10
+The server keeps no per-query counters, so rank your statements where you
+issue them — application logs, or the audit trail:
 
--- Create indexes for top queries only
+\`\`\`gql
+CALL audit.get_recent_events(1000)
+YIELD event_id, timestamp, category, action, outcome
+RETURN action, count(*) AS executions
+ORDER BY executions DESC
+LIMIT 10;
 \`\`\`
+
+Create indexes for the top statements only.
 
 ### Pitfall 2: Wrong Index Type
 
@@ -712,13 +722,15 @@ ORDER BY count DESC
 -- If most values have high count, index is not useful
 \`\`\`
 
-### Pitfall 4: Stale Statistics
+### Pitfall 4: Assuming a Statistics Refresh Exists
 
-**Problem**: Query planner uses outdated statistics
+**Problem**: Reaching for an \`ANALYZE\`-style command that Geode does not have
 
-**Solution**: Update statistics regularly
+**Solution**: Index and catalog state is maintained by the engine as data
+changes — there is nothing to refresh. If a plan looks wrong, inspect it
+directly:
 \`\`\`gql
-CALL db.stats.update()
+EXPLAIN MATCH (p:Product) WHERE p.category = 'Books' RETURN p;
 \`\`\`
 
 ## Practice Exercises

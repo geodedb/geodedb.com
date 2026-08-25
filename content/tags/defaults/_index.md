@@ -174,8 +174,9 @@ Expression defaults use GQL expressions to compute values based on literal value
 CREATE NODE TYPE Order (
     id STRING DEFAULT gen_random_uuid(),
     sequence_number INTEGER NOT NULL,
-    order_number STRING DEFAULT ('ORD-' || LPAD(sequence_number::TEXT, 8, '0')),
-    -- Generates: 'ORD-00000001', 'ORD-00000002', etc.
+    order_number STRING DEFAULT ('ORD-' || toString(sequence_number)),
+    -- Generates: 'ORD-1', 'ORD-2', etc. Zero-padding has no built-in
+    -- (there is no LPAD function), so pad in the client if you need it.
 
     created_at TIMESTAMP DEFAULT NOW(),
     year STRING DEFAULT EXTRACT(YEAR FROM created_at)::TEXT,
@@ -409,6 +410,7 @@ CREATE NODE TYPE AuditedEntity (
 ## Common Patterns
 
 **User Account Initialization**:
+
 ```gql
 status: 'pending' → requires email verification
 verified: false → must confirm email
@@ -417,6 +419,7 @@ created_at: NOW() → track registration time
 ```
 
 **Order Management**:
+
 ```gql
 status: 'draft' → orders start as drafts
 placed_at: NULL → set when order confirmed
@@ -424,6 +427,7 @@ total: 0.0 → computed from line items
 ```
 
 **Content Creation**:
+
 ```gql
 published: false → draft by default
 created_at: NOW() → auto-timestamp

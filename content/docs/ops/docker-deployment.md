@@ -146,7 +146,7 @@ zbt         # Build with tests
 
 # Run tests
 make test
-make geodetestlab
+make test-all-integration
 make verify-fast
 
 # Start Geode server

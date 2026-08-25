@@ -28,21 +28,29 @@ Geode provides comprehensive statistics and metrics for monitoring, optimization
 
 ### Metric Categories
 
-| Category | Purpose | Collection Method |
-|----------|---------|-------------------|
-| **Query Statistics** | Query performance analysis | Automatic |
-| **Storage Statistics** | Disk and memory usage | Automatic |
-| **Index Statistics** | Index efficiency | Automatic + Manual |
-| **Transaction Statistics** | ACID operations | Automatic |
-| **Connection Statistics** | Client connections | Automatic |
-| **System Statistics** | Resource utilization | Automatic |
+| Category | Purpose | Where it comes from |
+|----------|---------|---------------------|
+| **Query Statistics** | Query performance analysis | `/metrics`, `EXPLAIN`/`PROFILE` |
+| **Storage Statistics** | Storage-engine state | `CALL geode.storage.stats()` |
+| **Catalog Statistics** | Labels, types, indexes | `SHOW`/`CALL db.*` introspection |
+| **Transaction Statistics** | Commit and failure counts | `/metrics` |
+| **Connection Statistics** | Client connections | `/metrics` |
+| **Process Statistics** | Memory usage | `/metrics` |
 
 ### Access Methods
 
-1. **GQL Procedures**: `CALL db.stats.*`
-2. **Prometheus Endpoint**: `/metrics`
-3. **Admin API**: REST endpoints
-4. **EXPLAIN/PROFILE**: Per-query metrics
+1. **Prometheus endpoint**: `GET /metrics` (see [Prometheus Integration](#prometheus-integration))
+2. **Liveness endpoint**: `GET /health` on the same listener
+3. **Storage procedures**: `CALL geode.storage.stats()` and `CALL geode.storage.integrity()`
+4. **Catalog introspection**: `SHOW INDEXES`, `SHOW CONSTRAINTS`, `CALL db.labels()`, `CALL db.relationshipTypes()`, `CALL db.propertyKeys()`
+5. **EXPLAIN/PROFILE**: per-query plan and execution metrics
+
+There is no `db.stats.*` procedure namespace. The procedure surface the server
+dispatches is `db.`, `dbms.`, `algo.`, `audit.`, `tde.`, `cdc.` and
+`geode.{fle,auth,rls,storage,fts,ts,tenant}`; anything else returns
+`UnknownProcedure`. Aggregate counters live on the Prometheus endpoint,
+storage-level facts live on `geode.storage.stats()`, and everything else in this
+page is derived with ordinary GQL.
 
 ---
 
@@ -50,79 +58,63 @@ Geode provides comprehensive statistics and metrics for monitoring, optimization
 
 ### Global Query Statistics
 
-```gql
--- View overall query statistics
-CALL db.stats.queries();
+Query counters are exported by the metrics listener, not by a procedure:
+
+```bash
+curl -s http://localhost:9090/metrics | grep '^geode_quer'
 ```
 
-**Output:**
+**Exported query metrics:**
 
 | Metric | Type | Description |
 |--------|------|-------------|
-| `total_queries` | Counter | Total queries executed |
-| `successful_queries` | Counter | Successfully completed queries |
-| `failed_queries` | Counter | Failed queries |
-| `queries_in_progress` | Gauge | Currently executing queries |
-| `avg_query_time_ms` | Gauge | Average query latency |
-| `p50_query_time_ms` | Gauge | Median query latency |
-| `p95_query_time_ms` | Gauge | 95th percentile latency |
-| `p99_query_time_ms` | Gauge | 99th percentile latency |
-| `max_query_time_ms` | Gauge | Maximum observed latency |
+| `geode_queries_total` | Counter | Total number of queries executed |
+| `geode_queries_failed_total` | Counter | Total number of failed queries |
+| `geode_query_duration_seconds` | Histogram | Query execution duration in seconds |
+
+Latency percentiles are computed from the histogram in PromQL rather than
+being pre-aggregated by the server:
+
+```promql
+histogram_quantile(0.95, rate(geode_query_duration_seconds_bucket[5m]))
+```
 
 ### Query Type Breakdown
 
-```gql
--- Statistics by query type
-CALL db.stats.queries.by_type();
-```
+The server does not label query counters by statement type, so there is no
+per-type breakdown to read. Where you need one, count the statements you issue
+in the client, or read the audit trail with
+`CALL audit.get_recent_events(100) YIELD event_id, timestamp, category, action, outcome`
+and group by `action`.
 
-| Query Type | Description |
-|------------|-------------|
-| `MATCH` | Read queries |
-| `CREATE` | Node/relationship creation |
-| `SET` | Property updates |
-| `DELETE` | Deletions |
-| `MERGE` | Upsert operations |
-| `CALL` | Procedure calls |
+### Slow Query Analysis
 
-### Slow Query Log
+There is no slow-query log and no `query.slow_threshold_ms` setting. Analyse an
+individual slow statement with `PROFILE`, which runs the query and reports the
+real per-operator work:
 
 ```gql
--- View slow queries (> threshold)
-CALL db.stats.slow_queries(100);  -- threshold in ms
-
--- Configure slow query threshold
-CALL db.config.set('query.slow_threshold_ms', 100);
+PROFILE MATCH (p:Person)-[:KNOWS]->(f)
+WHERE p.name = 'Alice'
+RETURN f.name;
 ```
 
-**Slow Query Entry:**
+Use `EXPLAIN` for the plan alone, without executing:
 
-```json
-{
-  "timestamp": "2026-01-28T10:30:00Z",
-  "query": "MATCH (p:Person)-[:KNOWS*5]->(f) RETURN f",
-  "duration_ms": 1523,
-  "rows_returned": 10000,
-  "db_hits": 500000,
-  "user": "alice",
-  "client_ip": "192.168.1.100"
-}
+```gql
+EXPLAIN MATCH (p:Person)-[:KNOWS]->(f)
+WHERE p.name = 'Alice'
+RETURN f.name;
 ```
+
+For fleet-wide latency outliers, alert on the
+`geode_query_duration_seconds` histogram rather than polling the database.
 
 ### Query Plan Statistics
 
-```gql
--- View cached query plans
-CALL db.stats.query_plans();
-```
-
-| Metric | Description |
-|--------|-------------|
-| `plan_cache_size` | Number of cached plans |
-| `plan_cache_hits` | Cache hit count |
-| `plan_cache_misses` | Cache miss count |
-| `plan_cache_hit_rate` | Hit rate percentage |
-| `avg_plan_time_ms` | Average planning time |
+The planner caches plans internally, but that cache has no user-facing
+procedure or metric. `EXPLAIN` is the supported way to see the plan chosen for
+a given statement.
 
 ---
 
@@ -131,66 +123,100 @@ CALL db.stats.query_plans();
 ### Database Size
 
 ```gql
--- Overall storage statistics
-CALL db.stats.storage();
+-- Storage-engine statistics for the default graph
+CALL geode.storage.stats();
+
+-- ...or for a named graph
+CALL geode.storage.stats('analytics');
 ```
 
-**Output:**
+**Output columns:**
 
-| Metric | Type | Description |
-|--------|------|-------------|
-| `data_size_bytes` | Gauge | Total data file size |
-| `index_size_bytes` | Gauge | Total index size |
-| `wal_size_bytes` | Gauge | Write-ahead log size |
-| `total_size_bytes` | Gauge | Total disk usage |
-| `page_count` | Gauge | Total pages allocated |
-| `used_pages` | Gauge | Pages with data |
-| `free_pages` | Gauge | Available pages |
-| `fragmentation_ratio` | Gauge | Space fragmentation (0-1) |
+| Column | Description |
+|--------|-------------|
+| `node_count` | Nodes recorded by the storage engine |
+| `edge_count` | Edges recorded by the storage engine |
+| `label_count` | Distinct labels in the label index |
+| `format_version` | On-disk format version |
+| `page_size` | Page size in bytes |
+| `wal_lsn` | Current write-ahead-log sequence number |
+| `last_checkpoint_lsn` | LSN of the last checkpoint |
+| `free_pages_nodes` | Free pages in the node region |
+| `free_pages_adj_out` | Free pages in the outgoing-adjacency region |
+| `free_pages_adj_in` | Free pages in the incoming-adjacency region |
+| `free_pages_props` | Free pages in the property region |
+| `free_pages_var` | Free pages in the variable-length region |
+
+Total on-disk size is not reported by the engine; measure the data directory
+(`du -sh <data-dir>`) for that. The free-page columns are the closest available
+proxy for fragmentation.
+
+### Storage Integrity
+
+```gql
+CALL geode.storage.integrity();
+```
+
+| Column | Description |
+|--------|-------------|
+| `node_count_consistent` | Node counts agree between store and index |
+| `edge_count_consistent` | Edge counts agree between store and index |
+| `label_index_entries` | Entries in the label index |
+| `total_errors` | Number of inconsistencies detected |
+
+The same checks are available offline from the CLI with `geode storage verify`.
 
 ### Graph Statistics
 
+Element counts come from `geode.storage.stats()` (above) or from ordinary
+aggregation:
+
 ```gql
--- Graph element counts
-CALL db.stats.graph();
+-- Node and relationship totals
+MATCH (n) RETURN count(n) AS node_count;
+MATCH ()-[r]->() RETURN count(r) AS relationship_count;
+
+-- Catalog cardinalities
+CALL db.labels() YIELD label RETURN count(label) AS label_count;
+CALL db.relationshipTypes() YIELD relationshipType
+RETURN count(relationshipType) AS relationship_type_count;
+CALL db.propertyKeys() YIELD propertyKey
+RETURN count(propertyKey) AS property_key_count;
 ```
 
-| Metric | Description |
-|--------|-------------|
-| `node_count` | Total nodes |
-| `relationship_count` | Total relationships |
-| `label_count` | Distinct node labels |
-| `relationship_type_count` | Distinct relationship types |
-| `property_key_count` | Distinct property keys |
+`geode_nodes_total` and `geode_edges_total` expose the same two counts as
+Prometheus gauges.
 
 ### Label Statistics
 
 ```gql
--- Statistics per label
-CALL db.stats.labels();
+-- Nodes per label, one label at a time
+MATCH (n:Person) RETURN count(n) AS node_count;
+
+-- Enumerate the labels first, then count each one
+CALL db.labels() YIELD label RETURN label ORDER BY label;
 ```
 
-**Per-label metrics:**
+Average property and relationship counts per label are not maintained by the
+engine; derive them when you need them:
 
-| Metric | Description |
-|--------|-------------|
-| `node_count` | Nodes with this label |
-| `avg_property_count` | Average properties per node |
-| `avg_relationship_count` | Average relationships per node |
+```gql
+MATCH (n:Person)
+RETURN avg(size(keys(n))) AS avg_property_count;
+
+MATCH (n:Person)
+RETURN avg(outdegree(n) + indegree(n)) AS avg_relationship_count;
+```
 
 ### Relationship Type Statistics
 
 ```gql
--- Statistics per relationship type
-CALL db.stats.relationship_types();
+-- Relationships of a given type
+MATCH ()-[r:KNOWS]->() RETURN count(r) AS count;
+
+-- Enumerate the types in use
+CALL db.relationshipTypes() YIELD relationshipType RETURN relationshipType;
 ```
-
-**Per-type metrics:**
-
-| Metric | Description |
-|--------|-------------|
-| `count` | Relationships of this type |
-| `avg_property_count` | Average properties per relationship |
 
 ---
 
@@ -199,180 +225,122 @@ CALL db.stats.relationship_types();
 ### Index Overview
 
 ```gql
--- All index statistics
-CALL db.stats.indexes();
+-- Every index in the catalog
+SHOW INDEXES;
+
+-- Same list through the introspection procedure
+CALL db.indexes() YIELD name, type, label, properties
+RETURN name, type, label, properties
+ORDER BY name;
 ```
 
-**Per-index metrics:**
+**Columns:**
 
-| Metric | Type | Description |
-|--------|------|-------------|
-| `index_name` | String | Index identifier |
-| `index_type` | String | btree, hash, fulltext, etc. |
-| `label` | String | Target label |
-| `property` | String | Indexed property |
-| `size_bytes` | Gauge | Index storage size |
-| `entry_count` | Gauge | Number of indexed entries |
-| `unique_values` | Gauge | Distinct indexed values |
-| `null_count` | Gauge | NULL entries |
-| `avg_values_per_key` | Gauge | Average duplicates per key |
+| Column | Description |
+|--------|-------------|
+| `name` | Index identifier |
+| `type` | Index type (`BTREE`, `HASH`, `FULLTEXT`, `VECTOR`, ...) |
+| `label` | Target label |
+| `properties` | Indexed properties, comma-separated |
 
-### Index Usage Statistics
+Constraints are listed the same way with `SHOW CONSTRAINTS` or
+`CALL db.constraints() YIELD name, type, label, properties, enforced`.
+
+### Index Size and Usage
+
+The engine does not maintain per-index size, entry-count, read-count or
+last-used counters, and exposes no procedure for them. To find out whether a
+statement uses an index, read the plan:
 
 ```gql
--- Index usage metrics
-CALL db.stats.index_usage();
+EXPLAIN MATCH (p:Person) WHERE p.email = 'alice@example.com' RETURN p;
 ```
 
-| Metric | Description |
-|--------|-------------|
-| `reads` | Index read operations |
-| `scans` | Full index scans |
-| `seeks` | Point lookups |
-| `range_scans` | Range query operations |
-| `updates` | Index update operations |
-| `last_used` | Timestamp of last use |
+Index storage is part of the data directory; measure it on disk rather than
+through a procedure.
 
 ### Index Health
 
-```gql
--- Check index health
-CALL db.stats.index_health('index_name');
-```
+There is no index-health procedure, and no fragmentation, tree-depth,
+fill-factor or bloom-filter statistic is published. The available integrity
+signal is `CALL geode.storage.integrity()`, which reports whether the label
+index agrees with the store, plus `geode storage verify` from the CLI.
 
-| Metric | Description | Healthy Range |
-|--------|-------------|---------------|
-| `fragmentation` | Internal fragmentation | < 0.3 |
-| `depth` | Tree depth (B-tree) | < 5 |
-| `fill_factor` | Page fill ratio | > 0.7 |
-| `bloom_false_positive_rate` | Bloom filter FP rate | < 0.01 |
+### Statistics Maintenance
 
-### Manual Statistics Update
-
-```gql
--- Update statistics for all indexes
-CALL db.stats.update();
-
--- Update statistics for specific label
-CALL db.stats.update('Person');
-
--- Update specific index statistics
-CALL db.index.analyze('person_email_idx');
-```
+Index and catalog state is maintained by the engine as data changes. There is
+no `ANALYZE`-style command and no manual statistics-refresh procedure to run.
 
 ---
 
 ## Cardinality Estimation
 
-The query optimizer uses cardinality estimates for cost-based optimization.
+The query optimizer keeps its own cost estimates internally. They are not
+exposed as histograms, selectivity procedures, or configuration: there is no
+histogram procedure, no selectivity procedure, and no `statistics:` block in
+the server configuration file.
 
-### Histogram Statistics
-
-```gql
--- View histograms for a property
-CALL db.stats.histogram('Person', 'age');
-```
-
-**Output:**
-
-| Column | Description |
-|--------|-------------|
-| `bucket_min` | Bucket lower bound |
-| `bucket_max` | Bucket upper bound |
-| `frequency` | Row count in bucket |
-| `cumulative_frequency` | Cumulative row count |
-| `distinct_count` | Distinct values in bucket |
-
-### Selectivity Estimates
+What you can inspect is the plan the optimizer actually chose, and the work it
+actually did:
 
 ```gql
--- Estimate predicate selectivity
-CALL db.stats.selectivity('Person', 'age > 30');
+-- Chosen plan, without running the query
+EXPLAIN MATCH (p:Person) WHERE p.age > 30 RETURN p;
+
+-- Real per-operator work, by running it
+PROFILE MATCH (p:Person) WHERE p.age > 30 RETURN p;
 ```
 
-| Metric | Description |
-|--------|-------------|
-| `estimated_rows` | Rows matching predicate |
-| `selectivity` | Fraction of total (0-1) |
-| `confidence` | Estimate confidence (low/medium/high) |
+To check a predicate's real selectivity, count it:
 
-### Statistics Configuration
-
-```yaml
-statistics:
-  auto_update: true
-  update_threshold: 10000      # Update after N modifications
-  sample_size: 1000            # Rows sampled for histograms
-  histogram_buckets: 100       # Number of histogram buckets
-  update_interval: 3600        # Auto-update interval (seconds)
+```gql
+MATCH (p:Person) WHERE p.age > 30
+RETURN count(p) AS matching_rows;
 ```
 
 ---
 
 ## Transaction Statistics
 
-```gql
--- Transaction statistics
-CALL db.stats.transactions();
-```
+Transaction counters are exported by the metrics listener:
 
 | Metric | Type | Description |
 |--------|------|-------------|
-| `active_transactions` | Gauge | Currently open transactions |
-| `total_commits` | Counter | Successful commits |
-| `total_rollbacks` | Counter | Rollbacks |
-| `commit_rate` | Gauge | Commits per second |
-| `avg_transaction_time_ms` | Gauge | Average transaction duration |
-| `deadlock_count` | Counter | Deadlock occurrences |
-| `lock_wait_time_ms` | Counter | Total lock wait time |
+| `geode_transactions_total` | Counter | Total number of transactions |
+| `geode_transactions_failed_total` | Counter | Total number of failed transactions |
 
-### Lock Statistics
+Commit rate is a PromQL expression over the counter:
 
-```gql
--- Current lock information
-CALL db.stats.locks();
+```promql
+rate(geode_transactions_total[5m])
 ```
 
-| Metric | Description |
-|--------|-------------|
-| `active_locks` | Currently held locks |
-| `waiting_locks` | Lock requests waiting |
-| `lock_timeouts` | Lock timeout count |
-| `avg_lock_wait_ms` | Average lock wait time |
+Open-transaction lists, per-transaction durations, deadlock counters and lock
+tables are not published; there is no transaction- or lock-inspection
+procedure. Use client-side timing plus the failure counter above.
 
 ---
 
 ## Connection Statistics
 
-```gql
--- Connection statistics
-CALL db.stats.connections();
-```
-
 | Metric | Type | Description |
 |--------|------|-------------|
-| `active_connections` | Gauge | Currently connected clients |
-| `total_connections` | Counter | Total connections (lifetime) |
-| `connection_errors` | Counter | Failed connection attempts |
-| `max_connections` | Gauge | Connection limit |
-| `available_connections` | Gauge | Available connection slots |
+| `geode_connections_active` | Gauge | Number of active connections |
+| `geode_connections_total` | Counter | Total number of connections |
 
-### Per-Client Statistics
+The connection ceiling is set with the server's `--max-connections` flag, so
+available slots are `--max-connections` minus `geode_connections_active`.
+
+Per-client session tables (client id, IP, bytes sent/received) are not
+published by the server. Authentication and access events are recorded in the
+audit trail instead:
 
 ```gql
--- Statistics per connected client
-CALL db.stats.clients();
+CALL audit.get_recent_events(100)
+YIELD event_id, timestamp, category, action, outcome
+RETURN timestamp, category, action, outcome
+ORDER BY timestamp DESC;
 ```
-
-| Column | Description |
-|--------|-------------|
-| `client_id` | Client identifier |
-| `user` | Authenticated user |
-| `ip_address` | Client IP |
-| `connected_at` | Connection timestamp |
-| `queries_executed` | Query count for session |
-| `bytes_sent` | Data sent to client |
-| `bytes_received` | Data received from client |
 
 ---
 
@@ -380,53 +348,31 @@ CALL db.stats.clients();
 
 ### Resource Utilization
 
-```gql
--- System resource metrics
-CALL db.stats.system();
-```
-
 | Metric | Type | Description |
 |--------|------|-------------|
-| `cpu_usage_percent` | Gauge | CPU utilization |
-| `memory_used_bytes` | Gauge | Memory in use |
-| `memory_available_bytes` | Gauge | Available memory |
-| `memory_heap_bytes` | Gauge | Heap memory usage |
-| `gc_pause_ms` | Histogram | GC pause times |
-| `gc_count` | Counter | GC cycles |
+| `geode_memory_bytes` | Gauge | Memory usage in bytes |
+
+Geode is written in Zig and has no garbage collector, so there are no GC pause
+or GC cycle metrics. CPU utilisation is not published by the server; collect it
+from the host with `node_exporter` or the container runtime.
 
 ### I/O Statistics
 
-```gql
--- Disk I/O statistics
-CALL db.stats.io();
-```
-
-| Metric | Type | Description |
-|--------|------|-------------|
-| `read_bytes` | Counter | Bytes read from disk |
-| `write_bytes` | Counter | Bytes written to disk |
-| `read_ops` | Counter | Read operations |
-| `write_ops` | Counter | Write operations |
-| `read_latency_ms` | Histogram | Read latency |
-| `write_latency_ms` | Histogram | Write latency |
-| `fsync_count` | Counter | fsync operations |
-| `fsync_latency_ms` | Histogram | fsync latency |
-
-### Buffer Pool Statistics
+Disk I/O counters and latency histograms are not published by the server.
+Collect them from the host (`node_exporter`, `iostat`) and correlate with the
+storage LSN columns from `CALL geode.storage.stats()`:
 
 ```gql
--- Buffer pool metrics
-CALL db.stats.buffer_pool();
+CALL geode.storage.stats()
+YIELD wal_lsn, last_checkpoint_lsn
+RETURN wal_lsn, last_checkpoint_lsn, wal_lsn - last_checkpoint_lsn AS unflushed;
 ```
 
-| Metric | Description |
-|--------|-------------|
-| `pool_size_pages` | Total buffer pool pages |
-| `used_pages` | Pages in use |
-| `dirty_pages` | Modified pages pending write |
-| `hit_rate` | Buffer cache hit rate |
-| `evictions` | Page evictions |
-| `reads_from_disk` | Cache misses |
+### Page and Cache Statistics
+
+Buffer-pool hit rates, dirty-page counts and eviction counters are internal to
+the storage engine and are not exposed. The published page-level facts are the
+`page_size` and `free_pages_*` columns of `CALL geode.storage.stats()`.
 
 ---
 
@@ -434,21 +380,28 @@ CALL db.stats.buffer_pool();
 
 ### Metrics Endpoint
 
-Geode exposes metrics in Prometheus format at `/metrics`:
+The Prometheus listener is opt-in: start the server with `GEODE_METRICS_PORT`
+set, and it serves `GET /metrics` and `GET /health` on that port (the GQL
+listener on `3141` serves neither).
 
 ```bash
-curl http://localhost:3141/metrics
+GEODE_METRICS_PORT=9090 geode serve --data-dir ./data
+curl http://localhost:9090/metrics
+curl http://localhost:9090/health   # {"status":"ok"}
 ```
 
 ### Sample Output
 
 ```prometheus
-# HELP geode_queries_total Total queries executed
+# HELP geode_queries_total Total number of queries executed
 # TYPE geode_queries_total counter
-geode_queries_total{status="success"} 1234567
-geode_queries_total{status="error"} 123
+geode_queries_total 1234567
 
-# HELP geode_query_duration_seconds Query execution time
+# HELP geode_queries_failed_total Total number of failed queries
+# TYPE geode_queries_failed_total counter
+geode_queries_failed_total 123
+
+# HELP geode_query_duration_seconds Query execution duration in seconds
 # TYPE geode_query_duration_seconds histogram
 geode_query_duration_seconds_bucket{le="0.001"} 10000
 geode_query_duration_seconds_bucket{le="0.01"} 50000
@@ -458,23 +411,21 @@ geode_query_duration_seconds_bucket{le="+Inf"} 123456
 geode_query_duration_seconds_sum 12345.67
 geode_query_duration_seconds_count 123456
 
-# HELP geode_connections_active Active client connections
+# HELP geode_connections_active Number of active connections
 # TYPE geode_connections_active gauge
 geode_connections_active 42
 
-# HELP geode_storage_bytes Storage size in bytes
-# TYPE geode_storage_bytes gauge
-geode_storage_bytes{type="data"} 1073741824
-geode_storage_bytes{type="index"} 268435456
-geode_storage_bytes{type="wal"} 134217728
-
-# HELP geode_nodes_total Total nodes in database
+# HELP geode_nodes_total Total number of nodes in the graph
 # TYPE geode_nodes_total gauge
 geode_nodes_total 1000000
 
-# HELP geode_relationships_total Total relationships
-# TYPE geode_relationships_total gauge
-geode_relationships_total 5000000
+# HELP geode_edges_total Total number of edges in the graph
+# TYPE geode_edges_total gauge
+geode_edges_total 5000000
+
+# HELP geode_memory_bytes Memory usage in bytes
+# TYPE geode_memory_bytes gauge
+geode_memory_bytes 1073741824
 ```
 
 ### Prometheus Configuration
@@ -484,27 +435,27 @@ geode_relationships_total 5000000
 scrape_configs:
   - job_name: 'geode'
     static_configs:
-      - targets: ['geode-server:3141']
+      - targets: ['geode-server:9090']   # GEODE_METRICS_PORT
     metrics_path: '/metrics'
     scrape_interval: 15s
 ```
 
 ### Available Prometheus Metrics
 
-| Metric Name | Type | Labels | Description |
-|-------------|------|--------|-------------|
-| `geode_queries_total` | Counter | status | Total queries |
-| `geode_query_duration_seconds` | Histogram | - | Query latency |
-| `geode_connections_active` | Gauge | - | Active connections |
-| `geode_connections_total` | Counter | - | Total connections |
-| `geode_transactions_total` | Counter | status | Transaction count |
-| `geode_storage_bytes` | Gauge | type | Storage usage |
-| `geode_nodes_total` | Gauge | label | Node count |
-| `geode_relationships_total` | Gauge | type | Relationship count |
-| `geode_index_size_bytes` | Gauge | index | Index sizes |
-| `geode_buffer_pool_hit_ratio` | Gauge | - | Cache hit rate |
-| `geode_wal_size_bytes` | Gauge | - | WAL size |
-| `geode_gc_pause_seconds` | Histogram | - | GC pauses |
+These ten metrics are the complete registered set; none of them carry labels.
+
+| Metric Name | Type | Description |
+|-------------|------|-------------|
+| `geode_queries_total` | Counter | Total number of queries executed |
+| `geode_queries_failed_total` | Counter | Total number of failed queries |
+| `geode_query_duration_seconds` | Histogram | Query execution duration in seconds |
+| `geode_connections_active` | Gauge | Number of active connections |
+| `geode_connections_total` | Counter | Total number of connections |
+| `geode_transactions_total` | Counter | Total number of transactions |
+| `geode_transactions_failed_total` | Counter | Total number of failed transactions |
+| `geode_nodes_total` | Gauge | Total number of nodes in the graph |
+| `geode_edges_total` | Gauge | Total number of edges in the graph |
+| `geode_memory_bytes` | Gauge | Memory usage in bytes |
 
 ---
 
@@ -526,33 +477,36 @@ groups:
         annotations:
           summary: "High query latency detected"
 
-      # Connection pool exhaustion
+      # Connection pool exhaustion (900 = 90% of --max-connections 1000)
       - alert: GeodeConnectionPoolLow
-        expr: geode_connections_active / geode_connections_max > 0.9
+        expr: geode_connections_active > 900
         for: 5m
         labels:
           severity: critical
         annotations:
           summary: "Connection pool nearly exhausted"
 
-      # Storage space
-      - alert: GeodeStorageHigh
-        expr: geode_storage_bytes{type="data"} > 100e9
-        for: 1h
-        labels:
-          severity: warning
-        annotations:
-          summary: "Database storage exceeds 100GB"
-
-      # Buffer pool hit rate
-      - alert: GeodeLowCacheHitRate
-        expr: geode_buffer_pool_hit_ratio < 0.9
+      # Query error rate
+      - alert: GeodeQueryErrorRate
+        expr: rate(geode_queries_failed_total[5m]) / rate(geode_queries_total[5m]) > 0.01
         for: 10m
         labels:
           severity: warning
         annotations:
-          summary: "Buffer pool hit rate below 90%"
+          summary: "More than 1% of queries are failing"
+
+      # Memory growth
+      - alert: GeodeMemoryHigh
+        expr: geode_memory_bytes > 8e9
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Server memory usage exceeds 8GB"
 ```
+
+Disk-space alerting uses the host filesystem collector (`node_exporter`) on the
+data directory: the server publishes no storage-size metric.
 
 ---
 
@@ -618,9 +572,9 @@ groups:
 
 ### Statistics Collection
 
-1. **Enable auto-update** for query optimizer accuracy
-2. **Monitor slow queries** with appropriate thresholds
-3. **Track index usage** to identify unused indexes
+1. **Scrape `/metrics`** so counters survive server restarts in Prometheus
+2. **Profile individual statements** with `PROFILE` instead of a slow-query log
+3. **Review plans with `EXPLAIN`** to confirm indexes are used
 4. **Set up alerting** for critical metrics
 
 ### Performance Monitoring
@@ -632,10 +586,10 @@ groups:
 
 ### Capacity Planning
 
-1. **Monitor storage growth** rate
-2. **Track query volume** trends
-3. **Plan index storage** needs
-4. **Size buffer pool** based on working set
+1. **Monitor data-directory growth** from the host filesystem collector
+2. **Track query volume** trends with `rate(geode_queries_total[5m])`
+3. **Track graph growth** with `geode_nodes_total` and `geode_edges_total`
+4. **Size the host** so the working set fits in RAM (`geode_memory_bytes`)
 
 ---
 
@@ -650,4 +604,4 @@ groups:
 
 **Last Updated:** January 28, 2026
 **Geode Version:** **GEODE_TAG**+
-**Metrics Count:** 50+ observable metrics
+**Metrics Count:** 10 registered Prometheus metrics

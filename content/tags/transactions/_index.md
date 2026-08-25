@@ -26,6 +26,7 @@ This comprehensive guide explores transaction concepts, usage patterns, and best
 ## Core Transaction Concepts
 
 **ACID Guarantees**: Geode enforces all four ACID properties:
+
 - **Atomicity**: Transactions execute completely or not at all
 - **Consistency**: Transactions maintain all integrity constraints
 - **Isolation**: Concurrent transactions don't interfere with each other
@@ -70,6 +71,7 @@ COMMIT;
 ```
 
 **Rollback on Error**:
+
 ```gql
 START TRANSACTION;
 
@@ -84,6 +86,7 @@ ROLLBACK;
 ```
 
 **Read-Only Transactions**: Optimize read-heavy workloads by declaring transactions as read-only:
+
 ```gql
 START TRANSACTION READ ONLY;
 
@@ -121,6 +124,7 @@ COMMIT;
 ```
 
 **Savepoint Use Cases**:
+
 - Try-catch style error handling within transactions
 - Implementing multi-step workflows with conditional logic
 - Batch operations where some items may fail
@@ -131,6 +135,7 @@ COMMIT;
 Geode's SSI implementation prevents concurrency anomalies while maintaining high performance:
 
 **Preventing Lost Updates**:
+
 ```gql
 -- Transaction 1
 START TRANSACTION;
@@ -144,9 +149,11 @@ MATCH (u:User {id: 123})
 SET u.last_login = current_timestamp();
 COMMIT;
 ```
+
 Both transactions succeed without conflict. MVCC ensures each sees a consistent snapshot and updates are properly serialized.
 
 **Detecting Write Conflicts**:
+
 ```gql
 -- Transaction 1
 START TRANSACTION;
@@ -162,6 +169,7 @@ WHERE p.stock > 0
 SET p.stock = p.stock - 1;
 COMMIT;  -- May fail with serialization error
 ```
+
 If both transactions attempt to modify the same product concurrently, one will succeed and the other will be aborted with a serialization error. Your application should retry the failed transaction.
 
 ## Best Practices for Transaction Management
@@ -169,6 +177,7 @@ If both transactions attempt to modify the same product concurrently, one will s
 **Keep Transactions Short**: Long-running transactions hold resources and increase conflict probability. Execute transactions quickly and commit as soon as possible.
 
 **Batch Operations Wisely**: Group related operations into transactions, but avoid massive transactions that could exhaust memory:
+
 ```gql
 -- Good: Reasonably sized batch
 START TRANSACTION;
@@ -183,6 +192,7 @@ COMMIT;
 **Use Read-Only Transactions**: When you only need to query data, mark transactions as read-only for better performance and reduced conflict potential.
 
 **Handle Serialization Errors**: SSI may abort transactions due to conflicts. Implement retry logic with exponential backoff:
+
 ```python
 import time
 import random
@@ -205,6 +215,7 @@ def execute_with_retry(query, max_attempts=3):
 ## Transaction Performance Optimization
 
 **Connection Pooling**: Reuse database connections to avoid transaction setup overhead:
+
 ```python
 from geode import ConnectionPool
 
@@ -217,6 +228,7 @@ pool.release(conn)
 ```
 
 **Prepared Statements**: Pre-compile frequently used queries to reduce parsing overhead:
+
 ```python
 stmt = geode.prepare("""
   MATCH (u:User {id: $user_id})
@@ -240,6 +252,7 @@ For multi-node deployments, Geode coordinates distributed transactions:
 **Distributed Deadlock Detection**: Geode detects deadlocks across nodes and aborts one transaction to resolve the deadlock.
 
 **Cross-Shard Transactions**: Transactions can span multiple shards transparently:
+
 ```gql
 START TRANSACTION;
 
@@ -261,6 +274,7 @@ Monitor key transaction metrics to ensure system health:
 - **Long-running transactions**: Identify transactions holding resources
 
 Use Geode's metrics endpoints to track these values:
+
 ```gql
 -- View transaction statistics
 SHOW TRANSACTION STATS;
@@ -272,17 +286,20 @@ SHOW TRANSACTIONS WHERE duration > 1000;
 ## Troubleshooting Common Issues
 
 **High Abort Rates**: If many transactions abort due to conflicts:
+
 - Reduce transaction duration
 - Decrease batch sizes
 - Implement exponential backoff retry logic
 - Consider partitioning hot data
 
 **Deadlocks**: If deadlocks occur frequently:
+
 - Access resources in consistent order across transactions
 - Use shorter transactions
 - Implement timeout logic
 
 **Performance Degradation**: If transaction throughput drops:
+
 - Check for long-running transactions blocking others
 - Monitor WAL write performance
 - Verify sufficient connection pool capacity
@@ -291,6 +308,7 @@ SHOW TRANSACTIONS WHERE duration > 1000;
 ## Advanced Transaction Features
 
 **Transaction Hooks**: Register callbacks for transaction lifecycle events:
+
 ```python
 def on_commit(txn):
     # Trigger side effects after successful commit
@@ -688,56 +706,55 @@ async def transaction_with_timeout(client, timeout_seconds=30):
 
 ### Live Transaction Monitoring
 
+The server publishes no transaction table: there is no `dbms.transactions.*`
+namespace, so active transactions cannot be listed, inspected or terminated
+from GQL. Monitor from the client that owns the transaction, and bound it there:
+
 ```python
+import asyncio
+import time
+
 class TransactionMonitor:
-    """Monitor active transactions and identify issues."""
+    """Track the transactions this process owns and bound their lifetime."""
 
-    def __init__(self, client):
+    def __init__(self, client, max_seconds=300):
         self.client = client
+        self.max_seconds = max_seconds
 
-    async def list_active_transactions(self):
-        """List all currently active transactions."""
-        result, _ = await self.client.query("""
-            CALL dbms.transactions.list()
-            YIELD transactionId, username, database,
-                  elapsedTime, lockCount, status
-            RETURN transactionId,
-                   username,
-                   duration.inSeconds(elapsedTime) AS seconds,
-                   lockCount,
-                   status
-            ORDER BY elapsedTime DESC
-        """)
+    async def run_bounded(self, statements, params=None):
+        """Run a transaction with a client-side deadline.
 
-        return [row for row in result.rows]
+        Cancelling the coroutine drops the connection, which aborts the
+        server-side transaction — that is the only cancellation path.
+        """
+        started = time.monotonic()
+        try:
+            async with self.client.connection() as conn:
+                await asyncio.wait_for(
+                    self._execute_all(conn, statements, params or {}),
+                    timeout=self.max_seconds,
+                )
+        except asyncio.TimeoutError:
+            elapsed = time.monotonic() - started
+            print(f"Transaction exceeded {self.max_seconds}s ({elapsed:.1f}s), aborted")
+            raise
 
-    async def find_blocked_transactions(self):
-        """Identify transactions waiting on locks."""
-        result, _ = await self.client.query("""
-            CALL dbms.transactions.list()
-            YIELD transactionId, status, waitingOn
-            WHERE status = 'BLOCKED'
-            RETURN transactionId, waitingOn
-        """)
+    async def _execute_all(self, conn, statements, params):
+        await conn.execute("START TRANSACTION")
+        try:
+            for stmt in statements:
+                await conn.execute(stmt, params)
+            await conn.execute("COMMIT")
+        except Exception:
+            await conn.execute("ROLLBACK")
+            raise
+```
 
-        return [row for row in result.rows]
+Fleet-wide, the failure ratio on the metrics endpoint is the signal that
+transactions are aborting:
 
-    async def kill_long_running_transaction(self, tx_id):
-        """Terminate a specific transaction."""
-        await self.client.execute("""
-            CALL dbms.transactions.terminate($tx_id)
-        """, {'tx_id': tx_id})
-
-# Usage
-async def monitor_transactions():
-    monitor = TransactionMonitor(client)
-
-    # Find long-running transactions
-    active = await monitor.list_active_transactions()
-    for tx in active:
-        if tx['seconds'] > 300:  # 5 minutes
-            print(f"Long-running tx: {tx['transactionId']} ({tx['seconds']}s)")
-            await monitor.kill_long_running_transaction(tx['transactionId'])
+```promql
+rate(geode_transactions_failed_total[5m]) / rate(geode_transactions_total[5m])
 ```
 
 ### Transaction Metrics Collection
@@ -851,30 +868,40 @@ async def cross_shard_transfer(amount, from_account, to_account):
 
 ### Diagnosing Deadlocks
 
+The server exposes no wait-for graph (`dbms.transactions.graph` does not
+exist), so cycles have to be diagnosed from the client side. Record the entity
+each transaction touches first, and look for pairs that touch the same two
+entities in opposite order:
+
 ```python
-async def detect_deadlock_cycle():
-    """Identify circular wait dependencies."""
-    result, _ = await client.query("""
-        CALL dbms.transactions.graph()
-        YIELD transaction, waitingFor
-        WITH collect({tx: transaction, waits: waitingFor}) AS dependencies
+from collections import defaultdict
 
-        // Find cycles
-        WITH dependencies
-        UNWIND dependencies AS d1
-        UNWIND dependencies AS d2
-        WHERE d1.tx = d2.waits AND d2.tx = d1.waits
-        RETURN DISTINCT d1.tx AS tx1, d2.tx AS tx2
-    """)
+# Populated by your data-access layer: tx_id -> ordered entity ids touched
+ACCESS_ORDER = defaultdict(list)
 
-    cycles = [row for row in result.rows]
-    if cycles:
-        print("Deadlock detected!")
-        for cycle in cycles:
-            print(f"  {cycle['tx1']} ↔ {cycle['tx2']}")
+def detect_lock_order_inversions():
+    """Find transaction pairs that acquire the same entities in opposite order."""
+    inversions = []
+    tx_ids = list(ACCESS_ORDER)
 
-    return cycles
+    for i, a in enumerate(tx_ids):
+        for b in tx_ids[i + 1:]:
+            shared = [e for e in ACCESS_ORDER[a] if e in ACCESS_ORDER[b]]
+            if len(shared) < 2:
+                continue
+            order_a = [e for e in ACCESS_ORDER[a] if e in shared]
+            order_b = [e for e in ACCESS_ORDER[b] if e in shared]
+            if order_a != order_b:
+                inversions.append((a, b, shared))
+
+    for a, b, shared in inversions:
+        print(f"Lock-order inversion between {a} and {b} on {shared}")
+    return inversions
 ```
+
+The fix is the same one that prevents deadlocks in the first place: touch
+entities in a deterministic order (for example ascending `id(n)`) in every
+transaction.
 
 ### Resolving High Abort Rates
 
@@ -882,17 +909,17 @@ async def detect_deadlock_cycle():
 async def analyze_transaction_conflicts():
     """Analyze conflict patterns to reduce abort rate."""
 
-    # Identify hot spots (frequently conflicted entities)
-    result, _ = await client.query("""
-        CALL dbms.conflicts.summary()
-        YIELD entity, conflictCount, avgRetries
-        WHERE conflictCount > 100
-        RETURN entity, conflictCount, avgRetries
-        ORDER BY conflictCount DESC
-        LIMIT 20
-    """)
-
-    hotspots = [row for row in result.rows]
+    # There is no server-side conflict summary (`dbms.conflicts.summary` does
+    # not exist). Count retries in the client's retry wrapper instead — the
+    # entity key is whatever your data-access layer retried on.
+    hotspots = [
+        {'entity': entity, 'conflictCount': stats['conflicts'],
+         'avgRetries': stats['retries'] / max(stats['attempts'], 1)}
+        for entity, stats in RETRY_STATS.items()
+        if stats['conflicts'] > 100
+    ]
+    hotspots.sort(key=lambda h: h['conflictCount'], reverse=True)
+    hotspots = hotspots[:20]
 
     # Recommendations
     for hotspot in hotspots:

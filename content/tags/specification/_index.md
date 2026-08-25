@@ -191,6 +191,7 @@ GROUP BY year, month, day;
 GQL defines a rich type system:
 
 **Primitive Types**:
+
 - `BOOLEAN`: true or false
 - `INTEGER`: Whole numbers
 - `FLOAT`: Floating-point numbers
@@ -198,17 +199,20 @@ GQL defines a rich type system:
 - `BYTES`: Binary data
 
 **Temporal Types**:
+
 - `DATE`: Calendar dates (YYYY-MM-DD)
 - `TIME`: Time of day with optional timezone
 - `TIMESTAMP`: Point in time
 - `DURATION`: Time intervals (ISO 8601 format)
 
 **Structured Types**:
+
 - `LIST<T>`: Ordered collection
 - `MAP<K, V>`: Key-value mappings
 - `RECORD`: Named fields
 
 **Special Types**:
+
 - `NULL`: Absence of value
 - `PATH`: Graph path
 - `NODE`: Graph node
@@ -252,10 +256,11 @@ WHERE EXISTS {
 RETURN company.name;
 
 -- CALL for procedures
-MATCH (p:Person)
-CALL graph.pagerank(p, 'KNOWS') AS pr
-RETURN p.name, pr.score
-ORDER BY pr.score DESC
+CALL algo.pagerank.stream()
+YIELD nodeId, score
+MATCH (p:Person) WHERE id(p) = nodeId
+RETURN p.name, score
+ORDER BY score DESC
 LIMIT 20;
 ```
 
@@ -444,6 +449,7 @@ The GQL standard defines conformance requirements:
 ### Core GQL
 
 Minimum required features:
+
 - Pattern matching (MATCH)
 - Basic CRUD (INSERT, SET, DELETE)
 - WHERE filters
@@ -454,6 +460,7 @@ Minimum required features:
 ### Full GQL
 
 Complete specification including:
+
 - Path queries (SHORTEST, ALL SHORTEST, K SHORTEST)
 - Temporal types and operations
 - Full text search
@@ -480,12 +487,14 @@ Geode maintains 100% GQL compliance:
 Geode adds enterprise features beyond the standard:
 
 **Row-Level Security (RLS)**:
+
 ```gql
 CREATE POLICY user_data_isolation ON User
   USING (id = current_user_id());
 ```
 
 **Advanced Aggregations**:
+
 ```gql
 MATCH (p:Product)
 RETURN percentile(p.price, 0.95) AS p95_price;
@@ -621,6 +630,7 @@ ORDER BY levels_up;
 The GQL standard will continue evolving:
 
 **Expected in future versions**:
+
 - Graph schema definition language (extended)
 - Graph algorithms (PageRank, community detection)
 - Streaming query results
@@ -635,7 +645,7 @@ The GQL standard will continue evolving:
 ### Official Specification
 
 - ISO/IEC 39075:2024 document (available from ISO)
-- GQL working group: https://www.gqlstandards.org
+- GQL working group: <https://www.gqlstandards.org>
 - Public drafts and discussions
 
 ### Learning Resources

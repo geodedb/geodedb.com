@@ -747,20 +747,25 @@ Cryptographic hash (e.g., SHA-256).
 **Storage:** Variable (depends on algorithm)
 
 ```gql
--- SHA-256 hash
-RETURN sha256('hello') AS hash;
+-- Build a HASH value from a digest the client computed
+RETURN hash('sha3-256', $hex_digest) AS digest;
 
--- Store hash
+-- Store it
 CREATE (:File {
   name: 'document.pdf',
-  sha256: sha256(content)
+  digest: hash('sha3-256', $hex_digest)
 });
 
--- Compare
+-- Compare in constant time
 MATCH (f:File)
-WHERE f.sha256 = sha256($input_content)
+WHERE hash_equals(f.digest, hash('sha3-256', $probe_digest))
 RETURN f.name;
 ```
+
+The engine does not compute digests — there is no `sha256()` or `md5()`
+function. `hash(algorithm, hex_digest)` accepts `sha3-256`, `sha3-512`,
+`blake3`, `blake2b-256`, `blake2b-512`, `blake2s-256` and `argon2id`, and
+requires a hex string of the algorithm's digest length.
 
 ---
 

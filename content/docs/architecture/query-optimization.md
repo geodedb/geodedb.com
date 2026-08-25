@@ -77,6 +77,7 @@ Before:                         After:
 ```
 
 **Example**:
+
 ```gql
 -- Original query
 MATCH (p:Person)-[:KNOWS]->(f:Person)
@@ -116,6 +117,7 @@ fn selectBestIndex(
 ```
 
 **Index Selection Rules**:
+
 - Use equality indexes for exact matches
 - Use range indexes for comparison predicates
 - Consider covering indexes to avoid lookups
@@ -137,6 +139,7 @@ Poor Order:                    Optimal Order:
 ```
 
 **Join Order Algorithm**:
+
 ```zig
 fn optimizeJoinOrder(joins: []Join, stats: *Statistics) []Join {
     // Use dynamic programming for small join counts
@@ -196,15 +199,19 @@ statistics:
 
 ### Manual Statistics Update
 
+Planner statistics are maintained internally and are not readable or
+refreshable from GQL — there is no `db.stats.*` namespace. What you can inspect
+is the resulting plan, and the real cardinalities behind it:
+
 ```gql
--- Update all statistics
-CALL db.stats.update()
+-- The plan the optimizer chose
+EXPLAIN MATCH (p:Person) WHERE p.age > 30 RETURN p;
 
--- Update statistics for specific label
-CALL db.stats.update('Person')
+-- The work it actually did
+PROFILE MATCH (p:Person) WHERE p.age > 30 RETURN p;
 
--- View current statistics
-CALL db.stats.show()
+-- Ground-truth cardinality for a predicate
+MATCH (p:Person) WHERE p.age > 30 RETURN count(p);
 ```
 
 ## Adaptive Query Execution
@@ -229,6 +236,7 @@ pub const RuntimeStats = struct {
 ### Mid-Query Optimization
 
 When actual cardinalities differ significantly from estimates:
+
 1. Pause execution
 2. Re-optimize with actual statistics
 3. Resume with new plan
@@ -265,6 +273,7 @@ RETURN f.name
 ```
 
 Output:
+
 ```
 | plan                          | estimated_rows |
 |-------------------------------|----------------|
@@ -286,6 +295,7 @@ RETURN f.name
 ```
 
 Output:
+
 ```
 | plan                          | rows  | db_hits | time_ms |
 |-------------------------------|-------|---------|---------|
@@ -346,6 +356,7 @@ LIMIT 100
 ## Performance Tuning
 
 See also:
+
 - [Performance Tuning Guide](/docs/query/performance-tuning/)
 - [Index Optimization Tutorial](/docs/tutorials/index-optimization/)
 

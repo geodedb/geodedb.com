@@ -24,6 +24,18 @@ params:
 
 # User-Defined Functions in Geode
 
+{{< callout type="warning" >}}
+**Not available yet.** The GQL grammar has no `CREATE FUNCTION`,
+`CREATE AGGREGATE FUNCTION` or `CREATE PROCEDURE` statement, and the procedure
+registry dispatches only the built-in `db.`, `dbms.`, `algo.`, `audit.`, `tde.`,
+`cdc.` and `geode.*` families — user-supplied functions cannot be registered or
+called. Nothing on this page executes against a running server today; it
+documents the intended surface. Until it lands, put custom logic in your
+application and pass the results in as parameters. The built-in function surface
+is listed by `SHOW FUNCTIONS` and documented in the
+[function reference](/docs/gql-reference/functions/).
+{{< /callout >}}
+
 User-defined functions (UDFs) extend Geode's built-in GQL capabilities with custom logic tailored to your application's needs. Whether you need specialized data transformations, complex business rules, or domain-specific calculations, UDFs enable you to encapsulate reusable logic that executes directly within the database engine.
 
 Geode supports several types of custom functions: scalar functions that operate on individual values, aggregation functions that process sets of values, and stored procedures for complex multi-step operations.

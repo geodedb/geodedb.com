@@ -92,15 +92,15 @@ Alice --- Bob
 
 ```gql
 -- Compute PageRank
-CALL graph.pageRank('SocialNetwork', {
-  relationship_type: 'KNOWS',
-  iterations: 20,
-  damping_factor: 0.85
-})
-YIELD node, score
-RETURN node.name AS person, score
+CALL algo.pagerank.stream()
+YIELD nodeId, score
+MATCH (n) WHERE id(n) = nodeId
+RETURN n.name AS person, score
 ORDER BY score DESC;
 ```
+
+The procedure takes no arguments: damping factor and iteration count are fixed
+by the engine, and it runs over every relationship in the current graph.
 
 **Expected output**:
 
@@ -130,11 +130,10 @@ Frank    | 0.135
 **Query**:
 
 ```gql
-CALL graph.betweenness('SocialNetwork', {
-  relationship_type: 'KNOWS'
-})
-YIELD node, score
-RETURN node.name AS person, score
+CALL algo.betweenness.stream()
+YIELD nodeId, betweenness
+MATCH (n) WHERE id(n) = nodeId
+RETURN n.name AS person, betweenness AS score
 ORDER BY score DESC;
 ```
 
@@ -166,11 +165,10 @@ Frank    | 0.0
 **Query**:
 
 ```gql
-CALL graph.closeness('SocialNetwork', {
-  relationship_type: 'KNOWS'
-})
-YIELD node, score
-RETURN node.name AS person, score
+CALL algo.closeness.stream()
+YIELD nodeId, closeness
+MATCH (n) WHERE id(n) = nodeId
+RETURN n.name AS person, closeness AS score
 ORDER BY score DESC;
 ```
 
@@ -189,14 +187,15 @@ ORDER BY score DESC;
 **Query**:
 
 ```gql
-CALL graph.louvain('SocialNetwork', {
-  relationship_type: 'KNOWS',
-  resolution: 1.0
-})
-YIELD node, community
-RETURN community, COLLECT(node.name) AS members
+CALL algo.louvain.stream()
+YIELD nodeId, community
+MATCH (n) WHERE id(n) = nodeId
+RETURN community, COLLECT(n.name) AS members
 ORDER BY community;
 ```
+
+There is no resolution parameter; `algo.leiden.stream()` yields the same
+`(nodeId, community)` shape with the Leiden refinement.
 
 **Expected output**:
 
@@ -216,12 +215,10 @@ community | members
 **Query**:
 
 ```gql
-CALL graph.labelPropagation('SocialNetwork', {
-  relationship_type: 'KNOWS',
-  iterations: 10
-})
-YIELD node, community
-RETURN community, COLLECT(node.name) AS members
+CALL algo.labelPropagation.stream()
+YIELD nodeId, label
+MATCH (n) WHERE id(n) = nodeId
+RETURN label AS community, COLLECT(n.name) AS members
 ORDER BY community;
 ```
 
@@ -275,91 +272,49 @@ path_nodes                  | hops
 
 ## ML Graph Embeddings
 
-From `ML_GRAPH_EMBEDDINGS.md`:
+**Graph embeddings** convert nodes into dense vectors capturing structural and
+semantic information. Geode **stores and searches** embeddings; it does not
+train them. There is no `graph.node2vec`, `graph.graphSAGE` or `graph.deepWalk`
+procedure — the registry dispatches only `db.`, `dbms.`, `algo.`, `audit.`,
+`tde.`, `cdc.` and the `geode.*` families.
 
-**Graph embeddings** convert nodes into dense vectors capturing structural and semantic information.
+The workflow is: export the edges, train in your own pipeline, write the
+vectors back with `vectorf32()`, index them, then search.
 
-### Node2Vec
-
-**Random walk-based** embedding generation.
-
-**Parameters**:
-
-- `dimensions`: Embedding dimension (e.g., 128)
-- `walk_length`: Length of random walks (e.g., 80)
-- `num_walks`: Walks per node (e.g., 10)
-- `p`: Return parameter (1.0 = balanced)
-- `q`: In-out parameter (1.0 = balanced)
-
-**Query**:
+### 1. Export the graph for training
 
 ```gql
-CALL graph.node2vec('SocialNetwork', {
-  relationship_type: 'KNOWS',
-  dimensions: 128,
-  walk_length: 80,
-  num_walks: 10,
-  p: 1.0,
-  q: 1.0
-})
-YIELD node, embedding
-WITH node, embedding
-MATCH (n:Person)
-WHERE n.id = node.id
-SET n.embedding = embedding;
+-- Edge list for a Node2Vec / DeepWalk / GraphSAGE trainer
+MATCH (a:Person)-[:KNOWS]->(b:Person)
+RETURN id(a) AS source, id(b) AS target;
+```
 
--- Verify embeddings created
+Node features for an inductive model (GraphSAGE) come out of the same query
+shape:
+
+```gql
 MATCH (p:Person)
-RETURN p.name, p.embedding[0..5] AS embedding_sample;
+RETURN id(p) AS node_id, p.age AS age, p.city AS city;
 ```
 
-**Output**: Each Person node now has 128-dimensional embedding.
+### 2. Train off-line
 
-### GraphSAGE
+Any embedding implementation works — `node2vec`, `PyTorch Geometric`,
+`DGL`, or a hosted embedding model. Geode is not involved in this step, so the
+walk length, dimensionality, `p`/`q` return parameters and aggregator are
+whatever your trainer supports.
 
-**Graph Sampling and Aggregation** for inductive embeddings.
-
-**Aggregation strategies**:
-
-- `mean` - Average neighbor features
-- `pool` - Max pooling
-- `lstm` - LSTM aggregation
-
-**Query**:
+### 3. Write the vectors back
 
 ```gql
-CALL graph.graphSAGE('SocialNetwork', {
-  relationship_type: 'KNOWS',
-  dimensions: 128,
-  num_samples: 25,
-  aggregator: 'mean'
-})
-YIELD node, embedding
-WITH node, embedding
-MATCH (n:Person)
-WHERE n.id = node.id
-SET n.embedding = embedding;
+-- $embedding is a list of floats from the trainer
+MATCH (p:Person) WHERE id(p) = $node_id
+SET p.embedding = vectorf32($embedding);
 ```
 
-### DeepWalk
-
-**Simplified** Node2Vec (p=1, q=1).
-
-**Query**:
-
-```gql
-CALL graph.deepWalk('SocialNetwork', {
-  relationship_type: 'KNOWS',
-  dimensions: 128,
-  walk_length: 80,
-  num_walks: 10
-})
-YIELD node, embedding
-WITH node, embedding
-MATCH (n:Person)
-WHERE n.id = node.id
-SET n.embedding = embedding;
-```
+`vectorf32(...)` builds a 32-bit float `VECTOR` value; `vectori32(...)` builds
+the integer variant. Write them in batches from your client, one statement per
+node or one per parameterised batch.
 
 ## Vector Similarity Search
 
@@ -469,14 +424,9 @@ From `GRAPH_ALGORITHM_PERFORMANCE_ENHANCEMENTS.md`:
 
 ```gql
 -- Batch job (run daily)
-CALL graph.pageRank('SocialNetwork', {
-  relationship_type: 'KNOWS',
-  iterations: 20
-})
-YIELD node, score
-WITH node, score
-MATCH (n:Person)
-WHERE n.id = node.id
+CALL algo.pagerank.stream()
+YIELD nodeId, score
+MATCH (n:Person) WHERE id(n) = nodeId
 SET n.pagerank_score = score;
 
 -- Query uses cached property (fast)
@@ -498,7 +448,7 @@ LIMIT 10;
 
 - **PageRank** (1M nodes, 20 iterations): ~2-5 seconds
 - **Louvain** (1M nodes): ~10-30 seconds
-- **Node2Vec** (100K nodes, 10 walks): ~5-15 minutes
+- **Embedding training**: runs in your own pipeline, not in Geode
 
 **Tip**: Use PROFILE to measure actual execution time before deploying to production.
 

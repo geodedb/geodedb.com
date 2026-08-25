@@ -38,6 +38,7 @@ For graph databases, consistency is particularly important because graph queries
 Strong consistency provides the strongest guarantee: every read returns the most recent write, and all operations appear to occur atomically in a global order. This model is essential for applications requiring strict correctness guarantees.
 
 **Use Cases**:
+
 - Financial transactions and accounting systems
 - Inventory management with stock tracking
 - Audit logs and compliance systems
@@ -93,6 +94,7 @@ COMMIT;
 Eventual consistency guarantees that if no new updates are made, all replicas will eventually converge to the same state. This model provides high availability and performance at the cost of temporary inconsistencies.
 
 **Use Cases**:
+
 - Social media feeds and timelines
 - Analytics and reporting systems
 - Content delivery and caching
@@ -139,6 +141,7 @@ OPTION (consistency = 'eventual', max_staleness = '5s');
 Causal consistency ensures that causally related operations are seen in the same order by all nodes, while allowing concurrent operations to be seen in different orders. This model is ideal for maintaining meaningful ordering without sacrificing performance.
 
 **Use Cases**:
+
 - Comment threads and discussions
 - Event sourcing systems
 - Distributed workflow engines
@@ -584,18 +587,20 @@ geode consistency test \
 ### Diagnostic Queries
 
 ```gql
--- Check replication status
-CALL dbms.cluster.replication_status()
-YIELD node_id, lag_ms, status;
+-- Cluster membership, roles and how recently each member was heard from
+SHOW CLUSTER STATUS;
 
--- View active transactions
-CALL dbms.transactions.list()
-YIELD transaction_id, isolation_level, start_time;
-
--- Check consistency configuration
-CALL dbms.config.get('consistency.*')
-YIELD key, value;
+-- Local durability position on each member
+CALL geode.storage.stats()
+YIELD wal_lsn, last_checkpoint_lsn
+RETURN wal_lsn, last_checkpoint_lsn;
 ```
+
+There is no `dbms.cluster.*`, `dbms.transactions.*` or `dbms.config.*`
+namespace: replica lag, open transactions and effective configuration are not
+queryable. Compare `wal_lsn` across members for replication progress, and read
+the effective configuration from the server's own start-up flags and config
+file.
 
 ## CAP Theorem Considerations
 

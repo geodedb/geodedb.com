@@ -53,8 +53,8 @@ Neo4j uses Cypher; Geode uses ISO GQL. Most basic Cypher is compatible:
 | CREATE relationships | Full | Identical syntax |
 | WHERE clauses | Full | Identical syntax |
 | RETURN | Full | Identical syntax |
-| MERGE | Partial | Use INSERT...ON CONFLICT |
-| APOC procedures | None | Use built-in functions |
+| MERGE | Full | Same `ON CREATE SET` / `ON MATCH SET` clauses |
+| APOC procedures | None | Use built-in functions and `algo.*` procedures |
 | FOREACH | Partial | Standard loops |
 
 ### Export from Neo4j
@@ -136,7 +136,7 @@ geode migrate cypher-to-gql \
   --output import.gql
 
 # Execute import
-geode execute-file --file import.gql --batch-size 100
+geode query --file import.gql
 ```
 
 ### Query Migration
@@ -149,17 +149,18 @@ MERGE (p:Person {email: 'alice@example.com'})
 ON CREATE SET p.name = 'Alice', p.created = datetime()
 ON MATCH SET p.updated = datetime()
 
-// Geode GQL equivalent
-INSERT (:Person {email: 'alice@example.com', name: 'Alice', created: datetime()})
-ON CONFLICT (email) DO UPDATE SET updated = datetime()
+// Geode GQL equivalent: MERGE, with the same ON CREATE / ON MATCH clauses
+MERGE (p:Person {email: 'alice@example.com'})
+ON CREATE SET p.name = 'Alice', p.created = datetime()
+ON MATCH SET p.updated = datetime()
 ```
 
 ```cypher
 // Neo4j: APOC functions
 CALL apoc.create.uuid() YIELD uuid
 
-// Geode GQL equivalent
-SELECT gen_random_uuid() AS uuid
+// Geode GQL equivalent: built-in UUID constructors
+RETURN uuid_v4() AS uuid;   -- random (v4); uuid_v7() for time-ordered
 ```
 
 ```cypher
@@ -233,7 +234,7 @@ with open('import.gql', 'w') as out:
 EOF
 
 # Execute import
-geode execute-file --file import.gql
+geode query --file import.gql
 ```
 
 ## Migration from Relational Databases
@@ -363,11 +364,9 @@ geode import json \
 ### GQL Script Import
 
 ```bash
-# Execute GQL file
-geode execute-file \
-  --file import.gql \
-  --batch-size 100 \
-  --continue-on-error true
+# Execute GQL file (`geode query` accepts -f/--file; there is no
+# execute-file subcommand, batch-size or continue-on-error flag)
+geode query --file import.gql
 ```
 
 ## Environment Migration
@@ -526,6 +525,7 @@ echo "=== Validation Complete ==="
 ### Bulk Loading Best Practices
 
 1. **Disable constraints during import**:
+
 ```gql
 -- Temporarily disable constraints
 ALTER DATABASE DISABLE CONSTRAINTS;
@@ -538,6 +538,7 @@ ALTER DATABASE ENABLE CONSTRAINTS;
 ```
 
 2. **Use transactions for batching**:
+
 ```gql
 BEGIN TRANSACTION;
 CREATE (:Person {id: 1, name: 'Alice'});
@@ -547,6 +548,7 @@ COMMIT;
 ```
 
 3. **Create indexes after import**:
+
 ```gql
 -- Import data first
 -- Then create indexes
@@ -555,6 +557,7 @@ CREATE INDEX person_name ON Person(name);
 ```
 
 4. **Use parallel imports**:
+
 ```bash
 # Split file and import in parallel
 split -l 100000 large-file.csv chunk-

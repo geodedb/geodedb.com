@@ -513,8 +513,8 @@ cd geode
 # Core unit tests
 make test
 
-# Comprehensive test suite (97.4% pass rate expected)
-make geodetestlab-comprehensive
+# Local integration suites
+make test-all-integration
 ```
 
 Successful test execution confirms proper installation.

@@ -159,16 +159,11 @@ Accounts acting as hubs (receiving/sending to many accounts):
 
 ```gql
 -- Compute betweenness centrality to find mule accounts
-CALL graph.betweenness('PaymentNetwork', {
-  relationship_type: 'SENT'
-})
-YIELD node, score
-WITH node, score
-WHERE score > 10.0  -- High betweenness = hub account
-MATCH (a:Account)
-WHERE a.id = node.id
-RETURN a.holder_name, a.risk_score, score AS betweenness
-ORDER BY score DESC;
+CALL algo.betweenness.stream()
+YIELD nodeId, betweenness
+MATCH (a:Account) WHERE id(a) = nodeId AND betweenness > 10.0
+RETURN a.holder_name, a.risk_score, betweenness
+ORDER BY betweenness DESC;
 ```
 
 ## ML-Based Anomaly Detection
@@ -177,21 +172,18 @@ ORDER BY score DESC;
 
 Use Node2Vec to create account embeddings capturing behavioral patterns:
 
+Embeddings are trained outside the database — there is no `graph.node2vec`
+procedure. Export the transfer graph, train with Node2Vec (or any other model),
+then write the vectors back as `VECTOR` properties:
+
 ```gql
--- Generate account embeddings
-CALL graph.node2vec('PaymentNetwork', {
-  relationship_type: 'SENT',
-  dimensions: 128,
-  walk_length: 80,
-  num_walks: 10,
-  p: 1.0,
-  q: 1.0
-})
-YIELD node, embedding
-WITH node, embedding
-MATCH (a:Account)
-WHERE a.id = node.id
-SET a.embedding = embedding;
+-- Export the payment edges for the trainer
+MATCH (a:Account)-[:SENT]->(b:Account)
+RETURN id(a) AS source, id(b) AS target;
+
+-- Write a client-computed embedding back onto the account
+MATCH (a:Account) WHERE id(a) = $node_id
+SET a.embedding = vectorf32($embedding);
 ```
 
 ### Detect Anomalies with Vector Similarity

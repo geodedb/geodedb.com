@@ -892,21 +892,20 @@ pub fn fuzz_execution(input: []const u8) !void {
 
 ### Running Fuzz Tests
 
+The fuzz targets under `fuzz/targets/` are ordinary Zig test binaries wired
+into the `test-e2e` step, so that is how they run. `zig build fuzz` exists but
+is a declared placeholder, and there is no per-target step, `-Dseed` or
+`-Dinput` option, or standalone fuzz binary to hand to AFL:
+
 ```bash
-# Run all fuzz tests
+# Run every fuzz target (as part of the e2e suite)
+zig build test-e2e
+
+# ...or through the Makefile wrapper
 make fuzz
 
-# Run specific fuzz target
-zig build fuzz-parser
-
-# Run with custom seed (reproducibility)
-zig build fuzz-parser -Dseed=12345
-
-# Run with time limit (10 minutes)
-timeout 600 zig build fuzz-parser
-
-# Run with AFL (American Fuzzy Lop)
-afl-fuzz -i fuzz/inputs -o fuzz/outputs -- ./zig-out/bin/geode-fuzz-parser @@
+# Bound a long run from the outside
+timeout 600 zig build test-e2e
 ```
 
 ### Fuzz Test Configuration
@@ -933,17 +932,21 @@ pub const FuzzConfig = struct {
 
 ### Analyzing Fuzz Crashes
 
+Crashing inputs are reproduced by pinning them into the target itself: add the
+failing input as a test case in the relevant `fuzz/targets/*.zig` file and run
+the suite. The targets already build in `Debug`, so assertions and stack traces
+are on:
+
 ```bash
-# Reproduce crash with specific input
-zig build fuzz-parser -Dinput=crash_input.txt
+# Re-run after adding the failing input as a regression case
+zig build test-e2e
 
-# Debug crash
-zig build fuzz-parser -O Debug -Dinput=crash_input.txt
-gdb ./zig-out/bin/geode-fuzz-parser
-
-# Minimize crash input
-afl-tmin -i crash_input.txt -o minimized.txt -- ./zig-out/bin/geode-fuzz-parser @@
+# Debug the failing test binary directly
+zig test fuzz/targets/parser_fuzz.zig --test-no-exec
 ```
+
+That keeps the crash as a permanent regression test rather than a file on
+someone's disk.
 
 ## Benchmark Tests
 

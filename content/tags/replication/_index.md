@@ -72,17 +72,20 @@ replication:
 ```
 
 **Advantages**:
+
 - Simple to understand and operate
 - Consistent write path through single master
 - Read scaling through multiple replicas
 - Clear failure modes
 
 **Disadvantages**:
+
 - Single point of failure for writes
 - Limited write scalability
 - Master can become bottleneck
 
 **Use Cases**:
+
 - Read-heavy workloads
 - Applications requiring strong consistency
 - Traditional OLTP systems
@@ -119,17 +122,20 @@ replication:
 ```
 
 **Advantages**:
+
 - No single point of failure
 - Write scalability across multiple nodes
 - Geographic distribution of write capacity
 - Lower write latency for distributed users
 
 **Disadvantages**:
+
 - Complex conflict resolution
 - Eventual consistency challenges
 - More complex failure scenarios
 
 **Use Cases**:
+
 - Globally distributed applications
 - High write throughput requirements
 - Multi-region deployments
@@ -164,16 +170,19 @@ replication:
 ```
 
 **Advantages**:
+
 - Strong consistency guarantees
 - Efficient bandwidth usage
 - Simple failure recovery
 
 **Disadvantages**:
+
 - Higher latency for acknowledgments
 - Chain length limits scalability
 - Head node can become bottleneck
 
 **Use Cases**:
+
 - Strong consistency requirements
 - Linear data flow patterns
 - Storage systems requiring durability
@@ -223,6 +232,7 @@ COMMIT;
 ```
 
 **Characteristics**:
+
 - **Latency**: Higher due to network round-trips
 - **Consistency**: Strong consistency guarantees
 - **Availability**: Lower (requires replica acknowledgment)
@@ -256,6 +266,7 @@ replication:
 ```
 
 **Characteristics**:
+
 - **Latency**: Low (immediate return)
 - **Consistency**: Eventual consistency
 - **Availability**: High (no dependency on replicas)
@@ -284,6 +295,7 @@ replication:
 ```
 
 **Characteristics**:
+
 - Balance between performance and durability
 - Guarantees at least one replica has data
 - Better availability than fully synchronous
@@ -489,18 +501,18 @@ Key metrics:
 ### Diagnostic Queries
 
 ```gql
--- Check replication status
-CALL dbms.replication.status()
-YIELD replica_id, lag_ms, state, last_transaction;
+-- Membership, role, term, leader and last contact for every member
+SHOW CLUSTER STATUS;
 
--- View replication topology
-CALL dbms.replication.topology()
-YIELD role, node_id, replicas;
-
--- Get replication statistics
-CALL dbms.replication.stats()
-YIELD bytes_replicated, ops_per_second, avg_lag_ms;
+-- Local durability position; compare across members for replication progress
+CALL geode.storage.stats()
+YIELD wal_lsn, last_checkpoint_lsn
+RETURN wal_lsn, last_checkpoint_lsn;
 ```
+
+There is no `dbms.replication.*` namespace: per-replica byte lag, replication
+throughput and topology are not published as procedures. `SHOW CLUSTER STATUS`
+plus per-node `wal_lsn` comparison is the supported view.
 
 ## Advanced Replication Features
 

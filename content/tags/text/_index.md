@@ -69,18 +69,18 @@ CREATE (u:User {
 **Length and Size**:
 
 ```gql
--- String length (character count)
+-- String length in BYTES (length() and size() are the same function)
 MATCH (u:User)
-RETURN u.name, LENGTH(u.name) AS name_length;
+RETURN u.name, length(u.name) AS name_bytes;
 
--- Byte size
 MATCH (u:User)
-RETURN u.bio, OCTET_LENGTH(u.bio) AS byte_size;
-
--- Character count (Unicode-aware)
-MATCH (u:User)
-RETURN u.greeting, CHAR_LENGTH(u.greeting) AS char_count;
+RETURN u.bio, size(u.bio) AS byte_size;
 ```
+
+`length()`/`size()` measure UTF-8 **bytes**, so for ASCII text they equal the
+character count and for multi-byte text they do not. There is no
+`OCTET_LENGTH` or `CHAR_LENGTH` function and no code-point counter — compute a
+character count in the client if you need one.
 
 **Case Conversion**:
 
@@ -93,9 +93,15 @@ RETURN UPPER(u.name) AS uppercase_name;
 MATCH (u:User)
 RETURN LOWER(u.email) AS lowercase_email;
 
--- Title case (capitalize first letter of each word)
+```
+
+Title case has no built-in: there is no `INITCAP`. Capitalise in the client, or
+compose it from the primitives for a single-word value:
+
+```gql
 MATCH (u:User)
-RETURN INITCAP(u.name) AS title_case;
+RETURN toUpper(substring(u.first_name, 0, 1)) + toLower(substring(u.first_name, 1))
+       AS title_case;
 ```
 
 **Trimming and Padding**:
@@ -113,13 +119,11 @@ RETURN LTRIM(u.name) AS left_trimmed;
 MATCH (u:User)
 RETURN RTRIM(u.name) AS right_trimmed;
 
--- Pad string to specified length
-MATCH (p:Product)
-RETURN LPAD(p.sku, 10, '0') AS padded_sku;  -- Left pad with zeros
-
-MATCH (p:Product)
-RETURN RPAD(p.name, 20, '.') AS padded_name;  -- Right pad with dots
 ```
+
+Padding has no built-in: there is no `LPAD` or `RPAD`. Pad in the client, or
+store the padded form as its own property when you need to sort or match on
+it.
 
 ## Substring and Extraction
 
@@ -141,32 +145,46 @@ RETURN SUBSTRING(u.bio, 1, 50) AS preview;
 
 **String Splitting**:
 
+`split(string, delimiter)` is listed by `SHOW FUNCTIONS`, but the evaluator has
+no dispatch for it — treat it as unavailable until that is resolved upstream.
+Split in the client and pass the parts in as a list, or model the parts as
+properties when you need to query them:
+
 ```gql
--- Split string into array
-MATCH (u:User)
-RETURN u.name, SPLIT(u.name, ' ') AS name_parts;
+-- Parts supplied by the client as a list parameter
+MATCH (t:Tag) WHERE id(t) = $tag_id
+UNWIND $keywords AS keyword
+MERGE (k:Keyword {name: toLower(trim(keyword))})
+MERGE (t)-[:HAS_KEYWORD]->(k);
 
--- Extract first element
+-- Store the parts you filter on rather than splitting at query time
 MATCH (u:User)
-WITH SPLIT(u.name, ' ') AS parts
-RETURN parts[0] AS first_name;
-
--- Process split results
-MATCH (t:Tag)
-UNWIND SPLIT(t.keywords, ',') AS keyword
-RETURN TRIM(keyword) AS cleaned_keyword;
+WHERE u.first_name = 'Alice'
+RETURN u.first_name, u.last_name;
 ```
 
 **Pattern Extraction**:
 
-```gql
--- Extract using regular expressions
-MATCH (u:User)
-RETURN REGEXP_EXTRACT(u.email, '^([^@]+)') AS username;
+Geode has no regex **extraction** function — there is no `REGEXP_EXTRACT`,
+`REGEXP_EXTRACT_ALL` or capture-group access. What the engine provides is a
+regex **predicate**, `=~`, backed by a lightweight matcher supporting `^`, `$`,
+`.`, `*`, `+`, `?`, character classes and escapes (no alternation, no capture
+groups):
 
--- Extract all matches
-MATCH (p:Post)
-RETURN REGEXP_EXTRACT_ALL(p.content, '#(\w+)') AS hashtags;
+```gql
+-- Test a pattern
+MATCH (u:User)
+WHERE u.email =~ '^[a-z]+@example\.com$'
+RETURN u.email;
+```
+
+To pull a piece out of a string, use position-based extraction, or extract in
+the client and store the result:
+
+```gql
+-- Local part of an email, without regex
+MATCH (u:User)
+RETURN substring(u.email, 0, size(u.email) - size(url_host(u.email))) AS username;
 ```
 
 ## String Concatenation and Formatting
@@ -178,40 +196,50 @@ RETURN REGEXP_EXTRACT_ALL(p.content, '#(\w+)') AS hashtags;
 MATCH (u:User)
 RETURN u.first_name + ' ' + u.last_name AS full_name;
 
--- Concatenate with separator
+-- Concatenate with the `||` operator
 MATCH (u:User)
-RETURN CONCAT(u.first_name, ' ', u.last_name) AS full_name;
+RETURN u.first_name || ' ' || u.last_name AS full_name;
+```
 
--- Concatenate with null handling
+There is no `CONCAT` or `CONCAT_WS` function: `+` and `||` are the
+concatenation operators. Both propagate `NULL` (`null || 'x'` is `null`), so
+guard optional parts with `coalesce()`:
+
+```gql
 MATCH (u:User)
-RETURN CONCAT_WS(' ', u.first_name, u.middle_name, u.last_name) AS full_name;
+RETURN u.first_name || ' ' || coalesce(u.middle_name || ' ', '') || u.last_name
+       AS full_name;
 ```
 
 **String Formatting**:
 
-```gql
--- Format string with placeholders
-MATCH (u:User)
-RETURN FORMAT('User: %s (ID: %d)', u.name, u.user_id) AS formatted;
+There is no `FORMAT` function. Build the string with concatenation and
+`toString()`, and do numeric formatting (currency, fixed decimals) in the
+client or in the presentation layer:
 
--- Formatted output
+```gql
+MATCH (u:User)
+RETURN 'User: ' || u.name || ' (ID: ' || toString(u.user_id) || ')' AS formatted;
+
 MATCH (p:Product)
-RETURN FORMAT('$%.2f', p.price) AS formatted_price;
+RETURN '$' || toString(round(p.price * 100) / 100) AS approx_price;
 ```
 
 **String Aggregation**:
 
-```gql
--- Aggregate strings with separator
-MATCH (u:User)-[:MEMBER_OF]->(team:Team)
-RETURN team.name, STRING_AGG(u.name, ', ') AS members
-GROUP BY team.name;
+There is no `STRING_AGG`. The aggregate that exists is `collect()`, which
+returns a `LIST`; join it in the client (or keep it as a list, which is usually
+more useful):
 
--- Aggregate with ordering
+```gql
+-- Members per team, as a list
+MATCH (u:User)-[:MEMBER_OF]->(team:Team)
+RETURN team.name, collect(u.name) AS members;
+
+-- Ordered aggregation: order the rows before collecting
 MATCH (u:User)-[:PURCHASED]->(p:Product)
-RETURN u.name,
-       STRING_AGG(p.name ORDER BY p.purchased_at, ', ') AS purchase_history
-GROUP BY u.name;
+WITH u, p ORDER BY p.purchased_at
+RETURN u.name, collect(p.name) AS purchase_history;
 ```
 
 ## Pattern Matching
@@ -248,10 +276,11 @@ MATCH (p:Product)
 WHERE p.name =~ '(?i)laptop'
 RETURN p.name;
 
--- Extract with regex
+-- Regex is a predicate only: `=~` tests a pattern, and there is no extraction
+-- function or capture-group access.
 MATCH (p:Post)
-WHERE p.content =~ '#(\w+)'
-RETURN REGEXP_EXTRACT_ALL(p.content, '#(\w+)') AS hashtags;
+WHERE p.content =~ '.*#[a-zA-Z0-9]+.*'
+RETURN p.title;
 ```
 
 **STARTS WITH, ENDS WITH, CONTAINS**:
@@ -282,10 +311,6 @@ RETURN p.title, p.content;
 MATCH (u:User)
 RETURN REPLACE(u.phone, '-', '') AS phone_no_dashes;
 
--- Regular expression replacement
-MATCH (p:Post)
-RETURN REGEXP_REPLACE(p.content, '#(\w+)', '[$1]') AS processed_content;
-
 -- Multiple replacements
 MATCH (t:Text)
 RETURN REPLACE(REPLACE(t.content, '\n', ' '), '\t', ' ') AS cleaned;
@@ -293,14 +318,14 @@ RETURN REPLACE(REPLACE(t.content, '\n', ' '), '\t', ' ') AS cleaned;
 
 **Character Translation**:
 
-```gql
--- Translate characters
-MATCH (u:User)
-RETURN TRANSLATE(u.name, 'aeiou', 'AEIOU') AS vowels_upper;
+There is no `TRANSLATE` and no regex replacement (`REGEXP_REPLACE`); `replace()`
+is a literal substring replacement. Chain it for a small, fixed set of
+characters, and do anything larger in the client:
 
--- Remove specific characters
+```gql
+-- Strip separators from a SKU
 MATCH (p:Product)
-RETURN TRANSLATE(p.sku, '-_', '') AS sku_alphanumeric;
+RETURN replace(replace(p.sku, '-', ''), '_', '') AS sku_alphanumeric;
 ```
 
 ## String Comparison and Sorting
@@ -313,15 +338,12 @@ MATCH (u:User)
 WHERE LOWER(u.name) = LOWER('alice johnson')
 RETURN u;
 
--- Locale-aware sorting
-MATCH (u:User)
-RETURN u.name
-ORDER BY u.name COLLATE 'en_US';
-
--- Natural sorting (numbers sorted numerically)
+-- Ordering is by code point; there is no COLLATE clause and no NATURAL_SORT
+-- function. For locale or natural ordering, store a client-computed sort key
+-- and order by that.
 MATCH (p:Product)
 RETURN p.name
-ORDER BY NATURAL_SORT(p.name);
+ORDER BY p.sort_key;
 ```
 
 **Fuzzy and Relevance Matching**:
@@ -415,37 +437,53 @@ RETURN u;
 
 **Encoding Functions**:
 
+Geode has no Base64 or URL-encoding functions (`BASE64_ENCODE`,
+`BASE64_DECODE`, `URL_ENCODE`, `URL_DECODE` do not exist). The encodings it
+does implement are hex and URL *parsing*:
+
 ```gql
--- Base64 encoding
-MATCH (u:User)
-RETURN BASE64_ENCODE(u.password_hash) AS encoded;
-
--- Base64 decoding
+-- Hex encode / decode a binary value
 MATCH (c:Config)
-RETURN BASE64_DECODE(c.encoded_value) AS decoded;
+RETURN to_hex(c.payload) AS hex_encoded;
 
--- URL encoding
-MATCH (p:Product)
-RETURN URL_ENCODE(p.name) AS url_safe_name;
+RETURN from_hex('\x48656c6c6f') AS decoded_bytes;
+
+-- Parse a URL into its parts
+MATCH (l:Link)
+RETURN url_scheme(l.href) AS scheme,
+       url_host(l.href) AS host,
+       url_path(l.href) AS path,
+       url_query(l.href) AS query;
 ```
+
+Base64 and percent-encoding belong in the client; store the encoded form as an
+ordinary string property if you need to query it.
 
 **Hashing Functions**:
 
+Geode does not compute digests: there is no `MD5` or `SHA256` function. What it
+provides is a `HASH` **type** whose constructor takes an algorithm name and an
+already-computed hex digest, plus a constant-time comparison:
+
 ```gql
--- MD5 hash
-MATCH (u:User)
-RETURN MD5(u.email) AS email_hash;
+-- Store a digest computed by the client
+MATCH (u:User) WHERE id(u) = $id
+SET u.email_hash = hash('sha3-256', $hex_digest);
 
--- SHA256 hash
+-- Constant-time comparison against another digest
 MATCH (u:User)
-RETURN SHA256(u.email) AS email_sha;
-
--- Password hashing (use proper password hashing in production)
-CREATE (u:User {
-  email: 'user@example.com',
-  password_hash: SHA256('password' + 'salt')
-});
+WHERE hash_equals(u.email_hash, hash('sha3-256', $probe_digest))
+RETURN u.email;
 ```
+
+`hash()` accepts `sha3-256`, `sha3-512`, `blake3`, `blake2b-256`,
+`blake2b-512`, `blake2s-256` and `argon2id`, and requires a hex digest of the
+matching length (64 hex characters for the 256-bit algorithms, 128 for the
+512-bit ones).
+
+Never hash passwords this way. Password verification is the server's job —
+see [password hashing](/docs/security/password-hashing/) and the
+`geode.auth.*` procedures.
 
 ## Performance Optimization
 
@@ -521,17 +559,20 @@ WHERE u.email =~ '^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$';
 **Name Normalization**:
 
 ```gql
+-- Case-fold in the database; title-casing has no built-in, so store the
+-- client-computed display form separately if you need it.
 MATCH (u:User)
-SET u.name_normalized = TRIM(INITCAP(u.name));
+SET u.name_normalized = toLower(trim(u.name));
 ```
 
 **Tag Extraction**:
 
 ```gql
-MATCH (p:Post)
-WITH p, REGEXP_EXTRACT_ALL(p.content, '#(\w+)') AS tags
-UNWIND tags AS tag
-MERGE (t:Tag {name: LOWER(tag)})
+-- Hashtags are extracted in the client (there is no regex-extraction function)
+-- and passed in as a list parameter.
+MATCH (p:Post) WHERE id(p) = $post_id
+UNWIND $tags AS tag
+MERGE (t:Tag {name: toLower(tag)})
 MERGE (p)-[:TAGGED_WITH]->(t);
 ```
 

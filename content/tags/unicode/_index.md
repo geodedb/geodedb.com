@@ -211,7 +211,9 @@ RETURN UPPER('istanbul' COLLATE 'tr_TR');  -- 'İSTANBUL'
 ```gql
 -- Initialize capitals (title case)
 MATCH (u:User)
-RETURN INITCAP(u.name) AS title_case;
+-- Title case has no built-in (`INITCAP` does not exist); compose it from
+-- toUpper/toLower + substring, or store the display form from the client.
+RETURN toUpper(substring(u.name, 0, 1)) + toLower(substring(u.name, 1)) AS title_case;
 
 -- Example: 'alice johnson' → 'Alice Johnson'
 ```
@@ -234,7 +236,9 @@ RETURN p.content;
 
 -- Count emoji
 MATCH (p:Post)
-RETURN LENGTH(REGEXP_EXTRACT_ALL(p.content, '[\u{1F600}-\u{1F64F}]')) AS emoji_count;
+-- There is no regex-extraction function; count emoji in the client and store
+-- the result if you need to query it.
+RETURN p.emoji_count;
 
 -- Mathematical symbols
 CREATE (eq:Equation {
@@ -253,7 +257,7 @@ CREATE (p:Post {
 
 -- Character length is correct (3 characters, not 6 or 12)
 MATCH (p:Post)
-RETURN CHAR_LENGTH(p.content);  -- Returns 3
+RETURN LENGTH(p.content);  -- byte length: there is no CHAR_LENGTH
 ```
 
 ## Right-to-Left (RTL) Text

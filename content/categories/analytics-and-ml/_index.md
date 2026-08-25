@@ -51,13 +51,12 @@ RETURN n.url, rank
 ORDER BY rank DESC
 LIMIT 100
 
-// Community detection with Louvain algorithm
-CALL graph.algorithms.louvain('social_network', {
-  relationshipTypes: ['FRIEND', 'COLLEAGUE'],
-  includeIntermediateCommunities: true
-})
-YIELD nodeId, communityId, modularity
-RETURN communityId, COUNT(*) AS members, AVG(modularity) AS cohesion
+// Community detection with the Louvain algorithm.
+// The procedure takes no arguments: it runs over every relationship in the
+// current graph and yields one (nodeId, community) row per node.
+CALL algo.louvain.stream()
+YIELD nodeId, community
+RETURN community, COUNT(*) AS members
 ORDER BY members DESC
 
 // Betweenness centrality for bridge detection
@@ -283,8 +282,8 @@ Identify entities that don't fit their community:
 
 ```gql
 // Detect nodes with unusual community membership
-CALL graph.algorithms.louvain('transaction_network')
-YIELD nodeId, communityId
+CALL algo.louvain.stream()
+YIELD nodeId, community
 
 MATCH (n) WHERE id(n) = nodeId
 WITH n, communityId,

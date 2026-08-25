@@ -58,6 +58,7 @@ Geode's monorepo structure enables comprehensive CI across all components:
 ```
 
 This structure allows CI to:
+
 - Build all components in a single pipeline
 - Test server changes against all clients
 - Validate cross-client compatibility
@@ -75,10 +76,11 @@ build:
 test:
 	zig build test
 
-geodetestlab-comprehensive:
-	zig build test
-	# Run comprehensive test suite (1,688 tests)
-	./zig-out/bin/geodetestlab --comprehensive
+test-all-integration:
+	# Local integration suites (integration, regression, ordering,
+	# pagination, aggregation)
+	$(MAKE) integration-test regression-test property-ordering-test \
+		pagination-test aggregation-test
 ```
 
 **CI Build Configuration**:
@@ -150,7 +152,7 @@ unit-tests:
     - name: Run Unit Tests
       working-directory: geode
       run: |
-        zig build test -Dtest-filter="*"
+        zig build test
 
     - name: Parse Test Results
       run: |
@@ -161,10 +163,10 @@ unit-tests:
 **2. GeodeTestLab Comprehensive Suite** (1,688 tests):
 
 ```yaml
-    - name: Run GeodeTestLab
+    - name: Run Integration Suites
       working-directory: geode
       run: |
-        make geodetestlab-comprehensive
+        make test-all-integration
 
     - name: Check Pass Rate
       run: |
@@ -302,8 +304,9 @@ code-quality:
 ```yaml
     - name: Run Static Analysis
       run: |
-        # Memory safety checks
-        zig build -Dcheck
+        # Compile + format checks
+        zig build
+        zig fmt --check src/ tests/ build.zig
 
         # Security scanning
         semgrep --config=auto geode/src/
@@ -341,11 +344,16 @@ test-parallel:
   steps:
     - name: Run Test Shard ${{ matrix.shard }}
       run: |
-        # Split tests into 8 shards
-        zig build test -Dshard=${{ matrix.shard }} -Dtotal-shards=8
+        # Split tests into 8 load-balanced shards (shard index is 0-based)
+        zig build test -Dtest-shard-total=8 -Dtest-shard-index=${{ matrix.shard }}
 ```
 
+`-Dtest-shard-total` and `-Dtest-shard-index` are the only test-partitioning
+options `zig build --help` declares; the matrix above must therefore count
+`[0, 1, 2, 3, 4, 5, 6, 7]`.
+
 **Benefits**:
+
 - 8-minute test suite runs in 1-2 minutes
 - Early failure detection
 - Better resource utilization
@@ -364,9 +372,11 @@ Only test affected components:
 
     - name: Run Targeted Tests
       run: |
-        if echo "${{ steps.changed.outputs.files }}" | grep -q "geode/src/parser"; then
-          # Parser changed - run parser tests
-          zig build test -Dtest-filter="parser.*"
+        if echo "${{ steps.changed.outputs.files }}" | grep -q "geode/src/gql"; then
+          # Grammar changed - run the named GQL test steps
+          # (there is no test-name filter option; each suite is its own step)
+          zig build test-iso-conformance
+          zig build test-match-parity
         fi
 
         if echo "${{ steps.changed.outputs.files }}" | grep -q "geode-client-python"; then
@@ -473,6 +483,7 @@ jobs:
 Target: Feedback within 10 minutes
 
 **Optimization strategies**:
+
 - Cache aggressively (builds, dependencies, test data)
 - Parallelize independent tests
 - Use incremental testing
@@ -493,6 +504,7 @@ on:
 ### 3. Make CI Reproducible
 
 **Pin all versions**:
+
 ```yaml
 env:
   ZIG_VERSION: 0.1.0
@@ -506,6 +518,7 @@ env:
 ```
 
 **Use deterministic builds**:
+
 ```bash
 # Zig builds are deterministic by default
 zig build -Doptimize=ReleaseSafe
@@ -517,6 +530,7 @@ go build -trimpath -ldflags="-buildid="
 ### 4. Test in Clean Environments
 
 **Avoid environment pollution**:
+
 ```yaml
     - name: Run Tests in Clean Environment
       run: |
@@ -593,12 +607,14 @@ Enable debug logging:
     - name: Enable Debug Logging
       if: runner.debug
       run: |
-        export GEODE_LOG_LEVEL=debug
-        export GEODE_TRACE=1
-        zig build test -Dlog-level=debug
+        # `zig build test` has no log-level option; build in Debug and let the
+        # test output carry the detail. The server's own verbosity is a runtime
+        # flag: `geode serve --log-level debug`.
+        zig build test -Doptimize=Debug
 ```
 
 Trigger with:
+
 ```bash
 gh workflow run ci.yml -f debug=true
 ```

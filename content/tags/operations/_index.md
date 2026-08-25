@@ -227,12 +227,21 @@ Index effectiveness appears in the execution plan through index scan operations 
 
 ### Storage Optimization
 
-Over time, deleted data may leave unused space. Storage optimization reclaims this space (specific commands depend on Geode's implementation):
+Over time, deleted data leaves unused pages. The storage engine reclaims and
+reuses those pages itself — there is no compaction command or `system.*`
+procedure namespace. What you can do is observe the reclamation:
 
 ```gql
--- Compact storage (example operation)
-CALL system.compact_storage();
+CALL geode.storage.stats()
+YIELD page_size, free_pages_nodes, free_pages_adj_out, free_pages_adj_in,
+      free_pages_props, free_pages_var
+RETURN page_size, free_pages_nodes, free_pages_adj_out, free_pages_adj_in,
+       free_pages_props, free_pages_var;
 ```
+
+Rising free-page counts after a large delete mean the space is back in the
+engine's free lists and will be reused by the next writes. To hand space back to
+the filesystem, take a backup and restore it into a fresh data directory.
 
 ### Schema Evolution
 
@@ -573,16 +582,26 @@ class FailoverManager:
             if await self.health_check(replica):
                 print(f"Failing over to {replica}")
                 self.current_host = replica
-                await self.promote_replica(replica)
+                await self.wait_for_new_leader(replica)
                 return replica
 
         raise Exception("No healthy Geode instances available")
 
-    async def promote_replica(self, replica):
-        """Promote replica to primary"""
+    async def wait_for_new_leader(self, replica):
+        """Raft elects the new leader on its own; just wait for it to settle.
+
+        There is no promote-to-primary procedure: leadership is decided by the
+        Raft election, and SHOW CLUSTER STATUS reports the outcome.
+        """
         client = Client(replica)
-        async with client.connection() as client:
-            await client.execute("CALL system.promote_to_primary()")
+        async with client.connection() as conn:
+            for _ in range(30):
+                result, _ = await conn.query("SHOW CLUSTER STATUS")
+                roles = {row['node_id']: row['role'] for row in result.rows}
+                if 'leader' in roles.values():
+                    return roles
+                await asyncio.sleep(1)
+        raise Exception("No leader elected within 30s")
 
     async def monitor(self):
         """Continuously monitor and failover if needed"""
@@ -885,30 +904,36 @@ Create operational runbooks for common scenarios:
    ps aux --sort=-%mem | head -10
    ```
 
-2. Check Geode-specific metrics:
-   ```gql
-   CALL system.memory_stats()
+2. Check Geode-specific metrics (server started with `GEODE_METRICS_PORT`):
+
+   ```bash
+   curl -s http://localhost:9090/metrics | grep -E 'geode_memory_bytes|geode_connections_active'
    ```
 
 3. Identify memory-heavy queries:
+
    ```bash
    journalctl -u geode | grep "high memory"
    ```
 
 ## Resolution
-1. Clear query cache:
-   ```gql
-   CALL system.clear_cache()
+
+1. Cut the working set: there is no cache-clearing or query-killing procedure
+   (`system.*` is not a Geode namespace, and running queries are not listed or
+   cancellable from GQL). Cancel from the client instead, with a deadline:
+
+   ```bash
+   geode query --timeout 5000 "MATCH (n) RETURN count(n)"
    ```
 
-2. Kill long-running queries:
-   ```gql
-   CALL system.list_queries()
-   -- Note query IDs consuming memory
-   CALL system.kill_query($query_id)
+2. Cap concurrency so one burst cannot exhaust memory:
+
+   ```bash
+   geode serve --data-dir /var/lib/geode --max-connections 200
    ```
 
 3. Restart Geode if needed:
+
    ```bash
    systemctl restart geode
    ```
@@ -916,10 +941,13 @@ Create operational runbooks for common scenarios:
 4. Long-term: Increase memory or optimize queries
 
 ## Prevention
-- Set query memory limits
-- Monitor memory trends
-- Optimize expensive queries
+
+- Set client-side query timeouts (`--timeout`)
+- Cap connections with `--max-connections`
+- Monitor `geode_memory_bytes` trends
+- Optimize expensive queries with `PROFILE`
 - Add query timeouts
+
 ```
 
 ## Related Topics

@@ -20,11 +20,13 @@ Understanding these six fundamental dimensions helps frame your quality manageme
 Accuracy measures whether data correctly represents the real-world entities and relationships it describes. Inaccurate data leads to wrong conclusions and faulty business decisions.
 
 **Examples**:
+
 - Person's age matches their birth date
 - Product prices reflect current market rates
 - Addresses correspond to real locations
 
 **Validation**:
+
 ```gql
 -- Verify age matches birth date
 MATCH (p:Person)
@@ -39,11 +41,13 @@ RETURN p.id, p.age, p.date_of_birth, 'age mismatch' AS issue;
 Completeness measures whether all required data is present. Missing critical data prevents proper graph traversals and analytics.
 
 **Examples**:
+
 - All customers have email addresses
 - Products have prices and SKUs
 - Employees have hire dates
 
 **Validation**:
+
 ```gql
 -- Find incomplete records
 MATCH (p:Person)
@@ -65,11 +69,13 @@ RETURN
 Consistency ensures data is uniform across the system and doesn't contradict itself. Inconsistent data creates confusion and unreliable queries.
 
 **Examples**:
+
 - Same email format across all records
 - Consistent date formats
 - Matching foreign key references
 
 **Validation**:
+
 ```gql
 -- Check for date inconsistencies
 MATCH (o:Order)
@@ -88,11 +94,13 @@ RETURN e, r, c, 'orphaned relationship' AS issue;
 Timeliness measures whether data is up-to-date and available when needed. Stale data leads to decisions based on outdated information.
 
 **Examples**:
+
 - Inventory levels updated in real-time
 - User profiles reflect recent changes
 - Analytics dashboards show current data
 
 **Validation**:
+
 ```gql
 -- Find stale records (not updated in 30 days)
 MATCH (p:Product)
@@ -105,11 +113,13 @@ RETURN p.sku, p.name, p.updated_at, 'stale data' AS issue;
 Validity ensures data conforms to defined formats, ranges, and business rules. Invalid data fails to meet schema constraints.
 
 **Examples**:
+
 - Email addresses match email format
 - Ages within reasonable range (0-150)
 - Dates are valid calendar dates
 
 **Validation**:
+
 ```gql
 -- Find invalid formats
 MATCH (p:Person)
@@ -128,11 +138,13 @@ RETURN p.id, p.age, 'age out of range' AS issue;
 Uniqueness ensures no duplicate records exist that should be unique. Duplicates skew analytics and create confusion.
 
 **Examples**:
+
 - No duplicate email addresses
 - Unique product SKUs
 - Single canonical record per entity
 
 **Validation**:
+
 ```gql
 -- Find duplicate emails
 MATCH (p:Person)
@@ -291,10 +303,11 @@ MATCH (p:Person)
 WHERE p.email IS NOT NULL
 SET p.email = LOWER(TRIM(p.email));
 
--- Standardize phone numbers (remove formatting)
+-- Standardize phone numbers (remove formatting). There is no regex
+-- replacement; chain REPLACE for the separators you actually see.
 MATCH (p:Person)
 WHERE p.phone IS NOT NULL
-SET p.phone = REGEXP_REPLACE(p.phone, '[^0-9+]', '', 'g');
+SET p.phone = REPLACE(REPLACE(REPLACE(REPLACE(p.phone, '-', ''), ' ', ''), '(', ''), ')', '');
 
 -- Standardize country codes
 MATCH (p:Person)

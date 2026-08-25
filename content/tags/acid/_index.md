@@ -100,6 +100,7 @@ COMMIT;
 ```
 
 **Implementation in Geode**: Geode enforces consistency through:
+
 - Constraint checking (uniqueness, type constraints, schema validation)
 - Trigger execution (pre-commit and post-commit hooks)
 - Transaction validation before commit
@@ -112,6 +113,7 @@ Isolation means concurrent transactions behave as if they executed serially. One
 Geode supports multiple isolation levels:
 
 **Read Committed**: See only committed data
+
 ```gql
 SET TRANSACTION ISOLATION LEVEL READ COMMITTED;
 -- Won't see uncommitted changes from other transactions
@@ -121,6 +123,7 @@ COMMIT;
 ```
 
 **Snapshot Isolation**: See consistent snapshot from transaction start
+
 ```gql
 SET TRANSACTION ISOLATION LEVEL SNAPSHOT;
 BEGIN;
@@ -131,6 +134,7 @@ COMMIT;
 ```
 
 **Serializable**: Strongest isolation, prevents all anomalies
+
 ```gql
 SET TRANSACTION ISOLATION LEVEL SERIALIZABLE;
 BEGIN;
@@ -156,6 +160,7 @@ COMMIT; -- From this point, data survives any failure
 Even if the server crashes one nanosecond after COMMIT returns, the order will still exist after recovery.
 
 **Implementation in Geode**: Durability is achieved through:
+
 1. **Write-Ahead Logging**: All changes written to persistent WAL before commit
 2. **fsync()**: Forcing data to physical storage media
 3. **Checkpointing**: Periodic snapshots of database state
@@ -188,6 +193,7 @@ On commit, Geode calls `fsync()` to ensure WAL reaches physical media. Only then
 ### MVCC and Isolation
 
 Geode maintains multiple versions of each data item, timestamped with transaction IDs. This allows:
+
 - Readers to access consistent snapshots without blocking writers
 - Writers to create new versions without blocking readers
 - Time-travel queries to historical states
@@ -195,6 +201,7 @@ Geode maintains multiple versions of each data item, timestamped with transactio
 ### Crash Recovery
 
 On restart after a crash, Geode:
+
 1. Reads WAL from last checkpoint
 2. Identifies incomplete transactions
 3. Rolls back uncommitted transactions
@@ -391,33 +398,39 @@ COMMIT;
 
 Monitor key ACID metrics:
 
+There is no `dbms.monitor.*` namespace: active transactions, abort reasons,
+WAL file sizes and durability lag are not exposed as procedures. The equivalent
+signals are the transaction counters on the metrics endpoint and the WAL
+position in the storage statistics:
+
+```bash
+# Transaction volume and abort rate
+curl -s http://localhost:9090/metrics | grep '^geode_transactions'
+```
+
 ```gql
--- Active transactions
-CALL dbms.monitor.transactions.active() YIELD txid, duration, isolation;
-
--- Transaction abort rate
-CALL dbms.monitor.transactions.aborted() YIELD count, reason;
-
--- WAL metrics
-CALL dbms.monitor.wal.stats() YIELD size, flush_rate, checkpoint_interval;
-
--- Durability lag
-CALL dbms.monitor.durability.lag() YIELD seconds;
+-- How far the WAL has advanced past the last checkpoint
+CALL geode.storage.stats()
+YIELD wal_lsn, last_checkpoint_lsn
+RETURN wal_lsn, last_checkpoint_lsn, wal_lsn - last_checkpoint_lsn AS unflushed;
 ```
 
 ### Common Issues
 
 **Transaction Conflicts**: High abort rates
+
 - Reduce transaction duration
 - Use lower isolation level if acceptable
 - Partition hot data
 
 **WAL Growth**: Unbounded WAL files
+
 - Increase checkpoint frequency
 - Reduce transaction size
 - Check for long-running transactions
 
 **Slow Commits**: High commit latency
+
 - Check disk I/O performance
 - Tune fsync settings
 - Use SSDs for WAL storage

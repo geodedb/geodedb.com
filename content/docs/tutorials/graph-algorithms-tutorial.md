@@ -28,6 +28,7 @@ Learn to run powerful graph algorithms on your data in this hands-on 20-minute t
 **Topics**: PageRank, shortest paths, community detection, centrality measures
 
 By the end of this tutorial, you'll be able to:
+
 - Run PageRank to find influential nodes
 - Find shortest paths between nodes
 - Detect communities with Louvain algorithm
@@ -86,6 +87,7 @@ CREATE (g)-[:KNOWS]->(h);
 ```
 
 **Expected output**:
+
 ```
 Created 8 nodes
 Created 10 relationships
@@ -94,6 +96,7 @@ Created 10 relationships
 ### Network Structure
 
 The network has two loosely connected communities:
+
 - **Community 1**: Alice, Bob, Charlie, David
 - **Community 2**: Emma, Frank, Grace, Henry
 - **Bridge**: David-Emma connection links the communities
@@ -109,17 +112,15 @@ The network has two loosely connected communities:
 Run PageRank to identify the most connected/influential people:
 
 ```gql
-CALL graph.pageRank('SocialNetwork', {
-  relationship_type: 'KNOWS',
-  iterations: 20,
-  damping_factor: 0.85
-})
-YIELD node, score
-RETURN node.name AS person, score
+CALL algo.pagerank.stream()
+YIELD nodeId, score
+MATCH (n) WHERE id(n) = nodeId
+RETURN n.name AS person, score
 ORDER BY score DESC;
 ```
 
 **Expected output**:
+
 ```
 person   | score
 ---------|--------
@@ -138,14 +139,18 @@ Henry    | 0.060
 **Algorithm**: Iteratively distributes influence through the network
 
 **Score Meaning**:
+
 - Higher score = more influential/central
 - Score sums to 1.0 across all nodes
 - Considers both direct and indirect connections
 
-**Parameters**:
-- `iterations`: Number of propagation rounds (default: 20)
-- `damping_factor`: Random jump probability (default: 0.85)
-- `relationship_type`: Which relationships to traverse
+**Parameters**: none. `algo.pagerank.stream()` takes no effective arguments —
+damping factor and iteration count are fixed by the engine, and it runs over
+every relationship in the current graph rather than a named projection or a
+single relationship type. Restrict the *output* instead, by filtering the
+`MATCH` that resolves `nodeId`.
+
+**Yields**: `nodeId: INTEGER`, `score: FLOAT`
 
 ### Why David and Emma Score Highest
 
@@ -174,6 +179,7 @@ RETURN [n IN nodes(path) | n.name] AS path_names,
 ```
 
 **Expected output**:
+
 ```
 path_names                                      | hops
 ------------------------------------------------|-----
@@ -235,32 +241,45 @@ MATCH ()-[r:KNOWS]->()
 WHERE NOT EXISTS(r.frequency)
 SET r.frequency = 5;
 
--- Find path with highest total frequency (strongest connections)
-CALL graph.dijkstra('SocialNetwork', {
-  start_node: {name: "Alice"},
-  end_node: {name: "Henry"},
-  relationship_type: 'KNOWS',
-  weight_property: 'frequency',
-  minimize: false  -- Maximize frequency
-})
+-- Look up the endpoint ids
+MATCH (a:Person {name: "Alice"}) RETURN id(a) AS alice_id;
+MATCH (h:Person {name: "Henry"}) RETURN id(h) AS henry_id;
+
+-- Cheapest path by total frequency (substitute the ids you just read)
+CALL algo.dijkstra.stream(1, 8, 'frequency')
 YIELD path, cost
-RETURN [n IN nodes(path) | n.name] AS path_names,
-       cost AS total_frequency;
+RETURN path, cost AS total_frequency;
 ```
 
 **Expected output**:
+
 ```
-path_names                                      | total_frequency
-------------------------------------------------|----------------
-["Alice", "Bob", "Charlie", "David", "Emma", "Grace", "Henry"] | 38
+path                | total_frequency
+--------------------|----------------
+[1, 2, 4, 5, 7, 8]  | 26.00
+```
+
+`algo.dijkstra.stream(startId, endId, weightProperty)` takes node **ids**, not
+patterns, and yields `path` as a `LIST` of node ids plus a `cost`. Resolve the
+ids back to nodes when you want names:
+
+```gql
+CALL algo.dijkstra.stream(1, 8, 'frequency')
+YIELD path, cost
+UNWIND path AS hop_id
+MATCH (n) WHERE id(n) = hop_id
+RETURN collect(n.name) AS path_names, cost;
 ```
 
 ### Weighted vs Unweighted
 
 **Unweighted**: Counts hops (5 hops Alice→Henry)
-**Weighted**: Considers relationship strength (38 total frequency)
+**Weighted**: Sums `frequency` along the path and minimises it
 
-Different path may be optimal when weights are considered.
+Dijkstra always **minimises** the weight sum; there is no maximise mode. To
+prefer strong ties, store an inverse weight (for example
+`SET r.cost = 1.0 / r.frequency`) and minimise that instead. A different path
+may be optimal once weights are considered.
 
 ### What You Learned
 
@@ -274,16 +293,15 @@ Different path may be optimal when weights are considered.
 Discover communities in the network:
 
 ```gql
-CALL graph.louvain('SocialNetwork', {
-  relationship_type: 'KNOWS',
-  max_iterations: 10
-})
-YIELD node, community
-RETURN community, collect(node.name) AS members, count(*) AS size
+CALL algo.louvain.stream()
+YIELD nodeId, community
+MATCH (n) WHERE id(n) = nodeId
+RETURN community, collect(n.name) AS members, count(*) AS size
 ORDER BY size DESC;
 ```
 
 **Expected output**:
+
 ```
 community | members                           | size
 ----------|-----------------------------------|-----
@@ -294,11 +312,18 @@ community | members                           | size
 ### Community Detection Explained
 
 **Louvain Algorithm**:
+
 - Optimizes modularity (within-community vs between-community connections)
 - Iteratively merges communities for better modularity
 - Automatically determines number of communities
+- Takes no arguments: no iteration cap or relationship-type filter is accepted
+
+`algo.leiden.stream()` yields the same `(nodeId, community)` shape using the
+Leiden refinement, and `algo.labelPropagation.stream()` yields
+`(nodeId, label)` for a faster, less stable partition.
 
 **Interpretation**:
+
 - Community 1: Larger, more interconnected group
 - Community 0: Smaller, peripheral group
 - David acts as bridge between communities
@@ -307,13 +332,9 @@ community | members                           | size
 
 ```gql
 -- Persist community assignments
-CALL graph.louvain('SocialNetwork', {
-  relationship_type: 'KNOWS'
-})
-YIELD node, community
-WITH node, community
-MATCH (p:Person)
-WHERE p.id = node.id
+CALL algo.louvain.stream()
+YIELD nodeId, community
+MATCH (p:Person) WHERE id(p) = nodeId
 SET p.community = community;
 
 -- Query by community
@@ -334,17 +355,16 @@ ORDER BY p.community;
 Find nodes that bridge communities:
 
 ```gql
-CALL graph.betweennessCentrality('SocialNetwork', {
-  relationship_type: 'KNOWS',
-  normalized: true
-})
-YIELD node, score
-RETURN node.name AS person, score
+CALL algo.betweenness.stream()
+YIELD nodeId, betweenness
+MATCH (n) WHERE id(n) = nodeId
+RETURN n.name AS person, betweenness AS score
 ORDER BY score DESC
 LIMIT 5;
 ```
 
 **Expected output**:
+
 ```
 person  | score
 --------|-------
@@ -360,11 +380,13 @@ Charlie | 0.071
 **Definition**: Fraction of shortest paths passing through a node
 
 **High Betweenness**:
+
 - Node lies on many shortest paths
 - Removing it would disconnect the network
 - Bridge between communities
 
 **David's High Score**:
+
 - Only path between Alice-Emma passes through David
 - Critical for information flow between communities
 
@@ -373,17 +395,16 @@ Charlie | 0.071
 How quickly can a node reach all others:
 
 ```gql
-CALL graph.closenessCentrality('SocialNetwork', {
-  relationship_type: 'KNOWS',
-  normalized: true
-})
-YIELD node, score
-RETURN node.name AS person, score
+CALL algo.closeness.stream()
+YIELD nodeId, closeness
+MATCH (n) WHERE id(n) = nodeId
+RETURN n.name AS person, closeness AS score
 ORDER BY score DESC
 LIMIT 5;
 ```
 
 **Expected output**:
+
 ```
 person  | score
 --------|-------
@@ -416,6 +437,7 @@ ORDER BY degree DESC;
 ```
 
 **Expected output**:
+
 ```
 person   | degree
 ---------|-------
@@ -461,26 +483,28 @@ count( (p)<-[:KNOWS]-() )
 Count triangles (three nodes all connected):
 
 ```gql
-CALL graph.triangleCount('SocialNetwork', {
-  relationship_type: 'KNOWS'
-})
-YIELD node, count
-RETURN node.name AS person, count AS triangles
-ORDER BY count DESC;
+CALL algo.triangleCount()
+YIELD triangleCount
+RETURN triangleCount;
 ```
 
 **Expected output**:
+
 ```
-person   | triangles
----------|----------
-Bob      | 2
-Charlie  | 2
-David    | 1
-Emma     | 1
-Grace    | 1
-Frank    | 1
-Alice    | 1
-Henry    | 0
+triangleCount
+-------------
+3
+```
+
+`algo.triangleCount()` (alias `algo.triangleCounting()`) reports one
+graph-wide total, not a per-node breakdown. For the per-node view use the
+local clustering coefficient below, or count triangles yourself:
+
+```gql
+MATCH (p:Person)-[:KNOWS]-(b)-[:KNOWS]-(c)-[:KNOWS]-(p)
+WHERE id(b) < id(c)
+RETURN p.name AS person, count(*) AS triangles
+ORDER BY triangles DESC;
 ```
 
 ### Understanding Triangles
@@ -488,11 +512,13 @@ Henry    | 0
 **Triangle**: Three nodes A, B, C where A-B, B-C, and C-A all exist
 
 **Examples in network**:
+
 - Alice-Bob-Charlie: Triangle (all three connected)
 - Bob-Charlie-David: Triangle
 - Emma-Frank-Grace: Triangle
 
 **Significance**:
+
 - Measure of clustering/cohesion
 - High triangle count = tight-knit group
 - Zero triangles = peripheral or bridging position
@@ -502,12 +528,17 @@ Henry    | 0
 Related metric: fraction of possible triangles that exist
 
 ```gql
-CALL graph.clusteringCoefficient('SocialNetwork', {
-  relationship_type: 'KNOWS'
-})
-YIELD node, coefficient
-RETURN node.name AS person, coefficient
+-- Per-node coefficient
+CALL algo.localClustering()
+YIELD nodeId, coefficient
+MATCH (n) WHERE id(n) = nodeId
+RETURN n.name AS person, coefficient
 ORDER BY coefficient DESC;
+
+-- Whole-graph coefficient
+CALL algo.globalClustering()
+YIELD coefficient
+RETURN coefficient;
 ```
 
 ### What You Learned
@@ -522,20 +553,24 @@ ORDER BY coefficient DESC;
 Find disconnected subgraphs:
 
 ```gql
-CALL graph.connectedComponents('SocialNetwork', {
-  relationship_type: 'KNOWS'
-})
-YIELD node, component
-RETURN component, collect(node.name) AS members, count(*) AS size
+CALL algo.unionFind.stream()
+YIELD nodeId, setId
+MATCH (n) WHERE id(n) = nodeId
+RETURN setId AS component, collect(n.name) AS members, count(*) AS size
 ORDER BY size DESC;
 ```
 
 **Expected output**:
+
 ```
 component | members                                                | size
 ----------|--------------------------------------------------------|-----
 0         | ["Alice", "Bob", "Charlie", "David", "Emma", "Frank", "Grace", "Henry"] | 8
 ```
+
+`algo.unionFind.stream()` gives weakly connected components. For strongly
+connected components (direction-aware) use `algo.scc.stream()`, which yields
+`(nodeId, componentId)`.
 
 ### Interpretation
 
@@ -551,15 +586,15 @@ CREATE (:Person {name: "Isolated2", id: 10});
 CREATE (i1:Person {id: 9})-[:KNOWS]->(i2:Person {id: 10});
 
 -- Re-run connected components
-CALL graph.connectedComponents('SocialNetwork', {
-  relationship_type: 'KNOWS'
-})
-YIELD node, component
-RETURN component, collect(node.name) AS members, count(*) AS size
+CALL algo.unionFind.stream()
+YIELD nodeId, setId
+MATCH (n) WHERE id(n) = nodeId
+RETURN setId AS component, collect(n.name) AS members, count(*) AS size
 ORDER BY size DESC;
 ```
 
 **Expected output**:
+
 ```
 component | members                           | size
 ----------|-----------------------------------|-----
@@ -592,6 +627,7 @@ LIMIT 3;
 ```
 
 **Expected output**:
+
 ```
 recommendation | mutual_friends
 ---------------|---------------
@@ -602,15 +638,12 @@ David          | 2
 
 ```gql
 -- Weight recommendations by influence
-CALL graph.pageRank('SocialNetwork', {
-  relationship_type: 'KNOWS'
-})
-YIELD node, score
-WITH node.id AS node_id, score
+CALL algo.pagerank.stream()
+YIELD nodeId, score
 MATCH (alice:Person {name: "Alice"})-[:KNOWS*2]-(fof:Person)
 WHERE NOT EXISTS((alice)-[:KNOWS]-(fof))
   AND fof <> alice
-  AND fof.id = node_id
+  AND id(fof) = nodeId
 WITH fof, count(*) AS mutual_friends, score
 RETURN fof.name AS recommendation,
        mutual_friends,
@@ -665,16 +698,15 @@ MATCH (old:Paper {id: 2}), (new:Paper {id: 5})
 CREATE (new)-[:CITES]->(old);
 
 -- Find most influential papers (cited by many + cited by influential)
-CALL graph.pageRank('CitationNetwork', {
-  relationship_type: 'CITES',
-  iterations: 20
-})
-YIELD node, score
-RETURN node.title AS paper, node.year AS year, score
+CALL algo.pagerank.stream()
+YIELD nodeId, score
+MATCH (p:Paper) WHERE id(p) = nodeId
+RETURN p.title AS paper, p.year AS year, score
 ORDER BY score DESC;
 ```
 
 **Expected output**:
+
 ```
 paper                        | year | score
 -----------------------------|------|-------
@@ -696,31 +728,36 @@ PageRank Survey              | 2021 | 0.140
 
 ## Algorithm Selection Guide
 
-### Choose PageRank when:
+### Choose PageRank when
+
 - Finding influential/important nodes
 - Ranking nodes by connectivity
 - Building recommendation systems
 - Citation analysis, web page ranking
 
-### Choose Shortest Path when:
+### Choose Shortest Path when
+
 - Finding connections between nodes
 - Route planning, navigation
 - Understanding network distances
 - Six degrees of separation analysis
 
-### Choose Community Detection when:
+### Choose Community Detection when
+
 - Discovering natural groupings
 - Understanding network structure
 - Market segmentation
 - Fraud ring detection
 
-### Choose Centrality Measures when:
+### Choose Centrality Measures when
+
 - Identifying key players
 - Finding bottlenecks (betweenness)
 - Measuring reachability (closeness)
 - Detecting influencers (degree)
 
-### Choose Triangle Counting when:
+### Choose Triangle Counting when
+
 - Measuring cohesion
 - Detecting tightly-knit groups
 - Understanding local clustering
@@ -728,19 +765,18 @@ PageRank Survey              | 2021 | 0.140
 
 ## Performance Tips
 
-### For Large Graphs (millions of nodes):
+### For Large Graphs (millions of nodes)
 
-1. **Use relationship type filters**:
-   ```gql
-   {relationship_type: 'KNOWS'}  -- Faster than processing all types
-   ```
+1. **Keep analytical data in its own graph**: the `algo.*` procedures traverse
+   every relationship in the current graph and accept no relationship-type or
+   projection argument, so `CREATE GRAPH` + `USE` is the only way to narrow the
+   input set.
 
-2. **Limit iterations**:
-   ```gql
-   {iterations: 10}  -- Fewer iterations = faster (may sacrifice accuracy)
-   ```
+2. **Budget for full runs**: iteration counts are fixed by the engine and
+   cannot be lowered per call, so treat each invocation as a full pass.
 
 3. **Sample large graphs**:
+
    ```gql
    -- Work on subgraph first
    MATCH (n:Person)
@@ -749,17 +785,18 @@ PageRank Survey              | 2021 | 0.140
    ```
 
 4. **Create indexes**:
+
    ```gql
    CREATE INDEX person_id_idx ON Person(id) USING hash;
    ```
 
 5. **Persist results**:
+
    ```gql
    -- Store PageRank scores for reuse
-   CALL graph.pageRank(...)
-   YIELD node, score
-   WITH node, score
-   MATCH (p:Person) WHERE p.id = node.id
+   CALL algo.pagerank.stream()
+   YIELD nodeId, score
+   MATCH (p:Person) WHERE id(p) = nodeId
    SET p.pagerank = score;
    ```
 
@@ -798,34 +835,42 @@ PageRank Survey              | 2021 | 0.140
 <details>
 <summary>Exercise 1 Solution</summary>
 
+Each `algo.*` procedure streams its own result set, so run them one at a time
+and stage the scores on the nodes before combining:
+
 ```gql
--- Get PageRank
-CALL graph.pageRank('SocialNetwork', {relationship_type: 'KNOWS'})
-YIELD node, score
-WITH node.id AS id, score AS pr
--- Get degree
+-- 1. Stage each measure as a property
+CALL algo.pagerank.stream()
+YIELD nodeId, score
+MATCH (p:Person) WHERE id(p) = nodeId
+SET p.pagerank = score;
+
+CALL algo.betweenness.stream()
+YIELD nodeId, betweenness
+MATCH (p:Person) WHERE id(p) = nodeId
+SET p.betweenness = betweenness;
+
+CALL algo.closeness.stream()
+YIELD nodeId, closeness
+MATCH (p:Person) WHERE id(p) = nodeId
+SET p.closeness = closeness;
+
+CALL algo.degree.stream()
+YIELD nodeId, degree
+MATCH (p:Person) WHERE id(p) = nodeId
+SET p.degree = degree;
+
+-- 2. Combine and rank
 MATCH (p:Person)
-WHERE p.id = id
-OPTIONAL MATCH (p)-[r:KNOWS]-()
-WITH p, pr, count(r) AS degree
--- Get betweenness
-CALL graph.betweennessCentrality('SocialNetwork', {relationship_type: 'KNOWS'})
-YIELD node, score
-WHERE node.id = p.id
-WITH p, pr, degree, score AS between
--- Get closeness
-CALL graph.closenessCentrality('SocialNetwork', {relationship_type: 'KNOWS'})
-YIELD node, score
-WHERE node.id = p.id
--- Normalize and rank
 RETURN p.name,
-       pr,
-       degree,
-       between,
-       score AS closeness,
-       (pr + degree/10.0 + between + score) / 4 AS avg_rank
+       p.pagerank,
+       p.degree,
+       p.betweenness,
+       p.closeness,
+       (p.pagerank + p.degree / 10.0 + p.betweenness + p.closeness) / 4 AS avg_rank
 ORDER BY avg_rank DESC;
 ```
+
 </details>
 
 ## Next Steps
@@ -843,36 +888,35 @@ Continue your graph analytics journey:
 
 ```gql
 -- PageRank
-CALL graph.pageRank(graph_name, {relationship_type, iterations, damping_factor})
-YIELD node, score
+CALL algo.pagerank.stream() YIELD nodeId, score
 
 -- Shortest Path
 MATCH path = shortestPath((a)-[:TYPE*]-(b))
 
--- Dijkstra (weighted)
-CALL graph.dijkstra(graph_name, {start_node, end_node, weight_property})
-YIELD path, cost
+-- Dijkstra (weighted; node ids, not patterns)
+CALL algo.dijkstra.stream(startId, endId, 'weight') YIELD path, cost
 
 -- Community Detection
-CALL graph.louvain(graph_name, {relationship_type, max_iterations})
-YIELD node, community
+CALL algo.louvain.stream() YIELD nodeId, community
 
 -- Betweenness Centrality
-CALL graph.betweennessCentrality(graph_name, {relationship_type, normalized})
-YIELD node, score
+CALL algo.betweenness.stream() YIELD nodeId, betweenness
 
 -- Closeness Centrality
-CALL graph.closenessCentrality(graph_name, {relationship_type, normalized})
-YIELD node, score
+CALL algo.closeness.stream() YIELD nodeId, closeness
 
--- Triangle Counting
-CALL graph.triangleCount(graph_name, {relationship_type})
-YIELD node, count
+-- Degree Centrality
+CALL algo.degree.stream() YIELD nodeId, degree
 
--- Connected Components
-CALL graph.connectedComponents(graph_name, {relationship_type})
-YIELD node, component
+-- Triangle Counting (graph-wide total)
+CALL algo.triangleCount() YIELD triangleCount
+
+-- Connected Components (weakly connected)
+CALL algo.unionFind.stream() YIELD nodeId, setId
 ```
+
+Every `algo.*` procedure runs over the whole current graph and takes no tuning
+parameters; resolve `nodeId` with `MATCH (n) WHERE id(n) = nodeId`.
 
 ---
 

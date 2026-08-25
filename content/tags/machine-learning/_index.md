@@ -941,19 +941,40 @@ class GeodeFeatureStore:
         return entity_features
 
     async def materialize_features(self, feature_names, entity_type):
-        """Pre-compute and cache features"""
+        """Pre-compute and cache features.
+
+        Feature queries are stored as text on :Feature nodes, but the server
+        cannot execute a string it read from the graph — there is no
+        dynamic-query procedure (`apoc.cypher.run` is a Neo4j APOC procedure and
+        has no Geode equivalent). Read the query text first, then send it as a
+        statement of its own.
+        """
         for feature_name in feature_names:
-            await self.client.execute("""
-                MATCH (f:Feature {name: $name})
-                WITH f
-                CALL apoc.cypher.run(f.query, {}) YIELD value
-                MATCH (entity) WHERE entity.type = $entity_type
-                SET entity[$feature_name] = value.feature_value
-            """, {
-                "name": feature_name,
-                "entity_type": entity_type,
-                "feature_name": feature_name
-            })
+            # Property names cannot be parameterised, so the name is
+            # interpolated below — allow only safe identifiers.
+            if not feature_name.isidentifier():
+                raise ValueError(f"unsafe feature name: {feature_name!r}")
+
+            definition, _ = await self.client.query(
+                "MATCH (f:Feature {name: $name}) RETURN f.query AS query",
+                {"name": feature_name},
+            )
+            if not definition.rows:
+                continue
+
+            feature_query = definition.rows[0]["query"]
+
+            # The stored text is expected to yield (entity_id, feature_value)
+            values, _ = await self.client.query(
+                feature_query, {"entity_type": entity_type}
+            )
+
+            for row in values.rows:
+                await self.client.execute(
+                    f"MATCH (entity) WHERE id(entity) = $id "
+                    f"SET entity.{feature_name} = $value",
+                    {"id": row["entity_id"], "value": row["feature_value"]},
+                )
 ```
 
 ## Production ML Workflows

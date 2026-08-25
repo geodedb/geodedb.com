@@ -185,6 +185,7 @@ If the version changed, the WHERE clause fails, signaling a conflict.
 ### Transaction Management
 
 1. **Keep transactions short**: Long transactions hold snapshots, preventing garbage collection
+
    ```gql
    -- Good: Short transaction
    BEGIN;
@@ -201,6 +202,7 @@ If the version changed, the WHERE clause fails, signaling a conflict.
 2. **Use appropriate isolation levels**: Choose between snapshot isolation and serializable snapshot isolation based on requirements
 
 3. **Handle conflicts gracefully**: Implement retry logic for write-write conflicts
+
    ```python
    for attempt in range(max_retries):
        try:
@@ -230,10 +232,20 @@ Track MVCC metrics:
 - **Conflict rate**: Write-write conflicts per second
 - **Snapshot age**: Age of oldest active snapshot
 
+MVCC is entirely internal to the storage engine: there is no `dbms.mvcc.*` or
+`dbms.monitor.*` procedure namespace, and version chains, snapshots and GC are
+not exposed as queryable objects. The signals you actually get are the
+transaction counters on the Prometheus endpoint and the storage-engine LSNs:
+
+```bash
+curl -s http://localhost:9090/metrics | grep '^geode_transactions'
+```
+
 ```gql
--- Query MVCC statistics
-CALL dbms.monitor.mvcc.stats() YIELD metric, value
-RETURN metric, value
+-- How far the WAL has advanced past the last checkpoint
+CALL geode.storage.stats()
+YIELD wal_lsn, last_checkpoint_lsn
+RETURN wal_lsn, last_checkpoint_lsn, wal_lsn - last_checkpoint_lsn AS unflushed;
 ```
 
 ## Troubleshooting
@@ -530,164 +542,88 @@ async def historical_balance_report(account_id, start_date, end_date):
 
 ## Garbage Collection Strategies
 
-### Configurable GC Policies
+### What Is Configurable
 
-```python
-class MVCCGarbageCollector:
-    """Configure and manage MVCC garbage collection."""
+Version retention and garbage collection are engine-internal. There is no
+`dbms.mvcc.setRetentionPolicy`, `dbms.mvcc.garbageCollect` or
+`dbms.mvcc.configure` procedure, no retention-hours setting, and no manual GC
+trigger: the storage engine reclaims superseded versions on its own once no
+active snapshot can see them.
 
-    def __init__(self, client):
-        self.client = client
+What you control from outside the engine is how much garbage you create and how
+long you keep snapshots open:
 
-    async def set_retention_policy(self, retention_hours):
-        """Set how long to retain old versions."""
-        await self.client.execute("""
-            CALL dbms.mvcc.setRetentionPolicy($hours)
-        """, {'hours': retention_hours})
+- **Keep transactions short.** An open transaction pins a snapshot, and every
+  version newer than that snapshot has to be retained until it commits or
+  rolls back.
+- **Batch updates.** Rewriting the same property a thousand times in a thousand
+  transactions produces a thousand versions; one transaction produces one.
+- **Checkpoint pressure is observable.** A `wal_lsn` that keeps running away
+  from `last_checkpoint_lsn` is the signal that write volume is outpacing the
+  engine's background work.
 
-    async def run_gc_manually(self):
-        """Trigger manual garbage collection."""
-        result, _ = await self.client.query("""
-            CALL dbms.mvcc.garbageCollect()
-            YIELD versionsReclaimed, bytesFreed
-            RETURN versionsReclaimed, bytesFreed
-        """)
-
-        stats = result.rows[0] if result.rows else None
-        return stats
-
-    async def get_gc_stats(self):
-        """Get garbage collection statistics."""
-        result, _ = await self.client.query("""
-            CALL dbms.mvcc.stats()
-            YIELD metric, value
-            RETURN metric, value
-        """)
-
-        return {row['metric']: row['value'] for row in result.rows}
-
-# Usage
-async def manage_storage():
-    gc = MVCCGarbageCollector(client)
-
-    # Set 24-hour retention
-    await gc.set_retention_policy(retention_hours=24)
-
-    # Run GC and get stats
-    stats = await gc.run_gc_manually()
-    print(f"Reclaimed {stats['versionsReclaimed']} versions")
-    print(f"Freed {stats['bytesFreed'] / 1024 / 1024:.2f} MB")
-
-    # Monitor GC health
-    gc_stats = await gc.get_gc_stats()
-    print(f"Average version chain length: {gc_stats['avg_chain_length']}")
-    print(f"Oldest active snapshot age: {gc_stats['oldest_snapshot_age_seconds']}s")
+```gql
+CALL geode.storage.stats()
+YIELD wal_lsn, last_checkpoint_lsn, free_pages_nodes, free_pages_props
+RETURN wal_lsn - last_checkpoint_lsn AS unflushed,
+       free_pages_nodes,
+       free_pages_props;
 ```
 
-### Aggressive vs. Conservative GC
-
-```python
-# Conservative: Keep more history (better for time-travel)
-await client.execute("""
-    CALL dbms.mvcc.configure({
-        retention_hours: 168,  // 1 week
-        gc_frequency_minutes: 60,
-        max_chain_length: 100
-    })
-""")
-
-# Aggressive: Minimize storage (faster queries)
-await client.execute("""
-    CALL dbms.mvcc.configure({
-        retention_hours: 1,
-        gc_frequency_minutes: 5,
-        max_chain_length: 10
-    })
-""")
-```
+Rising `free_pages_*` counts mean the engine has reclaimed pages and is reusing
+them — that is GC working, not leaking.
 
 ## Performance Monitoring
 
-### MVCC Performance Metrics
+### Transaction Metrics
 
-```python
-from prometheus_client import Gauge, Histogram
+The server publishes transaction outcomes, not version-chain internals. There
+are no `geode_mvcc_*` metrics to scrape:
 
-# Define metrics
-version_chain_length = Histogram(
-    'geode_mvcc_version_chain_length',
-    'Length of version chains',
-    buckets=[1, 5, 10, 25, 50, 100, 250]
-)
+| Metric | Type | Description |
+|--------|------|-------------|
+| `geode_transactions_total` | Counter | Total number of transactions |
+| `geode_transactions_failed_total` | Counter | Total number of failed transactions |
 
-active_snapshots = Gauge(
-    'geode_mvcc_active_snapshots',
-    'Number of active snapshots'
-)
+A rising failure ratio is the practical conflict signal:
 
-gc_reclaimed_versions = Counter(
-    'geode_mvcc_gc_reclaimed_versions_total',
-    'Total versions reclaimed by GC'
-)
-
-async def collect_mvcc_metrics():
-    """Collect and export MVCC metrics."""
-    stats, _ = await client.query("""
-        CALL dbms.mvcc.detailedStats()
-        YIELD metric, value
-        RETURN metric, value
-    """)
-
-    for row in stats.rows:
-        metric = row['metric']
-        value = row['value']
-
-        if metric == 'avg_version_chain_length':
-            version_chain_length.observe(value)
-        elif metric == 'active_snapshots':
-            active_snapshots.set(value)
-        elif metric == 'gc_reclaimed_versions':
-            gc_reclaimed_versions.inc(value)
+```promql
+rate(geode_transactions_failed_total[5m]) / rate(geode_transactions_total[5m])
 ```
 
 ### Identifying Performance Bottlenecks
 
+There is no transaction-list, version-chain or blocking-transaction procedure
+(`dbms.transactions.*` does not exist). Diagnose from the client side instead:
+
 ```python
-async def diagnose_mvcc_issues():
-    """Diagnose MVCC-related performance issues."""
+import time
 
-    # Check for long version chains
-    result, _ = await client.query("""
-        CALL dbms.mvcc.versionChainStats()
-        YIELD nodeId, chainLength
-        WHERE chainLength > 50
-        RETURN nodeId, chainLength
-        ORDER BY chainLength DESC
-        LIMIT 10
-    """)
+async def measure_update_contention(client, node_id, attempts=100):
+    """Measure how often a hot-node update has to be retried."""
+    failures = 0
+    started = time.monotonic()
 
-    long_chains = [row for row in result.rows]
-    if long_chains:
-        print("WARNING: Long version chains detected")
-        for chain in long_chains:
-            print(f"  Node {chain['nodeId']}: {chain['chainLength']} versions")
-        print("Recommendation: Increase GC frequency or reduce update rate")
+    for _ in range(attempts):
+        try:
+            await client.execute(
+                "MATCH (n) WHERE id(n) = $id SET n.counter = n.counter + 1",
+                {"id": node_id},
+            )
+        except Exception:
+            failures += 1
 
-    # Check for old snapshots blocking GC
-    result, _ = await client.query("""
-        CALL dbms.transactions.list()
-        YIELD transactionId, startTime
-        WHERE duration.between(startTime, datetime()) > duration('PT5M')
-        RETURN transactionId, startTime
-    """)
+    elapsed = time.monotonic() - started
+    print(f"{failures}/{attempts} updates failed in {elapsed:.2f}s")
+    if failures:
+        print("Recommendation: batch the updates or spread the contention")
+```
 
-    old_txs = [row for row in result.rows]
-    if old_txs:
-        print("WARNING: Long-running transactions blocking GC")
-        for tx in old_txs:
-            print(f"  Transaction {tx['transactionId']}")
-            print(f"    Started: {tx['startTime']}")
-        print("Recommendation: Terminate or shorten these transactions")
+Pair that with `PROFILE` on the statement itself to see whether the cost is
+contention or plan shape:
+
+```gql
+PROFILE MATCH (n:Account {id: 42}) SET n.balance = n.balance + 100;
 ```
 
 ## Distributed MVCC
@@ -764,55 +700,46 @@ class HybridLogicalClock:
 
 **Symptom**: Queries slow down over time on frequently updated entities
 
-**Diagnosis**:
-```python
-async def find_bloated_chains():
-    result, _ = await client.query("""
-        CALL dbms.mvcc.analyzeChains()
-        YIELD entityId, entityType, chainLength, storageBytes
-        WHERE chainLength > 100
-        RETURN entityId, entityType, chainLength, storageBytes
-        ORDER BY chainLength DESC
-    """)
+**Diagnosis**: version chains are not queryable — there is no
+`dbms.mvcc.analyzeChains`. Find the entities you rewrite most often from your
+own write patterns, and watch storage-level growth:
 
-    return [row for row in result.rows]
+```gql
+CALL geode.storage.stats()
+YIELD node_count, edge_count, free_pages_props, page_size
+RETURN node_count, edge_count, free_pages_props, page_size;
 ```
 
 **Solutions**:
-1. Increase GC frequency
-2. Reduce retention period
-3. Redesign to batch updates
+
+1. Batch updates so one transaction produces one version
+2. Keep read transactions short so old versions become reclaimable
+3. Redesign hot counters (for example, append events and aggregate on read)
 4. Consider partitioning hot entities
 
 ### Issue: GC Starvation
 
 **Symptom**: Storage grows continuously, GC not reclaiming space
 
-**Diagnosis**:
-```python
-async def check_gc_health():
-    result, _ = await client.query("""
-        CALL dbms.mvcc.gcHealth()
-        YIELD lastRunTime, versionsEligible, versionsReclaimed
-        RETURN lastRunTime, versionsEligible, versionsReclaimed
-    """)
+**Diagnosis**: there is no GC-health or blocking-transaction procedure. Watch
+whether free pages are being handed back and whether checkpoints keep up:
 
-    health = result.rows[0] if result.rows else None
-
-    if health['versionsEligible'] > 0 and health['versionsReclaimed'] == 0:
-        # GC unable to run - find why
-        blocked_by, _ = await client.query("""
-            CALL dbms.transactions.blocking()
-            YIELD transactionId, blockedBy
-            RETURN transactionId, blockedBy
-        """)
-
-        return blocked_by.rows
+```gql
+CALL geode.storage.stats()
+YIELD wal_lsn, last_checkpoint_lsn,
+      free_pages_nodes, free_pages_adj_out, free_pages_props
+RETURN wal_lsn - last_checkpoint_lsn AS unflushed,
+       free_pages_nodes, free_pages_adj_out, free_pages_props;
 ```
 
+Free-page counts that stay flat while the data directory grows point at
+snapshots that are never released — almost always a client that opened a
+transaction and never committed it.
+
 **Solutions**:
-1. Identify and terminate long-running transactions
-2. Ensure no snapshots held indefinitely
-3. Check for GC configuration issues
+
+1. Set client-side statement/transaction timeouts (`geode shell --timeout`)
+2. Make sure every code path commits or rolls back, including error paths
+3. Restart clients that hold connections open indefinitely
 
 Geode's MVCC implementation provides the foundation for high-concurrency, consistent graph queries. By maintaining multiple versions and using snapshot isolation, Geode achieves both strong consistency guarantees and excellent concurrent performance—essential for production graph workloads.

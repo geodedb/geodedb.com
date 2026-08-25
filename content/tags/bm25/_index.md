@@ -155,13 +155,10 @@ ORDER BY relevance DESC
 LIMIT 20;
 
 -- Or using CALL syntax
-CALL fulltext.search({
-  index: 'document_content',
-  query: 'graph database performance',
-  limit: 20
-})
+CALL geode.fts.search('document_content', 'graph database performance', 20)
 YIELD node, score
-RETURN node.title, score
+MATCH (d) WHERE id(d) = node
+RETURN d.title, score
 ORDER BY score DESC;
 ```
 
@@ -428,11 +425,16 @@ Typical performance characteristics:
 
 ### Index Statistics
 
+The fulltext index publishes no statistics procedure — `SHOW INDEXES` confirms
+it exists, and the corpus figures come from the data itself:
+
 ```gql
--- Check index statistics
-CALL fulltext.index.stats('document_content')
-YIELD documents, terms, size_mb, avg_doc_length
-RETURN documents, terms, size_mb, avg_doc_length;
+SHOW INDEXES;
+
+-- Corpus size and average document length, straight from the documents
+MATCH (d:Document)
+RETURN count(d) AS documents,
+       avg(length(d.content)) AS avg_doc_length_chars;
 ```
 
 ### Query Performance
@@ -508,32 +510,30 @@ LIMIT 20;
 
 Expand query using top results:
 
-```gql
--- Stage 1: Initial retrieval
-CALL fulltext.search({
-    index: 'documents',
-    query: $original_query,
-    limit: 10
-})
-YIELD node AS top_doc, score
+`geode.fts.search` takes **string literals**, not variables or `$parameters`,
+so the expansion round-trip happens in the client: run the first search, read
+the expansion terms, then build and send the second search.
 
--- Stage 2: Extract expansion terms
-WITH top_doc
+```gql
+-- Stage 1: Initial retrieval (client substitutes the query text)
+CALL geode.fts.search('documents', 'graph database', 10)
+YIELD node, score
+MATCH (top_doc) WHERE id(top_doc) = node
+RETURN id(top_doc) AS doc_id, score;
+
+-- Stage 2: Extract expansion terms from those documents
 MATCH (top_doc)-[:HAS_TERM]->(term:Term)
+WHERE id(top_doc) IN $top_doc_ids
 WITH term, SUM(term.tfidf_score) AS term_importance
 ORDER BY term_importance DESC
 LIMIT 5
-WITH COLLECT(term.text) AS expansion_terms
+RETURN COLLECT(term.text) AS expansion_terms;
 
--- Stage 3: Expanded query
-WITH $original_query + ' ' + join(expansion_terms, ' ') AS expanded_query
-CALL fulltext.search({
-    index: 'documents',
-    query: expanded_query,
-    limit: 50
-})
+-- Stage 3: Expanded query (client concatenated the terms into the literal)
+CALL geode.fts.search('documents', 'graph database index storage engine', 50)
 YIELD node, score
-RETURN node.title, score
+MATCH (d) WHERE id(d) = node
+RETURN d.title, score
 ORDER BY score DESC;
 ```
 

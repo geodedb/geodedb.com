@@ -577,11 +577,9 @@ class AnalyticsUser(BaseGeodeUser):
     def community_detection(self):
         """Find communities"""
         self._run(self.conn.query("""
-            CALL graph.louvain('SocialNetwork', {
-                relationship_type: 'FOLLOWS'
-            })
-            YIELD node, community
-            RETURN community, count(node) AS size
+            CALL algo.louvain.stream()
+            YIELD nodeId, community
+            RETURN community, count(nodeId) AS size
             ORDER BY size DESC
         """))
 

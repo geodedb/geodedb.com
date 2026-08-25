@@ -34,12 +34,14 @@ Social networks model connections between people, organizations, and content. Ge
 **Challenge**: Connect professionals based on skills, interests, and connections
 
 **Solution**: Build professional graph with:
+
 - User profiles and skills
 - Connection types (colleague, mentor, classmate)
 - Companies and positions
 - Endorsements and recommendations
 
 **Benefits**:
+
 - Smart connection suggestions
 - Skill-based search
 - Career path discovery
@@ -50,12 +52,14 @@ Social networks model connections between people, organizations, and content. Ge
 **Challenge**: Track how content spreads through network
 
 **Solution**: Model content propagation:
+
 - Posts and shares
 - Engagement (likes, comments, reactions)
 - Viral coefficient tracking
 - Influence chains
 
 **Benefits**:
+
 - Identify viral content early
 - Detect trending topics
 - Target influential users
@@ -66,12 +70,14 @@ Social networks model connections between people, organizations, and content. Ge
 **Challenge**: Build engaging social features for multiplayer games
 
 **Solution**: Create social gaming graph:
+
 - Players and friendships
 - Teams and guilds
 - Achievements and leaderboards
 - In-game transactions
 
 **Benefits**:
+
 - Friend invites and referrals
 - Team formation recommendations
 - Social competitions
@@ -189,6 +195,7 @@ LIMIT 10;
 
 {{< tabs >}}
 {{< tab "Go" >}}
+
 ```go
 func getFriendRecommendations(ctx context.Context, db *sql.DB, userID string) ([]Recommendation, error) {
     rows, err := db.QueryContext(ctx, `
@@ -213,8 +220,10 @@ func getFriendRecommendations(ctx context.Context, db *sql.DB, userID string) ([
     return recommendations, nil
 }
 ```
+
 {{< /tab >}}
 {{< tab "Python" >}}
+
 ```python
 async def get_friend_recommendations(conn, user_id: str, limit: int = 10):
     page, _ = await conn.query("""
@@ -238,8 +247,10 @@ async def get_friend_recommendations(conn, user_id: str, limit: int = 10):
         for row in page.rows
     ]
 ```
+
 {{< /tab >}}
 {{< tab "Rust" >}}
+
 ```rust
 async fn get_friend_recommendations(conn: &mut Connection, user_id: &str) -> Result<Vec<Recommendation>> {
     let params = [("user_id", Value::string(user_id))].into();
@@ -261,8 +272,10 @@ async fn get_friend_recommendations(conn: &mut Connection, user_id: &str) -> Res
     Ok(recommendations)
 }
 ```
+
 {{< /tab >}}
 {{< tab "Node.js" >}}
+
 ```typescript
 async function getFriendRecommendations(userId: string, limit = 10) {
     const rows = await client.queryAll(`
@@ -284,8 +297,10 @@ async function getFriendRecommendations(userId: string, limit = 10) {
     }));
 }
 ```
+
 {{< /tab >}}
 {{< tab "Zig" >}}
+
 ```zig
 fn getFriendRecommendations(client: *GeodeClient, allocator: std.mem.Allocator, user_id: []const u8) ![]Recommendation {
     // Build params JSON object
@@ -311,6 +326,7 @@ fn getFriendRecommendations(client: *GeodeClient, allocator: std.mem.Allocator, 
     return parseRecommendations(allocator, result);
 }
 ```
+
 {{< /tab >}}
 {{< /tabs >}}
 
@@ -337,12 +353,10 @@ LIMIT 10;
 
 ```gql
 -- Detect communities
-CALL graph.louvain('SocialNetwork', {
-  relationship_type: 'FOLLOWS',
-  max_iterations: 10
-})
-YIELD node, community
-WITH community, collect(node.username) AS members, count(*) AS size
+CALL algo.louvain.stream()
+YIELD nodeId, community
+MATCH (u:User) WHERE id(u) = nodeId
+WITH community, collect(u.username) AS members, count(*) AS size
 ORDER BY size DESC
 RETURN community, size, members[0..5] AS sample_members;
 ```
@@ -351,12 +365,9 @@ RETURN community, size, members[0..5] AS sample_members;
 
 ```gql
 -- Alternative community detection
-CALL graph.labelPropagation('SocialNetwork', {
-  relationship_type: 'FOLLOWS',
-  max_iterations: 20
-})
-YIELD node, community
-RETURN community, count(*) AS community_size
+CALL algo.labelPropagation.stream()
+YIELD nodeId, label
+RETURN label AS community, count(*) AS community_size
 ORDER BY community_size DESC;
 ```
 
@@ -366,14 +377,11 @@ ORDER BY community_size DESC;
 
 ```gql
 -- Calculate user influence
-CALL graph.pageRank('SocialNetwork', {
-  relationship_type: 'FOLLOWS',
-  iterations: 20,
-  damping_factor: 0.85
-})
-YIELD node, score
-RETURN node.username,
-       node.name,
+CALL algo.pagerank.stream()
+YIELD nodeId, score
+MATCH (u:User) WHERE id(u) = nodeId
+RETURN u.username,
+       u.name,
        score AS influence_score
 ORDER BY influence_score DESC
 LIMIT 20;
@@ -383,14 +391,12 @@ LIMIT 20;
 
 ```gql
 -- Find bridge users (connectors between communities)
-CALL graph.betweennessCentrality('SocialNetwork', {
-  relationship_type: 'FOLLOWS',
-  normalized: true
-})
-YIELD node, score
-RETURN node.username,
-       score AS bridge_score
-ORDER BY score DESC
+CALL algo.betweenness.stream()
+YIELD nodeId, betweenness
+MATCH (u:User) WHERE id(u) = nodeId
+RETURN u.username,
+       betweenness AS bridge_score
+ORDER BY bridge_score DESC
 LIMIT 20;
 ```
 
@@ -464,23 +470,30 @@ RETURN tag.name,
 
 ### Graph Projections for Analysis
 
-```gql
--- Create projection of strong connections only
-CALL graph.project('StrongConnections', {
-  node_filter: 'User',
-  relationship_filter: 'CLOSE_FRIEND OR (FOLLOWS AND interaction_score > 0.7)'
-})
-YIELD graph_name, node_count, relationship_count;
+There is no in-memory projection API (`graph.project` does not exist), and the
+`algo.*` procedures always run over every relationship in the **current** graph.
+To analyse a subset, materialise it as its own named graph:
 
--- Run algorithms on projection
-CALL graph.pageRank('StrongConnections', {
-  relationship_type: '*',
-  iterations: 20
-})
-YIELD node, score
-RETURN node.username, score
+```gql
+-- Build a graph holding only the strong connections
+CREATE GRAPH StrongConnections;
+
+USE SocialNetwork;
+MATCH (a:User)-[r:FOLLOWS]->(b:User)
+WHERE r.interaction_score > 0.7
+RETURN id(a) AS source, id(b) AS target, a.username, b.username;
+-- ...write those pairs into StrongConnections from your client, then:
+
+USE StrongConnections;
+CALL algo.pagerank.stream()
+YIELD nodeId, score
+MATCH (u:User) WHERE id(u) = nodeId
+RETURN u.username, score
 ORDER BY score DESC;
 ```
+
+If the subset is only a filter on the *output*, skip the copy entirely and
+filter the `MATCH` that resolves `nodeId`.
 
 ### Temporal Network Analysis
 
@@ -536,6 +549,7 @@ Poll for new notifications and display them to users.
 
 {{< tabs >}}
 {{< tab "Go" >}}
+
 ```go
 func pollNotifications(ctx context.Context, db *sql.DB, userID string) {
     var lastSeen *int64
@@ -579,8 +593,10 @@ func pollNotifications(ctx context.Context, db *sql.DB, userID string) {
     }
 }
 ```
+
 {{< /tab >}}
 {{< tab "Python" >}}
+
 ```python
 async def poll_notifications(user_id):
     last_seen = None
@@ -606,8 +622,10 @@ async def poll_notifications(user_id):
                 last_seen = page.rows[0]["ts"].raw_value
             await asyncio.sleep(2)
 ```
+
 {{< /tab >}}
 {{< tab "Rust" >}}
+
 ```rust
 async fn poll_notifications(conn: &mut Connection, user_id: &str) -> Result<()> {
     let mut last_seen: Option<i64> = None;
@@ -641,8 +659,10 @@ async fn poll_notifications(conn: &mut Connection, user_id: &str) -> Result<()> 
     }
 }
 ```
+
 {{< /tab >}}
 {{< tab "Node.js" >}}
+
 ```typescript
 async function pollNotifications(userId: string) {
     let lastSeen: number | null = null;
@@ -670,8 +690,10 @@ async function pollNotifications(userId: string) {
     }
 }
 ```
+
 {{< /tab >}}
 {{< tab "Zig" >}}
+
 ```zig
 fn pollNotifications(client: *GeodeClient, allocator: std.mem.Allocator, user_id: []const u8) !void {
     var last_seen: ?i64 = null;
@@ -704,6 +726,7 @@ fn pollNotifications(client: *GeodeClient, allocator: std.mem.Allocator, user_id
     }
 }
 ```
+
 {{< /tab >}}
 {{< /tabs >}}
 
@@ -711,6 +734,7 @@ fn pollNotifications(client: *GeodeClient, allocator: std.mem.Allocator, user_id
 
 {{< tabs >}}
 {{< tab "Go" >}}
+
 ```go
 func pollLiveFeed(ctx context.Context, db *sql.DB, userID string) {
     var lastSeen *int64
@@ -736,8 +760,10 @@ func pollLiveFeed(ctx context.Context, db *sql.DB, userID string) {
     }
 }
 ```
+
 {{< /tab >}}
 {{< tab "Python" >}}
+
 ```python
 async def poll_live_feed(user_id):
     last_seen = None
@@ -757,8 +783,10 @@ async def poll_live_feed(user_id):
                 last_seen = page.rows[0]["p.created_at"].raw_value
             await asyncio.sleep(3)
 ```
+
 {{< /tab >}}
 {{< tab "Rust" >}}
+
 ```rust
 async fn poll_live_feed(conn: &mut Connection, user_id: &str) -> Result<()> {
     let mut last_seen: Option<i64> = None;
@@ -785,8 +813,10 @@ async fn poll_live_feed(conn: &mut Connection, user_id: &str) -> Result<()> {
     }
 }
 ```
+
 {{< /tab >}}
 {{< tab "Node.js" >}}
+
 ```typescript
 async function pollLiveFeed(userId: string) {
     let lastSeen: number | null = null;
@@ -808,8 +838,10 @@ async function pollLiveFeed(userId: string) {
     }
 }
 ```
+
 {{< /tab >}}
 {{< tab "Zig" >}}
+
 ```zig
 fn pollLiveFeed(client: *GeodeClient, allocator: std.mem.Allocator, user_id: []const u8) !void {
     var last_seen: ?i64 = null;
@@ -842,6 +874,7 @@ fn pollLiveFeed(client: *GeodeClient, allocator: std.mem.Allocator, user_id: []c
     }
 }
 ```
+
 {{< /tab >}}
 {{< /tabs >}}
 
@@ -942,11 +975,9 @@ WITH total_users, count(f) AS total_edges
 RETURN total_edges * 1.0 / (total_users * (total_users - 1)) AS network_density;
 
 -- Clustering coefficient (how connected are friends of friends)
-CALL graph.clusteringCoefficient('SocialNetwork', {
-  relationship_type: 'FOLLOWS'
-})
-YIELD node, coefficient
-RETURN avg(coefficient) AS avg_clustering_coefficient;
+CALL algo.globalClustering()
+YIELD coefficient
+RETURN coefficient AS clustering_coefficient;
 ```
 
 ### Engagement KPIs

@@ -30,6 +30,7 @@ Data sharding is a horizontal partitioning technique that distributes data acros
 Sharding involves splitting a large dataset into smaller, more manageable pieces called shards. Each shard is a fully functional database instance that stores a subset of the total data. Unlike replication, where each node contains all data, sharding distributes unique data subsets across shards.
 
 **Key Characteristics**:
+
 - Each shard contains unique data (no overlap by default)
 - Shards can operate independently for single-shard operations
 - Cross-shard operations require coordination
@@ -42,12 +43,14 @@ For graph databases, sharding must carefully consider graph structure to minimiz
 While often used interchangeably, sharding and partitioning have subtle differences:
 
 **Partitioning**:
+
 - Logical division within a cluster
 - Partitions share cluster-wide metadata
 - Typically managed automatically
 - Transparent to applications
 
 **Sharding**:
+
 - Physical division into separate instances
 - Each shard is independent database
 - Requires explicit shard routing
@@ -127,16 +130,19 @@ sharding:
 ```
 
 **Hash Function**:
+
 ```
 shard_id = hash(shard_key) % shard_count
 ```
 
 **Advantages**:
+
 - Uniform distribution
 - Simple and predictable
 - No hotspots
 
 **Disadvantages**:
+
 - Range queries require all shards
 - Resharding requires data movement
 - Cannot leverage data locality
@@ -173,11 +179,13 @@ sharding:
 ```
 
 **Advantages**:
+
 - Efficient range queries
 - Natural for time-series data
 - Predictable data placement
 
 **Disadvantages**:
+
 - Risk of hotspots
 - Requires range boundary management
 - May need rebalancing
@@ -215,11 +223,13 @@ sharding:
 ```
 
 **Advantages**:
+
 - Data locality for users
 - Compliance with data residency
 - Reduced latency
 
 **Disadvantages**:
+
 - Uneven distribution by population
 - Complex cross-region queries
 - Regulatory complexity
@@ -249,11 +259,13 @@ sharding:
 ```
 
 **Advantages**:
+
 - Natural isolation boundaries
 - Easy compliance and backup
 - Predictable per-entity performance
 
 **Disadvantages**:
+
 - Potential imbalance
 - Difficult cross-entity queries
 - Shard proliferation
@@ -711,23 +723,24 @@ geode shard export-config \
 
 ### Diagnostic Queries
 
+Shard routing is internal to the cluster layer: there is no `dbms.shard.*`
+procedure namespace, so shard placement, per-shard sizes and cross-shard edge
+ratios cannot be queried. The cluster-level facts you can read are membership
+and leadership, plus each node's own storage counters:
+
 ```gql
--- Check shard distribution for key
-CALL dbms.shard.route('user_id', $user_id)
-YIELD shard_id;
+-- One row per cluster member: node_id, role, term, leader_id,
+-- endpoint, last_contact_ms
+SHOW CLUSTER STATUS;
 
--- View shard statistics
-CALL dbms.shard.stats()
-YIELD shard_id, size_bytes, node_count, query_rate;
-
--- Analyze cross-shard relationships
-CALL dbms.shard.cross_shard_edges()
-YIELD count, percentage;
-
--- Find queries requiring multiple shards
-CALL dbms.shard.multi_shard_queries()
-YIELD query_text, shard_count, frequency;
+-- Run against each member to compare their local footprints
+CALL geode.storage.stats()
+YIELD node_count, edge_count, label_count
+RETURN node_count, edge_count, label_count;
 ```
+
+Scrape `/metrics` on every node (`geode_nodes_total`, `geode_edges_total`,
+`geode_queries_total`) to compare load across the cluster.
 
 ## Related Topics
 

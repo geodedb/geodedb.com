@@ -53,9 +53,10 @@ RETURN MIN(u.age) AS youngest,
 MATCH (u:User)-[:LIKES]->(p:Product)
 RETURN u.name, COLLECT(p.name) AS liked_products
 
-// String aggregation
+// String aggregation: COLLECT returns a LIST; join it in the client.
+// There is no STRING_AGG function.
 MATCH (t:Tag)
-RETURN STRING_AGG(t.name, ', ') AS tag_list
+RETURN COLLECT(t.name) AS tag_list
 ```
 
 ### String Functions
@@ -73,27 +74,25 @@ MATCH (p:Post)
 WHERE LENGTH(p.content) > 280
 RETURN p
 
-// SUBSTRING - extract substring
+// SUBSTRING - extract substring (there is no POSITION/STRPOS function;
+// substring takes a start offset and a length)
 MATCH (u:User)
-RETURN SUBSTRING(u.email, 0, POSITION('@', u.email)) AS username
+RETURN SUBSTRING(u.email, 0, 5) AS email_prefix
 
 // TRIM/LTRIM/RTRIM - remove whitespace
 MATCH (t:Text)
 RETURN TRIM(t.value) AS trimmed
 
-// CONCAT - concatenate strings
+// Concatenation is an operator (`+` or `||`); there is no CONCAT function
 MATCH (u:User)
-RETURN CONCAT(u.first_name, ' ', u.last_name) AS full_name
+RETURN u.first_name || ' ' || u.last_name AS full_name
 
-// REPLACE - replace substring
+// REPLACE - literal substring replacement
 MATCH (t:Text)
 RETURN REPLACE(t.content, 'old', 'new') AS updated
 
-// SPLIT - split string into list
-MATCH (t:Tag)
-RETURN SPLIT(t.path, '/') AS path_parts
-
-// Regular expressions
+// Regular expressions: `=~` is a predicate over a lightweight matcher
+// (^, $, ., *, +, ?, character classes, escapes — no alternation or captures)
 MATCH (p:Product)
 WHERE p.sku =~ '^PROD-[0-9]{4}$'
 RETURN p
@@ -322,17 +321,26 @@ RETURN u
 
 ### Hash and Encoding Functions
 
-Cryptographic and encoding operations:
+Geode does not compute digests and has no Base64 or URL encoders: there is no
+`SHA256`, `MD5`, `BASE64_ENCODE`, `BASE64_DECODE` or `URL_ENCODE` function.
+What it provides is a `HASH` type built from an already-computed hex digest, a
+constant-time comparison, hex encode/decode, and URL *parsing*:
 
 ```gql
-// Hash functions
-RETURN SHA256('password') AS hash,
-       MD5('data') AS md5_hash
+// Store a client-computed digest as a typed HASH value
+RETURN hash('sha3-256', $hex_digest) AS digest;
 
-// Encoding
-RETURN BASE64_ENCODE('Hello World') AS encoded,
-       BASE64_DECODE('SGVsbG8gV29ybGQ=') AS decoded,
-       URL_ENCODE('hello world') AS url_encoded
+// Constant-time comparison
+RETURN hash_equals(hash('sha3-256', $a), hash('sha3-256', $b)) AS same;
+
+// Hex encoding (bytea/from_hex require the \x prefix)
+RETURN to_hex($bytes) AS hex, from_hex('\x48656c6c6f') AS bytes;
+
+// URL parsing
+RETURN url_scheme($href) AS scheme,
+       url_host($href) AS host,
+       url_path($href) AS path,
+       url_query($href) AS query;
 ```
 
 ## Advanced Function Usage
@@ -452,8 +460,8 @@ RETURN p
 
 ```gql
 MATCH (u:User)
-SET u.full_name = CONCAT(u.first_name, ' ', u.last_name),
-    u.name_length = LENGTH(u.full_name)
+SET u.full_name = u.first_name || ' ' || u.last_name,
+    u.name_length = LENGTH(u.first_name || ' ' || u.last_name)
 ```
 
 ### Conditional Aggregation
@@ -497,17 +505,19 @@ RETURN path, REDUCE(dist = 0, rel IN relationships(path) | dist + rel.distance) 
 ### Centrality Functions
 
 ```gql
--- PageRank centrality
-CALL graph.pagerank(nodes: [:User], relationships: [:FOLLOWS])
-YIELD node, score
-RETURN node.name, score
+-- PageRank centrality (runs over the whole graph; takes no arguments)
+CALL algo.pagerank.stream()
+YIELD nodeId, score
+MATCH (n:User) WHERE id(n) = nodeId
+RETURN n.name, score
 ORDER BY score DESC
 LIMIT 10;
 
 -- Betweenness centrality
-CALL graph.betweenness([:User], [:KNOWS])
-YIELD node, score
-RETURN node.name, score;
+CALL algo.betweenness.stream()
+YIELD nodeId, betweenness
+MATCH (n:User) WHERE id(n) = nodeId
+RETURN n.name, betweenness;
 
 -- Degree centrality
 MATCH (n:User)
@@ -521,16 +531,21 @@ RETURN n.name,
 
 ```gql
 -- Louvain community detection
-CALL graph.louvain([:User], [:KNOWS], {iterations: 10})
-YIELD node, community
-SET node.community = community;
+CALL algo.louvain.stream()
+YIELD nodeId, community
+MATCH (n:User) WHERE id(n) = nodeId
+SET n.community = community;
 
 -- Label propagation
-CALL graph.label_propagation([:User], [:FOLLOWS])
-YIELD node, community
-RETURN community, COUNT(node) AS size
+CALL algo.labelPropagation.stream()
+YIELD nodeId, label
+MATCH (n:User) WHERE id(n) = nodeId
+RETURN label AS community, COUNT(n) AS size
 ORDER BY size DESC;
 ```
+
+None of the `algo.*` procedures accept label, relationship-type or iteration
+arguments; they run over every node and relationship in the current graph.
 
 ## Geospatial Functions
 
@@ -797,7 +812,7 @@ RETURN u;
 ```gql
 -- Pre-compute expensive functions
 MATCH (u:User)
-SET u.full_name_normalized = UPPER(TRIM(CONCAT(u.first_name, ' ', u.last_name)));
+SET u.full_name_normalized = UPPER(TRIM(u.first_name || ' ' || u.last_name));
 
 -- Later queries are fast
 MATCH (u:User {full_name_normalized: 'ALICE SMITH'})

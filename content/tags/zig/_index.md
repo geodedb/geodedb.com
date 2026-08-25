@@ -278,7 +278,7 @@ zig build -Dtarget=x86_64-windows-gnu
 make build                        # Debug build
 make release                      # Release build
 make test                         # Unit tests
-make geodetestlab-comprehensive   # Integration tests (97.4% pass rate)
+make test-all-integration         # Local integration suites
 make fmt                          # Format code
 make cross-compile                # All platforms
 make ci                           # Full CI pipeline

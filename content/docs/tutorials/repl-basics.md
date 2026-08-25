@@ -484,7 +484,7 @@ geode> MATCH (n:Person) RETURN n LIMIT 5
 **Schema Discovery**:
 
 ```gql
-geode> CALL db.schema.nodeLabels()
+geode> CALL db.labels()
 ┌────────┐
 │ label  │
 ├────────┤
@@ -494,32 +494,38 @@ geode> CALL db.schema.nodeLabels()
 └────────┘
 ```
 
+`CALL db.relationshipTypes()` and `CALL db.propertyKeys()` complete the picture.
+
 ### Database Administration
 
 **Show Indexes**:
 
 ```gql
 geode> CALL db.indexes()
-┌──────────────────┬──────────┬────────┐
-│ name             │ type     │ labels │
-├──────────────────┼──────────┼────────┤
-│ person_email_idx │ btree    │ Person │
-│ product_sku_idx  │ unique   │ Product│
-└──────────────────┴──────────┴────────┘
+┌──────────────────┬──────────┬─────────┬────────────┐
+│ name             │ type     │ label   │ properties │
+├──────────────────┼──────────┼─────────┼────────────┤
+│ person_email_idx │ BTREE    │ Person  │ email      │
+│ product_sku_idx  │ BTREE    │ Product │ sku        │
+└──────────────────┴──────────┴─────────┴────────────┘
 ```
+
+`SHOW INDEXES` prints the same catalog.
 
 **Database Statistics**:
 
 ```gql
-geode> CALL db.stats()
-┌──────────────┬────────┐
-│ metric       │ value  │
-├──────────────┼────────┤
-│ node_count   │ 10000  │
-│ edge_count   │ 25000  │
-│ storage_mb   │ 450    │
-└──────────────┴────────┘
+geode> CALL geode.storage.stats() YIELD node_count, edge_count, label_count
+┌────────────┬────────────┬─────────────┐
+│ node_count │ edge_count │ label_count │
+├────────────┼────────────┼─────────────┤
+│ 10000      │ 25000      │ 3           │
+└────────────┴────────────┴─────────────┘
 ```
+
+The full column list also includes `format_version`, `page_size`, `wal_lsn`,
+`last_checkpoint_lsn` and the `free_pages_*` counters. There is no `db.stats()`
+procedure, and on-disk size is measured on the filesystem.
 
 ### Development Workflow
 

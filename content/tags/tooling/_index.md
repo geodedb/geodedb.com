@@ -151,15 +151,17 @@ geode shell --timing
 
 Geode provides comprehensive testing tools for validating database behavior, query correctness, and performance characteristics:
 
-**GeodeTestLab**: Built-in test harness for server validation:
+**Integration suites**: server validation runs from the Makefile; the
+spec-driven harness lives in the separate `geode-test-harness` repository:
 
 ```bash
-# Run full test suite
-make geodetestlab-comprehensive
+# Run the local integration suites
+make test-all-integration
 
-# Run specific test categories
-make test-core          # Core functionality tests
-make test-gql           # GQL compliance tests
+# Run specific suites
+make integration-test   # Basic end-to-end script
+make regression-test    # Regression suite
+make graph-test         # Graph algorithm suite
 make test-concurrency   # Concurrency and locking tests
 make test-performance   # Performance benchmarks
 

@@ -122,10 +122,11 @@ Measures how often a node appears on shortest paths between other nodes (bridge/
 
 ```gql
 -- Identify key intermediaries in network
-MATCH (p:Person)
-CALL graph.betweenness_centrality(p, 'KNOWS') AS bc
-RETURN p.name, bc.score
-ORDER BY bc.score DESC
+CALL algo.betweenness.stream()
+YIELD nodeId, betweenness
+MATCH (p:Person) WHERE id(p) = nodeId
+RETURN p.name, betweenness
+ORDER BY betweenness DESC
 LIMIT 10;
 ```
 
@@ -135,21 +136,19 @@ Recursive importance based on connections from important nodes:
 
 ```gql
 -- Calculate PageRank scores
-MATCH (page:WebPage)
-CALL graph.pagerank(page, 'LINKS_TO', {
-  iterations: 20,
-  damping: 0.85
-}) AS pr
-RETURN page.url, pr.score
-ORDER BY pr.score DESC
+CALL algo.pagerank.stream()
+YIELD nodeId, score
+MATCH (page:WebPage) WHERE id(page) = nodeId
+RETURN page.url, score
+ORDER BY score DESC
 LIMIT 50;
 
 -- Social influence ranking
-MATCH (u:User)
-CALL graph.pagerank(u, 'FOLLOWS') AS influence
-WHERE influence.score > 0.01
-RETURN u.name, influence.score, u.followers_count
-ORDER BY influence.score DESC;
+CALL algo.pagerank.stream()
+YIELD nodeId, score
+MATCH (u:User) WHERE id(u) = nodeId AND score > 0.01
+RETURN u.name, score, u.followers_count
+ORDER BY score DESC;
 ```
 
 ### Community Detection
@@ -162,9 +161,10 @@ Fast algorithm for community detection:
 
 ```gql
 -- Detect communities in social network
-MATCH (u:User)
-CALL graph.label_propagation(u, 'FOLLOWS', 10) AS community
-RETURN community.id, collect(u.name) AS members, count(u) AS size
+CALL algo.labelPropagation.stream()
+YIELD nodeId, label
+MATCH (u:User) WHERE id(u) = nodeId
+RETURN label, collect(u.name) AS members, count(u) AS size
 ORDER BY size DESC;
 ```
 
@@ -174,10 +174,12 @@ Find disconnected subgraphs:
 
 ```gql
 -- Identify isolated clusters
-MATCH (n:Node)
-CALL graph.connected_components(n, 'CONNECTS') AS component
-RETURN component.id, count(n) AS size, collect(n.id) AS nodes
-HAVING size > 1
+CALL algo.unionFind.stream()
+YIELD nodeId, setId
+MATCH (n:Node) WHERE id(n) = nodeId
+WITH setId, count(n) AS size, collect(n.id) AS nodes
+WHERE size > 1
+RETURN setId, size, nodes
 ORDER BY size DESC;
 ```
 
@@ -185,17 +187,14 @@ ORDER BY size DESC;
 
 ```gql
 -- High-quality community detection
-MATCH (u:User)
-CALL graph.louvain(u, 'INTERACTS', {
-  levels: 3,
-  resolution: 1.0
-}) AS cluster
+CALL algo.louvain.stream()
+YIELD nodeId, community
+MATCH (u:User) WHERE id(u) = nodeId
 RETURN
-  cluster.level,
-  cluster.community_id,
+  community,
   collect(u.name) AS members,
   count(u) AS size
-ORDER BY cluster.level, size DESC;
+ORDER BY size DESC;
 ```
 
 ### Pattern Matching and Discovery
@@ -591,9 +590,13 @@ ORDER BY s.day;
 
 ## Getting Started
 
+There is no sample-dataset loader procedure; create the data you need with
+ordinary statements (or load a `.gql` script with `geode query -f script.gql`)
+and analyse it from there.
+
 ```gql
--- Import sample dataset
-CALL graph.load_sample('analytics_demo');
+-- Seed a tiny dataset
+CREATE (:User {name: 'Alice'})-[:PURCHASED]->(:Product {category: 'Books'});
 
 -- Run basic analytics
 MATCH (u:User)-[:PURCHASED]->(p:Product)

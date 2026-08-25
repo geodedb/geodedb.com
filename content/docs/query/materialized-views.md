@@ -22,6 +22,17 @@ params:
 
 ## Overview
 
+{{< callout type="warning" >}}
+**Not reachable from GQL yet.** The materialized-view manager exists inside the
+engine (`MaterializedViewManager`: catalog, dependency tracker, refresh
+scheduler, query rewriter), but the GQL grammar has no `MATERIALIZED` keyword
+and the procedure registry has no `db.view.*` namespace. Nothing on this page
+can be executed against a running server today; it documents the internal
+design and the intended surface. For pre-computed results you can use now,
+write the aggregate back onto nodes with an ordinary `MATCH ... SET` batch job,
+as shown in [Manual Precomputation](#manual-precomputation).
+{{< /callout >}}
+
 The Geode Materialized Views System provides comprehensive view management with intelligent refresh strategies, dependency tracking, and query optimization. This system improves query performance for complex analytical queries by pre-computing and storing query results with enterprise-grade reliability.
 
 ### What are Materialized Views?
@@ -29,6 +40,7 @@ The Geode Materialized Views System provides comprehensive view management with 
 **Materialized Views** are pre-computed query results stored as physical data structures that can be queried like regular tables. Unlike regular views (which re-execute the query each time), materialized views cache results for instant access.
 
 **Key Benefits**:
+
 - **Query Acceleration**: Faster access to pre-computed results
 - **Resource Efficiency**: Compute once, query many times
 - **Automatic Refresh**: Keep data current with configurable strategies
@@ -76,12 +88,14 @@ WITH REFRESH STRATEGY manual
 ```
 
 **Characteristics**:
+
 - Refresh only on explicit command
 - Lowest resource overhead
 - Best for infrequently changing data
 - Suitable for monthly/quarterly reports
 
 **Refresh Command**:
+
 ```gql
 -- Manually refresh view
 REFRESH MATERIALIZED VIEW quarterly_analytics
@@ -101,12 +115,14 @@ WITH REFRESH STRATEGY auto_immediate
 ```
 
 **Characteristics**:
+
 - Refreshes immediately when source data changes
 - Always returns current data
 - Higher resource usage
 - Best for mission-critical dashboards
 
 **Behavior**:
+
 ```plaintext
 1. Transaction commits to Order table
 2. DependencyTracker detects change
@@ -129,12 +145,14 @@ WITH REFRESH STRATEGY auto_scheduled INTERVAL 3600  -- Every hour
 ```
 
 **Characteristics**:
+
 - Predictable refresh schedule
 - Balanced resource usage
 - Data freshness within refresh interval
 - Best for periodic analytics
 
 **Configuration**:
+
 ```yaml
 # Default intervals
 default_refresh_intervals:
@@ -156,12 +174,14 @@ WITH REFRESH STRATEGY incremental
 ```
 
 **Characteristics**:
+
 - Only processes changed rows
 - Dramatically faster for large datasets
 - Requires change tracking
 - Best for append-only or small update patterns
 
 **Behavior**:
+
 ```plaintext
 Initial Refresh: Process all 1M rows → 60 seconds
 Incremental Refresh: Process 1K changed rows → 0.5 seconds (120x faster)
@@ -181,6 +201,7 @@ WITH REFRESH STRATEGY streaming
 ```
 
 **Characteristics**:
+
 - Continuous incremental updates
 - Sub-second data freshness
 - Integrates with event streams
@@ -228,6 +249,7 @@ WITH REFRESH STRATEGY auto_scheduled INTERVAL 7200
 ```
 
 **Benefits**:
+
 - Pre-computed joins eliminate join cost
 - Aggregations computed once
 - Perfect for dashboard queries
@@ -263,6 +285,7 @@ ORDER BY v.total_revenue DESC
 ```
 
 **Characteristics**:
+
 - Instant results from cached data
 - No re-computation
 - Limited to pre-computed columns
@@ -272,6 +295,7 @@ ORDER BY v.total_revenue DESC
 Geode's optimizer automatically rewrites queries to use compatible materialized views:
 
 **Original Query**:
+
 ```gql
 MATCH (p:Product)<-[:CONTAINS]-(s:Sale)
 WHERE p.category = 'Electronics'
@@ -279,6 +303,7 @@ RETURN p.category, sum(s.amount) AS revenue
 ```
 
 **Optimizer Rewrite**:
+
 ```gql
 -- Automatically uses product_sales view
 MATCH (v:product_sales)
@@ -287,6 +312,7 @@ RETURN v.category, v.total_revenue AS revenue
 ```
 
 **Performance Impact**:
+
 ```plaintext
 Original: 1.8 seconds
 Rewritten: 0.015 seconds (120x speedup)
@@ -295,6 +321,7 @@ Rewritten: 0.015 seconds (120x speedup)
 ### View Compatibility
 
 **Compatible Query** (uses view):
+
 ```gql
 -- Matches view structure
 MATCH (p:Product)<-[:CONTAINS]-(s:Sale)
@@ -303,6 +330,7 @@ RETURN p.category, count(s)
 ```
 
 **Incompatible Query** (doesn't use view):
+
 ```gql
 -- Different aggregation
 MATCH (p:Product)<-[:CONTAINS]-(s:Sale)
@@ -323,6 +351,7 @@ RETURN u.name, count(p) AS post_count, collect(DISTINCT t.name) AS tags
 ```
 
 **Detected Dependencies**:
+
 - Tables: User, Post, Tag
 - Relationships: POSTED, HAS_TAG
 - Change to any triggers refresh consideration
@@ -330,6 +359,7 @@ RETURN u.name, count(p) AS post_count, collect(DISTINCT t.name) AS tags
 ### Cascading Refreshes
 
 **Dependency Chain**:
+
 ```gql
 -- Base view
 CREATE MATERIALIZED VIEW daily_sales AS
@@ -343,6 +373,7 @@ RETURN year_month(d.sale_date) AS month, sum(d.revenue) AS monthly_revenue
 ```
 
 **Refresh Behavior**:
+
 ```plaintext
 1. Sale table updated
 2. daily_sales refresh triggered
@@ -354,6 +385,7 @@ RETURN year_month(d.sale_date) AS month, sum(d.revenue) AS monthly_revenue
 ### Change Detection
 
 **Change Log**:
+
 ```zig
 pub const ChangeLogEntry = struct {
     table_name: []const u8,
@@ -365,6 +397,7 @@ pub const ChangeLogEntry = struct {
 ```
 
 **Incremental Refresh Logic**:
+
 ```plaintext
 1. Track changes since last refresh
 2. Apply only delta changes to view
@@ -376,12 +409,14 @@ pub const ChangeLogEntry = struct {
 
 ### View Statistics
 
-```gql
--- Get view performance metrics
-CALL db.view.stats('product_sales')
-```
+View statistics are collected internally by `ViewMetrics`. There is no
+`db.view.stats` procedure to read them with — the introspection procedures the
+server dispatches are `db.labels`, `db.relationshipTypes`, `db.propertyKeys`,
+`db.indexes`, `db.constraints`, `dbms.procedures` and `dbms.functions`. The
+shape the manager tracks per view is:
 
 **Output**:
+
 ```json
 {
   "total_refreshes": 240,
@@ -398,12 +433,11 @@ CALL db.view.stats('product_sales')
 
 ### System Statistics
 
-```gql
--- Get all views overview
-CALL db.view.list()
-```
+Manager-level statistics are aggregated the same way, and are likewise not
+exposed through a procedure:
 
 **Output**:
+
 ```json
 {
   "total_views": 12,
@@ -417,6 +451,7 @@ CALL db.view.list()
 ### Performance Metrics
 
 **Collected Metrics**:
+
 - **total_refreshes**: Lifetime refresh count
 - **successful_refreshes**: Successful refresh operations
 - **failed_refreshes**: Failed refresh attempts
@@ -443,6 +478,7 @@ materialized_views:
 ```
 
 **Options Explained**:
+
 - **max_views**: Maximum concurrent materialized views
 - **max_view_size_mb**: Per-view storage limit
 - **default_refresh_interval_seconds**: Default auto-scheduled interval
@@ -464,6 +500,7 @@ pub const RefreshPriority = enum {
 ```
 
 **Priority Queue**:
+
 ```plaintext
 Immediate → High → Normal → Low → Background
 
@@ -490,6 +527,7 @@ WITH REFRESH STRATEGY incremental
 ```
 
 **Benefits**:
+
 - Refresh only affected partitions
 - Parallel partition processing
 - Efficient data pruning
@@ -510,6 +548,7 @@ WITH REFRESH STRATEGY auto_scheduled INTERVAL 86400
 ```
 
 **Benefits**:
+
 - Compose complex analytics pipelines
 - Reuse intermediate results
 - Optimize storage (base view can be pruned)
@@ -545,6 +584,7 @@ WITH REFRESH STRATEGY auto_immediate
 ```
 
 **Dashboard Integration**:
+
 ```javascript
 // Frontend refreshes every 30 seconds
 setInterval(async () => {
@@ -594,13 +634,11 @@ WITH REFRESH STRATEGY auto_scheduled INTERVAL 86400
 
 **Issue**: View refresh fails with timeout
 
-**Diagnosis**:
-```gql
--- Check view status
-CALL db.view.status('slow_view')
-```
+**Diagnosis**: no view-status procedure exists; time the source query directly
+with `PROFILE` to see where the refresh cost comes from.
 
 **Solution**:
+
 ```yaml
 # Increase refresh timeout
 materialized_views:
@@ -616,13 +654,11 @@ materialized_views:
 
 **Issue**: Incremental refresh not working
 
-**Diagnosis**:
-```gql
--- Verify change tracking
-CALL db.view.changes('view_name')
-```
+**Diagnosis**: change tracking is internal to `DependencyTracker` and has no
+inspection procedure.
 
 **Solution**:
+
 ```gql
 -- Rebuild view with change tracking
 DROP MATERIALIZED VIEW old_view
@@ -635,6 +671,7 @@ WITH REFRESH STRATEGY incremental ENABLE_CHANGE_TRACKING true
 **Issue**: View queries slower than expected
 
 **Analysis**:
+
 ```gql
 PROFILE MATCH (v:product_sales)
 WHERE v.category = 'Electronics'
@@ -642,17 +679,21 @@ RETURN v
 ```
 
 **Solutions**:
+
 1. **Add indexes on view columns**:
+
    ```gql
    CREATE INDEX view_category_idx ON product_sales (category)
    ```
 
 2. **Partition large views**:
+
    ```gql
    CREATE MATERIALIZED VIEW partitioned_sales PARTITION BY region AS ...
    ```
 
 3. **Prune old data**:
+
    ```gql
    ALTER MATERIALIZED VIEW sales_view SET RETENTION P90D
    ```
@@ -662,6 +703,7 @@ RETURN v
 ### View Design
 
 1. **Appropriate Granularity**:
+
    ```gql
    -- ✅ Good: Aggregate to useful level
    CREATE MATERIALIZED VIEW daily_sales AS ...  -- Daily granularity
@@ -671,6 +713,7 @@ RETURN v
    ```
 
 2. **Include Filtering Columns**:
+
    ```gql
    -- ✅ Good: Include common filter columns
    RETURN sale_date, region, category, revenue
@@ -680,6 +723,7 @@ RETURN v
    ```
 
 3. **Balance Freshness vs Cost**:
+
    ```gql
    -- Dashboard: Immediate refresh
    WITH REFRESH STRATEGY auto_immediate
@@ -704,15 +748,42 @@ RETURN v
 
 ### Monitoring
 
-**Automated Checks**:
-```bash
-# Cron job: Check view health
-*/15 * * * * geode query "CALL db.view.health_check()" | mail -s "View Status" admin@example.com
+**Automated Checks**: there is no health-check or failed-refresh procedure to
+poll. Until the GQL surface lands, monitor the batch job that maintains your
+precomputed properties — it is an ordinary client program and can report its own
+success or failure:
 
-# Alert on refresh failures
-geode query "CALL db.view.failed_refreshes()" | \
-  jq 'select(.failed_count > 0)' | \
-  mail -s "ALERT: View refresh failures" ops@example.com
+```bash
+# Cron job: refresh precomputed aggregates, alert if the job fails
+0 * * * * /usr/local/bin/geode-refresh-aggregates.sh \
+  || mail -s "ALERT: aggregate refresh failed" ops@example.com
+```
+
+## Manual Precomputation
+
+Until the GQL surface lands, the working equivalent of a materialized view is a
+batch job that writes the aggregate onto the graph as ordinary properties:
+
+```gql
+-- "Refresh": recompute per-product sales and store them on the node
+MATCH (p:Product)<-[:CONTAINS]-(o:Order)
+WITH p, count(o) AS order_count, sum(o.total) AS revenue
+SET p.order_count = order_count,
+    p.revenue = revenue,
+    p.aggregates_refreshed_at = datetime();
+
+-- "Query the view": read the stored values, no aggregation at read time
+MATCH (p:Product)
+WHERE p.revenue > 10000
+RETURN p.name, p.order_count, p.revenue
+ORDER BY p.revenue DESC;
+```
+
+Schedule that statement from cron or your job runner at whatever interval your
+staleness budget allows, and index the properties you filter on:
+
+```gql
+CREATE INDEX product_revenue_idx ON Product(revenue);
 ```
 
 ## References
@@ -734,16 +805,19 @@ geode query "CALL db.view.failed_refreshes()" | \
 ## Next Steps
 
 **For New Users**:
+
 - [Indexing Guide](/docs/query/indexing-and-optimization/) - Foundation for view optimization
 - [Query Performance](/docs/query/performance-tuning/) - Query optimization basics
 - [GQL Guide](/docs/gql/guide/) - Query language fundamentals
 
 **For Advanced Users**:
+
 - [Real-Time Analytics](/docs/analytics/real-time-analytics/) - Streaming view integration
 - [Distributed Coordination](/docs/architecture/distributed-architecture/) - Cross-shard views
 - [Performance Benchmarking](/docs/guides/performance-benchmarking/) - View performance testing
 
 **For Administrators**:
+
 - [Monitoring](/docs/ops/observability/) - View health monitoring
 - [Performance Tuning](/docs/configuration/server-configuration/) - System optimization
 - [Backup & Recovery](/docs/guides/backup-automation/) - View backup strategies

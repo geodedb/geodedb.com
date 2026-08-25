@@ -27,6 +27,7 @@ Complete reference documentation for GQL (Graph Query Language), the ISO/IEC 390
 GQL (Graph Query Language) is the ISO/IEC 39075:2024 international standard for querying property graph databases. It provides a declarative syntax for pattern matching, data manipulation, and graph traversal, similar to SQL for relational databases but optimized for highly connected data.
 
 Key characteristics:
+
 - **Declarative**: Describe what you want, not how to get it
 - **Pattern-based**: Match graph patterns using visual ASCII art syntax
 - **Composable**: Build complex queries from simple building blocks
@@ -313,8 +314,9 @@ SUM(expr)
 AVG(expr)
 MIN(expr), MAX(expr)
 COLLECT(expr)
-STRING_AGG(expr, delimiter)
 ```
+
+`COLLECT` returns a `LIST`; join it in the client. There is no `STRING_AGG`.
 
 ### String
 
@@ -787,21 +789,23 @@ RETURN order, order_status;
 ### Calling Built-in Procedures
 
 ```gql
-// Database statistics
-CALL dbms.info() YIELD name, value
-RETURN name, value;
+// Server version and capabilities
+SHOW VERSION;
+SHOW CAPABILITIES;
 
-// Index management
-CALL dbms.indexes.list() YIELD name, type, state
-WHERE state = 'online'
-RETURN name, type;
+// Index and constraint catalog
+SHOW INDEXES;
+CALL db.indexes() YIELD name, type, label, properties
+RETURN name, type, label, properties;
 
-// Transaction monitoring
-CALL dbms.transactions.list() YIELD transactionId, elapsedTime
-WHERE elapsedTime > duration('PT30S')
-RETURN transactionId, elapsedTime
-ORDER BY elapsedTime DESC;
+// Procedures and functions the server actually dispatches
+CALL dbms.procedures() YIELD name, signature RETURN name, signature;
+CALL dbms.functions() YIELD name, signature RETURN name, signature;
 ```
+
+There is no `dbms.info`, `dbms.indexes.list` or `dbms.transactions.list`: the
+`dbms.` namespace dispatches exactly two procedures, `dbms.procedures()` and
+`dbms.functions()`.
 
 ### Custom Aggregation Functions
 
@@ -919,6 +923,7 @@ class Query:
 ### Common Query Errors
 
 **Error: Syntax error near line X**
+
 ```gql
 -- WRONG: Missing closing parenthesis
 MATCH (u:User {id: 123}
@@ -930,6 +935,7 @@ RETURN u;
 ```
 
 **Error: Type mismatch**
+
 ```gql
 -- WRONG: Comparing string to integer
 MATCH (u:User)
@@ -943,6 +949,7 @@ RETURN u;
 ```
 
 **Error: Undefined variable**
+
 ```gql
 -- WRONG: Using variable not in scope
 MATCH (u:User)
@@ -958,6 +965,7 @@ RETURN u;
 ### Performance Troubleshooting
 
 **Slow query diagnosis**:
+
 ```gql
 -- Step 1: Check execution plan
 EXPLAIN
@@ -967,15 +975,16 @@ EXPLAIN
 PROFILE
 [your query];
 
--- Step 3: Check index usage
-CALL dbms.indexes.list() YIELD name, properties, state
-RETURN name, properties, state;
+-- Step 3: Check the catalog, then confirm the plan uses the index
+SHOW INDEXES;
+EXPLAIN MATCH (u:User) WHERE u.age > 30 RETURN u;
 
 -- Step 4: Add missing indexes
 CREATE INDEX user_age_idx FOR (u:User) ON (u.age);
 ```
 
 **Large result set issues**:
+
 ```gql
 -- Add LIMIT to queries
 MATCH (n:Node)

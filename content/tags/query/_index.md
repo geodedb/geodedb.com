@@ -24,18 +24,21 @@ Querying is the primary interface for interacting with graph databases. Geode im
 Graph queries differ fundamentally from SQL queries:
 
 **SQL (Relational)**:
+
 - Tables with rows and columns
 - Joins explicitly specified
 - Fixed schema required
 - Path queries complex (recursive CTEs)
 
 **GQL (Graph)**:
+
 - Nodes and relationships as first-class citizens
 - Relationships traversed naturally with pattern matching
 - Flexible schema (property graph model)
 - Path queries intuitive with variable-length patterns
 
 Example comparison:
+
 ```sql
 -- SQL: Find friends-of-friends (complex)
 SELECT DISTINCT u3.name
@@ -161,6 +164,7 @@ Understanding how Geode executes queries helps write efficient queries:
 ### 1. Parsing
 
 Query text parsed into Abstract Syntax Tree (AST):
+
 ```gql
 MATCH (u:User {country: 'USA'})-[:PURCHASED]->(p:Product)
 WHERE p.price > 100
@@ -168,6 +172,7 @@ RETURN u.name, p.name;
 ```
 
 **Parsed structure**:
+
 - MATCH clause: Pattern with node filters
 - WHERE clause: Additional predicates
 - RETURN clause: Projection
@@ -175,6 +180,7 @@ RETURN u.name, p.name;
 ### 2. Planning
 
 Optimizer generates execution plan:
+
 ```
 EXPLAIN
 MATCH (u:User {country: 'USA'})-[:PURCHASED]->(p:Product)
@@ -191,6 +197,7 @@ Project(u.name, p.name)
 ### 3. Execution
 
 Plan executed step-by-step:
+
 1. IndexSeek: Find Users in USA (fast)
 2. Expand: Follow PURCHASED relationships
 3. Filter: Keep only products with price > 100
@@ -436,18 +443,21 @@ func queryExample() {
 ## Performance Considerations
 
 **Query latency depends on**:
+
 - Index utilization (indexed vs. full scan)
 - Result cardinality (10 rows vs. 1M rows)
 - Graph complexity (1 hop vs. 6 hops)
 - Concurrent load (single query vs. high-concurrency workloads)
 
 **Typical performance** (mid-range server):
+
 - Indexed point lookup: <1ms (typically 100-500us)
 - Simple 1-2 hop traversal: 1-5ms
 - Complex 3-4 hop pattern: 10-100ms
 - Analytical aggregation: 100-500ms for ~1M rows
 
 **Use PROFILE to measure**:
+
 ```gql
 PROFILE
 MATCH (u:User {id: $id})-[:FRIEND*1..2]->(connection)
@@ -476,6 +486,7 @@ RETURN connection.name;
 - **Optimization Guide**: `/docs/performance/query-optimization/`
 - **Client Libraries**: `/docs/client-libraries/overview/`
 - **API Reference**: `/docs/api-reference/gql-syntax/`
+
 ## Advanced Query Optimization Techniques
 
 ### Query Plan Caching
@@ -855,8 +866,10 @@ LIMIT 100;  -- Also add result limit
 
 ```gql
 -- Check current indexes
-CALL dbms.indexes.list() YIELD name, labels, properties
-RETURN name, labels, properties;
+SHOW INDEXES;
+
+CALL db.indexes() YIELD name, type, label, properties
+RETURN name, type, label, properties;
 
 -- Identify missing index from slow query
 PROFILE

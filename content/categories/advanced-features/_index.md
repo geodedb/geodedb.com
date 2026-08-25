@@ -168,12 +168,15 @@ Geode provides built-in implementations of sophisticated graph algorithms optimi
 ### Community Detection
 
 ```gql
-// Detect communities using Louvain algorithm
-CALL graph.algorithms.community_detection('friendship_network')
-YIELD community_id, modularity
-RETURN community_id, COUNT(*) AS size, modularity
+// Detect communities using the Louvain algorithm
+CALL algo.louvain.stream()
+YIELD nodeId, community
+RETURN community, COUNT(*) AS size
 ORDER BY size DESC
 ```
+
+The procedure takes no arguments and reports no modularity score: it runs over
+the current graph and yields one `(nodeId, community)` row per node.
 
 ### Centrality Analysis
 

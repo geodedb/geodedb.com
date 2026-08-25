@@ -106,6 +106,7 @@ Geode supports multiple isolation levels to balance consistency and performance.
 
 {{< tabs >}}
 {{< tab "Go" >}}
+
 ```go
 package main
 
@@ -191,8 +192,10 @@ func criticalFinancialOperation(db *sql.DB) {
     tx.Commit()
 }
 ```
+
 {{< /tab >}}
 {{< tab "Python" >}}
+
 ```python
 import asyncio
 from enum import Enum
@@ -304,8 +307,10 @@ async def main():
 if __name__ == "__main__":
     asyncio.run(main())
 ```
+
 {{< /tab >}}
 {{< tab "Rust" >}}
+
 ```rust
 use geode_client::{Client, Connection, IsolationLevel, TransactionOptions, Value};
 use std::collections::HashMap;
@@ -430,8 +435,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 ```
+
 {{< /tab >}}
 {{< tab "Node.js" >}}
+
 ```typescript
 import { createClient, GeodeClient, IsolationLevel } from '@geodedb/client';
 
@@ -529,8 +536,10 @@ async function main() {
 
 main().catch(console.error);
 ```
+
 {{< /tab >}}
 {{< tab "Zig" >}}
+
 ```zig
 const std = @import("std");
 const geode = @import("geode_client");
@@ -680,6 +689,7 @@ pub fn main() !void {
     try criticalOperation(&client);
 }
 ```
+
 {{< /tab >}}
 {{< /tabs >}}
 
@@ -689,6 +699,7 @@ pub fn main() !void {
 
 {{< tabs >}}
 {{< tab "Go" >}}
+
 ```go
 func basicTransaction(db *sql.DB) error {
     ctx := context.Background()
@@ -768,8 +779,10 @@ func main() {
     }
 }
 ```
+
 {{< /tab >}}
 {{< tab "Python" >}}
+
 ```python
 async def basic_transaction(client: Client) -> None:
     """Basic transaction with explicit begin/commit."""
@@ -840,8 +853,10 @@ async def main():
 
     await with_transaction(client, create_people)
 ```
+
 {{< /tab >}}
 {{< tab "Rust" >}}
+
 ```rust
 async fn basic_transaction(conn: &mut Connection) -> Result<(), Error> {
     // Begin transaction
@@ -921,8 +936,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 ```
+
 {{< /tab >}}
 {{< tab "Node.js" >}}
+
 ```typescript
 async function basicTransaction(client: GeodeClient): Promise<void> {
     // Using withTransaction helper
@@ -998,8 +1015,10 @@ async function main() {
     }
 }
 ```
+
 {{< /tab >}}
 {{< tab "Zig" >}}
+
 ```zig
 const std = @import("std");
 const geode = @import("geode_client");
@@ -1079,6 +1098,7 @@ pub fn main() !void {
     }.op);
 }
 ```
+
 {{< /tab >}}
 {{< /tabs >}}
 
@@ -1090,6 +1110,7 @@ Savepoints allow partial rollback within a transaction.
 
 {{< tabs >}}
 {{< tab "Go" >}}
+
 ```go
 func transactionWithSavepoints(db *sql.DB) error {
     ctx := context.Background()
@@ -1163,8 +1184,10 @@ func nestedSavepoints(db *sql.DB) error {
     return tx.Commit()
 }
 ```
+
 {{< /tab >}}
 {{< tab "Python" >}}
+
 ```python
 async def transaction_with_savepoints(client: Client) -> None:
     """Use savepoints for partial rollback."""
@@ -1280,8 +1303,10 @@ async def with_savepoint_context(client: Client) -> None:
 
         await conn.commit()
 ```
+
 {{< /tab >}}
 {{< tab "Rust" >}}
+
 ```rust
 async fn transaction_with_savepoints(conn: &mut Connection) -> Result<(), Error> {
     conn.begin().await?;
@@ -1385,8 +1410,10 @@ impl<'a> Drop for SavepointGuard<'a> {
     }
 }
 ```
+
 {{< /tab >}}
 {{< tab "Node.js" >}}
+
 ```typescript
 async function transactionWithSavepoints(client: GeodeClient): Promise<void> {
     await client.withTransaction(async (tx) => {
@@ -1484,8 +1511,10 @@ async function withSavepointScope(client: GeodeClient): Promise<void> {
     });
 }
 ```
+
 {{< /tab >}}
 {{< tab "Zig" >}}
+
 ```zig
 const std = @import("std");
 const geode = @import("geode_client");
@@ -1570,6 +1599,7 @@ pub fn nestedSavepoints(client: *geode.GeodeClient) !void {
     _ = try client.receiveMessage(30000);
 }
 ```
+
 {{< /tab >}}
 {{< /tabs >}}
 
@@ -1581,6 +1611,7 @@ Assumes conflicts are rare. Check for conflicts at commit time.
 
 {{< tabs >}}
 {{< tab "Go" >}}
+
 ```go
 // Optimistic concurrency with version checking
 func updateWithOptimisticLocking(db *sql.DB, personID int, newName string) error {
@@ -1661,8 +1692,10 @@ func updateWithTimestamp(db *sql.DB, personID int, newName string) error {
     return nil
 }
 ```
+
 {{< /tab >}}
 {{< tab "Python" >}}
+
 ```python
 import random
 import asyncio
@@ -1764,8 +1797,10 @@ async def update_with_timestamp(
         if check_result.rows[0]["modified_at"].as_timestamp == last_modified:
             raise Exception("Concurrent modification detected")
 ```
+
 {{< /tab >}}
 {{< tab "Rust" >}}
+
 ```rust
 async fn update_with_optimistic_locking(
     conn: &mut Connection,
@@ -1826,8 +1861,10 @@ async fn update_with_optimistic_locking(
     Err("Failed after max retry attempts".into())
 }
 ```
+
 {{< /tab >}}
 {{< tab "Node.js" >}}
+
 ```typescript
 async function updateWithOptimisticLocking(
     client: GeodeClient,
@@ -1895,8 +1932,10 @@ class OptimisticLockError extends Error {
     }
 }
 ```
+
 {{< /tab >}}
 {{< tab "Zig" >}}
+
 ```zig
 const std = @import("std");
 const geode = @import("geode_client");
@@ -1968,6 +2007,7 @@ pub fn updateWithOptimisticLocking(
     return error.MaxRetriesExceeded;
 }
 ```
+
 {{< /tab >}}
 {{< /tabs >}}
 
@@ -1977,6 +2017,7 @@ Acquire locks before reading. Prevents conflicts at the cost of reduced concurre
 
 {{< tabs >}}
 {{< tab "Go" >}}
+
 ```go
 // Pessimistic locking with SELECT FOR UPDATE
 func updateWithPessimisticLocking(db *sql.DB, personID int, newName string) error {
@@ -2014,7 +2055,12 @@ func updateWithPessimisticLocking(db *sql.DB, personID int, newName string) erro
     return tx.Commit()
 }
 
-// Using Geode's built-in locking
+// Relying on the engine's own write locks.
+//
+// There is no lock-acquisition procedure (`geode.locks.*` is not a Geode
+// namespace). A mutating statement inside a transaction takes the engine's
+// write lock for the duration of that transaction, so the MATCH...SET below is
+// already serialised against other writers of the same account.
 func updateWithExplicitLock(db *sql.DB, accountID int, amount float64) error {
     ctx := context.Background()
 
@@ -2024,15 +2070,7 @@ func updateWithExplicitLock(db *sql.DB, accountID int, amount float64) error {
     }
     defer tx.Rollback()
 
-    // Acquire exclusive lock
-    _, err = tx.ExecContext(ctx, `
-        CALL geode.locks.acquire('account_' + ?, 'EXCLUSIVE', 30000)
-    `, accountID)
-    if err != nil {
-        return fmt.Errorf("failed to acquire lock: %w", err)
-    }
-
-    // Perform update
+    // The write lock is taken here and held until commit/rollback
     _, err = tx.ExecContext(ctx, `
         MATCH (a:Account {id: ?})
         SET a.balance = a.balance + ?
@@ -2041,12 +2079,13 @@ func updateWithExplicitLock(db *sql.DB, accountID int, amount float64) error {
         return err
     }
 
-    // Lock is automatically released on commit/rollback
     return tx.Commit()
 }
 ```
+
 {{< /tab >}}
 {{< tab "Python" >}}
+
 ```python
 async def update_with_pessimistic_locking(
     client: Client,
@@ -2085,29 +2124,23 @@ async def update_with_pessimistic_locking(
 async def update_with_explicit_lock(
     client: Client,
     account_id: int,
-    amount: float,
-    lock_timeout_ms: int = 30000
+    amount: float
 ) -> None:
-    """Update with explicit lock acquisition."""
+    """Update under the engine's own write lock.
+
+    There is no lock-acquisition procedure (`geode.locks.*` does not exist).
+    The write lock is taken by the mutating statement and released at commit
+    or rollback.
+    """
     async with client.connection() as conn:
         await conn.begin()
 
         try:
-            # Acquire exclusive lock
-            await conn.execute("""
-                CALL geode.locks.acquire($lock_key, 'EXCLUSIVE', $timeout)
-            """, {
-                "lock_key": f"account_{account_id}",
-                "timeout": lock_timeout_ms
-            })
-
-            # Perform update
             await conn.execute("""
                 MATCH (a:Account {id: $id})
                 SET a.balance = a.balance + $amount
             """, {"id": account_id, "amount": amount})
 
-            # Lock is automatically released on commit
             await conn.commit()
 
         except Exception:
@@ -2115,25 +2148,7 @@ async def update_with_explicit_lock(
             raise
 
 
-# Lock context manager
-class ExclusiveLock:
-    def __init__(self, conn, lock_key: str, timeout_ms: int = 30000):
-        self.conn = conn
-        self.lock_key = lock_key
-        self.timeout_ms = timeout_ms
-
-    async def __aenter__(self):
-        await self.conn.execute("""
-            CALL geode.locks.acquire($key, 'EXCLUSIVE', $timeout)
-        """, {"key": self.lock_key, "timeout": self.timeout_ms})
-        return self
-
-    async def __aexit__(self, exc_type, exc_val, exc_tb):
-        # Lock released automatically by transaction
-        pass
-
-
-# Usage
+# Usage: order the writes deterministically to prevent deadlocks
 async def transfer_with_locks(
     client: Client,
     from_account: int,
@@ -2143,24 +2158,16 @@ async def transfer_with_locks(
     async with client.connection() as conn:
         await conn.begin()
 
-        # Acquire locks in consistent order to prevent deadlocks
-        lock_keys = sorted([f"account_{from_account}", f"account_{to_account}"])
+        # Touch accounts in a consistent order in every transaction
+        first, second = sorted([from_account, to_account])
+        deltas = {from_account: -amount, to_account: amount}
 
         try:
-            for key in lock_keys:
-                async with ExclusiveLock(conn, key):
-                    pass  # Lock acquired
-
-            # Perform transfer
-            await conn.execute("""
-                MATCH (a:Account {id: $id})
-                SET a.balance = a.balance - $amount
-            """, {"id": from_account, "amount": amount})
-
-            await conn.execute("""
-                MATCH (a:Account {id: $id})
-                SET a.balance = a.balance + $amount
-            """, {"id": to_account, "amount": amount})
+            for account_id in (first, second):
+                await conn.execute("""
+                    MATCH (a:Account {id: $id})
+                    SET a.balance = a.balance + $amount
+                """, {"id": account_id, "amount": deltas[account_id]})
 
             await conn.commit()
 
@@ -2168,8 +2175,10 @@ async def transfer_with_locks(
             await conn.rollback()
             raise
 ```
+
 {{< /tab >}}
 {{< tab "Rust" >}}
+
 ```rust
 async fn update_with_pessimistic_locking(
     conn: &mut Connection,
@@ -2209,6 +2218,9 @@ async fn update_with_pessimistic_locking(
     Ok(())
 }
 
+// No lock-acquisition procedure exists (`geode.locks.*` is not a Geode
+// namespace); the mutating statement takes the engine's write lock and holds
+// it until commit or rollback.
 async fn update_with_explicit_lock(
     conn: &mut Connection,
     account_id: i64,
@@ -2216,17 +2228,7 @@ async fn update_with_explicit_lock(
 ) -> Result<(), Error> {
     conn.begin().await?;
 
-    // Acquire exclusive lock
     let mut params = HashMap::new();
-    params.insert("lock_key".to_string(), Value::string(&format!("account_{}", account_id)));
-    params.insert("timeout".to_string(), Value::int(30000));
-
-    conn.query_with_params(
-        "CALL geode.locks.acquire($lock_key, 'EXCLUSIVE', $timeout)",
-        &params
-    ).await?;
-
-    // Perform update
     params.insert("id".to_string(), Value::int(account_id));
     params.insert("amount".to_string(), Value::float(amount));
 
@@ -2239,8 +2241,10 @@ async fn update_with_explicit_lock(
     Ok(())
 }
 ```
+
 {{< /tab >}}
 {{< tab "Node.js" >}}
+
 ```typescript
 async function updateWithPessimisticLocking(
     client: GeodeClient,
@@ -2275,29 +2279,20 @@ async function updateWithExplicitLock(
     amount: number
 ): Promise<void> {
     await client.withTransaction(async (tx) => {
-        // Acquire exclusive lock
-        await tx.exec(
-            'CALL geode.locks.acquire($lockKey, \'EXCLUSIVE\', $timeout)',
-            {
-                params: {
-                    lockKey: `account_${accountId}`,
-                    timeout: 30000
-                }
-            }
-        );
-
-        // Perform update
+        // No lock-acquisition procedure exists (`geode.locks.*` is not a Geode
+        // namespace). The mutating statement takes the engine's write lock and
+        // holds it until the transaction commits or rolls back.
         await tx.exec(
             'MATCH (a:Account {id: $id}) SET a.balance = a.balance + $amount',
             { params: { id: accountId, amount } }
         );
-
-        // Lock released automatically on commit
     });
 }
 ```
+
 {{< /tab >}}
 {{< tab "Zig" >}}
+
 ```zig
 pub fn updateWithPessimisticLocking(
     client: *geode.GeodeClient,
@@ -2340,6 +2335,7 @@ pub fn updateWithPessimisticLocking(
     _ = try client.receiveMessage(30000);
 }
 ```
+
 {{< /tab >}}
 {{< /tabs >}}
 
@@ -2353,6 +2349,7 @@ pub fn updateWithPessimisticLocking(
 
 {{< tabs >}}
 {{< tab "Go" >}}
+
 ```go
 // Lock ordering to prevent deadlocks
 func transferWithLockOrdering(db *sql.DB, fromID, toID int, amount float64) error {
@@ -2437,8 +2434,10 @@ func executeWithDeadlockRetry(db *sql.DB, maxRetries int, fn func(*sql.Tx) error
     return errors.New("max deadlock retries exceeded")
 }
 ```
+
 {{< /tab >}}
 {{< tab "Python" >}}
+
 ```python
 async def transfer_with_lock_ordering(
     client: Client,
@@ -2523,8 +2522,10 @@ async def main():
         await conn.execute("MATCH (a:Account {id: 2}) SET a.balance = a.balance + 100")
     )
 ```
+
 {{< /tab >}}
 {{< tab "Rust" >}}
+
 ```rust
 async fn transfer_with_lock_ordering(
     conn: &mut Connection,
@@ -2613,8 +2614,10 @@ where
     Err(Error::new("Max deadlock retries exceeded"))
 }
 ```
+
 {{< /tab >}}
 {{< tab "Node.js" >}}
+
 ```typescript
 async function transferWithLockOrdering(
     client: GeodeClient,
@@ -2676,8 +2679,10 @@ async function executeWithDeadlockRetry<T>(
     throw new Error('Max deadlock retries exceeded');
 }
 ```
+
 {{< /tab >}}
 {{< tab "Zig" >}}
+
 ```zig
 pub fn transferWithLockOrdering(
     client: *geode.GeodeClient,
@@ -2735,6 +2740,7 @@ pub fn transferWithLockOrdering(
     _ = try client.receiveMessage(30000);
 }
 ```
+
 {{< /tab >}}
 {{< /tabs >}}
 
@@ -2751,6 +2757,7 @@ Handle transactions that may take a long time to complete.
 
 {{< tabs >}}
 {{< tab "Go" >}}
+
 ```go
 // Batch processing with progress tracking
 func processBatch(db *sql.DB, batchSize int) error {
@@ -2840,8 +2847,10 @@ func executeWithTimeout(db *sql.DB, timeout time.Duration) error {
     return tx.Commit()
 }
 ```
+
 {{< /tab >}}
 {{< tab "Python" >}}
+
 ```python
 async def process_batch(
     client: Client,
@@ -2926,8 +2935,10 @@ async def execute_with_timeout(
             await conn.rollback()
             raise
 ```
+
 {{< /tab >}}
 {{< tab "Rust" >}}
+
 ```rust
 async fn process_batch(
     conn: &mut Connection,
@@ -3009,8 +3020,10 @@ async fn execute_with_timeout(
     }
 }
 ```
+
 {{< /tab >}}
 {{< tab "Node.js" >}}
+
 ```typescript
 async function processBatch(
     client: GeodeClient,
@@ -3089,8 +3102,10 @@ async function executeWithTimeout(
     }
 }
 ```
+
 {{< /tab >}}
 {{< tab "Zig" >}}
+
 ```zig
 pub fn processBatch(
     client: *geode.GeodeClient,
@@ -3158,6 +3173,7 @@ pub fn processBatch(
     }
 }
 ```
+
 {{< /tab >}}
 {{< /tabs >}}
 

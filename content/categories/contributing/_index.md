@@ -61,8 +61,8 @@ make build
 # Run tests
 make test
 
-# Run comprehensive test suite (97.4% pass rate)
-make geodetestlab-comprehensive
+# Run the local integration suites
+make test-all-integration
 
 # Start development server
 ./zig-out/bin/geode serve --listen 127.0.0.1:3141
@@ -170,10 +170,11 @@ test "query with parameters" {
 ```
 
 Test coverage requirements:
+
 - All new features must have tests
 - Bug fixes must include regression tests
 - Maintain or improve overall coverage (currently 97.4%)
-- Use `make geodetestlab-comprehensive` to run full suite
+- Use `make test-all-integration` to run the local integration suites
 
 ### 5. Update Documentation
 
@@ -200,6 +201,7 @@ pub fn executeMatch(self: *QueryEngine, pattern: Pattern) !ResultSet {
 ```
 
 CANARY markers track:
+
 - Feature implementations
 - Compliance requirements
 - Security measures

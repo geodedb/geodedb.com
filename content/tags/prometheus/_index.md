@@ -491,24 +491,19 @@ cache_memory_gauge = Gauge('geode_custom_cache_memory_bytes',
 async def collect_custom_metrics(client):
     """Collect custom Geode metrics"""
     while True:
-        # Active queries by type
-        result, _ = await client.query("""
-            CALL system.active_queries()
-            RETURN query_type, count(*) as count
-        """)
+        # The server does not list running queries (`system.*` is not a Geode
+        # namespace). Export what your own client layer knows instead — the
+        # in-flight statements this process has issued.
+        result = inflight_statements_by_type()   # {'MATCH': 3, 'CREATE': 1, ...}
 
-        for row in result.rows:
+        for row in result:
             active_queries_gauge.labels(
                 query_type=row['query_type']
             ).set(row['count'])
 
-        # Cache memory usage
-        cache_stats, _ = await client.query("""
-            CALL system.cache_stats()
-            RETURN memory_bytes
-        """)
-
-        cache_memory_gauge.set(cache_stats.rows[0]['memory_bytes'])
+        # Server memory is already exported by the server itself as
+        # `geode_memory_bytes` on GEODE_METRICS_PORT; scrape that endpoint
+        # rather than re-exporting it. There is no cache-statistics procedure.
 
         await asyncio.sleep(15)  # Scrape interval
 

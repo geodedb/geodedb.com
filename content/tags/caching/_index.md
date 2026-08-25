@@ -29,6 +29,19 @@ Caching is fundamental to database performance, reducing latency by avoiding rep
 
 This guide explores Geode's caching mechanisms, configuration options, and best practices for achieving optimal cache efficiency.
 
+{{< callout type="warning" >}}
+**Cache internals are not addressable from GQL.** The planner's AST/plan cache
+and the storage engine's page handling are internal: there is no `system.*`
+procedure namespace, no `system.*` catalog tables, no `OPTION (NO_CACHE)` /
+`OPTION (REFRESH_CACHE)` clause, and no cache-clearing, warming or statistics
+procedure. The cache layers described below are real engine behaviour, but the
+only things you can *do* about them from outside are: choose what you query,
+size the host, and cache in your own application (see
+[Application-Level Caching](#application-level-caching)). Query-level
+observability is `EXPLAIN`/`PROFILE`; process-level observability is the
+Prometheus endpoint.
+{{< /callout >}}
+
 ## Caching Architecture Overview
 
 ### Multi-Layer Cache Hierarchy
@@ -133,50 +146,22 @@ max_tracked_entries = 100000
 max_staleness_ms = 1000
 ```
 
-**Manual Cache Control**:
-```gql
--- Bypass cache for fresh results
-MATCH (u:User {id: $id})
-RETURN u.name
-OPTION (NO_CACHE);
-
--- Force cache refresh
-MATCH (u:User {id: $id})
-RETURN u.name
-OPTION (REFRESH_CACHE);
-
--- Clear all query cache
-CALL system.clear_query_cache();
-
--- Clear cache for specific query pattern
-CALL system.clear_query_cache('MATCH (u:User%)');
-```
+**Manual Cache Control**: none is exposed. There is no per-statement cache
+hint and no cache-clearing procedure; the engine invalidates cached plans when
+the schema or data they depend on changes. If you must guarantee a fresh read,
+issue the query — results are computed from the current snapshot, not served
+from a stale result cache.
 
 ### Monitoring Query Cache
 
 ```gql
--- Query cache statistics
-SELECT
-    total_entries,
-    size_mb,
-    hit_count,
-    miss_count,
-    hit_ratio,
-    eviction_count,
-    invalidation_count
-FROM system.query_cache_stats;
+-- No cache-statistics catalog exists. Measure the effect end-to-end instead:
+-- run the statement twice and compare the reported execution time.
+PROFILE MATCH (u:User {id: $id}) RETURN u.name;
 
--- Top cached queries
-SELECT
-    query_hash,
-    query_text,
-    execution_count,
-    cache_hits,
-    hit_ratio,
-    avg_result_size_kb
-FROM system.cached_queries
-ORDER BY cache_hits DESC
-LIMIT 20;
+-- Aggregate query volume comes from the metrics endpoint, not the database:
+--   rate(geode_queries_total[5m])
+--   histogram_quantile(0.95, rate(geode_query_duration_seconds_bucket[5m]))
 ```
 
 ## Query Plan Cache
@@ -220,6 +205,7 @@ parameterization_threshold = 3  # Queries seen before parameterizing
 Prepared statements maximize plan cache efficiency:
 
 **Python Client**:
+
 ```python
 from geode_client import Client
 
@@ -239,6 +225,7 @@ async def efficient_queries():
 ```
 
 **Go Client**:
+
 ```go
 import (
     "database/sql"
@@ -267,31 +254,12 @@ func efficientQueries(db *sql.DB, userIDs []string) {
 ### Monitoring Plan Cache
 
 ```gql
--- Plan cache statistics
-SELECT
-    total_entries,
-    size_mb,
-    hit_count,
-    miss_count,
-    hit_ratio,
-    eviction_count,
-    recompilation_count
-FROM system.plan_cache_stats;
+-- The plan cache publishes no statistics and cannot be listed or cleared.
+-- Inspect the plan the optimizer picked for a specific statement:
+EXPLAIN MATCH (u:User {id: $id}) RETURN u.name;
 
--- View cached plans
-SELECT
-    plan_hash,
-    query_pattern,
-    execution_count,
-    avg_planning_time_ms,
-    avg_execution_time_ms,
-    last_used
-FROM system.cached_plans
-ORDER BY execution_count DESC
-LIMIT 20;
-
--- Clear plan cache
-CALL system.clear_plan_cache();
+-- ...and what executing it actually cost:
+PROFILE MATCH (u:User {id: $id}) RETURN u.name;
 ```
 
 ## Buffer Pool Cache
@@ -341,54 +309,33 @@ warming_queries = [
 ]
 ```
 
-**Manual Warming**:
+**Manual Warming**: there is no warming procedure. Warm the cache the same way
+production traffic does — by running the queries you care about:
+
 ```gql
--- Warm specific table into buffer pool
-CALL system.warm_table('User');
-
--- Warm index
-CALL system.warm_index('user_email_idx');
-
--- Check warming progress
-SELECT table_name, pages_loaded, pages_total, percent_complete
-FROM system.warming_status;
+-- Touch the label and its index the way the hot path will
+MATCH (u:User) RETURN count(u);
+MATCH (u:User) WHERE u.email = 'warmup@example.com' RETURN u;
 ```
+
+Run those from a start-up script (`geode query -f warmup.gql`) after the server
+comes up.
 
 ### Monitoring Buffer Pool
 
+Buffer-pool hit ratios and per-table page residency are not published. The
+page-level facts the engine does expose are the page size and free-page counts:
+
 ```gql
--- Buffer pool statistics
-SELECT
-    total_pages,
-    used_pages,
-    dirty_pages,
-    free_pages,
-    hit_count,
-    miss_count,
-    hit_ratio,
-    evictions_total
-FROM system.buffer_pool_stats;
-
--- Buffer usage by table
-SELECT
-    table_name,
-    cached_pages,
-    cached_mb,
-    dirty_pages,
-    access_count,
-    hit_ratio
-FROM system.buffer_usage_by_table
-ORDER BY cached_mb DESC;
-
--- Buffer usage by index
-SELECT
-    index_name,
-    cached_pages,
-    cached_mb,
-    hit_ratio
-FROM system.buffer_usage_by_index
-ORDER BY cached_mb DESC;
+CALL geode.storage.stats()
+YIELD page_size, free_pages_nodes, free_pages_adj_out, free_pages_adj_in,
+      free_pages_props, free_pages_var
+RETURN page_size, free_pages_nodes, free_pages_adj_out, free_pages_adj_in,
+       free_pages_props, free_pages_var;
 ```
+
+Process memory is on the metrics endpoint as `geode_memory_bytes`; host-level
+page-cache behaviour comes from `node_exporter`.
 
 ## Metadata Cache
 
@@ -412,32 +359,23 @@ auto_analyze_threshold = 0.1  # 10% data change triggers refresh
 
 ### Statistics Refresh
 
+Catalog and statistics caching is maintained by the engine. There is no
+`ANALYZE` command and no statistics catalog to read; the introspection surface
+is the catalog itself:
+
 ```gql
--- Refresh statistics for a table
-ANALYZE User;
+SHOW INDEXES;
+SHOW CONSTRAINTS;
 
--- Refresh all statistics
-ANALYZE;
+CALL db.labels() YIELD label RETURN label ORDER BY label;
+CALL db.propertyKeys() YIELD propertyKey RETURN propertyKey ORDER BY propertyKey;
+```
 
--- View cached statistics
-SELECT
-    table_name,
-    row_count,
-    distinct_values,
-    null_fraction,
-    avg_width,
-    last_analyzed
-FROM system.table_statistics;
+Real cardinalities come from counting:
 
--- Column statistics
-SELECT
-    table_name,
-    column_name,
-    n_distinct,
-    most_common_values,
-    histogram_bounds
-FROM system.column_statistics
-WHERE table_name = 'User';
+```gql
+MATCH (u:User) RETURN count(u) AS row_count;
+MATCH (u:User) RETURN count(DISTINCT u.email) AS distinct_values;
 ```
 
 ## Distributed Caching
@@ -486,27 +424,17 @@ Write on Node 1:
 
 ### Monitoring Distributed Cache
 
-```gql
--- Distributed cache statistics
-SELECT
-    node_id,
-    local_cache_size_mb,
-    invalidations_received,
-    invalidations_sent,
-    cache_coherence_lag_ms
-FROM system.distributed_cache_stats;
+Per-node cache statistics and a coordination log are not published. What a
+cluster does expose is membership and leadership:
 
--- Cross-node cache coordination
-SELECT
-    event_type,
-    source_node,
-    target_nodes,
-    entries_invalidated,
-    latency_ms
-FROM system.cache_coordination_log
-ORDER BY timestamp DESC
-LIMIT 20;
+```gql
+SHOW CLUSTER STATUS;
 ```
+
+That returns one row per member (`node_id`, `role`, `term`, `leader_id`,
+`endpoint`, `last_contact_ms`); in standalone mode it returns a single row with
+`role = standalone`. Scrape `/metrics` on each node for per-node query,
+connection and memory counters.
 
 ## Application-Level Caching
 
@@ -515,6 +443,7 @@ LIMIT 20;
 Implement application-layer caching for frequently accessed data:
 
 **Python with Redis**:
+
 ```python
 import redis
 import json
@@ -562,6 +491,7 @@ class CachedGeodeClient:
 ```
 
 **Go with In-Memory Cache**:
+
 ```go
 import (
     "sync"
@@ -678,15 +608,18 @@ async def add_friend(user_id, friend_id):
 ### Sizing Guidelines
 
 **Query Result Cache**:
+
 - Size based on unique query patterns and result sizes
 - Start with 256-512 MB for small deployments
 - Scale to 1-4 GB for large deployments
 
 **Plan Cache**:
+
 - Typically 2000-10000 entries sufficient
 - Monitor miss rate; increase if >10%
 
 **Buffer Pool**:
+
 - 50-75% of available RAM
 - Should hold working set for good hit ratio (>95%)
 

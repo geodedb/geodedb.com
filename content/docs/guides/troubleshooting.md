@@ -1052,12 +1052,15 @@ EXPLAIN
 MATCH (p:Person {age: 30})
 RETURN p;
 
--- Check current queries (if monitoring enabled)
-CALL db.currentQueries();
-
--- Show active transactions
-CALL db.transactions();
+-- Running queries and open transactions are not listed by the server: there is
+-- no db.currentQueries() or db.transactions() procedure. Time the suspect
+-- statement directly instead.
+PROFILE MATCH (p:Person) WHERE p.email = 'alice@example.com' RETURN p;
 ```
+
+For fleet-wide load, scrape the metrics endpoint
+(`geode_queries_total`, `geode_query_duration_seconds`,
+`geode_connections_active`) rather than polling the database.
 
 ---
 

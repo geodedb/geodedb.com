@@ -10,7 +10,7 @@ keywords:
   - restore
   - disaster recovery
   - point-in-time recovery
-  - incremental backup
+  - full backup
   - Geode backup
   - database backup
 ---
@@ -19,20 +19,34 @@ keywords:
 
 # Backup and Restore Guide
 
-This guide covers comprehensive backup and restore strategies for Geode databases. Learn how to implement online and offline backups, full and incremental backups, point-in-time recovery, and disaster recovery planning.
+This guide covers backup and restore strategies for Geode databases: online and offline backups, the full-backup CLI workflow, restoring to the newest backup at or before a timestamp, and disaster recovery planning.
 
 ## Overview
 
-Geode provides multiple backup strategies to protect your data:
+Geode provides two backup strategies to protect your data:
 
 | Backup Type | Description | Use Case |
 |-------------|-------------|----------|
-| Online Backup | No downtime required | Production systems |
-| Offline Backup | Database stopped | Maintenance windows |
-| Full Backup | Complete database copy | Weekly/monthly backups |
-| Incremental Backup | Changes since last backup | Daily backups |
-| Point-in-Time | Restore to specific moment | Data recovery |
-| Snapshot | Instant copy | Testing, development |
+| Online Backup | Server keeps serving; `geode backup create` streams a full copy | Production systems |
+| Offline Backup | Server stopped; filesystem copy of the data directory | Maintenance windows |
+
+Every Geode backup is a **full** backup. There is no incremental backup type
+(`geode backup create --type` accepts `full` and nothing else), and there is no
+WAL-replay point-in-time recovery. `geode restore --target-time` selects the
+newest backup at or before a timestamp — see
+[Point-in-Time Selection](#point-in-time-selection).
+
+**Backup and restore are CLI operations.** GQL `BACKUP`/`RESTORE` statements
+parse but are intentionally refused by the executor with SQLSTATE `0A000`:
+
+```text
+GQL BACKUP/RESTORE statements are unsupported: use the CLI instead
+(`geode backup create --output <file>` to create a backup,
+`geode restore <file>` to restore one).
+```
+
+There is likewise no `geode.backup.*` or `geode.restore.*` procedure namespace;
+drive backups from the CLI, including from application code (examples below).
 
 ## Backup Architecture
 
@@ -55,131 +69,115 @@ Geode Database
 Online backups allow you to back up the database while it's running and serving traffic.
 
 **Advantages**:
+
 - No downtime
 - Consistent snapshot
 - Suitable for 24/7 operations
 
 **CLI Command**:
+
 ```bash
 # Create online backup
 geode backup create \
   --output /backups/geode-$(date +%Y%m%d-%H%M%S).backup \
-  --compress \
-  --verify
+  --compress
 
-# With specific connection
+# With specific connection and credentials
 geode backup create \
-  --host localhost:3141 \
+  --server localhost:3141 \
+  --user admin --password "$GEODE_PASSWORD" \
   --output /backups/full-backup.backup
 ```
+
+`geode backup create` accepts `--output` (required), `--type full`,
+`--server`, `--user`, `--password`, `--compress`, and the TLS options
+(`--ca-cert`, `--client-cert`, `--client-key`,
+`--insecure-tls-skip-verify`). Inspect the result with
+`geode backup info <file>` — there is no `--verify` flag.
 
 **Multi-Language Online Backup Examples**:
 
 {{< tabs >}}
 {{< tab "Go" >}}
+
 ```go
 package main
 
 import (
     "context"
-    "database/sql"
     "fmt"
     "log"
+    "os/exec"
     "time"
-
-    _ "geodedb.com/geode"
 )
 
-func createOnlineBackup(db *sql.DB, backupPath string) error {
-    ctx := context.Background()
+// createOnlineBackup shells out to the geode CLI: backup is not a GQL
+// operation, so there is no query to send over the client connection.
+func createOnlineBackup(ctx context.Context, server, backupPath string) error {
+    cmd := exec.CommandContext(ctx, "geode", "backup", "create",
+        "--server", server,
+        "--output", backupPath,
+        "--compress")
+    if out, err := cmd.CombinedOutput(); err != nil {
+        return fmt.Errorf("backup failed: %w: %s", err, out)
+    }
 
-    // Start backup
-    _, err := db.ExecContext(ctx,
-        "CALL geode.backup.create($path, $compress)",
-        backupPath, true)
+    // Inspect the header the CLI wrote (format, type, timestamp, size, checksum)
+    info, err := exec.CommandContext(ctx, "geode", "backup", "info", backupPath).CombinedOutput()
     if err != nil {
-        return fmt.Errorf("backup failed: %w", err)
+        return fmt.Errorf("backup info failed: %w: %s", err, info)
     }
-
-    // Verify backup
-    rows, err := db.QueryContext(ctx,
-        "CALL geode.backup.verify($path)",
-        backupPath)
-    if err != nil {
-        return fmt.Errorf("verification failed: %w", err)
-    }
-    defer rows.Close()
-
-    var valid bool
-    var checksum string
-    if rows.Next() {
-        rows.Scan(&valid, &checksum)
-        if !valid {
-            return fmt.Errorf("backup verification failed")
-        }
-        log.Printf("Backup verified: checksum=%s", checksum)
-    }
+    log.Printf("Backup header:\n%s", info)
 
     return nil
 }
 
 func main() {
-    db, err := sql.Open("geode", "localhost:3141")
-    if err != nil {
-        log.Fatal(err)
-    }
-    defer db.Close()
+    ctx := context.Background()
 
     backupPath := fmt.Sprintf("/backups/geode-%s.backup",
         time.Now().Format("20060102-150405"))
 
-    if err := createOnlineBackup(db, backupPath); err != nil {
+    if err := createOnlineBackup(ctx, "localhost:3141", backupPath); err != nil {
         log.Fatalf("Backup failed: %v", err)
     }
 
     log.Printf("Backup created successfully: %s", backupPath)
 }
 ```
+
 {{< /tab >}}
 {{< tab "Python" >}}
+
 ```python
 import asyncio
 from datetime import datetime
-from geode_client import Client
 
-async def create_online_backup(backup_path: str):
+async def run(*args: str) -> str:
+    """Run a geode CLI command and return its combined output."""
+    proc = await asyncio.create_subprocess_exec(
+        *args,
+        stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.STDOUT,
+    )
+    out, _ = await proc.communicate()
+    if proc.returncode != 0:
+        raise RuntimeError(f"{' '.join(args)} failed: {out.decode()}")
+    return out.decode()
+
+async def create_online_backup(backup_path: str, server: str = "localhost:3141"):
     """Create an online backup without stopping the database."""
-    client = Client(host="localhost", port=3141, skip_verify=True)
+    print(f"Starting online backup to {backup_path}...")
 
-    async with client.connection() as conn:
-        # Start backup
-        print(f"Starting online backup to {backup_path}...")
+    await run("geode", "backup", "create",
+              "--server", server,
+              "--output", backup_path,
+              "--compress")
 
-        await conn.execute(
-            "CALL geode.backup.create($path, $compress)",
-            {"path": backup_path, "compress": True}
-        )
-
-        # Verify backup integrity
-        result, _ = await conn.query(
-            "CALL geode.backup.verify($path)",
-            {"path": backup_path}
-        )
-
-        if result.rows:
-            row = result.rows[0]
-            valid = row['valid'].as_bool
-            checksum = row['checksum'].as_string
-            size_mb = row['size_bytes'].as_int / (1024 * 1024)
-
-            if valid:
-                print(f"Backup verified successfully")
-                print(f"  Checksum: {checksum}")
-                print(f"  Size: {size_mb:.2f} MB")
-            else:
-                raise Exception("Backup verification failed")
-
-        print(f"Online backup complete: {backup_path}")
+    # Read back the backup header: format, type, compression, timestamp,
+    # payload size and checksum.
+    print(await run("geode", "backup", "info", backup_path))
+    print(f"Online backup complete: {backup_path}")
 
 async def main():
     timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
@@ -189,59 +187,55 @@ async def main():
 
 asyncio.run(main())
 ```
+
 {{< /tab >}}
 {{< tab "Rust" >}}
+
 ```rust
-use geode_client::{Client, Value};
-use std::collections::HashMap;
 use chrono::Local;
+use std::process::Command;
 
-#[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let client = Client::new("127.0.0.1", 3141).skip_verify(true);
-    let mut conn = client.connect().await?;
+fn geode(args: &[&str]) -> Result<String, Box<dyn std::error::Error>> {
+    let out = Command::new("geode").args(args).output()?;
+    if !out.status.success() {
+        return Err(format!(
+            "geode {} failed: {}",
+            args.join(" "),
+            String::from_utf8_lossy(&out.stderr)
+        )
+        .into());
+    }
+    Ok(String::from_utf8_lossy(&out.stdout).to_string())
+}
 
+fn main() -> Result<(), Box<dyn std::error::Error>> {
     let timestamp = Local::now().format("%Y%m%d-%H%M%S");
     let backup_path = format!("/backups/geode-{}.backup", timestamp);
 
     println!("Starting online backup to {}...", backup_path);
 
-    // Create backup
-    let mut params = HashMap::new();
-    params.insert("path".to_string(), Value::string(&backup_path));
-    params.insert("compress".to_string(), Value::bool(true));
+    // Backup is a CLI operation; there is no GQL statement or procedure for it.
+    geode(&[
+        "backup",
+        "create",
+        "--server",
+        "127.0.0.1:3141",
+        "--output",
+        &backup_path,
+        "--compress",
+    ])?;
 
-    conn.query_with_params(
-        "CALL geode.backup.create($path, $compress)",
-        &params
-    ).await?;
-
-    // Verify backup
-    let mut verify_params = HashMap::new();
-    verify_params.insert("path".to_string(), Value::string(&backup_path));
-
-    let (result, _) = conn.query_with_params(
-        "CALL geode.backup.verify($path)",
-        &verify_params
-    ).await?;
-
-    if let Some(row) = result.rows.first() {
-        let valid = row.get("valid").unwrap().as_bool()?;
-        let checksum = row.get("checksum").unwrap().as_string()?;
-
-        if valid {
-            println!("Backup verified: checksum={}", checksum);
-        } else {
-            return Err("Backup verification failed".into());
-        }
-    }
+    // Read back the header the CLI wrote, including its checksum.
+    print!("{}", geode(&["backup", "info", &backup_path])?);
 
     println!("Online backup complete: {}", backup_path);
     Ok(())
 }
 ```
+
 {{< /tab >}}
 {{< tab "Bash" >}}
+
 ```bash
 #!/bin/bash
 # Online backup script
@@ -251,30 +245,26 @@ set -euo pipefail
 BACKUP_DIR="/backups"
 TIMESTAMP=$(date +%Y%m%d-%H%M%S)
 BACKUP_FILE="${BACKUP_DIR}/geode-${TIMESTAMP}.backup"
-GEODE_HOST="localhost:3141"
+GEODE_SERVER="localhost:3141"
 
 echo "Starting online backup..."
 
-# Create backup
+# Create backup (set -e aborts the script if this fails)
 geode backup create \
-  --host "${GEODE_HOST}" \
+  --server "${GEODE_SERVER}" \
   --output "${BACKUP_FILE}" \
-  --compress \
-  --verify
+  --compress
 
-# Check result
-if [ $? -eq 0 ]; then
-    SIZE=$(du -h "${BACKUP_FILE}" | cut -f1)
-    echo "Backup complete: ${BACKUP_FILE} (${SIZE})"
+SIZE=$(du -h "${BACKUP_FILE}" | cut -f1)
+echo "Backup complete: ${BACKUP_FILE} (${SIZE})"
 
-    # Keep only last 7 daily backups
-    find "${BACKUP_DIR}" -name "geode-*.backup" -mtime +7 -delete
-    echo "Cleaned up old backups"
-else
-    echo "Backup failed!"
-    exit 1
-fi
+# Show the header the CLI wrote (type, compression, timestamp, checksum)
+geode backup info "${BACKUP_FILE}"
+
+# Keep only the last 7 days of backups
+geode backup cleanup --older-than 7d
 ```
+
 {{< /tab >}}
 {{< /tabs >}}
 
@@ -283,6 +273,7 @@ fi
 Offline backups require stopping the database but guarantee complete consistency.
 
 **CLI Commands**:
+
 ```bash
 # Stop Geode
 systemctl stop geode
@@ -295,6 +286,7 @@ systemctl start geode
 ```
 
 **When to Use Offline Backups**:
+
 - Major version upgrades
 - Schema migrations
 - Hardware maintenance
@@ -304,17 +296,21 @@ systemctl start geode
 
 ### Creating Full Backups
 
-A full backup contains the complete database state.
+A full backup contains the complete database state. `full` is the only backup
+type the CLI accepts, so this is what every `geode backup create` produces.
 
 ```bash
-# Full backup with metadata
-geode backup full \
+# Full backup, gzip-compressed
+geode backup create \
+  --type full \
   --output /backups/full-$(date +%Y%m%d).backup \
-  --include-metadata \
-  --include-indexes \
-  --compress gzip \
-  --compression-level 6
+  --compress
 ```
+
+`--compress` is a boolean switch: the CLI chooses the codec and records it in
+the backup header (`geode backup info` reports `gzip` or `zstd`). There is no
+compression-level, metadata or index selection flag — a full backup already
+carries the schema and index definitions with the data.
 
 ### Full Backup Schedule
 
@@ -322,532 +318,166 @@ geode backup full \
 import asyncio
 import os
 from datetime import datetime
-from geode_client import Client
 
-async def create_full_backup():
-    """Create a full backup with all data and metadata."""
-    client = Client(host="localhost", port=3141, skip_verify=True)
+async def run(*args: str) -> str:
+    proc = await asyncio.create_subprocess_exec(
+        *args,
+        stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.STDOUT,
+    )
+    out, _ = await proc.communicate()
+    if proc.returncode != 0:
+        raise RuntimeError(f"{' '.join(args)} failed: {out.decode()}")
+    return out.decode()
 
+async def create_full_backup(server: str = "localhost:3141"):
+    """Create a full backup and report what landed on disk."""
     backup_dir = "/backups/full"
     os.makedirs(backup_dir, exist_ok=True)
 
     timestamp = datetime.now().strftime("%Y%m%d")
     backup_path = f"{backup_dir}/geode-full-{timestamp}.backup"
 
-    async with client.connection() as conn:
-        # Create full backup with all options
-        await conn.execute(
-            """CALL geode.backup.full($path, {
-                include_metadata: true,
-                include_indexes: true,
-                compression: 'gzip',
-                compression_level: 6
-            })""",
-            {"path": backup_path}
-        )
+    await run("geode", "backup", "create",
+              "--server", server,
+              "--type", "full",
+              "--output", backup_path,
+              "--compress")
 
-        # Get backup info
-        result, _ = await conn.query(
-            "CALL geode.backup.info($path)",
-            {"path": backup_path}
-        )
-
-        if result.rows:
-            info = result.rows[0]
-            print(f"Full backup created: {backup_path}")
-            print(f"  Nodes: {info['node_count'].as_int:,}")
-            print(f"  Relationships: {info['relationship_count'].as_int:,}")
-            print(f"  Size: {info['size_bytes'].as_int / (1024*1024):.2f} MB")
-            print(f"  Duration: {info['duration_ms'].as_int} ms")
+    print(f"Full backup created: {backup_path}")
+    print(f"  Size: {os.path.getsize(backup_path) / (1024 * 1024):.2f} MB")
+    print(await run("geode", "backup", "info", backup_path))
 
 asyncio.run(create_full_backup())
 ```
 
-## Incremental Backups
+Node and relationship counts are not part of the backup header. Capture them
+from the live database before the backup if you want them in your logs:
 
-### Understanding Incremental Backups
-
-Incremental backups only store changes since the last backup, reducing storage and time.
-
-```
-Day 1: Full Backup (10GB)
-Day 2: Incremental (+500MB changes)
-Day 3: Incremental (+300MB changes)
-Day 4: Incremental (+400MB changes)
-...
-Day 7: New Full Backup
+```gql
+CALL geode.storage.stats() YIELD node_count, edge_count
+RETURN node_count, edge_count;
 ```
 
-### Creating Incremental Backups
+### Listing Backups
 
 ```bash
-# Create incremental backup based on last full backup
-geode backup incremental \
-  --base /backups/full/geode-full-20260125.backup \
-  --output /backups/incremental/geode-incr-$(date +%Y%m%d-%H%M%S).backup
+# Scans ./backups and /tmp by default
+geode backup list
+
+# Or a specific directory
+geode backup list --dir /backups/full
 ```
 
-{{< tabs >}}
-{{< tab "Python" >}}
-```python
-import asyncio
-import os
-import json
-from datetime import datetime
-from geode_client import Client
+The listing reports path, type, size and compression for each file whose name
+starts with `geode_backup` or ends in `.backup`, `.gz` or `.zst`.
 
-class IncrementalBackupManager:
-    def __init__(self, backup_dir: str):
-        self.backup_dir = backup_dir
-        self.full_dir = os.path.join(backup_dir, "full")
-        self.incr_dir = os.path.join(backup_dir, "incremental")
-        self.state_file = os.path.join(backup_dir, "backup_state.json")
+## Backup Rotation
 
-        os.makedirs(self.full_dir, exist_ok=True)
-        os.makedirs(self.incr_dir, exist_ok=True)
-
-    def _load_state(self) -> dict:
-        try:
-            with open(self.state_file, 'r') as f:
-                return json.load(f)
-        except FileNotFoundError:
-            return {"last_full": None, "last_lsn": 0}
-
-    def _save_state(self, state: dict):
-        with open(self.state_file, 'w') as f:
-            json.dump(state, f, indent=2)
-
-    async def create_full_backup(self) -> str:
-        """Create a new full backup."""
-        client = Client(host="localhost", port=3141, skip_verify=True)
-
-        timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
-        backup_path = os.path.join(self.full_dir, f"full-{timestamp}.backup")
-
-        async with client.connection() as conn:
-            # Create full backup
-            result, _ = await conn.query(
-                """CALL geode.backup.full($path, {
-                    include_metadata: true,
-                    compression: 'gzip'
-                })""",
-                {"path": backup_path}
-            )
-
-            if result.rows:
-                lsn = result.rows[0]['end_lsn'].as_int
-
-                # Update state
-                state = self._load_state()
-                state["last_full"] = backup_path
-                state["last_lsn"] = lsn
-                self._save_state(state)
-
-                print(f"Full backup created: {backup_path}")
-                print(f"  End LSN: {lsn}")
-
-                return backup_path
-
-        return None
-
-    async def create_incremental_backup(self) -> str:
-        """Create an incremental backup since last backup."""
-        state = self._load_state()
-
-        if not state["last_full"]:
-            print("No full backup exists. Creating full backup first...")
-            return await self.create_full_backup()
-
-        client = Client(host="localhost", port=3141, skip_verify=True)
-
-        timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
-        backup_path = os.path.join(self.incr_dir, f"incr-{timestamp}.backup")
-
-        async with client.connection() as conn:
-            # Create incremental backup
-            result, _ = await conn.query(
-                """CALL geode.backup.incremental($path, $from_lsn, {
-                    compression: 'gzip'
-                })""",
-                {"path": backup_path, "from_lsn": state["last_lsn"]}
-            )
-
-            if result.rows:
-                row = result.rows[0]
-                changes = row['change_count'].as_int
-                end_lsn = row['end_lsn'].as_int
-
-                if changes == 0:
-                    print("No changes since last backup")
-                    os.remove(backup_path)
-                    return None
-
-                # Update state
-                state["last_lsn"] = end_lsn
-                self._save_state(state)
-
-                print(f"Incremental backup created: {backup_path}")
-                print(f"  Changes: {changes:,}")
-                print(f"  End LSN: {end_lsn}")
-
-                return backup_path
-
-        return None
-
-async def main():
-    manager = IncrementalBackupManager("/backups/geode")
-
-    # Weekly: Create full backup
-    # await manager.create_full_backup()
-
-    # Daily: Create incremental backup
-    await manager.create_incremental_backup()
-
-asyncio.run(main())
-```
-{{< /tab >}}
-{{< tab "Go" >}}
-```go
-package main
-
-import (
-    "context"
-    "database/sql"
-    "encoding/json"
-    "fmt"
-    "log"
-    "os"
-    "path/filepath"
-    "time"
-
-    _ "geodedb.com/geode"
-)
-
-type BackupState struct {
-    LastFull string `json:"last_full"`
-    LastLSN  int64  `json:"last_lsn"`
-}
-
-type IncrementalBackupManager struct {
-    backupDir string
-    db        *sql.DB
-}
-
-func NewIncrementalBackupManager(backupDir string, db *sql.DB) *IncrementalBackupManager {
-    os.MkdirAll(filepath.Join(backupDir, "full"), 0755)
-    os.MkdirAll(filepath.Join(backupDir, "incremental"), 0755)
-    return &IncrementalBackupManager{backupDir: backupDir, db: db}
-}
-
-func (m *IncrementalBackupManager) loadState() BackupState {
-    stateFile := filepath.Join(m.backupDir, "backup_state.json")
-    data, err := os.ReadFile(stateFile)
-    if err != nil {
-        return BackupState{}
-    }
-    var state BackupState
-    json.Unmarshal(data, &state)
-    return state
-}
-
-func (m *IncrementalBackupManager) saveState(state BackupState) {
-    stateFile := filepath.Join(m.backupDir, "backup_state.json")
-    data, _ := json.MarshalIndent(state, "", "  ")
-    os.WriteFile(stateFile, data, 0644)
-}
-
-func (m *IncrementalBackupManager) CreateFullBackup(ctx context.Context) (string, error) {
-    timestamp := time.Now().Format("20060102-150405")
-    backupPath := filepath.Join(m.backupDir, "full", fmt.Sprintf("full-%s.backup", timestamp))
-
-    rows, err := m.db.QueryContext(ctx, `
-        CALL geode.backup.full($1, {include_metadata: true, compression: 'gzip'})
-    `, backupPath)
-    if err != nil {
-        return "", err
-    }
-    defer rows.Close()
-
-    if rows.Next() {
-        var endLSN int64
-        rows.Scan(&endLSN)
-
-        state := BackupState{LastFull: backupPath, LastLSN: endLSN}
-        m.saveState(state)
-
-        log.Printf("Full backup created: %s (LSN: %d)", backupPath, endLSN)
-        return backupPath, nil
-    }
-
-    return "", fmt.Errorf("backup failed")
-}
-
-func (m *IncrementalBackupManager) CreateIncrementalBackup(ctx context.Context) (string, error) {
-    state := m.loadState()
-
-    if state.LastFull == "" {
-        log.Println("No full backup exists, creating one first...")
-        return m.CreateFullBackup(ctx)
-    }
-
-    timestamp := time.Now().Format("20060102-150405")
-    backupPath := filepath.Join(m.backupDir, "incremental", fmt.Sprintf("incr-%s.backup", timestamp))
-
-    rows, err := m.db.QueryContext(ctx, `
-        CALL geode.backup.incremental($1, $2, {compression: 'gzip'})
-    `, backupPath, state.LastLSN)
-    if err != nil {
-        return "", err
-    }
-    defer rows.Close()
-
-    if rows.Next() {
-        var changes int64
-        var endLSN int64
-        rows.Scan(&changes, &endLSN)
-
-        if changes == 0 {
-            os.Remove(backupPath)
-            log.Println("No changes since last backup")
-            return "", nil
-        }
-
-        state.LastLSN = endLSN
-        m.saveState(state)
-
-        log.Printf("Incremental backup: %s (changes: %d, LSN: %d)", backupPath, changes, endLSN)
-        return backupPath, nil
-    }
-
-    return "", fmt.Errorf("incremental backup failed")
-}
-
-func main() {
-    db, err := sql.Open("geode", "localhost:3141")
-    if err != nil {
-        log.Fatal(err)
-    }
-    defer db.Close()
-
-    ctx := context.Background()
-    manager := NewIncrementalBackupManager("/backups/geode", db)
-
-    // Create incremental backup
-    _, err = manager.CreateIncrementalBackup(ctx)
-    if err != nil {
-        log.Fatalf("Backup failed: %v", err)
-    }
-}
-```
-{{< /tab >}}
-{{< /tabs >}}
-
-## Point-in-Time Recovery
-
-### Understanding PITR
-
-Point-in-Time Recovery allows you to restore the database to any specific moment.
-
-**Requirements**:
-- Full backup as a base
-- Continuous WAL (Write-Ahead Log) archiving
-- WAL files stored safely
-
-### Configuring WAL Archiving
-
-**geode.conf**:
-```toml
-[wal]
-archive_enabled = true
-archive_command = "cp %p /backups/wal/%f"
-archive_timeout = 60  # seconds
-
-[recovery]
-restore_command = "cp /backups/wal/%f %p"
-```
-
-### Performing Point-in-Time Recovery
+Because every backup is a full backup, rotation is a retention decision rather
+than a chain to maintain:
 
 ```bash
-# Restore to specific timestamp
+# Remove backups older than seven days
+geode backup cleanup --older-than 7d
+
+# Accepts h and d units, e.g. 1h, 24h, 30d
+geode backup cleanup --older-than 30d
+```
+
+A weekly-full/daily-incremental scheme is not available: there is no
+incremental backup type, no `--base` flag, and no LSN-delta procedure. If daily
+full backups are too expensive for your dataset, take them less often and
+accept the corresponding RPO, or replicate to a standby (see
+[Distributed Systems](/docs/architecture/distributed-systems/)).
+
+## Point-in-Time Selection
+
+### What Geode Supports
+
+Geode does not replay archived WAL segments to an arbitrary instant. What
+`geode restore --target-time` does is **pick the newest backup at or before the
+timestamp you name** and restore that. Your effective recovery point is
+therefore your backup interval, not a single transaction.
+
+There is no `[wal] archive_enabled` / `archive_command` configuration, no
+`--wal-dir` flag and no `--target-lsn` flag. The server configuration file is a
+flat YAML/TOML/JSON document (`.geode/config.yaml`, `.geode/config.toml`, ...)
+holding keys such as `data_dir`, `listen_quic`, `listen_grpc`, `cert_path`,
+`key_path`, `log_level` and `idle_timeout`.
+
+### Restoring to a Timestamp
+
+```bash
+# Restore whatever backup was current at 14:30 UTC
 geode restore \
-  --backup /backups/full/geode-full-20260125.backup \
-  --wal-dir /backups/wal \
+  --source /backups/full \
   --target-time "2026-01-28T14:30:00Z" \
-  --output /var/lib/geode/data
+  --yes
 
-# Restore to specific transaction
-geode restore \
-  --backup /backups/full/geode-full-20260125.backup \
-  --wal-dir /backups/wal \
-  --target-lsn 12345678 \
-  --output /var/lib/geode/data
+# Or name the file directly
+geode restore /backups/full/geode-full-20260128.backup --yes
 ```
 
-{{< tabs >}}
-{{< tab "Python" >}}
-```python
-import asyncio
-from datetime import datetime
-from geode_client import Client
+`geode restore` takes the backup as a positional argument or via `--source`
+(which also accepts a URI such as `s3://bucket/backup.gql`), plus `--server`,
+`--user`, `--password`, `--yes`/`--confirm` and the TLS options. Without
+`--yes` it prompts for interactive confirmation.
 
-async def point_in_time_recovery(
-    backup_path: str,
-    wal_dir: str,
-    target_time: datetime,
-    output_dir: str
-):
-    """Restore database to a specific point in time."""
-    client = Client(host="localhost", port=3141, skip_verify=True)
-
-    async with client.connection() as conn:
-        print(f"Starting point-in-time recovery...")
-        print(f"  Base backup: {backup_path}")
-        print(f"  Target time: {target_time.isoformat()}")
-
-        # Initiate PITR
-        result, _ = await conn.query(
-            """CALL geode.restore.point_in_time($backup, $wal_dir, $target, $output, {
-                verify: true,
-                create_recovery_conf: true
-            })""",
-            {
-                "backup": backup_path,
-                "wal_dir": wal_dir,
-                "target": target_time.isoformat(),
-                "output": output_dir
-            }
-        )
-
-        if result.rows:
-            info = result.rows[0]
-            print(f"Recovery complete:")
-            print(f"  Restored to: {info['restored_to'].as_string}")
-            print(f"  WAL files applied: {info['wal_files_applied'].as_int}")
-            print(f"  Transactions recovered: {info['transactions_recovered'].as_int}")
-
-            return True
-
-    return False
-
-async def main():
-    # Restore to 2:30 PM today
-    target = datetime(2026, 1, 28, 14, 30, 0)
-
-    await point_in_time_recovery(
-        backup_path="/backups/full/geode-full-20260125.backup",
-        wal_dir="/backups/wal",
-        target_time=target,
-        output_dir="/var/lib/geode/data-recovered"
-    )
-
-asyncio.run(main())
-```
-{{< /tab >}}
-{{< /tabs >}}
+To narrow the recovery point, back up more often — every backup is a full
+backup, so there is no chain to replay.
 
 ## Backup Verification
 
-### Automatic Verification
+### Inspecting a Backup File
 
 ```bash
-# Verify backup integrity
-geode backup verify /backups/geode-20260128.backup
+# Header: format version, type, compression, encryption flag,
+# timestamp, payload size and checksum
+geode backup info /backups/geode-20260128.backup
 
-# Verify with detailed output
-geode backup verify \
-  --backup /backups/geode-20260128.backup \
-  --check-checksums \
-  --check-consistency \
-  --verbose
+# Everything currently on disk
+geode backup list --dir /backups
 ```
 
-### Programmatic Verification
+There is no `geode backup verify` command and no verification procedure. The
+checks available are the header/checksum readout above, plus the live-store
+integrity checks after a restore:
 
-{{< tabs >}}
-{{< tab "Python" >}}
-```python
-import asyncio
-from geode_client import Client
-
-async def verify_backup(backup_path: str) -> bool:
-    """Comprehensively verify a backup file."""
-    client = Client(host="localhost", port=3141, skip_verify=True)
-
-    async with client.connection() as conn:
-        print(f"Verifying backup: {backup_path}")
-
-        # Basic integrity check
-        result, _ = await conn.query(
-            """CALL geode.backup.verify($path, {
-                check_checksums: true,
-                check_consistency: true,
-                check_indexes: true
-            })""",
-            {"path": backup_path}
-        )
-
-        if not result.rows:
-            print("Verification failed: No result")
-            return False
-
-        info = result.rows[0]
-
-        checks = {
-            "File integrity": info['file_valid'].as_bool,
-            "Checksum match": info['checksum_valid'].as_bool,
-            "Data consistency": info['data_consistent'].as_bool,
-            "Index integrity": info['indexes_valid'].as_bool,
-        }
-
-        all_passed = True
-        for check_name, passed in checks.items():
-            status = "PASS" if passed else "FAIL"
-            print(f"  {check_name}: {status}")
-            if not passed:
-                all_passed = False
-
-        if all_passed:
-            print(f"\nBackup verification: PASSED")
-            print(f"  Checksum: {info['checksum'].as_string}")
-            print(f"  Node count: {info['node_count'].as_int:,}")
-            print(f"  Relationship count: {info['relationship_count'].as_int:,}")
-        else:
-            print(f"\nBackup verification: FAILED")
-
-        return all_passed
-
-async def verify_all_backups(backup_dir: str):
-    """Verify all backups in a directory."""
-    import os
-
-    results = []
-    for filename in os.listdir(backup_dir):
-        if filename.endswith('.backup'):
-            path = os.path.join(backup_dir, filename)
-            valid = await verify_backup(path)
-            results.append((filename, valid))
-            print()
-
-    print("=" * 50)
-    print("SUMMARY")
-    print("=" * 50)
-    for filename, valid in results:
-        status = "OK" if valid else "FAILED"
-        print(f"  {filename}: {status}")
-
-asyncio.run(verify_all_backups("/backups/full"))
+```bash
+geode storage verify
 ```
-{{< /tab >}}
-{{< /tabs >}}
+
+```gql
+CALL geode.storage.integrity()
+YIELD node_count_consistent, edge_count_consistent, label_index_entries, total_errors
+RETURN node_count_consistent, edge_count_consistent, label_index_entries, total_errors;
+```
+
+### Checking Every Backup in a Directory
+
+```bash
+#!/bin/bash
+# Print the header of every backup in a directory and fail on the first
+# file whose header cannot be read.
+set -euo pipefail
+
+BACKUP_DIR="${1:-/backups/full}"
+
+for f in "${BACKUP_DIR}"/*.backup; do
+    echo "=== ${f}"
+    geode backup info "${f}"
+done
+```
 
 ### Test Restores
 
-Regularly test your backups by performing test restores:
+Regularly test your backups by restoring into a throwaway server:
 
 ```bash
 #!/bin/bash
 # Test restore script
+set -euo pipefail
 
 BACKUP_FILE="$1"
 TEST_DIR="/tmp/geode-test-restore"
@@ -856,30 +486,21 @@ TEST_DIR="/tmp/geode-test-restore"
 rm -rf "${TEST_DIR}"
 mkdir -p "${TEST_DIR}"
 
-# Restore to test directory
-geode restore \
-  --backup "${BACKUP_FILE}" \
-  --output "${TEST_DIR}" \
-  --no-start
-
-# Verify data
-geode verify "${TEST_DIR}"
-
-# Start test instance
-geode serve \
-  --data-dir "${TEST_DIR}" \
-  --port 3142 &
-
+# Start a scratch server on its own port and data directory
+geode serve --data-dir "${TEST_DIR}" --listen 127.0.0.1:3142 &
 GEODE_PID=$!
 sleep 5
 
-# Run verification queries
-geode shell --port 3142 -c "MATCH (n) RETURN count(n)"
+# Restore into it
+geode restore "${BACKUP_FILE}" --server 127.0.0.1:3142 --yes
 
-# Stop test instance
+# Verify the restored data
+geode query --server 127.0.0.1:3142 "MATCH (n) RETURN count(n)"
+geode query --server 127.0.0.1:3142 \
+  "CALL geode.storage.integrity() YIELD total_errors RETURN total_errors"
+
+# Stop the scratch instance and clean up
 kill ${GEODE_PID}
-
-# Clean up
 rm -rf "${TEST_DIR}"
 
 echo "Test restore completed successfully"
@@ -890,112 +511,55 @@ echo "Test restore completed successfully"
 ### Full Restore
 
 ```bash
-# Stop Geode
-systemctl stop geode
+# Restore into the running server (prompts unless --yes is given)
+geode restore /backups/geode-full-20260128.backup \
+  --server localhost:3141 \
+  --yes
 
-# Restore from backup
-geode restore \
-  --backup /backups/geode-full-20260128.backup \
-  --output /var/lib/geode/data \
-  --overwrite
-
-# Verify restored data
-geode verify /var/lib/geode/data
-
-# Start Geode
-systemctl start geode
+# Verify the restored store
+geode query "CALL geode.storage.integrity() YIELD total_errors RETURN total_errors"
 ```
 
-### Restore from Incremental Backups
+For an offline restore, stop the server, replace the data directory with the
+copy taken by `tar`, and start it again — the same procedure as an offline
+backup in reverse.
 
-```bash
-# Restore full backup first
-geode restore \
-  --backup /backups/full/geode-full-20260125.backup \
-  --output /var/lib/geode/data
+### Restoring a Chain of Backups
 
-# Apply incremental backups in order
-geode restore \
-  --backup /backups/incremental/geode-incr-20260126.backup \
-  --output /var/lib/geode/data \
-  --incremental
-
-geode restore \
-  --backup /backups/incremental/geode-incr-20260127.backup \
-  --output /var/lib/geode/data \
-  --incremental
-```
+Not applicable: every Geode backup is self-contained. Restore the one backup
+you want; there are no incremental files to apply on top of it, and `geode
+restore` has no `--incremental` flag.
 
 ### Programmatic Restore
 
-{{< tabs >}}
-{{< tab "Python" >}}
 ```python
 import asyncio
-import os
-from geode_client import Client
 
-async def restore_database(
-    backup_path: str,
-    output_dir: str,
-    incremental_backups: list = None
-):
-    """Restore database from backup files."""
-    client = Client(host="localhost", port=3141, skip_verify=True)
-
-    # Ensure output directory exists
-    os.makedirs(output_dir, exist_ok=True)
-
-    async with client.connection() as conn:
-        # Restore full backup
-        print(f"Restoring full backup: {backup_path}")
-
-        result, _ = await conn.query(
-            """CALL geode.restore.full($backup, $output, {
-                verify: true,
-                overwrite: true
-            })""",
-            {"backup": backup_path, "output": output_dir}
-        )
-
-        if result.rows:
-            info = result.rows[0]
-            print(f"  Nodes restored: {info['node_count'].as_int:,}")
-            print(f"  Relationships restored: {info['relationship_count'].as_int:,}")
-
-        # Apply incremental backups
-        if incremental_backups:
-            for incr_backup in incremental_backups:
-                print(f"Applying incremental: {incr_backup}")
-
-                result, _ = await conn.query(
-                    """CALL geode.restore.incremental($backup, $output, {
-                        verify: true
-                    })""",
-                    {"backup": incr_backup, "output": output_dir}
-                )
-
-                if result.rows:
-                    changes = result.rows[0]['changes_applied'].as_int
-                    print(f"  Changes applied: {changes:,}")
-
-        print(f"\nRestore complete. Data directory: {output_dir}")
-
-async def main():
-    await restore_database(
-        backup_path="/backups/full/geode-full-20260125.backup",
-        output_dir="/var/lib/geode/data-restored",
-        incremental_backups=[
-            "/backups/incremental/geode-incr-20260126.backup",
-            "/backups/incremental/geode-incr-20260127.backup",
-            "/backups/incremental/geode-incr-20260128.backup",
-        ]
+async def run(*args: str) -> str:
+    proc = await asyncio.create_subprocess_exec(
+        *args,
+        stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.STDOUT,
     )
+    out, _ = await proc.communicate()
+    if proc.returncode != 0:
+        raise RuntimeError(f"{' '.join(args)} failed: {out.decode()}")
+    return out.decode()
 
-asyncio.run(main())
+async def restore_database(backup_path: str, server: str = "localhost:3141"):
+    """Restore a database from a full backup file."""
+    print(f"Restoring: {backup_path}")
+    print(await run("geode", "backup", "info", backup_path))
+    print(await run("geode", "restore", backup_path, "--server", server, "--yes"))
+
+    # Confirm the restored store is self-consistent
+    print(await run(
+        "geode", "query", "--server", server,
+        "CALL geode.storage.integrity() YIELD total_errors RETURN total_errors",
+    ))
+
+asyncio.run(restore_database("/backups/full/geode-full-20260128.backup"))
 ```
-{{< /tab >}}
-{{< /tabs >}}
 
 ## Disaster Recovery Planning
 
@@ -1004,8 +568,12 @@ asyncio.run(main())
 | Strategy | RTO | RPO | Cost |
 |----------|-----|-----|------|
 | Standby replica | Minutes | Seconds | High |
-| Continuous backup | Hours | Minutes | Medium |
-| Daily backup | Hours-Days | 24 hours | Low |
+| Hourly full backup | Hours | 1 hour | Medium |
+| Daily full backup | Hours-Days | 24 hours | Low |
+
+Because there is no WAL replay, the RPO of a backup-based strategy is exactly
+the interval between full backups. Sub-minute RPO needs replication, not
+backups.
 
 ### Disaster Recovery Runbook
 
@@ -1025,7 +593,7 @@ asyncio.run(main())
 ## 3. Restore Database
 - [ ] Deploy new Geode instance
 - [ ] Restore from backup
-- [ ] Apply incremental/WAL files
+- [ ] Confirm the restored store is consistent (`CALL geode.storage.integrity()`)
 - [ ] Verify data integrity
 
 ## 4. Validate Recovery
@@ -1048,11 +616,22 @@ asyncio.run(main())
 
 {{< tabs >}}
 {{< tab "Python" >}}
+
 ```python
 import asyncio
 import boto3
 from datetime import datetime
-from geode_client import Client
+
+async def run(*args: str) -> str:
+    proc = await asyncio.create_subprocess_exec(
+        *args,
+        stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.STDOUT,
+    )
+    out, _ = await proc.communicate()
+    if proc.returncode != 0:
+        raise RuntimeError(f"{' '.join(args)} failed: {out.decode()}")
+    return out.decode()
 
 class MultiRegionBackupManager:
     def __init__(self):
@@ -1065,49 +644,44 @@ class MultiRegionBackupManager:
 
     async def create_and_replicate_backup(self):
         """Create backup and replicate to multiple regions."""
-        client = Client(host="localhost", port=3141, skip_verify=True)
-
         timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
         local_path = f"/tmp/geode-backup-{timestamp}.backup"
         s3_key = f"backups/geode/full-{timestamp}.backup"
 
-        async with client.connection() as conn:
-            # Create local backup
-            print("Creating backup...")
-            await conn.execute(
-                "CALL geode.backup.full($path, {compression: 'gzip'})",
-                {"path": local_path}
+        # Create local backup with the CLI
+        print("Creating backup...")
+        await run("geode", "backup", "create",
+                  "--output", local_path, "--compress")
+
+        # Upload to primary region
+        print(f"Uploading to {self.primary_region}...")
+        self.s3_clients[self.primary_region].upload_file(
+            local_path,
+            f"geode-backups-{self.primary_region}",
+            s3_key
+        )
+
+        # Replicate to backup regions
+        for region in self.backup_regions:
+            print(f"Replicating to {region}...")
+
+            # Copy from primary to backup region
+            self.s3_clients[region].copy_object(
+                CopySource={
+                    'Bucket': f"geode-backups-{self.primary_region}",
+                    'Key': s3_key
+                },
+                Bucket=f"geode-backups-{region}",
+                Key=s3_key
             )
 
-            # Upload to primary region
-            print(f"Uploading to {self.primary_region}...")
-            self.s3_clients[self.primary_region].upload_file(
-                local_path,
-                f"geode-backups-{self.primary_region}",
-                s3_key
-            )
+        print(f"Backup replicated to {len(self.backup_regions)} regions")
 
-            # Replicate to backup regions
-            for region in self.backup_regions:
-                print(f"Replicating to {region}...")
+        # Clean up local file
+        import os
+        os.remove(local_path)
 
-                # Copy from primary to backup region
-                self.s3_clients[region].copy_object(
-                    CopySource={
-                        'Bucket': f"geode-backups-{self.primary_region}",
-                        'Key': s3_key
-                    },
-                    Bucket=f"geode-backups-{region}",
-                    Key=s3_key
-                )
-
-            print(f"Backup replicated to {len(self.backup_regions)} regions")
-
-            # Clean up local file
-            import os
-            os.remove(local_path)
-
-    async def restore_from_nearest_region(self, target_dir: str):
+    async def restore_from_nearest_region(self, server: str = "localhost:3141"):
         """Restore from the nearest available region."""
         # Check backup availability in each region
         for region in [self.primary_region] + self.backup_regions:
@@ -1136,13 +710,9 @@ class MultiRegionBackupManager:
                         local_path
                     )
 
-                    # Restore
-                    client = Client(host="localhost", port=3141, skip_verify=True)
-                    async with client.connection() as conn:
-                        await conn.execute(
-                            "CALL geode.restore.full($path, $output)",
-                            {"path": local_path, "output": target_dir}
-                        )
+                    # Restore into the running server
+                    await run("geode", "restore", local_path,
+                              "--server", server, "--yes")
 
                     print(f"Restore complete from {region}")
                     return True
@@ -1162,6 +732,7 @@ async def main():
 
 asyncio.run(main())
 ```
+
 {{< /tab >}}
 {{< /tabs >}}
 
@@ -1172,14 +743,11 @@ asyncio.run(main())
 ```bash
 # /etc/cron.d/geode-backup
 
-# Full backup every Sunday at 2 AM
-0 2 * * 0 geode /usr/local/bin/geode-full-backup.sh >> /var/log/geode-backup.log 2>&1
+# Full backup every day at 2 AM (every Geode backup is a full backup)
+0 2 * * * geode /usr/local/bin/geode-full-backup.sh >> /var/log/geode-backup.log 2>&1
 
-# Incremental backup every day at 2 AM (except Sunday)
-0 2 * * 1-6 geode /usr/local/bin/geode-incr-backup.sh >> /var/log/geode-backup.log 2>&1
-
-# WAL archiving check every 5 minutes
-*/5 * * * * geode /usr/local/bin/geode-wal-check.sh >> /var/log/geode-wal.log 2>&1
+# Prune backups older than 30 days, weekly
+0 4 * * 0 geode /usr/local/bin/geode backup cleanup --older-than 30d >> /var/log/geode-backup.log 2>&1
 ```
 
 ### Systemd Timer
@@ -1231,75 +799,38 @@ set -euo pipefail
 # Configuration
 BACKUP_DIR="/backups/geode"
 FULL_DIR="${BACKUP_DIR}/full"
-INCR_DIR="${BACKUP_DIR}/incremental"
-WAL_DIR="${BACKUP_DIR}/wal"
-STATE_FILE="${BACKUP_DIR}/backup_state.json"
-RETENTION_DAYS=30
-FULL_BACKUP_DAY=0  # Sunday
+RETENTION="30d"
+GEODE_SERVER="${GEODE_SERVER:-localhost:3141}"
 
 # Logging
 log() {
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1"
 }
 
-# Create directories
-mkdir -p "${FULL_DIR}" "${INCR_DIR}" "${WAL_DIR}"
+mkdir -p "${FULL_DIR}"
 
-# Determine backup type
-DAY_OF_WEEK=$(date +%w)
 TIMESTAMP=$(date +%Y%m%d-%H%M%S)
+BACKUP_FILE="${FULL_DIR}/geode-full-${TIMESTAMP}.backup"
 
-if [ "${DAY_OF_WEEK}" -eq "${FULL_BACKUP_DAY}" ]; then
-    BACKUP_TYPE="full"
-    BACKUP_FILE="${FULL_DIR}/geode-full-${TIMESTAMP}.backup"
-else
-    BACKUP_TYPE="incremental"
-    BACKUP_FILE="${INCR_DIR}/geode-incr-${TIMESTAMP}.backup"
-fi
+log "Starting full backup"
 
-log "Starting ${BACKUP_TYPE} backup"
+# Every Geode backup is a full backup
+geode backup create \
+    --server "${GEODE_SERVER}" \
+    --type full \
+    --output "${BACKUP_FILE}" \
+    --compress
 
-# Create backup
-if [ "${BACKUP_TYPE}" = "full" ]; then
-    geode backup full \
-        --output "${BACKUP_FILE}" \
-        --compress gzip \
-        --verify
+# Read the header back (fails loudly if the file is unreadable)
+log "Reading backup header..."
+geode backup info "${BACKUP_FILE}"
 
-    # Update state with new full backup
-    echo "{\"last_full\": \"${BACKUP_FILE}\"}" > "${STATE_FILE}"
-else
-    # Read last full backup from state
-    if [ -f "${STATE_FILE}" ]; then
-        LAST_FULL=$(jq -r '.last_full' "${STATE_FILE}")
-    else
-        log "No state file found. Creating full backup instead."
-        BACKUP_FILE="${FULL_DIR}/geode-full-${TIMESTAMP}.backup"
-        geode backup full --output "${BACKUP_FILE}" --compress gzip --verify
-        echo "{\"last_full\": \"${BACKUP_FILE}\"}" > "${STATE_FILE}"
-        exit 0
-    fi
-
-    geode backup incremental \
-        --base "${LAST_FULL}" \
-        --output "${BACKUP_FILE}" \
-        --compress gzip \
-        --verify
-fi
-
-# Verify backup
-log "Verifying backup..."
-geode backup verify "${BACKUP_FILE}"
-
-# Get backup size
 SIZE=$(du -h "${BACKUP_FILE}" | cut -f1)
 log "Backup complete: ${BACKUP_FILE} (${SIZE})"
 
-# Clean up old backups
-log "Cleaning up backups older than ${RETENTION_DAYS} days..."
-find "${FULL_DIR}" -name "*.backup" -mtime +${RETENTION_DAYS} -delete
-find "${INCR_DIR}" -name "*.backup" -mtime +${RETENTION_DAYS} -delete
-find "${WAL_DIR}" -name "*.wal" -mtime +${RETENTION_DAYS} -delete
+# Retention
+log "Removing backups older than ${RETENTION}..."
+geode backup cleanup --older-than "${RETENTION}"
 
 # Upload to remote storage (optional)
 if [ -n "${S3_BUCKET:-}" ]; then
@@ -1317,8 +848,7 @@ log "Backup job completed successfully"
 ```python
 import asyncio
 import os
-from datetime import datetime, timedelta
-from geode_client import Client
+from datetime import datetime
 
 async def check_backup_health(backup_dir: str):
     """Check backup health and alert on issues."""
@@ -1338,37 +868,8 @@ async def check_backup_health(backup_dir: str):
             mtime = datetime.fromtimestamp(os.path.getmtime(latest_full))
             age_days = (datetime.now() - mtime).days
 
-            if age_days > 7:
-                issues.append(f"Latest full backup is {age_days} days old")
-
-    # Check for recent incremental backup
-    incr_dir = os.path.join(backup_dir, "incremental")
-    if os.path.exists(incr_dir):
-        incr_backups = sorted([
-            f for f in os.listdir(incr_dir) if f.endswith('.backup')
-        ], reverse=True)
-
-        if incr_backups:
-            latest_incr = os.path.join(incr_dir, incr_backups[0])
-            mtime = datetime.fromtimestamp(os.path.getmtime(latest_incr))
-            age_hours = (datetime.now() - mtime).total_seconds() / 3600
-
-            if age_hours > 25:  # More than 25 hours
-                issues.append(f"Latest incremental is {age_hours:.0f} hours old")
-
-    # Check WAL archiving
-    wal_dir = os.path.join(backup_dir, "wal")
-    if os.path.exists(wal_dir):
-        wal_files = [f for f in os.listdir(wal_dir) if f.endswith('.wal')]
-        if wal_files:
-            latest_wal = max(wal_files, key=lambda f: os.path.getmtime(
-                os.path.join(wal_dir, f)))
-            mtime = datetime.fromtimestamp(
-                os.path.getmtime(os.path.join(wal_dir, latest_wal)))
-            age_minutes = (datetime.now() - mtime).total_seconds() / 60
-
-            if age_minutes > 10:
-                issues.append(f"WAL archiving may be delayed ({age_minutes:.0f} min)")
+            if age_days > 1:
+                issues.append(f"Latest backup is {age_days} days old")
 
     # Check disk space
     statvfs = os.statvfs(backup_dir)
@@ -1423,7 +924,7 @@ backup_disk_free_bytes = Gauge(
 
 def update_metrics(backup_dir: str):
     """Update Prometheus metrics."""
-    for backup_type in ['full', 'incremental']:
+    for backup_type in ['full']:
         type_dir = os.path.join(backup_dir, backup_type)
         if not os.path.exists(type_dir):
             continue
@@ -1452,8 +953,9 @@ def update_metrics(backup_dir: str):
     free_bytes = statvfs.f_frsize * statvfs.f_bavail
     backup_disk_free_bytes.set(free_bytes)
 
-# Start metrics server
-start_http_server(9090)
+# Start this exporter on its own port: 9090 is the conventional port for the
+# server's own GEODE_METRICS_PORT listener.
+start_http_server(9091)
 
 # Update metrics periodically
 import time
@@ -1466,10 +968,9 @@ while True:
 
 ### Backup Checklist
 
-- [ ] **Regular full backups** (weekly recommended)
-- [ ] **Daily incremental backups**
-- [ ] **WAL archiving enabled** for point-in-time recovery
-- [ ] **Backup verification** after each backup
+- [ ] **Regular full backups** (every backup is a full backup)
+- [ ] **Backup interval matched to your RPO** (there is no WAL replay to close the gap)
+- [ ] **`geode backup info` after each backup** to confirm a readable header
 - [ ] **Test restores** at least monthly
 - [ ] **Off-site backup storage** (different region/provider)
 - [ ] **Encryption** for backups containing sensitive data
@@ -1479,19 +980,27 @@ while True:
 
 ### Security Considerations
 
-```bash
-# Encrypt backup
-geode backup create \
-  --output /backups/geode.backup \
-  --encrypt \
-  --encryption-key-file /etc/geode/backup.key
+Backup encryption is a property of the **server**, not a CLI flag: there is no
+`--encrypt`, `--decrypt` or `--encryption-key-file` option. When the server runs
+with Transparent Data Encryption (`geode serve --enable-tde --tde-provider ...`),
+the backup it produces is written encrypted and `geode backup info` reports
+`Encrypted: true`. See the [KMS integration guide](/docs/security/kms-integration/) for key
+provider configuration and the `tde.*` procedures.
 
-# Restore encrypted backup
-geode restore \
-  --backup /backups/geode.backup \
-  --decrypt \
-  --encryption-key-file /etc/geode/backup.key \
-  --output /var/lib/geode/data
+Protect the backup files themselves with ordinary filesystem controls, and use
+the TLS options (`--ca-cert`, `--client-cert`, `--client-key`) so the backup
+stream to the server is authenticated:
+
+```bash
+geode backup create \
+  --server geode.internal:3141 \
+  --output /backups/geode.backup \
+  --compress \
+  --ca-cert /etc/ssl/geode-ca.crt \
+  --client-cert /etc/ssl/backup-client.crt \
+  --client-key /etc/ssl/backup-client.key
+
+chmod 600 /backups/geode.backup
 ```
 
 ## Next Steps

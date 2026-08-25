@@ -32,6 +32,7 @@ Building production-ready graph applications with Geode requires understanding n
 Design your graph schema based on how you'll query it, not just the domain structure.
 
 **Good Practice**:
+
 ```gql
 -- If you frequently query "products a user might like"
 -- Model supports this pattern:
@@ -43,6 +44,7 @@ ORDER BY relevance DESC;
 ```
 
 **Poor Practice**:
+
 ```gql
 -- Model that doesn't support common queries efficiently
 -- Requires complex traversals or multiple queries
@@ -51,12 +53,14 @@ ORDER BY relevance DESC;
 ### 2. Choose Appropriate Granularity
 
 **When to Use Nodes**:
+
 - Entity referenced by multiple others
 - Has its own relationships
 - Queried independently
 - Complex structure
 
 **When to Use Properties**:
+
 - Simple attribute values
 - Unique to parent entity
 - Not queried independently
@@ -95,12 +99,14 @@ Choose specific, action-oriented relationship types:
 Nodes with millions of relationships degrade performance.
 
 **Problem**:
+
 ```gql
 -- Country node with millions of users
 INSERT (user)-[:LIVES_IN]->(usa:Country);  -- Repeated millions of times
 ```
 
 **Solutions**:
+
 ```gql
 -- Solution 1: Use property + index
 INSERT (user:User {country: 'USA'});
@@ -145,6 +151,7 @@ RETURN p.age, p.city;
 ```
 
 From client code:
+
 ```python
 # Python
 result, _ = await client.query(
@@ -165,6 +172,7 @@ RETURN friend.name;
 ```
 
 Analyze:
+
 - Execution plan
 - Operator costs
 - Index usage
@@ -361,10 +369,12 @@ result, _ = await client.query(
 Log all data modifications:
 
 ```gql
--- Geode automatically logs all mutations
--- Review audit logs regularly
--- Example: check recent mutations
-CALL system.audit_log(CURRENT_TIMESTAMP - DURATION 'P7D');
+-- Review the audit trail regularly. The audit surface is the `audit.*`
+-- namespace; there is no `system.*` procedure namespace.
+CALL audit.get_recent_events(1000)
+YIELD event_id, timestamp, category, action, outcome
+RETURN timestamp, category, action, outcome
+ORDER BY timestamp DESC;
 ```
 
 ### 4. Use TLS for All Connections
@@ -393,6 +403,7 @@ INSERT (u:User {
 ```
 
 From application:
+
 ```python
 users = [
     {"id": "u1", "name": "Alice", "email": "alice@example.com"},
@@ -435,10 +446,10 @@ async def execute_with_timing(query, params):
     start = time.time()
     result, _ = await client.query(query, params)
     duration = time.time() - start
-    
+
     if duration > 1.0:  # Log queries over 1 second
         logging.warning(f"Slow query ({duration:.2f}s): {query}")
-    
+
     return result
 ```
 
@@ -454,7 +465,7 @@ user_cache = {}
 async def get_user(user_id):
     if user_id in user_cache:
         return user_cache[user_id]
-    
+
     result, _ = await client.query(
         "MATCH (u:User {id: $id}) RETURN u",
         {"id": user_id}
@@ -511,11 +522,13 @@ async def query_with_retry(query, params):
 ### 1. Resource Planning
 
 **Minimum Resources**:
+
 - CPU: 4 cores
 - RAM: 8GB
 - Storage: SSD recommended
 
 **Scale Based on**:
+
 - Number of nodes/relationships
 - Query complexity
 - Concurrent connections
@@ -535,6 +548,7 @@ find /backups -name "geode-*.tar.gz" -mtime +30 -delete
 ### 3. Monitoring
 
 Monitor key metrics:
+
 - Query latency (p50, p95, p99)
 - Throughput (queries/sec)
 - Connection pool usage
@@ -583,20 +597,20 @@ import pytest
 async def test_user_creation():
     # Setup
     await client.query("DELETE (u:User {email: 'test@example.com'})")
-    
+
     # Execute
     await client.query(
         "INSERT (u:User {email: $email, name: $name})",
         {"email": "test@example.com", "name": "Test User"}
     )
-    
+
     # Verify
     result, _ = await client.query(
         "MATCH (u:User {email: $email}) RETURN u.name",
         {"email": "test@example.com"}
     )
     assert result.rows[0]['u.name'] == "Test User"
-    
+
     # Cleanup
     await client.query("DELETE (u:User {email: 'test@example.com'})")
 ```
@@ -609,7 +623,7 @@ async def test_order_workflow():
     # Create test data
     await tx.query("INSERT (u:User {id: 'test_user'})")
     await tx.query("INSERT (p:Product {id: 'test_prod', price: 99.99})")
-    
+
     # Test workflow
     async with client.connection() as tx:
         await tx.begin()
@@ -621,7 +635,7 @@ async def test_order_workflow():
             "INSERT (u)-[:PLACED]->(o)"
         )
         await tx.commit()
-    
+
     # Verify
     result, _ = await tx.query(
         "MATCH (u:User {id: 'test_user'})-[:PLACED]->(o:Order) "

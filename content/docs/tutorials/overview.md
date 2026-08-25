@@ -136,12 +136,10 @@ CREATE (b)-[:KNOWS]->(c);
 **Run PageRank**:
 
 ```gql
-CALL graph.pageRank('SocialNetwork', {
-  relationship_type: 'KNOWS',
-  iterations: 20
-})
-YIELD node, score
-RETURN node.name AS person, score
+CALL algo.pagerank.stream()
+YIELD nodeId, score
+MATCH (n) WHERE id(n) = nodeId
+RETURN n.name AS person, score
 ORDER BY score DESC;
 ```
 
@@ -185,18 +183,18 @@ CREATE (laptop)-[:CO_PURCHASED]->(monitor);
 
 **Generate embeddings**:
 
+Geode stores and searches embeddings but does not train them — there is no
+`graph.node2vec` procedure. Export the co-purchase edges, train in your own
+pipeline, then write the vectors back:
+
 ```gql
-CALL graph.node2vec('ProductCatalog', {
-  relationship_type: 'CO_PURCHASED',
-  dimensions: 128,
-  walk_length: 80,
-  num_walks: 10
-})
-YIELD node, embedding
-WITH node, embedding
-MATCH (p:Product)
-WHERE p.id = node.id
-SET p.embedding = embedding;
+-- Export the edge list for the trainer
+MATCH (a:Product)-[:CO_PURCHASED]->(b:Product)
+RETURN id(a) AS source, id(b) AS target;
+
+-- Write a client-computed embedding back onto the product
+MATCH (p:Product) WHERE id(p) = $node_id
+SET p.embedding = vectorf32($embedding);
 ```
 
 **Create vector index**:

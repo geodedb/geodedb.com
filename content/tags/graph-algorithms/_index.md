@@ -39,18 +39,21 @@ This comprehensive guide explores essential graph algorithms, their mathematical
 Understanding algorithmic complexity is crucial for choosing the right algorithm for your data size:
 
 **Polynomial Time (P)**:
+
 - Single-source shortest path: O(V + E) with BFS, O((V + E) log V) with Dijkstra
 - Minimum spanning tree: O(E log V) with Kruskal's, O(E + V log V) with Prim's
 - PageRank (fixed iterations): O(k × E) where k is iteration count
 - Strongly connected components: O(V + E) with Tarjan's algorithm
 
 **NP-Complete (Intractable)**:
+
 - Hamiltonian path/cycle: O(2^V × V^2)
 - Graph coloring: O(k^V) where k is number of colors
 - Traveling salesman problem (TSP): O(V! / 2)
 - Maximum clique: O(3^(V/3))
 
 **Approximation Algorithms** (when exact solutions are impractical):
+
 - Community detection: Modularity optimization O(V × E)
 - Betweenness centrality sampling: O(k × V × E) where k << V
 - Graph partitioning: Spectral methods O(V^3)
@@ -58,11 +61,13 @@ Understanding algorithmic complexity is crucial for choosing the right algorithm
 ### Graph Properties and Invariants
 
 **Degree Distribution**: Characterizes network topology
+
 - Regular graphs: All nodes have same degree
 - Scale-free networks: Power-law degree distribution P(k) ~ k^(-γ)
 - Small-world networks: High clustering, short average path length
 
 **Clustering Coefficient**: Measures local density
+
 ```
 C(v) = 2 × |{(u,w) : u,w ∈ N(v) ∧ (u,w) ∈ E}| / (deg(v) × (deg(v) - 1))
 ```
@@ -803,12 +808,9 @@ WITH start_time, datetime() AS end_time
 RETURN duration.between(start_time, end_time).milliseconds AS runtime_ms,
        runtime_ms / 20.0 AS ms_per_iteration;
 
--- Memory usage profiling
-CALL dbms.memory.usage()
-YIELD used, total, peak
-RETURN used / 1024 / 1024 AS used_mb,
-       total / 1024 / 1024 AS total_mb,
-       peak / 1024 / 1024 AS peak_mb;
+-- Memory usage is published on the metrics endpoint as `geode_memory_bytes`,
+-- not through a procedure (`dbms.memory.usage` does not exist):
+--   curl -s http://localhost:9090/metrics | grep '^geode_memory_bytes'
 ```
 
 ### Convergence Analysis
@@ -873,11 +875,9 @@ RETURN [n IN nodes(path) | n.name] AS critical_path,
        total_time AS longest_lead_time,
        [r IN relationships(path) | r.lead_time_days] AS segment_times;
 
--- Bottleneck identification (max flow)
-MATCH (factory:Factory {id: $factory_id})
-MATCH (warehouse:Warehouse {id: $warehouse_id})
-CALL algorithms.maxFlow(factory, warehouse, 'SHIPS', 'capacity')
-YIELD path, flow
+-- Bottleneck identification. There is no max-flow procedure; the narrowest
+-- link on each candidate path is an ordinary pattern plus REDUCE.
+MATCH path = (factory:Factory {id: $factory_id})-[:SHIPS*1..6]->(warehouse:Warehouse {id: $warehouse_id})
 WITH REDUCE(min_cap = 999999, r IN relationships(path) |
          CASE WHEN r.capacity < min_cap THEN r.capacity ELSE min_cap END
      ) AS bottleneck_capacity,

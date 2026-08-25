@@ -727,18 +727,21 @@ EXPLAIN ANALYZE MATCH (doc:Document)
 WHERE doc.content CONTAINS 'test'
 RETURN count(doc)
 
--- Verify index statistics
-CALL db.index.stats('document_content_idx')
+-- Verify the index exists and covers the property you search
+SHOW INDEXES;
 ```
 
 **Solution**:
 
-```bash
-# Rebuild index statistics
-geode query "CALL db.index.rebuild('document_content_idx')" --insecure
+There is no index-rebuild or index-analyze procedure. Rebuild by dropping and
+re-creating the index, which re-ingests every matching node:
 
-# Verify vocabulary size and document count
-geode query "CALL db.index.analyze('document_content_idx')" --insecure
+```bash
+geode query "DROP INDEX document_content_idx"
+geode query "CREATE INDEX document_content_idx ON Document(content) USING fulltext"
+
+# Confirm the corpus the index now covers
+geode query "MATCH (d:Document) RETURN count(d) AS documents"
 ```
 
 ---
@@ -854,8 +857,8 @@ ORDER BY score DESC
 1. **Monitor Statistics**:
 
    ```bash
-   # Regular statistics updates
-   0 2 * * * geode query "CALL db.index.analyze('*')"
+   # Track corpus growth; the index maintains itself as documents change
+   0 2 * * * geode query "MATCH (d:Document) RETURN count(d)" >> /var/log/geode-corpus.log
    ```
 
 2. **Tune Parameters**:

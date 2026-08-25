@@ -47,12 +47,14 @@ Together, these provide defense-in-depth security.
 Geode uses a two-tier key hierarchy for security and operational flexibility:
 
 **Master Encryption Key (MEK)**:
+
 - Stored in external Key Management Service (KMS) or Hardware Security Module (HSM)
 - Never stored on disk with encrypted data
 - Rotated infrequently (annually or when compromised)
 - Examples: AWS KMS, Azure Key Vault, HashiCorp Vault, PKCS#11 HSM
 
 **Data Encryption Keys (DEK)**:
+
 - Generated per database/tablespace/file
 - Encrypted with MEK and stored alongside encrypted data
 - Rotated periodically for defense-in-depth
@@ -63,6 +65,7 @@ This architecture enables key rotation without re-encrypting the entire database
 ### Encryption Scope
 
 TDE encrypts:
+
 - **Data files**: Node storage, relationship storage, property storage
 - **Index files**: All index structures (B-trees, HNSW graphs, etc.)
 - **WAL (Write-Ahead Log)**: Transaction log files
@@ -70,6 +73,7 @@ TDE encrypts:
 - **Backups**: Backup archives and snapshots
 
 TDE does NOT encrypt:
+
 - **Configuration files**: Database configuration (not sensitive data)
 - **Logs**: Application logs (use separate log encryption if needed)
 - **In-memory data**: Data in RAM (use encrypted memory for extreme security)
@@ -141,6 +145,7 @@ security:
 Geode integrates with enterprise key management systems:
 
 **AWS KMS**:
+
 ```yaml
 kms:
   provider: aws-kms
@@ -150,6 +155,7 @@ kms:
 ```
 
 **Azure Key Vault**:
+
 ```yaml
 kms:
   provider: azure-kv
@@ -160,6 +166,7 @@ kms:
 ```
 
 **HashiCorp Vault**:
+
 ```yaml
 kms:
   provider: vault
@@ -170,6 +177,7 @@ kms:
 ```
 
 **PKCS#11 HSM**:
+
 ```yaml
 kms:
   provider: pkcs11
@@ -277,6 +285,7 @@ Faster and more secure than deleting millions of records.
 ### Key Management
 
 1. **Use external KMS**: Never store MEK with encrypted data
+
    ```yaml
    # Good: MEK in AWS KMS
    kms:
@@ -290,6 +299,7 @@ Faster and more secure than deleting millions of records.
    ```
 
 2. **Rotate MEK annually**: Regular rotation limits exposure
+
    ```bash
    $ geode rotate-mek \
      --old-key-id arn:aws:kms:.../old-key \
@@ -297,6 +307,7 @@ Faster and more secure than deleting millions of records.
    ```
 
 3. **Rotate DEKs quarterly**: Defense-in-depth
+
    ```yaml
    dek_rotation:
      enabled: true
@@ -308,6 +319,7 @@ Faster and more secure than deleting millions of records.
 ### Performance Optimization
 
 1. **Enable hardware acceleration**: Use AES-NI when available
+
    ```bash
    # Verify AES-NI support
    $ grep -o aes /proc/cpuinfo | wc -l
@@ -315,6 +327,7 @@ Faster and more secure than deleting millions of records.
    ```
 
 2. **Cache DEKs**: Reduce KMS roundtrips
+
    ```yaml
    encryption:
      cache_deks: true
@@ -322,12 +335,14 @@ Faster and more secure than deleting millions of records.
    ```
 
 3. **Use AES-GCM**: Faster than AES-CBC (parallel encryption)
+
    ```yaml
    encryption:
      algorithm: aes-256-gcm  # Recommended
    ```
 
 4. **Benchmark impact**: Measure before deploying
+
    ```bash
    $ geode benchmark --with-tde --without-tde
    # Expect < 5% overhead with AES-NI
@@ -336,6 +351,7 @@ Faster and more secure than deleting millions of records.
 ### Operational Security
 
 1. **Principle of least privilege**: Limit KMS key access
+
    ```json
    {
      "Version": "2012-10-17",
@@ -349,6 +365,7 @@ Faster and more secure than deleting millions of records.
    ```
 
 2. **Enable audit logging**: Track all key usage
+
    ```yaml
    audit:
      log_key_access: true
@@ -356,6 +373,7 @@ Faster and more secure than deleting millions of records.
    ```
 
 3. **Test disaster recovery**: Practice key recovery procedures
+
    ```bash
    # Test MEK recovery from backup
    $ geode recover-mek \
@@ -396,35 +414,48 @@ Track TDE health:
 
 ```gql
 -- Check encryption status
-CALL dbms.security.encryption.status()
-YIELD enabled, algorithm, kms_provider, dek_count, last_rotation
-RETURN enabled, algorithm, kms_provider, dek_count, last_rotation;
+CALL tde.get_encryption_status()
+YIELD enabled, encrypted_tables, encryption_algorithm
+RETURN enabled, encrypted_tables, encryption_algorithm;
 
--- Monitor key access
-CALL dbms.security.encryption.audit()
-YIELD timestamp, operation, key_id, success, error
-WHERE success = false
-RETURN timestamp, operation, key_id, error;
+-- Where key rotation stands
+CALL tde.get_rotation_state()
+YIELD current_generation, last_rotation_time, rotation_in_progress, scheduled_rotation
+RETURN current_generation, last_rotation_time, rotation_in_progress, scheduled_rotation;
 
--- Performance metrics
-CALL dbms.monitor.encryption.stats()
-YIELD encrypt_ops_per_sec, decrypt_ops_per_sec, avg_latency_ms
-RETURN encrypt_ops_per_sec, decrypt_ops_per_sec, avg_latency_ms;
+-- Encryption overhead against an unencrypted baseline
+CALL tde.measure_overhead()
+YIELD baseline_ops_per_sec, encrypted_ops_per_sec, overhead_percentage, passes_threshold
+RETURN baseline_ops_per_sec, encrypted_ops_per_sec, overhead_percentage, passes_threshold;
+```
+
+Key-access events go to the audit trail rather than a dedicated encryption-audit
+procedure — there is no `dbms.security.encryption.*` or `dbms.monitor.*`
+namespace:
+
+```gql
+CALL audit.get_recent_events(100)
+YIELD event_id, timestamp, category, action, outcome
+RETURN timestamp, category, action, outcome
+ORDER BY timestamp DESC;
 ```
 
 ### Common Issues
 
 **KMS unavailable**:
+
 - **Symptom**: Cannot start database, "Failed to retrieve MEK"
 - **Cause**: KMS service unreachable
 - **Solution**: Verify network connectivity, check KMS service status, use cached DEKs (if enabled)
 
 **Performance degradation**:
+
 - **Symptom**: Slow queries after enabling TDE
 - **Cause**: Missing AES-NI support or software encryption
 - **Solution**: Verify AES-NI availability, consider hardware upgrade
 
 **Key rotation failures**:
+
 - **Symptom**: DEK rotation fails
 - **Cause**: Insufficient KMS permissions
 - **Solution**: Grant required KMS permissions (GenerateDataKey, Decrypt)
@@ -487,25 +518,28 @@ Benefits: Different security levels, independent key rotation, compliance segmen
 
 Rotate encryption keys while database remains online:
 
-```bash
-# Initiate key rotation
-geode admin rotate-tde-key \
-    --old-key-id arn:aws:kms:us-east-1:123:key/old-key \
-    --new-key-id arn:aws:kms:us-east-1:123:key/new-key \
-    --rotation-mode online
+Rotation is driven by the `tde.*` procedures, not a `geode admin` subcommand
+(there is no `admin` subcommand):
 
-# Monitor rotation progress
-geode admin show-key-rotation-status
-# Output:
-# Rotation ID: rot-20260124-001
-# Status: In Progress
-# Progress: 1,234,567 / 5,000,000 pages (24.7%)
-# Estimated completion: 2026-01-24 18:30:00
-# Old DEKs re-encrypted: 45 / 100
-# New DEKs created: 45
+```gql
+-- Rotate now
+CALL tde.rotate_keys()
+YIELD success, keys_rotated, new_master_key_id
+RETURN success, keys_rotated, new_master_key_id;
+
+-- Or install a schedule
+CALL tde.configure_rotation('scheduled', 8760)
+YIELD status, next_rotation_time
+RETURN status, next_rotation_time;
+
+-- Watch progress
+CALL tde.get_rotation_state()
+YIELD current_generation, last_rotation_time, rotation_in_progress, scheduled_rotation
+RETURN current_generation, last_rotation_time, rotation_in_progress, scheduled_rotation;
 ```
 
 Online rotation process:
+
 1. New DEKs created with new MEK
 2. Background process re-encrypts old DEKs with new MEK
 3. Newly written data uses new DEKs
@@ -594,6 +628,7 @@ geode benchmark read --queries=1000000 --threads=32 --without-tde
 ```
 
 Typical results with AES-NI:
+
 - Read overhead: 2-4%
 - Write overhead: 4-8%
 - CPU increase: 10-15%
@@ -603,43 +638,36 @@ Typical results with AES-NI:
 Generate TDE compliance reports:
 
 ```gql
--- Verify encryption status
-CALL dbms.security.encryption.audit()
-YIELD
-    tablespace,
-    encrypted,
-    algorithm,
-    key_id,
-    key_created_at,
-    last_rotation,
-    pages_encrypted,
-    pages_total,
-    encryption_percentage
-RETURN
-    tablespace,
-    encrypted,
-    encryption_percentage,
-    last_rotation
-ORDER BY tablespace;
+-- Confirm encryption is on and which algorithm is in use
+CALL tde.get_encryption_status()
+YIELD enabled, encrypted_tables, encryption_algorithm
+RETURN enabled, encrypted_tables, encryption_algorithm;
 
--- List all encryption keys
-CALL dbms.security.encryption.listKeys()
-YIELD key_id, algorithm, created_at, status, usage_count
-RETURN key_id, algorithm, created_at, status, usage_count
-ORDER BY created_at DESC;
+-- Prove no page still holds plaintext
+CALL tde.verify_no_plaintext()
+YIELD verified, pages_scanned, violations
+RETURN verified, pages_scanned, violations;
 
--- Check key access logs
-SELECT
-    timestamp,
-    key_id,
-    operation,  -- encrypt, decrypt, rotate
-    user_id,
-    success,
-    error_message
-FROM system.tde_audit
-WHERE timestamp > current_timestamp() - INTERVAL '7 days'
+-- Prove no key material is stored in the clear
+CALL tde.audit_plaintext_keys()
+YIELD plaintext_keys_found, encrypted_keys_count, security_violation
+RETURN plaintext_keys_found, encrypted_keys_count, security_violation;
+
+-- Write a signed manifest of the key hierarchy for the auditor
+CALL tde.generate_key_manifest()
+YIELD success, manifest_path, keys_included
+RETURN success, manifest_path, keys_included;
+
+-- Key access events come from the audit trail
+CALL audit.get_recent_events(500)
+YIELD event_id, timestamp, category, action, outcome
+RETURN timestamp, category, action, outcome
 ORDER BY timestamp DESC;
 ```
+
+There is no per-tablespace encryption report and no key listing procedure:
+Geode encrypts the whole store rather than individual tablespaces, and key
+material is never enumerated to clients.
 
 Export for compliance reporting:
 
@@ -653,34 +681,35 @@ def generate_tde_compliance_report():
         'access_audit': {}
     }
 
-    # Verify all data encrypted
+    # Verify encryption is enabled and no plaintext remains
     result = db.execute("""
-        CALL dbms.security.encryption.audit()
-        YIELD tablespace, encrypted, encryption_percentage
-        RETURN tablespace, encrypted, encryption_percentage
+        CALL tde.verify_no_plaintext()
+        YIELD verified, pages_scanned, violations
+        RETURN verified, pages_scanned, violations
     """)
 
+    row = result.rows[0]
     report['encryption_status'] = {
-        row['tablespace']: {
-            'encrypted': row['encrypted'],
-            'percentage': row['encryption_percentage']
-        }
-        for row in result
+        'verified': row['verified'],
+        'pages_scanned': row['pages_scanned'],
+        'violations': row['violations'],
     }
 
     # Verify key rotation compliance
     result = db.execute("""
-        CALL dbms.security.encryption.listKeys()
-        YIELD key_id, created_at, last_rotation
-        RETURN key_id, created_at, last_rotation
+        CALL tde.get_rotation_state()
+        YIELD current_generation, last_rotation_time, rotation_in_progress
+        RETURN current_generation, last_rotation_time, rotation_in_progress
     """)
 
-    for row in result.rows:
-        days_since_rotation = (datetime.now() - row['last_rotation']).days
-        report['key_management'][row['key_id']] = {
-            'age_days': days_since_rotation,
-            'compliant': days_since_rotation < 365  # Annual rotation required
-        }
+    row = result.rows[0]
+    last_rotation = datetime.fromisoformat(row['last_rotation_time'])
+    days_since_rotation = (datetime.now() - last_rotation).days
+    report['key_management'] = {
+        'generation': row['current_generation'],
+        'age_days': days_since_rotation,
+        'compliant': days_since_rotation < 365,  # Annual rotation required
+    }
 
     return report
 ```
@@ -689,82 +718,96 @@ def generate_tde_compliance_report():
 
 Implement cryptographic erasure for secure data deletion:
 
+Crypto-shredding in Geode is **whole-store**, not per-tablespace: there is no
+`dbms.security.cryptoShred` procedure and no per-tablespace DEK to destroy. The
+key-destruction surface is the TDE key hierarchy itself:
+
 ```gql
--- Delete data cryptographically by destroying its DEK
-CALL dbms.security.cryptoShred('tablespace_archived_2023')
-YIELD
-    tablespace,
-    dek_id,
-    dek_destroyed,
-    data_rendered_unrecoverable,
-    timestamp
-RETURN *;
+-- Wipe live key material from memory
+CALL tde.zeroize_keys()
+YIELD success, keys_cleared, memory_wiped
+RETURN success, keys_cleared, memory_wiped;
+
+-- Tear down the derived key hierarchy
+CALL tde.cleanup_key_hierarchy()
+YIELD keys_zeroized, hierarchy_cleared
+RETURN keys_zeroized, hierarchy_cleared;
 ```
 
-Crypto-shredding is faster than deleting billions of records and provides mathematical certainty that data is unrecoverable. Essential for GDPR "right to be forgotten" compliance.
+For per-record erasure ("right to be forgotten") use
+[field-level encryption](/docs/security/field-level-encryption/), where each
+field is encrypted under a key you can retire independently, or delete the
+records outright with `DETACH DELETE`. Destroying the TDE master key renders
+the **entire** store unrecoverable, which is a disposal operation, not a
+selective one.
 
 ### TDE Disaster Recovery
 
 Backup encryption keys securely:
 
-```bash
-# Export MEK reference (NOT the key itself)
-geode admin export-tde-config \
-    --output=/backups/tde-config.json
-
-# Backup should contain:
-# - KMS key ARN/ID
-# - Algorithm configuration
-# - DEK metadata
-# NOT the actual encryption keys!
-
-# Keys remain in KMS - disaster recovery restores access, not keys themselves
+```gql
+-- Write a key manifest alongside the backup (references, not key material)
+CALL tde.generate_key_manifest()
+YIELD success, manifest_path, keys_included
+RETURN success, manifest_path, keys_included;
 ```
 
-Recover TDE-encrypted database:
+The manifest records key identifiers and hierarchy metadata. The key material
+itself stays in the KMS: disaster recovery restores *access* to the keys, not
+the keys themselves.
+
+Recover a TDE-encrypted database:
 
 ```bash
-# Step 1: Restore database from backup
-geode restore --backup=/backups/geode-full-20260124.tar.gz
+# Step 1: Start the server with TDE enabled
+geode serve --data-dir /var/lib/geode --enable-tde --tde-provider aws-kms
 
-# Step 2: Configure KMS access
-geode admin configure-tde \
-    --kms-provider aws-kms \
-    --kms-key-id arn:aws:kms:us-east-1:123:key/abc-def
+# Step 2: Restore the backup into it
+geode restore /backups/geode-full-20260124.backup --yes
+```
 
-# Step 3: Verify key access
-geode admin test-tde-access
+```gql
+-- Step 3: Point the server at the KMS and confirm it can wrap/unwrap
+CALL tde.configure_external_kms('https://kms.us-east-1.amazonaws.com', 'us-east-1')
+YIELD status, endpoint, connection_verified
+RETURN status, endpoint, connection_verified;
 
-# Step 4: Start database (auto-loads DEKs from KMS)
-geode serve --data /var/lib/geode
+CALL tde.test_kms_wrap_unwrap()
+YIELD wrap_success, unwrap_success, roundtrip_verified, latency_ms
+RETURN wrap_success, unwrap_success, roundtrip_verified, latency_ms;
+
+-- Step 4: Confirm the restored store decrypts
+CALL tde.get_encryption_status()
+YIELD enabled, encrypted_tables, encryption_algorithm
+RETURN enabled, encrypted_tables, encryption_algorithm;
 ```
 
 ## TDE Monitoring and Alerting
 
 Set up monitoring for encryption health:
 
-```yaml
-# prometheus_rules.yml
-groups:
-  - name: geode_tde
-    rules:
-      - alert: TDEKeyUnavailable
-        expr: geode_tde_key_access_failures > 0
-        for: 5m
-        annotations:
-          summary: "TDE encryption key unavailable"
+The server exposes no `geode_tde_*` Prometheus metrics — the registered set is
+the ten process-level metrics documented in the
+[statistics reference](/docs/reference/statistics/). Monitor TDE by polling the
+procedures on a schedule and alerting on their output:
 
-      - alert: TDEPerformanceDegradation
-        expr: rate(geode_tde_decrypt_duration_seconds[5m]) > 0.01
-        for: 10m
-        annotations:
-          summary: "TDE decryption taking longer than expected"
+```bash
+#!/bin/bash
+# /usr/local/bin/geode-tde-check.sh — run from cron, alert on non-zero exit
+set -euo pipefail
 
-      - alert: TDEKeyRotationOverdue
-        expr: geode_tde_key_age_days > 365
-        annotations:
-          summary: "TDE key rotation overdue (>365 days)"
+geode query "CALL tde.get_encryption_status() YIELD enabled RETURN enabled" \
+  | grep -q true || { echo "TDE not enabled"; exit 1; }
+
+geode query "CALL tde.test_kms_wrap_unwrap() YIELD roundtrip_verified RETURN roundtrip_verified" \
+  | grep -q true || { echo "KMS wrap/unwrap failed"; exit 1; }
+
+geode query "CALL tde.audit_plaintext_keys() YIELD security_violation RETURN security_violation" \
+  | grep -q false || { echo "Plaintext key material detected"; exit 1; }
 ```
+
+Rotation age comes from `tde.get_rotation_state()`'s `last_rotation_time`;
+compare it against your policy window in the same script.
 
 ## Related Topics
 

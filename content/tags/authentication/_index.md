@@ -165,6 +165,7 @@ CREATE POLICY department_data ON :Employee
 ```
 
 **RLS Use Cases**:
+
 - **Multi-tenancy**: Isolate tenant data in shared databases
 - **Hierarchical access**: Managers see their team's data only
 - **Regional compliance**: Restrict data access by geography
@@ -621,9 +622,11 @@ Implement runtime permission checks:
 
 ```gql
 -- Check user's current permissions
-CALL dbms.security.showUserPermissions('analyst')
-YIELD role, permission, resource
-RETURN role, permission, resource;
+SHOW PERMISSIONS FOR analyst;
+SHOW GRANTS FOR analyst;
+
+-- Or through the auth procedure surface
+CALL geode.auth.user_permissions('analyst');
 
 -- Temporarily elevate privileges
 BEGIN TRANSACTION;
@@ -777,8 +780,10 @@ ALTER USER analyst REQUIRE PASSWORD_CHANGE;
 -- Set password expiration
 ALTER USER analyst PASSWORD_EXPIRES '90 days';
 
--- Check password compliance
-CALL dbms.security.validatePassword('proposed_password');
+-- Password policy is enforced by the server when the password is set; there is
+-- no validate-password procedure to pre-check a candidate. Change it and let
+-- the server accept or reject it:
+CALL geode.auth.user_change_password('analyst', 'old_password', 'new_password');
 ```
 
 ## Authentication Best Practices Summary

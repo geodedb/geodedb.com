@@ -576,14 +576,28 @@ DROP INDEX IF EXISTS person_email_idx;
 ### Index Statistics
 
 ```gql
--- View index statistics
-CALL db.index.stats('person_email_idx');
+-- List every index with its type, label and properties
+SHOW INDEXES;
 
--- Update index statistics
-CALL db.index.analyze('person_email_idx');
+-- Same list through the introspection procedure
+CALL db.indexes() YIELD name, type, label, properties
+RETURN name, type, label, properties
+ORDER BY name;
+```
 
--- Rebuild index
-CALL db.index.rebuild('person_email_idx');
+The engine maintains index contents as data changes, so there is no
+statistics-update or analyze command, and no per-index size, hit-count or
+fragmentation metric. To rebuild an index, drop and re-create it:
+
+```gql
+DROP INDEX person_email_idx;
+CREATE INDEX person_email_idx ON Person(email);
+```
+
+To confirm a statement actually uses an index, read the plan:
+
+```gql
+EXPLAIN MATCH (p:Person) WHERE p.email = 'alice@example.com' RETURN p;
 ```
 
 ---

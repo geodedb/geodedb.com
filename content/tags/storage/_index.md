@@ -474,17 +474,16 @@ throttle_mb_per_sec = 100
 **Via GQL**:
 
 ```gql
--- Compact a specific table
-CALL system.compact('User');
+-- Compaction, ANALYZE, VACUUM and REINDEX have no GQL surface: the storage
+-- engine reclaims and reuses pages itself, and index contents are maintained
+-- as data changes. Observe reclamation instead:
+CALL geode.storage.stats()
+YIELD page_size, free_pages_nodes, free_pages_props, free_pages_var
+RETURN page_size, free_pages_nodes, free_pages_props, free_pages_var;
 
--- Update statistics
-ANALYZE User;
-
--- Vacuum dead tuples
-VACUUM User;
-
--- Rebuild index
-REINDEX INDEX user_email_idx;
+-- Rebuild an index by dropping and re-creating it
+DROP INDEX user_email_idx;
+CREATE INDEX user_email_idx ON User(email);
 
 -- Check fragmentation
 SELECT

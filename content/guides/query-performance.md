@@ -63,12 +63,14 @@ Understanding plan components helps you write better queries:
 Always begin your MATCH pattern with the most selective (narrowest) node. This minimizes the initial working set.
 
 **Inefficient** (scans all Posts first):
+
 ```gql
 MATCH (post:Post)<-[:POSTED]-(user:User {username: "alice"})
 RETURN post.title
 ```
 
 **Efficient** (uses index on User.username):
+
 ```gql
 MATCH (user:User {username: "alice"})-[:POSTED]->(post:Post)
 RETURN post.title
@@ -79,6 +81,7 @@ RETURN post.title
 Specify relationship types when possible to reduce exploration:
 
 **Inefficient** (explores all relationship types):
+
 ```gql
 MATCH (a:Person)-[r]->(b:Person)
 WHERE type(r) = "KNOWS"
@@ -86,6 +89,7 @@ RETURN a, b
 ```
 
 **Efficient** (only explores KNOWS relationships):
+
 ```gql
 MATCH (a:Person)-[:KNOWS]->(b:Person)
 RETURN a, b
@@ -96,12 +100,14 @@ RETURN a, b
 Variable-length patterns can be expensive. Always set bounds:
 
 **Dangerous** (unbounded traversal):
+
 ```gql
 MATCH (start:Person)-[:KNOWS*]->(end:Person)
 RETURN end
 ```
 
 **Safe** (bounded traversal):
+
 ```gql
 MATCH (start:Person)-[:KNOWS*1..4]->(end:Person)
 RETURN end
@@ -112,12 +118,14 @@ RETURN end
 Directional patterns are more efficient than undirected ones:
 
 **Less efficient** (explores both directions):
+
 ```gql
 MATCH (a:Person)-[:KNOWS]-(b:Person)
 RETURN a, b
 ```
 
 **More efficient** (specific direction):
+
 ```gql
 MATCH (a:Person)-[:KNOWS]->(b:Person)
 RETURN a, b
@@ -130,12 +138,14 @@ A Cartesian product occurs when two unconnected patterns create all possible com
 ### Recognizing Cartesian Products
 
 **Cartesian product** (users x products = millions of rows):
+
 ```gql
 MATCH (u:User), (p:Product)
 RETURN u.name, p.name
 ```
 
 **Connected pattern** (only related pairs):
+
 ```gql
 MATCH (u:User)-[:PURCHASED]->(p:Product)
 RETURN u.name, p.name
@@ -146,6 +156,7 @@ RETURN u.name, p.name
 Watch for separated patterns in the same MATCH:
 
 **Cartesian product** (a,b and c,d are unconnected):
+
 ```gql
 MATCH (a:Person)-[:KNOWS]->(b:Person),
       (c:Company)-[:LOCATED_IN]->(d:City)
@@ -153,12 +164,14 @@ RETURN a, b, c, d
 ```
 
 **Solution 1** - Connect the patterns:
+
 ```gql
 MATCH (a:Person)-[:KNOWS]->(b:Person)-[:WORKS_AT]->(c:Company)-[:LOCATED_IN]->(d:City)
 RETURN a, b, c, d
 ```
 
 **Solution 2** - Use separate queries:
+
 ```gql
 // Query 1
 MATCH (a:Person)-[:KNOWS]->(b:Person)
@@ -188,6 +201,7 @@ The WITH clause allows you to chain query parts, reducing intermediate result se
 ### Filtering Early with WITH
 
 **Inefficient** (processes all relationships before filtering):
+
 ```gql
 MATCH (user:User)-[:POSTED]->(post:Post)-[:HAS_COMMENT]->(comment:Comment)
 WHERE user.active = true
@@ -195,6 +209,7 @@ RETURN user.name, count(comment) AS comment_count
 ```
 
 **Efficient** (filters users early):
+
 ```gql
 MATCH (user:User)
 WHERE user.active = true
@@ -263,6 +278,7 @@ RETURN p.name, count(friend) AS friend_count
 Pre-filter data before aggregating:
 
 **Inefficient**:
+
 ```gql
 MATCH (o:Order)
 WHERE o.status = "completed"
@@ -270,6 +286,7 @@ RETURN sum(o.total) AS revenue
 ```
 
 **More efficient with index**:
+
 ```gql
 // Ensure index exists: CREATE INDEX order_status ON :Order(status)
 MATCH (o:Order {status: "completed"})
@@ -281,12 +298,14 @@ RETURN sum(o.total) AS revenue
 The `collect()` function gathers values into a list. Limit what you collect:
 
 **Inefficient** (collects everything):
+
 ```gql
 MATCH (author:Author)-[:WROTE]->(book:Book)
 RETURN author.name, collect(book) AS all_books
 ```
 
 **Efficient** (limits collection):
+
 ```gql
 MATCH (author:Author)-[:WROTE]->(book:Book)
 WITH author, book
@@ -302,6 +321,7 @@ RETURN author.name, recent_books
 Place LIMIT as early as possible in your query:
 
 **Inefficient** (processes all results, then limits):
+
 ```gql
 MATCH (p:Person)-[:KNOWS]->(friend:Person)-[:KNOWS]->(fof:Person)
 RETURN DISTINCT fof.name
@@ -310,6 +330,7 @@ LIMIT 10
 ```
 
 **Efficient** (limits intermediate results):
+
 ```gql
 MATCH (p:Person)-[:KNOWS]->(friend:Person)
 WITH friend LIMIT 100
@@ -370,6 +391,7 @@ RETURN user.name, user.email
 ```
 
 **Client usage (Python)**:
+
 ```python
 result, _ = await conn.query(
     """
@@ -382,6 +404,7 @@ result, _ = await conn.query(
 ```
 
 **Client usage (Go)**:
+
 ```go
 rows, err := db.QueryContext(ctx, `
     MATCH (user:User {username: ?})
@@ -393,6 +416,7 @@ rows, err := db.QueryContext(ctx, `
 ### Parameter Best Practices
 
 **Good**: Parameterize variable values:
+
 ```gql
 MATCH (p:Product)
 WHERE p.category = $category AND p.price <= $max_price
@@ -400,6 +424,7 @@ RETURN p
 ```
 
 **Bad**: Don't parameterize structural elements:
+
 ```gql
 // Labels and relationship types cannot be parameterized
 // This does NOT work:
@@ -421,6 +446,7 @@ CREATE (u:User {
 ```
 
 **Client usage**:
+
 ```python
 users = [
     {"name": "Alice", "email": "alice@example.com"},
@@ -440,12 +466,14 @@ await conn.execute(
 **Problem**: Returning entire nodes when you only need specific properties.
 
 **Slow**:
+
 ```gql
 MATCH (user:User)-[:POSTED]->(post:Post)
 RETURN user, post  // Returns all properties
 ```
 
 **Fast**:
+
 ```gql
 MATCH (user:User)-[:POSTED]->(post:Post)
 RETURN user.name, post.title, post.created_at  // Returns only needed properties
@@ -489,6 +517,7 @@ LIMIT 100
 **Problem**: Matching the same pattern multiple times.
 
 **Slow**:
+
 ```gql
 MATCH (user:User {id: $id})-[:POSTED]->(post:Post)
 WITH user, count(post) AS post_count
@@ -499,6 +528,7 @@ RETURN user.name, post_count, comment_count, count(liked) AS like_count
 ```
 
 **Fast** (using OPTIONAL MATCH):
+
 ```gql
 MATCH (user:User {id: $id})
 OPTIONAL MATCH (user)-[:POSTED]->(post:Post)
@@ -514,6 +544,7 @@ RETURN user.name, post_count, comment_count, count(liked) AS like_count
 **Problem**: Fetching all paths when you only need a few.
 
 **Slow**:
+
 ```gql
 MATCH path = (start:Person)-[:KNOWS*1..6]->(end:Person)
 WHERE start.name = "Alice"
@@ -521,6 +552,7 @@ RETURN path
 ```
 
 **Fast**:
+
 ```gql
 MATCH path = (start:Person {name: "Alice"})-[:KNOWS*1..6]->(end:Person)
 RETURN path
@@ -532,6 +564,7 @@ LIMIT 100
 **Problem**: Using CONTAINS or regex without full-text indexes.
 
 **Slow**:
+
 ```gql
 MATCH (p:Product)
 WHERE p.description CONTAINS "wireless"
@@ -539,13 +572,15 @@ RETURN p
 ```
 
 **Fast** (with full-text index):
+
 ```gql
 // First, create a full-text index:
 // CREATE FULLTEXT INDEX product_search ON :Product(name, description)
 
-CALL db.index.fulltext.queryNodes("product_search", "wireless")
-YIELD node
-RETURN node
+CALL geode.fts.search('product_search', 'wireless')
+YIELD node, score
+MATCH (p) WHERE id(p) = node
+RETURN p, score
 ```
 
 ## Performance Checklist

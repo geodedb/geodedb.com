@@ -212,6 +212,7 @@ ALTER LABEL :Employee ENABLE ROW LEVEL SECURITY;
 ```
 
 **RLS Implementation**:
+
 ```zig
 pub fn applyRLS(
     query: Query,
@@ -328,16 +329,26 @@ audit:
 
 ```gql
 -- View recent audit events
-CALL db.audit.recent(100)
+CALL audit.get_recent_events(100)
+YIELD event_id, timestamp, category, action, outcome
+RETURN timestamp, category, action, outcome
+ORDER BY timestamp DESC;
 
--- Search audit logs
-CALL db.audit.search({
-  user: 'alice',
-  event_type: 'data_access',
-  start_time: datetime('2026-01-01'),
-  end_time: datetime('2026-01-31')
-})
+-- Filter the same rows with an ordinary WHERE
+CALL audit.get_recent_events(1000)
+YIELD event_id, timestamp, category, action, outcome
+WHERE category = 'data_access' AND outcome = 'denied'
+RETURN timestamp, action, outcome;
+
+-- Verify the tamper-evident hash chain
+CALL audit.verify_hash_chain()
+YIELD valid, events_checked, issues_found
+RETURN valid, events_checked, issues_found;
 ```
+
+The audit surface is the `audit.*` namespace; there is no `db.audit.*` search
+procedure, and events carry `category`, `action` and `outcome` rather than a
+free-form user/time filter.
 
 ## Security Best Practices
 

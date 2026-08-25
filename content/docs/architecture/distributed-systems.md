@@ -367,15 +367,15 @@ transactions:
 ### Cluster Health
 
 ```gql
--- View cluster status
-CALL db.cluster.status()
-
--- View shard distribution
-CALL db.cluster.shards()
-
--- View replication lag
-CALL db.cluster.replicationLag()
+-- One row per cluster member: node_id, role, term, leader_id,
+-- endpoint, last_contact_ms
+SHOW CLUSTER STATUS;
 ```
+
+There is no `db.cluster.*` namespace: shard distribution and per-replica lag are
+not exposed as procedures. Compare members by running
+`CALL geode.storage.stats() YIELD wal_lsn, node_count, edge_count` against each
+node, and by scraping `/metrics` on each of them.
 
 ### Metrics
 

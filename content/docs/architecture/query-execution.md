@@ -518,15 +518,12 @@ fn estimateMemoryCost(operator: Operator) f64 {
 - Index selectivity
 - Data skew metrics
 
-**Statistics Update**:
-\`\`\`gql
--- Manual statistics update
-CALL db.stats.update()
+**Statistics Update**: the planner maintains its own estimates as data changes.
+There is no statistics-refresh procedure and no `statistics:` configuration
+block; inspect the plan the optimizer chose instead:
 
--- Automatic update (configured in server)
-statistics:
-  auto_update: true
-  update_threshold: 10000  -- Update after 10k modifications
+\`\`\`gql
+EXPLAIN MATCH (p:Person) WHERE p.age > 30 RETURN p;
 \`\`\`
 
 ## Component 4: Query Executor

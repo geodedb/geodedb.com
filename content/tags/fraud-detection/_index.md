@@ -705,13 +705,16 @@ CREATE (rule:FraudRule {
     enabled: true
 });
 
--- Execute rules engine
+-- Execute rules engine.
+--
+-- There is no rules-engine procedure (`fraud.*` is not a Geode namespace), so
+-- each rule is an ordinary pattern. Evaluate the rules you have stored, and
+-- sum the scores of the ones whose pattern matches this transaction.
 MATCH (tx:Transaction {transaction_id: $tx_id})
 MATCH (rule:FraudRule {enabled: true})
-CALL fraud.evaluate_rule(tx, rule)
-YIELD matched, score
-WHERE matched = true
-WITH tx, SUM(score) AS total_fraud_score,
+WHERE (rule.rule_id = 'RULE_001' AND tx.amount > tx.account_avg_amount * 10)
+   OR (rule.rule_id = 'RULE_002' AND tx.distance_km > 500 AND tx.time_diff_minutes < 60)
+WITH tx, SUM(rule.score) AS total_fraud_score,
      COLLECT(rule.name) AS triggered_rules
 WITH tx, total_fraud_score, triggered_rules,
      CASE
@@ -775,27 +778,35 @@ RETURN tx.transaction_id, tx.decision, tx.fraud_score;
 
 ### Batch Fraud Sweep (Daily/Weekly)
 
-```gql
--- Comprehensive fraud analysis for all accounts
-MATCH (a:Account)
-WHERE a.last_fraud_check < datetime().minusDays(1)
-CALL {
-    WITH a
-    // Run full suite of checks
-    CALL fraud.check_network_anomalies(a) YIELD network_score
-    CALL fraud.check_behavioral_patterns(a) YIELD behavior_score
-    CALL fraud.check_transaction_patterns(a) YIELD transaction_score
-    
-    WITH network_score + behavior_score + transaction_score AS total_score
-    WHERE total_score > 0.6
-    
-    SET a.fraud_risk_score = total_score,
-        a.last_fraud_check = datetime(),
-        a.requires_review = true
-    
-    RETURN a.account_id, total_score
-} IN TRANSACTIONS OF 10000 ROWS
+The individual checks are patterns and algorithms, not procedures. Stage each
+signal onto the account, then combine them:
 
+```gql
+-- Signal 1 (network): how central is the account in the transfer graph?
+CALL algo.betweenness.stream()
+YIELD nodeId, betweenness
+MATCH (a:Account) WHERE id(a) = nodeId
+SET a.network_score = betweenness;
+
+-- Signal 2 (behavioural): deviation from the account's own baseline
+MATCH (a:Account)-[:SENT]->(tx:Transaction)
+WHERE tx.timestamp > timestamp() - (24 * 60 * 60 * 1000)
+WITH a, max(tx.amount) AS peak, avg(tx.amount) AS mean
+SET a.behavior_score = CASE WHEN mean > 0 THEN peak / mean ELSE 0 END;
+
+-- Signal 3 (velocity): transaction burst in the last hour
+MATCH (a:Account)-[:SENT]->(tx:Transaction)
+WHERE tx.timestamp > timestamp() - (60 * 60 * 1000)
+WITH a, count(tx) AS recent_count
+SET a.transaction_score = recent_count / 10.0;
+
+-- Combine and flag
+MATCH (a:Account)
+WITH a, a.network_score + a.behavior_score + a.transaction_score AS total_score
+WHERE total_score > 0.6
+SET a.fraud_risk_score = total_score,
+    a.last_fraud_check = datetime(),
+    a.requires_review = true
 RETURN COUNT(*) AS accounts_flagged;
 ```
 

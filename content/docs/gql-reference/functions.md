@@ -340,12 +340,12 @@ Splits a string into a list.
 split(string, delimiter) -> LIST<STRING>
 ```
 
-**Examples:**
-
-```gql
-RETURN split('a,b,c', ',') AS parts;           -- ['a', 'b', 'c']
-RETURN split('hello world', ' ') AS words;     -- ['hello', 'world']
-```
+{{< callout type="warning" >}}
+`split` is listed by `SHOW FUNCTIONS` and in the language metadata, but the
+evaluator currently has no dispatch for it, so calling it does not return a
+list. Treat it as unavailable and split in the client until the engine side is
+resolved.
+{{< /callout >}}
 
 ---
 
@@ -363,10 +363,11 @@ length(string) -> INTEGER
 
 ```gql
 RETURN length('hello') AS len;  -- 5
-
--- Unicode-aware
-RETURN length('') AS emoji_len;  -- 1 (grapheme count)
 ```
+
+`length()` (and its alias `size()`) counts UTF-8 **bytes**, not code points or
+graphemes: a multi-byte character contributes its encoded length. There is no
+character-count or grapheme-count function — compute those in the client.
 
 ---
 
@@ -404,26 +405,6 @@ right(string, count) -> STRING
 ```gql
 RETURN left('hello', 3) AS first_three;   -- 'hel'
 RETURN right('hello', 3) AS last_three;   -- 'llo'
-```
-
----
-
-### lpad / rpad
-
-Pads a string to a length.
-
-**Signatures:**
-
-```text
-lpad(string, length, pad_string) -> STRING
-rpad(string, length, pad_string) -> STRING
-```
-
-**Examples:**
-
-```gql
-RETURN lpad('42', 5, '0') AS padded;    -- '00042'
-RETURN rpad('hi', 5, '-') AS padded;    -- 'hi---'
 ```
 
 ---

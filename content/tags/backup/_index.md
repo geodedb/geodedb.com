@@ -397,10 +397,15 @@ async def create_application_consistent_backup():
     # Step 1: Quiesce application writes
     await app.pause_writes()
 
-    # Step 2: Flush pending transactions
-    async with geode_client.connection() as tx:
-        await tx.begin()
-        await tx.execute("CALL dbms.checkpoint()")
+    # Step 2: There is no checkpoint procedure (`dbms.checkpoint` does not
+    # exist); the engine checkpoints on its own. Confirm how far the WAL has
+    # advanced past the last checkpoint before taking the backup.
+    async with geode_client.connection() as conn:
+        result, _ = await conn.query(
+            "CALL geode.storage.stats() YIELD wal_lsn, last_checkpoint_lsn "
+            "RETURN wal_lsn, last_checkpoint_lsn"
+        )
+        print(result.rows[0])
 
     # Step 3: Create backup
     subprocess.run([

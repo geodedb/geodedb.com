@@ -29,6 +29,7 @@ Query optimization operates on multiple levels:
 4. **Runtime Optimization**: Adapting execution based on intermediate results
 
 For graph queries, additional challenges include:
+
 - Highly variable result cardinalities from relationship traversals
 - Complex pattern matching with multiple possible start points
 - Trade-offs between depth-first and breadth-first traversal strategies
@@ -51,6 +52,7 @@ ORDER BY p.price DESC;
 ```
 
 **Parsed structure**:
+
 1. MATCH clause with pattern and filters
 2. WHERE clause with additional predicates
 3. RETURN clause specifying projections
@@ -61,6 +63,7 @@ ORDER BY p.price DESC;
 The optimizer applies transformation rules to create equivalent but more efficient logical plans:
 
 **Predicate Pushdown**:
+
 ```gql
 -- Before: Filter after traversal
 MATCH (u:User)-[:PURCHASED]->(p:Product)
@@ -73,6 +76,7 @@ RETURN u.name, p.name;
 ```
 
 **Join Reordering**:
+
 ```gql
 -- Optimizer evaluates multiple join orders:
 -- Option 1: Start from User, expand to Product
@@ -81,6 +85,7 @@ RETURN u.name, p.name;
 ```
 
 **Subquery Elimination**:
+
 ```gql
 -- Before: Correlated subquery
 MATCH (u:User)
@@ -99,6 +104,7 @@ RETURN DISTINCT u.name;
 The optimizer generates concrete execution strategies:
 
 **Index Selection**:
+
 ```gql
 -- Query with multiple index opportunities
 MATCH (u:User {email: $email})-[:FRIEND]->(f:User {country: 'USA'})
@@ -111,12 +117,14 @@ RETURN f.name;
 ```
 
 **Access Methods**:
+
 - **Index Seek**: Direct lookup by key (O(log n))
 - **Index Scan**: Range scan over sorted index
 - **Label Scan**: All nodes with specific label
 - **Full Scan**: All nodes (last resort)
 
 **Join Algorithms**:
+
 - **Nested Loop**: For small inner sets
 - **Hash Join**: For equi-joins with moderate cardinality
 - **Expand**: Following relationship pointers (graph-specific)
@@ -135,6 +143,7 @@ LIMIT 10;
 ```
 
 **Sample output**:
+
 ```
 Limit(10)
   Sort(influencer.follower_count DESC)
@@ -147,6 +156,7 @@ Estimated cost: 2,450
 ```
 
 **Interpreting the plan**:
+
 - **Bottom-up execution**: Read from bottom (IndexSeek) to top (Limit)
 - **Indentation**: Shows nesting/pipeline structure
 - **Estimated rows**: Expected result cardinality at each stage
@@ -155,6 +165,7 @@ Estimated cost: 2,450
 ### Common Plan Patterns
 
 **Efficient Plan (Good)**:
+
 ```
 Project(u.name, p.name)
   Expand((User)-[:PURCHASED]->(Product))
@@ -164,6 +175,7 @@ Cost: 150, Rows: 1,234
 ```
 
 **Inefficient Plan (Bad)**:
+
 ```
 Filter(u.country = 'USA')
   CartesianProduct
@@ -178,6 +190,7 @@ Cost: 45,000, Rows: 1,234
 ### Technique 1: Strategic Index Placement
 
 **Identify frequently filtered properties**:
+
 ```python
 # Analyze query logs
 async def analyze_query_patterns(log_file):
@@ -194,6 +207,7 @@ async def analyze_query_patterns(log_file):
 ```
 
 **Composite indexes for multi-property filters**:
+
 ```gql
 -- If you frequently filter by both category AND price:
 CREATE INDEX product_cat_price ON Product(category, price);
@@ -222,6 +236,7 @@ RETURN p.name;
 ```
 
 **With multiple filters**:
+
 ```gql
 -- Analyze cardinality first:
 MATCH (u:User) RETURN count(*);  -- 1,000,000 users
@@ -251,16 +266,20 @@ WHERE u.id = $user_id
 RETURN DISTINCT friend.name;
 -- Bounded exploration
 
--- BEST: Use algorithm-specific functions
+-- BEST: Use the built-in traversal procedure
 MATCH (u:User {id: $user_id})
-CALL graph.bfs(u, [:FRIEND], {maxDepth: 3}) YIELD node AS friend
-RETURN friend.name;
--- Optimized breadth-first search
+CALL algo.bfs.stream(u, {maxDepth: 3}) YIELD path
+UNWIND path AS friend_id
+MATCH (friend) WHERE id(friend) = friend_id
+RETURN DISTINCT friend.name;
+-- algo.bfs.stream yields `path` as a LIST of node ids and traverses every
+-- relationship type; it takes no relationship-type filter.
 ```
 
 ### Technique 4: Aggregation Optimization
 
 **Push aggregation down**:
+
 ```gql
 -- INEFFICIENT: Materialize all, then count
 MATCH (u:User)-[:PURCHASED]->(p:Product)
@@ -273,6 +292,7 @@ RETURN u.name, count(p) AS purchase_count;
 ```
 
 **Use GROUP BY strategically**:
+
 ```gql
 -- Complex aggregation with filtering
 MATCH (u:User)-[:PURCHASED]->(p:Product)-[:IN_CATEGORY]->(c:Category)
@@ -381,6 +401,7 @@ LIMIT 10;
 ```
 
 **Output with timings**:
+
 ```
 Limit(10) - 0.05ms, 10 rows
   Sort(purchase_count DESC) - 2.3ms, 1,234 rows
@@ -395,6 +416,7 @@ Disk I/O: 234 pages
 ```
 
 **What to look for**:
+
 - **Time hotspots**: Operations taking >50% of total time
 - **Cardinality explosion**: Row count increasing dramatically
 - **Cache miss rate**: High disk I/O indicates insufficient memory
@@ -434,17 +456,20 @@ async def benchmark_queries():
 ### Problem: Query Times Out
 
 **Diagnosis**:
+
 ```gql
 EXPLAIN [your query]
 ```
 
 Look for:
+
 - NodeScan/LabelScan instead of IndexSeek
 - High estimated row counts (>100K)
 - Cartesian products
 - Unbounded variable-length paths
 
 **Solutions**:
+
 1. Add missing indexes
 2. Add LIMIT clauses to bound intermediate results
 3. Rewrite to start from more selective patterns
@@ -453,6 +478,7 @@ Look for:
 ### Problem: Query Uses Wrong Index
 
 **Force specific index** (if optimizer chooses poorly):
+
 ```gql
 -- Hint to use specific index
 MATCH (u:User)
@@ -464,6 +490,7 @@ RETURN u;
 ### Problem: Plan Changes with Different Parameters
 
 **Enable plan stability**:
+
 ```gql
 -- Query with stable plan regardless of parameters
 MATCH (u:User)
@@ -523,13 +550,12 @@ ANALYZE User;
 ```python
 # Check plan cache hit rate
 async def monitor_plan_cache(client):
-    result, _ = await client.query("""
-        CALL system.plan_cache_stats()
-        RETURN hits, misses, hit_rate
-    """)
-
-    stats = result.rows[0]
-    print(f"Plan cache hit rate: {stats['hit_rate']:.2%}")
+    # The plan cache publishes no statistics (`system.*` is not a Geode
+    # namespace). Measure the effect end-to-end instead: run the statement
+    # twice and compare the execution time PROFILE reports.
+    first, _ = await client.query("PROFILE MATCH (u:User) RETURN count(u)")
+    second, _ = await client.query("PROFILE MATCH (u:User) RETURN count(u)")
+    print(f"cold={first.execution_time_ms}ms warm={second.execution_time_ms}ms")
 
     if stats['hit_rate'] < 0.80:
         print("Warning: Low plan cache hit rate")
@@ -723,12 +749,14 @@ LIMIT 10;
 **Optimization Steps**:
 
 1. Add indexes:
+
 ```gql
 CREATE INDEX ON User(id);
 CREATE INDEX ON Product(id);
 ```
 
 2. Limit intermediate results:
+
 ```gql
 MATCH (user:User {id: $user_id})-[:PURCHASED]->(p1:Product)
       <-[:PURCHASED]-(other:User)
@@ -742,6 +770,7 @@ LIMIT 10;
 ```
 
 3. Materialize frequently accessed data:
+
 ```gql
 -- Pre-compute recommendations nightly
 MATCH (user:User)-[:PURCHASED]->(p1:Product)
@@ -798,13 +827,10 @@ RETURN fof.name, mutual_friends;
 **Optimization**: Use specialized graph algorithms:
 
 ```gql
--- Instead of generic pattern matching
-CALL graph.detect_cycles(
-    start_nodes: [:Account],
-    relationship_type: 'PAYMENT',
-    max_cycle_length: 5,
-    min_amount: 1000
-) YIELD cycle
+-- There is no cycle-detection procedure; express the cycle as a pattern and
+-- let the planner bound it with the path length and the WHERE clause.
+MATCH cycle = (a:Account)-[:PAYMENT*1..5]->(a)
+WHERE all(r IN relationships(cycle) WHERE r.amount > 1000)
 RETURN cycle;
 ```
 
