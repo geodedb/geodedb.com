@@ -15,7 +15,7 @@ default:
     - linux
 
 include:
-  - component: gitlab.com/devnw/ci-catalog/cloudflare-pages-deploy@v1.53.0
+  - component: gitlab.com/devnw/ci-catalog/cloudflare-pages-deploy@v1.54.0
     inputs:
       stage: deploy
       project_name: geodedb-com

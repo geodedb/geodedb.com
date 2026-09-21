@@ -6,7 +6,7 @@ fail_fast: false
 
 repos:
 - repo: https://github.com/pre-commit/pre-commit-hooks
-  rev: v5.0.0
+  rev: v6.0.0
   hooks:
   - id: trailing-whitespace
     args: [--markdown-linebreak-ext=md]
@@ -42,21 +42,21 @@ repos:
     args: [--severity=error, --shell=bash]
 
 - repo: https://github.com/igorshubovych/markdownlint-cli
-  rev: v0.43.0
+  rev: v0.49.1
   hooks:
   - id: markdownlint
     args: [--fix, --disable, MD013, MD025, MD033, MD036, MD041, MD024, --]
     exclude: ^(CHANGELOG\.md|public/|resources/)
 
 - repo: https://github.com/macisamuele/language-formatters-pre-commit-hooks
-  rev: v2.14.0
+  rev: v2.16.0
   hooks:
   - id: pretty-format-yaml
     args: [--autofix, --indent, '2']
     exclude: ^(\.gitlab-ci\.yml|public/|resources/)
 
 - repo: https://github.com/commitizen-tools/commitizen
-  rev: v4.1.0
+  rev: v4.18.1
   hooks:
   - id: commitizen
     stages: [commit-msg]
