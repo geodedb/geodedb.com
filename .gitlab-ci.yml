@@ -9,6 +9,12 @@
 
 image: ubuntu:26.04
 
+workflow:
+  # SRE-172: a newer commit on the same ref cancels the superseded pipeline's
+  # interruptible (validation) jobs. Release/deploy jobs stay non-interruptible.
+  auto_cancel:
+    on_new_commit: interruptible
+
 default:
   tags:
     - company
@@ -65,6 +71,7 @@ stages:
 
 # Test build for merge requests and non-default branches
 test:
+  interruptible: true
   extends: .setup
   stage: test
   script:
@@ -78,6 +85,7 @@ test:
 
 # Link validation for all branches
 link-check:
+  interruptible: true
   extends: .setup
   stage: test
   script:
@@ -100,6 +108,7 @@ link-check:
 
 # Deploy to GitLab Pages on main branch -> dev.geodedb.com
 pages:
+  interruptible: false
   extends: .setup
   stage: deploy
   script:
@@ -122,6 +131,7 @@ pages:
 # The component provides id_tokens, secrets (CLOUDFLARE_API_TOKEN,
 # CLOUDFLARE_ACCOUNT_ID), and variables for Vault auth automatically.
 cloudflare-pages-deploy:
+  interruptible: false
   extends: .setup
   image: ubuntu:26.04
   script:
